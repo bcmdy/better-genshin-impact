@@ -1057,227 +1057,267 @@ public class AutoDomainTask : ISoloTask
         while (true)
         {
             retryTimes++;
-            if (retryTimes > 3)
+            if (retryTimes > 4) //情况1：没找到石化古树的情况
             {
-                Logger.LogInformation("没有可选择的树脂了");
-                TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu); // ESC 
-                Sleep(1000, _ct);
-                TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu); // ESC 
-                Sleep(1000, _ct);
-                var exitRara = CaptureToRectArea();
-                var exitRectArea = exitRara.Find(AutoFightAssets.Instance.BlackConfirmRa);
-                if (!exitRectArea.IsEmpty())
+                for (int i = 0; i < 2; i++) //防止卡顿
                 {
-                    exitRectArea.Click();
-                    return false;
-                }else
-                {
-                    Logger.LogInformation("没有找到确认按钮");
+                    Simulation.ReleaseAllKey();
+                    TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu);
+                    Sleep(980, _ct);
+                    var exitRara1 = CaptureToRectArea();
+                    var exitRectArea1 = exitRara1.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                    if (!exitRectArea1.IsEmpty())
+                    {                    
+                        Logger.LogInformation("没有可选择的树脂了，退出自动秘境");
+                        exitRectArea1.Click();
+                        Sleep(1500, _ct);
+                        var exitRara2 = CaptureToRectArea();
+                        var exitRectArea2 = exitRara2.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                        if (exitRectArea2.IsEmpty())
+                        {
+                            Logger.LogInformation("自动秘境结束");
+                            return false;
+                        }
+                        else
+                        {
+                            exitRectArea1.Click();
+                        }
+                    }
+                    if (retryTimes > 60)
+                    {
+                        Logger.LogError("领取奖励失败,没有找到退出确认按钮，自动秘境结束");
+                        return false;
+                    }
                 }
             }
             
-            var ra = CaptureToRectArea();
-            var ancientTreeStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.4, ra.Height * 0.2,
-                ra.Width * 0.2, ra.Height * 0.2));
-            var done = ancientTreeStringArea.LastOrDefault(t =>
-                Regex.IsMatch(t.Text, this.ancientTreeString));
-            if (done != null) // 
+            using (var ra = CaptureToRectArea())
             {
-                Logger.LogInformation("检测到 石化古树");
-                done.MoveTo(done.X, done.Y);//移开鼠标
-                Sleep(200, _ct);
-                var resinType = _taskParam.ResinOrder;
-                var useCondensedResinRa = ra.Find(AutoFightAssets.Instance.UseCondensedResinRa); //改浓缩树脂识别图片和范围
-                var useOriginalResinRa = ra.Find(AutoFightAssets.Instance.UseOriginalResinRa); //原粹树脂
-                var useMomentResinRa = ra.Find(AutoFightAssets.Instance.UseMomentResinRa); //改须臾树脂识别图片和范围
-                var useFragileResinRa = ra.Find(AutoFightAssets.Instance.UseFragileResinRa); //改脆弱树脂识别图片和范围
-                
-                var replenishStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.5, ra.Height * 0.3,
-                    ra.Width * 0.25, ra.Height * 0.3));
-                var replenishStringdone = replenishStringArea.LastOrDefault(t =>
-                    Regex.IsMatch(t.Text, this.replenishString));//补充原粹树脂按钮文字
-
-                //移除resinType中所有的“原粹树脂”和“无”
-                resinType = resinType.Where(t => t != "无").ToList();
-                Logger.LogInformation("测试LOG：领取奖励：{ResinType}", resinType);
-
-                if (resinType.Count > 0 && resinType[0] == "浓缩树脂" && useCondensedResinRa.IsEmpty())
+                var ancientTreeStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.4, ra.Height * 0.2,
+                    ra.Width * 0.2, ra.Height * 0.2));
+                var done = ancientTreeStringArea.LastOrDefault(t =>
+                    Regex.IsMatch(t.Text, this.ancientTreeString));
+                if (done != null) // 
                 {
-                    Logger.LogInformation("测试LOG：没有浓缩树脂了");
-                    resinType.Remove("浓缩树脂");
-                }
+                    Logger.LogInformation("自动秘境：检测到石化古树，领取奖励...");
+                    done.Click();//移开鼠标
+                    Sleep(200, _ct);
+                    var resinType = _taskParam.ResinOrder;
+                    var useCondensedResinRa = ra.Find(AutoFightAssets.Instance.UseCondensedResinRa); 
+                    var useOriginalResinRa = ra.Find(AutoFightAssets.Instance.UseOriginalResinRa); 
+                    var useMomentResinRa = ra.Find(AutoFightAssets.Instance.UseMomentResinRa); 
+                    var useFragileResinRa = ra.Find(AutoFightAssets.Instance.UseFragileResinRa);
+                    
+                    var replenishStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.5, ra.Height * 0.3,
+                        ra.Width * 0.25, ra.Height * 0.3));
+                    var replenishStringdone = replenishStringArea.LastOrDefault(t =>
+                        Regex.IsMatch(t.Text, this.replenishString));//补充原粹树脂按钮文字
 
-                if (resinType.Count > 0 && resinType[0] == "原粹树脂"  && useOriginalResinRa.IsEmpty() || replenishStringdone != null)
-                {
-                    Logger.LogInformation("测试LOG：没有原粹树脂了");
-                    resinType.Remove("原粹树脂");
-                }
+                    //移除resinType中所有的“原粹树脂”和“无”
+                    resinType = resinType.Where(t => t != "无").ToList();
+                    Logger.LogInformation("自动秘境：树脂使用顺序：{ResinType}", resinType);
 
-                if (resinType.Count > 0 && resinType[0] == "须臾树脂" && useMomentResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("测试LOG：没有须臾树脂了");
-                    resinType.Remove("须臾树脂");
-                }
-                
-                if (resinType.Count > 0 && resinType[0] == "脆弱树脂" && useFragileResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("测试LOG：没有凝缩树脂了");
-                    resinType.Remove("脆弱树脂");
-                }
-
-                if (resinType.Count == 0)
-                {
-                    Logger.LogInformation("没有可选择的树脂了");
-                    TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu); // ESC 
-                    Sleep(1000, _ct);
-                    TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu); // ESC 
-                    Sleep(1000, _ct);
-                    var exitRara = CaptureToRectArea();
-                    var exitRectArea = exitRara.Find(AutoFightAssets.Instance.BlackConfirmRa);
-                    if (!exitRectArea.IsEmpty())
+                    if (resinType.Count > 0 && resinType[0] == "浓缩树脂" && useCondensedResinRa.IsEmpty())
                     {
-                        exitRectArea.Click();
-                        return false;
-                    }else
+                        Logger.LogInformation("测试LOG：没有浓缩树脂了");
+                        resinType.Remove("浓缩树脂");
+                    }
+
+                    if (resinType.Count > 0 && resinType[0] == "原粹树脂"  && useOriginalResinRa.IsEmpty() || replenishStringdone != null)
                     {
-                        Logger.LogInformation("没有找到确认按钮");
+                        Logger.LogInformation("测试LOG：没有原粹树脂了");
+                        resinType.Remove("原粹树脂");
+                    }
+
+                    if (resinType.Count > 0 && resinType[0] == "须臾树脂" && useMomentResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("测试LOG：没有须臾树脂了");
+                        resinType.Remove("须臾树脂");
+                    }
+                    
+                    if (resinType.Count > 0 && resinType[0] == "脆弱树脂" && useFragileResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("测试LOG：没有凝缩树脂了");
+                        resinType.Remove("脆弱树脂");
+                    }
+
+                    if (resinType.Count == 0) //情况2：没找到树脂的情况
+                    {   
+                        Simulation.ReleaseAllKey();
+                        for (int i = 0; i < 62; i++) //防止卡顿
+                        {
+                            TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu);
+                            Sleep(980, _ct);
+                            var exitRara1 = CaptureToRectArea();
+                            var exitRectArea1 = exitRara1.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                            if (!exitRectArea1.IsEmpty())
+                            {
+                                Logger.LogInformation("自动秘境：没有可选择的树脂了，退出自动秘境");
+                                exitRectArea1.Click();
+                                Sleep(1500, _ct);
+                                var exitRara2 = CaptureToRectArea();
+                                var exitRectArea2 = exitRara2.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                                if (exitRectArea2.IsEmpty())
+                                {
+                                    Logger.LogInformation("自动秘境结束");
+                                    return false;
+                                }
+                                else
+                                {
+                                    exitRectArea1.Click();
+                                }
+                            }
+                            if (i > 60)
+                            {
+                                Logger.LogError("自动秘境：没有找到退出确认按钮，自动秘境结束");
+                                return false;
+                            }
+                        }
+                    }
+
+                    Logger.LogInformation("使用 {ResinType} 领取奖励", resinType[0]);
+                    
+                    // 根据树脂类型进行领取奖励
+                    if (resinType[0] == "浓缩树脂" && !useCondensedResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("使用浓缩树脂");
+                        useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2); //ra.Width / 3 要进行确认
+                        Sleep(100, _ct);
+                        useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2);
+                        break;
+                    }
+
+                    if (resinType[0] == "原粹树脂" && !useOriginalResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("使用原粹树脂");
+                        useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
+                        Sleep(100, _ct);
+                        useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
+                        break;
+                    }
+
+                    if (resinType[0] == "须臾树脂" && !useMomentResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("使用须臾树脂");
+                        useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
+                        Sleep(100, _ct);
+                        useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
+                        break;
+                    }
+                    
+                    if (resinType[0] == "脆弱树脂" && !useFragileResinRa.IsEmpty())
+                    {
+                        Logger.LogInformation("使用脆弱树脂");
+                        useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
+                        Sleep(100, _ct);
+                        useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
+                        break;
                     }
                 }
-
-                Logger.LogInformation("使用 {ResinType} 领取奖励", resinType[0]);
-                
-                // 根据树脂类型进行领取奖励
-                if (resinType[0] == "浓缩树脂" && !useCondensedResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("使用浓缩树脂");
-                    useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2); //ra.Width / 3 要进行确认
-                    Sleep(100, _ct);
-                    useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2);
-                    break;
-                }
-
-                if (resinType[0] == "原粹树脂" && !useOriginalResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("使用原粹树脂");
-                    useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
-                    Sleep(100, _ct);
-                    useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
-                    break;
-                }
-
-                if (resinType[0] == "须臾树脂" && !useMomentResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("使用须臾树脂");
-                    useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
-                    Sleep(100, _ct);
-                    useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
-                    break;
-                }
-                
-                if (resinType[0] == "脆弱树脂" && !useFragileResinRa.IsEmpty())
-                {
-                    Logger.LogInformation("使用脆弱树脂");
-                    useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
-                    Sleep(100, _ct);
-                    useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
-                    break;
-                }
             }
-
             Sleep(900, _ct);    
         }
         
         Sleep(1000, _ct);
         
-        // var hasSkip = false;
-        var captureArea = TaskContext.Instance().SystemInfo.ScaleMax1080PCaptureRect;
-        var assetScale = TaskContext.Instance().SystemInfo.AssetScale;
         for (var i = 0; i < 30; i++)
         {
-            using var ra = CaptureToRectArea();
-            
-            var skipAnimationStringArea = ra.FindMulti(RecognitionObject.Ocr(0, 0,
-                ra.Width * 0.2, ra.Height * 0.1));
-            var done = skipAnimationStringArea.LastOrDefault(t =>
-                Regex.IsMatch(t.Text, this.skipAnimationString));//跳过动画按钮文字
-            
-            using var confirmRectArea = ra.Find(AutoFightAssets.Instance.ConfirmRa);//继续按键
-            
-            if (!confirmRectArea.IsEmpty() && done != null) //双层确认
+            using (var ra = CaptureToRectArea())
             {
-                Sleep(1000, _ct);
-                var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
-                if (skipAnimationRa.IsEmpty())
+                var skipAnimationStringArea = ra.FindMulti(RecognitionObject.Ocr(0, 0,
+                    ra.Width * 0.2, ra.Height * 0.1));
+                var done = skipAnimationStringArea.LastOrDefault(t =>
+                    Regex.IsMatch(t.Text, this.skipAnimationString));//跳过动画按钮文字
+                
+                using var confirmRectArea = ra.Find(AutoFightAssets.Instance.ConfirmRa);//继续按键
+                
+                if (!confirmRectArea.IsEmpty() && done != null) //双层确认
                 {
-                    Logger.LogInformation("检测到跳过动画未启动，启用跳过");
                     Sleep(1000, _ct);
-                    GameCaptureRegion.GameRegion1080PPosClick(66, 50);//非凌晨4点，点击屏幕(66,50);
-                    Sleep(500, _ct);
-                }
-                
-                if (isLastTurn)
-                {
-                    // 最后一回合 退出
-                    Logger.LogInformation("最后一回合，退出秘境");
-                    var exitRectArea = ra.Find(AutoFightAssets.Instance.ExitRa);
-                    if (!exitRectArea.IsEmpty())
+                    var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
+                    if (skipAnimationRa.IsEmpty())
                     {
-                        exitRectArea.Click();
+                        Logger.LogInformation("检测到跳过动画未启动，启用跳过");
+                        Sleep(2000, _ct);
+                        GameCaptureRegion.GameRegion1080PPosClick(66, 50);//非凌晨4点，点击屏幕(66,50);
+                        Sleep(500, _ct);
+                    }
+                    
+                    if (isLastTurn)
+                    {
+                        // 最后一回合 退出
+                        Logger.LogInformation("最后一回合，退出秘境");
+                        var exitRectArea = ra.Find(AutoFightAssets.Instance.ExitRa);
+                        if (!exitRectArea.IsEmpty())
+                        {
+                            exitRectArea.Click();
+                            return false;
+                        }
+                    }
+
+                    if (!recognizeResin)
+                    {
+                        Logger.LogInformation("领取奖励完成，退出秘境");
+                        confirmRectArea.Click();
+                        return true;
+                    }
+                    
+                    var (condensedResinCount, originalResinCount,fragileResinCount) = GetRemainResinStatus();
+          
+                    // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
+                    bool shouldExit = true;
+
+                    if (_taskParam.ResinOrder.Contains("浓缩树脂"))
+                    {
+                        shouldExit &= (condensedResinCount == 0);
+                    }
+
+                    if (_taskParam.ResinOrder.Contains("原粹树脂"))
+                    {
+                        shouldExit &= (originalResinCount < 20);
+                    }
+
+                    if (_taskParam.ResinOrder.Contains("脆弱树脂"))
+                    {
+                        shouldExit &= (fragileResinCount == 0);
+                    }
+                    
+                    //根据_taskParam.ResinOrder中是否有对应的树脂类型，判断是否有体力，//情况3：领奖后体力不足
+                    if (shouldExit) {
+                        // 没有体力了退出秘境
+                        for (int j = 0; j < 4; j++) //防止卡顿
+                        {
+                            Simulation.ReleaseAllKey();
+                            var exitRara = CaptureToRectArea();
+                            var exitRectArea = exitRara.Find(AutoFightAssets.Instance.ExitRa);
+                            if (!exitRectArea.IsEmpty())
+                            {
+                                Logger.LogInformation("自动秘境：树脂不足，退出秘境");
+                                exitRectArea.Click();
+                                Sleep(1500, _ct);
+                                var exitRara2 = CaptureToRectArea();
+                                var exitRectArea2 = exitRara2.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                                if (exitRectArea2.IsEmpty())
+                                {
+                                    Logger.LogInformation("自动秘境结束");
+                                    return false;
+                                }
+                                else
+                                {
+                                    exitRectArea.Click();
+                                }
+                            }
+                            Sleep(1000, _ct);
+                        }
+                        Logger.LogInformation("自动秘境：没有找到确认按钮");
                         return false;
                     }
-                }
-
-                if (!recognizeResin)
-                {
-                    Logger.LogInformation("领取奖励完成，退出秘境");
-                    confirmRectArea.Click();
-                    return true;
-                }
-                
-                var (condensedResinCount, originalResinCount,fragileResinCount) = GetRemainResinStatus();
-      
-                // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
-                bool shouldExit = true;
-
-                if (_taskParam.ResinOrder.Contains("浓缩树脂"))
-                {
-                    shouldExit &= (condensedResinCount == 0);
-                }
-
-                if (_taskParam.ResinOrder.Contains("原粹树脂"))
-                {
-                    shouldExit &= (originalResinCount < 20);
-                }
-
-                if (_taskParam.ResinOrder.Contains("脆弱树脂"))
-                {
-                    shouldExit &= (fragileResinCount == 0);
-                }
-                
-                //根据_taskParam.ResinOrder中是否有对应的树脂类型，判断是否有体力
-                if (shouldExit) {
-                    // 没有体力了退出
-                    Logger.LogInformation("树脂不足，退出秘境");
-                    var exitRara = CaptureToRectArea();
-                    var exitRectArea = exitRara.Find(AutoFightAssets.Instance.ExitRa);
-                    if (!exitRectArea.IsEmpty())
-                    {
-                        exitRectArea.Click();
-                        return false;
-                    }else
-                    {
-                        Logger.LogInformation("没有找到确认按钮");
-                    }
-                }
-                else
-                {
                     // 有体力继续
-                    Logger.LogInformation("还有树脂，继续执行自动秘境");
+                    Logger.LogInformation("自动秘境：还有树脂，继续执行自动秘境");
                     confirmRectArea.Click();
                     return true;
                 }
             }
-
             Sleep(300, _ct);
         }
 
@@ -1293,110 +1333,109 @@ public class AutoDomainTask : ISoloTask
         var originalResinCount = 0; //原粹树脂
         var fragileResinCount = 0; //脆弱树脂
 
-        var ra = CaptureToRectArea();
-
-        //判断是否启用了跳过动画
-
-        // 浓缩树脂，//可以识别 √
-        var condensedResinCountRa = ra.Find(AutoFightAssets.Instance.CondensedResinCountRa);
-        if (!condensedResinCountRa.IsEmpty())
+        using (var ra = CaptureToRectArea())
         {
-            Logger.LogInformation("检测到浓缩树脂");
-            // 图像右侧就是浓缩树脂数量
-            var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
-                condensedResinCountRa.Y,
-                condensedResinCountRa.Width, condensedResinCountRa.Height);
-            var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
-            condensedResinCount = StringUtils.TryParseInt(count);
-        }
-        else
-        {
-            Logger.LogInformation("未检测到浓缩树脂数量");
-        }
+            // 浓缩树脂，//可以识别 √
+            var condensedResinCountRa = ra.Find(AutoFightAssets.Instance.CondensedResinCountRa);
+            if (!condensedResinCountRa.IsEmpty())
+            {
+                Logger.LogInformation("测试LOG：检测到浓缩树脂图标");
+                // 图像右侧就是浓缩树脂数量
+                using (var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
+                    condensedResinCountRa.Y,
+                    condensedResinCountRa.Width, condensedResinCountRa.Height))
+                {
+                    var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                    condensedResinCount = StringUtils.TryParseInt(count);
+                }
+            }
+            else
+            {
+                Logger.LogInformation("未检测到浓缩树脂数量");
+            }
 
-        // 原粹树脂
-        var originalResinCountRa = ra.Find(AutoFightAssets.Instance.OriginalResinCountRa);
-        if (!originalResinCountRa.IsEmpty())
-        {
-            Logger.LogInformation("检测到原粹树脂");
-            // 图像右侧就是原粹树脂数量
-            var countArea = ra.DeriveCrop(originalResinCountRa.X + originalResinCountRa.Width,
-                originalResinCountRa.Y,
-                (int)(originalResinCountRa.Width * 3), originalResinCountRa.Height);
+            // 原粹树脂
+            var originalResinCountRa = ra.Find(AutoFightAssets.Instance.OriginalResinCountRa);
+            if (!originalResinCountRa.IsEmpty())
+            {
+                Logger.LogInformation("测试LOG：检测到原粹树脂图标");
+                // 图像右侧就是原粹树脂数量
+                using (var countArea = ra.DeriveCrop(originalResinCountRa.X + originalResinCountRa.Width,
+                    originalResinCountRa.Y,
+                    (int)(originalResinCountRa.Width * 3), originalResinCountRa.Height))
+                {
+                    bool extracted = false;
+
+                    for (int i = 0; i < 2 && !extracted; i++)
+                    {
+                        string count;
+                        if (i == 0)
+                        {
+                            count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                            Logger.LogInformation("第一次识别原粹树脂数量：{Count}", count);
+                        }
+                        else
+                        {
+                            count = OcrFactory.Paddle.Ocr(countArea.SrcMat);
+                            Logger.LogInformation("第二次识别原粹树脂数量：{Count}", count);
+                        }
+
+                        // 使用正则表达式提取 1 或 / 前面的纯数值
+                        var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/1]\s*(2|20|200)");
+                        // var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/1]\s*200");
+                        if (match.Success)
+                        {
+                            var numericPart = match.Groups[1].Value;
+                            originalResinCount = StringUtils.TryParseInt(numericPart);
+                            Logger.LogInformation("提取到的原粹树脂数量：{OriginalResinCount}", originalResinCount);
+                            extracted = true;
+                        }
+                    }
+
+                    if (!extracted)
+                    {
+                        Logger.LogInformation("两次识别都无法提取原粹树脂数量，设置识别值");
+                        originalResinCount = 0; // 或者其他默认值
+                    }
+                }
+            }
+
+            if (originalResinCount == 0)
+            {
+                var replenishStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.5, ra.Height * 0.3,
+                    ra.Width * 0.25, ra.Height * 0.3));
+                var replenishStringdone = replenishStringArea.LastOrDefault(t =>
+                    Regex.IsMatch(t.Text, this.replenishString));//补充原粹树脂按钮文字
+                if (replenishStringdone != null)
+                {
+                    Logger.LogInformation("检测到补充原粹树脂按钮,原粹树脂不足");
+                    originalResinCount = 0;
+                }else
+                {
+                    Logger.LogInformation("未检测到补充原粹树脂按钮,强制设定树脂数量 20");
+                    originalResinCount = 20; // 强制设定树脂数量 20
+                }
+            }
             
-            bool extracted = false;
 
-            for (int i = 0; i < 2 && !extracted; i++)
+            // 脆弱树脂 //可以识别 √
+            var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
+            if (!fragileResinCountRa.IsEmpty())
             {
-                string count;
-                if (i == 0)
+                Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
+                // 图像右侧就是脆弱树脂数量
+                using (var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
+                    (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height))
                 {
-                    count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
-                    Logger.LogInformation("第一次识别原粹树脂数量：{Count}", count);
-                }
-                else
-                {
-                    count = OcrFactory.Paddle.Ocr(countArea.SrcMat);
-                    Logger.LogInformation("第二次识别原粹树脂数量：{Count}", count);
-                }
-
-                // 使用正则表达式提取 1 或 / 前面的纯数值
-                var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/1]\s*200");
-                if (match.Success)
-                {
-                    var numericPart = match.Groups[1].Value;
-                    originalResinCount = StringUtils.TryParseInt(numericPart);
-                    Logger.LogInformation("提取到的原粹树脂数量：{OriginalResinCount}", originalResinCount);
-                    extracted = true;
+                    var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                    fragileResinCount = StringUtils.TryParseInt(count);
                 }
             }
-
-            if (!extracted)
+            else
             {
-                Logger.LogInformation("两次识别都无法提取原粹树脂数量，设置识别值");
-                originalResinCount = 0; // 或者其他默认值
+                Logger.LogInformation("未检测到脆弱树脂数量");
             }
         }
-        else
-        {
-            Logger.LogInformation("未检测到原粹树脂数量，设置识别值");
-            originalResinCount = 0; // 设置为0或其他合理的默认值
-        }
-
-        if (originalResinCount == 0)
-        {
-            var replenishStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.5, ra.Height * 0.3,
-                ra.Width * 0.25, ra.Height * 0.3));
-            var replenishStringdone = replenishStringArea.LastOrDefault(t =>
-                Regex.IsMatch(t.Text, this.replenishString));//补充原粹树脂按钮文字
-            if (replenishStringdone != null)
-            {
-                Logger.LogInformation("检测到补充原粹树脂按钮,原粹树脂不足");
-                originalResinCount = 0;
-            }else
-            {
-                Logger.LogInformation("未检测到补充原粹树脂按钮,强制设定树脂数量 20");
-                originalResinCount = 20; // 强制设定树脂数量 20
-            }
-        }
-        
-
-        // 脆弱树脂 //可以识别 √
-        var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
-        if (!fragileResinCountRa.IsEmpty())
-        {
-            Logger.LogInformation("检测到脆弱树脂");
-            // 图像右侧就是脆弱树脂数量
-            var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
-                (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height);
-            var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
-            fragileResinCount = StringUtils.TryParseInt(count);
-        }
-        else
-        {
-            Logger.LogInformation("未检测到脆弱树脂数量");
-        }
-
         Logger.LogInformation("剩余：浓缩树脂 {CondensedResinCount} 原粹树脂 {OriginalResinCount} 脆弱树脂 {MentResinCount}", condensedResinCount,originalResinCount,
             fragileResinCount);
         return (condensedResinCount , originalResinCount , fragileResinCount);

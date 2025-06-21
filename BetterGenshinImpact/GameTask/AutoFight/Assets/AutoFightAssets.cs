@@ -36,7 +36,9 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public RecognitionObject OriginalResinCountRa;
 
     public RecognitionObject FragileResinCountRa;
-
+    // public RecognitionObject LockIconRa; // 锁定辅助图标
+    public RecognitionObject CondensedResinTopIconRa;
+    public RecognitionObject OriginalResinTopIconRa;
     public Dictionary<string, string> AvatarCostumeMap;
 
     // 联机
@@ -295,7 +297,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             Name = "Skipanimation",
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "skip_animation.png"),
-            RegionOfInterest = new Rect(0, 0, CaptureRect.Width / 20, CaptureRect.Height / 10),
+            RegionOfInterest = new Rect(0, 0, CaptureRect.Width / 10, CaptureRect.Height / 10),
             DrawOnWindow = false
         }.InitTemplate();
         BlackConfirmRa = new RecognitionObject //可以识别 √
