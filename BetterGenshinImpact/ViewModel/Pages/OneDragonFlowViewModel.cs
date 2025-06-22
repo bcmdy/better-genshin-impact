@@ -320,38 +320,43 @@ public partial class OneDragonFlowViewModel : ViewModel
     [RelayCommand]
     public async Task<string> OnResinUsageSequenceAsync()
     {
-        if (!SelectedConfig?.ResinOrder.Any() ?? true)
+        if (!SelectedConfig?.ResinCount.Any() ?? true)
         {
             Toast.Warning("优先级至少需要三个，自动设置为浓缩树脂、原粹树脂、无", ToastLocation.TopCenter, default, 4000);
-            SelectedConfig.ResinOrder = new List<string> { "浓缩树脂", "原粹树脂", "无" , "无"};
+            SelectedConfig.ResinCount = new Dictionary<string, int> { 
+                {"浓缩树脂", 5},
+                {"原粹树脂", 10},
+                {"脆弱树脂", 0},
+                {"须臾树脂", 0},
+            };;
         }
         var stackPanel = new StackPanel();
         var resinTypes = new List<string> { "浓缩树脂", "原粹树脂", "脆弱树脂","须臾树脂", "无" };
         var resinComboBox1 = new ComboBox
         {
             ItemsSource = resinTypes,
-            SelectedItem = SelectedConfig.ResinOrder?[0]?? "浓缩树脂",
+            SelectedItem = SelectedConfig.ResinCount.Keys.ToList()[0]?? "浓缩树脂",
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 10)
         };
         var resinComboBox2 = new ComboBox
         {
             ItemsSource = resinTypes,
-            SelectedItem = SelectedConfig.ResinOrder?[1]?? "原粹树脂",
+            SelectedItem = SelectedConfig.ResinCount.Keys.ToList()[1]?? "原粹树脂",
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 10)
         };
         var resinComboBox3 = new ComboBox
         {
             ItemsSource = resinTypes,
-            SelectedItem = SelectedConfig.ResinOrder?[2]?? "无",
+            SelectedItem = SelectedConfig.ResinCount.Keys.ToList()[2]?? "无",
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 10)
         };
         var resinComboBox4 = new ComboBox
         {
             ItemsSource = resinTypes,
-            SelectedItem = SelectedConfig.ResinOrder?[3]?? "无",
+            SelectedItem = SelectedConfig.ResinCount.Keys.ToList()[3]?? "无",
             FontSize = 12,
             Margin = new Thickness(0, 0, 0, 10)
         };
@@ -359,6 +364,9 @@ public partial class OneDragonFlowViewModel : ViewModel
         stackPanel.Children.Add(resinComboBox2);
         stackPanel.Children.Add(resinComboBox3);
         stackPanel.Children.Add(resinComboBox4);
+        
+        //创建
+        
         var uiMessageBox = new Wpf.Ui.Controls.MessageBox
         {
             Title = "优先级从上往下",
@@ -502,7 +510,14 @@ public partial class OneDragonFlowViewModel : ViewModel
                 var result2 = await uiMessageBox2.ShowDialogAsync();
                 if (result2 == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
-                    SelectedConfig.ResinOrder = new List<string> { resinType1, resinType2, resinType3 , resinType4 };
+                    //修改配置文件
+                    SelectedConfig.ResinCount = new Dictionary<string, int>
+                    {
+                        { resinType1, 5 },
+                        { resinType2, 10 },
+                        { resinType3, 0 },
+                        { resinType4, 0 },
+                    };
                     return resinType1 + "," + resinType2 + "," + resinType3 + "," + resinType4;
                 }
                 else
@@ -514,12 +529,11 @@ public partial class OneDragonFlowViewModel : ViewModel
             //修改配置文件
             SelectedConfig.ResinCount = new Dictionary<string, int>
             {
-                { "浓缩树脂", 0 },
-                { "原粹树脂", 0 },
-                { "脆弱树脂", 0 },
-                { "须臾树脂", 0 }
+                { resinType1, 5 },
+                { resinType2, 10 },
+                { resinType3, 0 },
+                { resinType4, 0 },
             };
-            SelectedConfig.ResinOrder = new List<string> { resinType1, resinType2, resinType3 , resinType4 };
             return resinType1 + "," + resinType2 + "," + resinType3 + "," + resinType4;
         }
         return null;

@@ -168,13 +168,18 @@ public class AutoDomainTask : ISoloTask
     
     private async Task DoDomain()
     {
-        if (_taskParam.ResinOrder.Count < 4)
+        if (_taskParam.ResinCount.Count < 4)
         {
             Logger.LogInformation("自动秘境：未设置树脂使用顺序，使用默认顺序 {text}", "浓缩树脂、原粹树脂");
-            _taskParam.ResinOrder = new List<string> { "浓缩树脂", "原粹树脂", "无" , "无"};
+            _taskParam.ResinCount = new Dictionary<string, int>
+                {
+                { "浓缩树脂", 5 },
+                { "原粹树脂", 10 },
+                { "脆弱树脂", 0 },
+                { "须臾树脂", 0 }
+                };
         }
-        Logger.LogInformation("领取奖励使用顺序：{ResinOrder}", _taskParam.ResinOrder);
-        Logger.LogInformation("领取树脂次数：{ResinCount}", _taskParam.ResinCount);
+        Logger.LogInformation("自动秘境：树脂使用顺序和领取树脂次数：{ResinCount}", _taskParam.ResinCount);
         
         // while (true)//测试用
         // {
@@ -1112,7 +1117,7 @@ public class AutoDomainTask : ISoloTask
                     Logger.LogInformation("自动秘境：检测到石化古树，领取奖励...");
                     done.Click();//移开鼠标
                     Sleep(200, _ct);
-                    var resinType = _taskParam.ResinOrder;
+                    var resinType = _taskParam.ResinCount.Keys.ToList();
                     var useCondensedResinRa = ra.Find(AutoFightAssets.Instance.UseCondensedResinRa); 
                     var useOriginalResinRa = ra.Find(AutoFightAssets.Instance.UseOriginalResinRa); 
                     var useMomentResinRa = ra.Find(AutoFightAssets.Instance.UseMomentResinRa); 
@@ -1329,22 +1334,22 @@ public class AutoDomainTask : ISoloTask
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
 
-                    if (_taskParam.ResinOrder.Contains("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
+                    if (_taskParam.ResinCount.ContainsKey("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
                     {
                         shouldExit &= (condensedResinCount == 0);
                     }
 
-                    if (_taskParam.ResinOrder.Contains("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
+                    if (_taskParam.ResinCount.ContainsKey("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
                     {
                         shouldExit &= (originalResinCount < 20); // 原粹树脂数量小于20
                     }
 
-                    if (_taskParam.ResinOrder.Contains("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
+                    if (_taskParam.ResinCount.ContainsKey("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
                     {
                         shouldExit &= (fragileResinCount == 0);
                     }
                     
-                    if (_taskParam.ResinOrder.Contains("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
+                    if (_taskParam.ResinCount.ContainsKey("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
                     {
                         shouldExit &= (fragileResinCount == 0);
                     }

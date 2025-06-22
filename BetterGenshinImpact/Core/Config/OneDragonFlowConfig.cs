@@ -177,9 +177,6 @@ public partial class OneDragonFlowConfig : ObservableObject
     [ObservableProperty]
     private List<string> _secretTreasureObjects = new();
     
-    //树脂使用顺序
-    [ObservableProperty] private List<string> _resinOrder = new();
-    
     //四种树脂类型的对应数量
     [ObservableProperty] private Dictionary<string, int> _resinCount = new();
     
@@ -301,26 +298,26 @@ public partial class OneDragonFlowConfig : ObservableObject
     private string _completionAction = string.Empty;
     
     // 通过当天（4点起始）是哪一天来返回配置
-    public (string partyName, string domainName, string sundaySelectedValue,List<string> ResinOrder,Dictionary<string, int> ResinCount) GetDomainConfig()
+    public (string partyName, string domainName, string sundaySelectedValue,Dictionary<string, int> ResinCount) GetDomainConfig()
     {
         if (WeeklyDomainEnabled)
         {
             var dayOfWeek = (DateTime.Now.Hour >= 4 ? DateTime.Today : DateTime.Today.AddDays(-1)).DayOfWeek;
             return dayOfWeek switch
             {
-                DayOfWeek.Monday => (MondayPartyName, MondayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Tuesday => (TuesdayPartyName, TuesdayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Wednesday => (WednesdayPartyName, WednesdayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Thursday => (ThursdayPartyName, ThursdayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Friday => (FridayPartyName, FridayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Saturday => (SaturdayPartyName, SaturdayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                DayOfWeek.Sunday => (SundayPartyName, SundayDomainName,SundaySelectedValue,ResinOrder,ResinCount),
-                _ => (PartyName, DomainName,SundaySelectedValue,ResinOrder,ResinCount)
+                DayOfWeek.Monday => (MondayPartyName, MondayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Tuesday => (TuesdayPartyName, TuesdayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Wednesday => (WednesdayPartyName, WednesdayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Thursday => (ThursdayPartyName, ThursdayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Friday => (FridayPartyName, FridayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Saturday => (SaturdayPartyName, SaturdayDomainName,SundaySelectedValue,ResinCount),
+                DayOfWeek.Sunday => (SundayPartyName, SundayDomainName,SundaySelectedValue,ResinCount),
+                _ => (PartyName, DomainName,SundaySelectedValue,ResinCount)
             };
         }
         else
         {
-            return (PartyName, DomainName,SundayEverySelectedValue,ResinOrder,ResinCount);
+            return (PartyName, DomainName,SundayEverySelectedValue,ResinCount);
         }
     }
 
