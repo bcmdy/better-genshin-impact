@@ -468,6 +468,19 @@ public class AutoDomainTask : ISoloTask
                     Regex.IsMatch(t.Text, this.matchingChallengeString));
                 if (done != null)
                 {
+                    
+                    using var confirmRectArea2 = ra.Find(RecognitionObject.Ocr(ra.Width * 0.263, ra.Height * 0.32,
+                        ra.Width - ra.Width * 0.263 * 2, ra.Height - ra.Height * 0.32 - ra.Height * 0.353));
+                    if (confirmRectArea2.IsExist() && confirmRectArea2.Text.Contains("是否仍要挑战该秘境"))
+                    {
+                        Logger.LogWarning("自动秘境：检测到树脂不足提示：{Text}", confirmRectArea2.Text);
+                        throw new Exception("当前树脂不足，自动秘境停止运行。");
+                    }
+                    else
+                    {
+                        Logger.LogInformation("自动秘境：检测到匹配挑战提示，未进入秘境，尝试继续");
+                    }
+
                     continue;
                 }
                 else
@@ -502,15 +515,6 @@ public class AutoDomainTask : ISoloTask
             {
                 break;
             }
-
-            using var confirmRectArea2 = ra.Find(RecognitionObject.Ocr(ra.Width * 0.263, ra.Height * 0.32,
-                ra.Width - ra.Width * 0.263 * 2, ra.Height - ra.Height * 0.32 - ra.Height * 0.353));
-            if (confirmRectArea2.IsExist() && confirmRectArea2.Text.Contains("是否仍要挑战该秘境"))
-            {
-                Logger.LogWarning("自动秘境：检测到树脂不足提示：{Text}", confirmRectArea2.Text);
-                throw new Exception("当前树脂不足，自动秘境停止运行。");
-            }
-
             retryTimes++;
         }
 
