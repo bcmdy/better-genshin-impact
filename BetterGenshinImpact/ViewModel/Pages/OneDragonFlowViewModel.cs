@@ -356,12 +356,11 @@ public partial class OneDragonFlowViewModel : ViewModel
         grid.RowDefinitions.Add(new RowDefinition()); // 使能按键
         
         string[] resinTypes = { "浓缩树脂", "原粹树脂", "须臾树脂", "脆弱树脂" };
-        string[] resinProperties = {"浓缩树脂", "原粹树脂", "须臾树脂", "脆弱树脂"};
         Dictionary<string, Wpf.Ui.Controls.TextBox> resinInputs = new Dictionary<string, Wpf.Ui.Controls.TextBox>();
 
         for (int i = 0; i < resinTypes.Length; i++)
         {
-            // 添加文本块
+            // 树脂类型
             TextBlock textBlock = new TextBlock
             {
                 Text = resinTypes[i],
@@ -386,10 +385,9 @@ public partial class OneDragonFlowViewModel : ViewModel
             Wpf.Ui.Controls.Grid.SetRow(increaseButton, i);
             Wpf.Ui.Controls.Grid.SetColumn(increaseButton, 1);
             grid.Children.Add(increaseButton);
+            
             // 使用局部变量捕获当前的 i 值
             int localIndex = i;
-            
-            
             // 添加输入框
             TextBox textBox = new TextBox
             {
@@ -420,7 +418,6 @@ public partial class OneDragonFlowViewModel : ViewModel
                     textBox.Text =  "" ; 
                 }
             };
-            // 为按钮添加点击事件, 使得对应树脂数量SelectedConfig.ResinCount[resinTypes[localIndex]]加1
             increaseButton.Click += (sender, e) =>
             {
                 if (SelectedConfig.ResinCount.ContainsKey(resinTypes[localIndex]) && 
@@ -491,10 +488,11 @@ public partial class OneDragonFlowViewModel : ViewModel
             {
                 separator.Visibility = Visibility.Collapsed;
             }
-            grid.Children.Add(separator);
             
+            grid.Children.Add(separator);
             resinInputs[resinTypes[i]] = textBox;
         }
+        
         // 使能按键
         var enableButton = new Button
         {
@@ -510,44 +508,50 @@ public partial class OneDragonFlowViewModel : ViewModel
         {
             SelectedConfig.SpecifyResinUse = !SelectedConfig.SpecifyResinUse;
             enableButton.Content = SelectedConfig.SpecifyResinUse ? "自定义模式：按上述配置使用树脂类型和数量" : "耗尽模式：先用浓缩，再用原粹，其他不使用";
+            Toast.Information(SelectedConfig.SpecifyResinUse ? "自定义模式：按上述配置使用树脂类型和数量" : "耗尽模式：先用浓缩，再用原粹，其他不使用");
             foreach (var input in resinInputs.Values)
             {
                 input.IsEnabled = SelectedConfig.SpecifyResinUse;// 根据使能状态启用或禁用输入框
-                var increaseButton = grid.Children.OfType<Button>().FirstOrDefault(b => b.Content.ToString() == "+" && Wpf.Ui.Controls.Grid.GetRow(b) == Wpf.Ui.Controls.Grid.GetRow(input));
+                var increaseButton = grid.Children.OfType<Button>().FirstOrDefault(b => b.Content.ToString() == 
+                    "+" && Wpf.Ui.Controls.Grid.GetRow(b) == Wpf.Ui.Controls.Grid.GetRow(input));
                 if (increaseButton != null)
                 {
                     increaseButton.IsEnabled = SelectedConfig.SpecifyResinUse;
                 }
-                var decreaseButton = grid.Children.OfType<Button>().FirstOrDefault(b => b.Content.ToString() == "-" && Wpf.Ui.Controls.Grid.GetRow(b) == Wpf.Ui.Controls.Grid.GetRow(input));
+                var decreaseButton = grid.Children.OfType<Button>().FirstOrDefault(b => b.Content.ToString() == 
+                    "-" && Wpf.Ui.Controls.Grid.GetRow(b) == Wpf.Ui.Controls.Grid.GetRow(input));
                 if (decreaseButton != null)
                 {
                     decreaseButton.IsEnabled = SelectedConfig.SpecifyResinUse;
                 }
-                
             }
         };
         grid.Children.Add(enableButton);
-        
         resinDialog.Content = grid;
+        
         var result = await resinDialog.ShowDialogAsync();
-        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+        if (result == Wpf.Ui.Controls.MessageBoxResult.None)
         {
-            foreach (var resinType in resinInputs.Keys)
+            foreach (var resinType in resinInputs.Keys)// 遍历每种树脂类型
             {
-                if (string.IsNullOrEmpty(resinInputs[resinType].Text))
+                if (string.IsNullOrEmpty(resinInputs[resinType].Text)) // 如果输入框为空，则设置为0
                 {
                     resinInputs[resinType].Text = "0";
+                    SelectedConfig.ResinCount[resinType] = 0; // 确保字典中有该键
                 }
-                if (!int.TryParse(resinInputs[resinType].Text, out int value) || value < 0 || value > 99)
+                if (!int.TryParse(resinInputs[resinType].Text, out int value) || value < 0 || value > 99) // 如果输入框不是整数或超出范围，则弹窗提示并返回
                 {
                     Toast.Warning($"{resinType} 的输入无效，请输入非负整数且不超过99");
                     return await OnResinUsageSequenceAsync();
-                }else
-                {
-                    Config.AutoDomainConfig.GetType().GetProperty(resinProperties[Array.IndexOf(resinTypes, resinType)])?
-                        .SetValue(Config.AutoDomainConfig, value);
                 }
             }
+            
+            if ((SelectedConfig.ResinCount.Values.All(count => count == 0) || SelectedConfig.ResinCount.Count == 0) && SelectedConfig.SpecifyResinUse)
+            {
+                Toast.Warning("请至少要有一种树脂的数量大于0");
+                return await OnResinUsageSequenceAsync();
+            }
+            
         }
         
         string resinUsageSequence = string.Join(", ",
