@@ -25,6 +25,9 @@ public class AutoDomainParam : BaseTaskParam
     
     //四种树脂类型的对应数量
     public Dictionary<string, int> ResinCount { get; set; } = new();
+    
+    //树脂刷取模式
+    public bool SpecifyResinUse { get; set; } = false;
 
     // 分解圣遗物的最大星级
     // 1~4
