@@ -23,6 +23,9 @@ public class AutoDomainParam : BaseTaskParam
 
     // 结束后是否自动分解圣遗物
     public bool AutoArtifactSalvage { get; set; } = false;
+    
+    //四种树脂类型的对应数量
+    public Dictionary<string, int> ResinCount { get; set; } = new();
 
     // 分解圣遗物的最大星级
     // 1~4
@@ -47,6 +50,7 @@ public class AutoDomainParam : BaseTaskParam
         DomainName = config.DomainName;
         SundaySelectedValue = config.SundaySelectedValue;
         ResinOrder = config.ResinOrder;
+        ResinCount = config.ResinCount;
         AutoArtifactSalvage = config.AutoArtifactSalvage;
         MaxArtifactStar = TaskContext.Instance().Config.AutoArtifactSalvageConfig.MaxArtifactStar;
     }

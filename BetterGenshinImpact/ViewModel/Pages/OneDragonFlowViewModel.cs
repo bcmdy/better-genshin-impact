@@ -512,6 +512,13 @@ public partial class OneDragonFlowViewModel : ViewModel
             }
             
             //修改配置文件
+            SelectedConfig.ResinCount = new Dictionary<string, int>
+            {
+                { "浓缩树脂", 0 },
+                { "原粹树脂", 0 },
+                { "脆弱树脂", 0 },
+                { "须臾树脂", 0 }
+            };
             SelectedConfig.ResinOrder = new List<string> { resinType1, resinType2, resinType3 , resinType4 };
             return resinType1 + "," + resinType2 + "," + resinType3 + "," + resinType4;
         }

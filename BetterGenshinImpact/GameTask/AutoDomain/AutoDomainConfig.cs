@@ -55,5 +55,8 @@ public partial class AutoDomainConfig : ObservableObject
     
     //树脂使用顺序
     [ObservableProperty] private List<string> _resinOrder = new();
+    
+    //四种树脂类型的对应数量
+    [ObservableProperty] private Dictionary<string, int> _resinCount = new();
 
 }

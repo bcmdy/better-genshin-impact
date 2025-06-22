@@ -91,6 +91,11 @@ public class AutoDomainTask : ISoloTask
     private readonly string ancientTreeString;
     private readonly string skipAnimationString;
     private readonly string replenishString;
+    
+    private int condensedResinUsedCount = 0;
+    private int originalResinUsedCount = 0;
+    private int fragileResinUsedCount = 0;
+    private int momentResinUsedCount = 0;
 
     public AutoDomainTask(AutoDomainParam taskParam)
     {
@@ -169,7 +174,8 @@ public class AutoDomainTask : ISoloTask
             _taskParam.ResinOrder = new List<string> { "浓缩树脂", "原粹树脂", "无" , "无"};
         }
         Logger.LogInformation("领取奖励使用顺序：{ResinOrder}", _taskParam.ResinOrder);
-
+        Logger.LogInformation("领取树脂次数：{ResinCount}", _taskParam.ResinCount);
+        
         // while (true)//测试用
         // {
         //     GetRemainResinStatus();
@@ -185,7 +191,7 @@ public class AutoDomainTask : ISoloTask
 
         // 前置进入秘境
         await EnterDomain();
-
+        
         for (var i = 0; i < _taskParam.DomainRoundNum; i++)
         {
             // 0. 关闭秘境提示
@@ -1179,39 +1185,91 @@ public class AutoDomainTask : ISoloTask
                         }
                     }
 
+                    // 创建一个字典来映射树脂类型到对应的使用次数变量
+                    var resinUsedCountMap = new Dictionary<string, int>
+                    {
+                        { "须臾树脂", momentResinUsedCount },
+                        { "脆弱树脂", fragileResinUsedCount },
+                        { "原粹树脂", originalResinUsedCount },
+                        { "浓缩树脂", condensedResinUsedCount }
+                    };
+                    
+                    //根据resinType[0]确定UsedCount是为momentResinUsedCount、fragileResinUsedCount、originalResinUsedCount、condensedResinUsedCount中哪个
+                    var usedCount = resinUsedCountMap[resinType[0]];
+                    Logger.LogInformation("树脂类型 {ResinType} 当前使用次数 {CurrentUsage} / 限制次数 {MaxLimit}", resinType[0],usedCount,_taskParam.ResinCount[resinType[0]]);
+                    
+                    if (usedCount >= _taskParam.ResinCount[resinType[0]])
+                    {
+                        Logger.LogInformation("树脂类型 {ResinType} 已达到限制次数 {MaxLimit} ，退出自动秘境", resinType[0],_taskParam.ResinCount[resinType[0]]);
+                        Simulation.ReleaseAllKey();
+                        for (int i = 0; i < 62; i++) //防止卡顿
+                        {
+                            TaskContext.Instance().PostMessageSimulator.SimulateAction(GIActions.OpenPaimonMenu);
+                            Sleep(980, _ct);
+                            var exitRara1 = CaptureToRectArea();
+                            var exitRectArea1 = exitRara1.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                            if (!exitRectArea1.IsEmpty())
+                            {
+                                Logger.LogInformation("自动秘境：没有可选择的树脂了，退出自动秘境");
+                                exitRectArea1.Click();
+                                Sleep(1500, _ct);
+                                var exitRara2 = CaptureToRectArea();
+                                var exitRectArea2 = exitRara2.Find(AutoFightAssets.Instance.BlackConfirmRa);
+                                if (exitRectArea2.IsEmpty())
+                                {
+                                    Logger.LogInformation("自动秘境结束");
+                                    return false;
+                                }
+                                else
+                                {
+                                    exitRectArea1.Click();
+                                }
+                            }
+                            if (i > 60)
+                            {
+                                Logger.LogError("自动秘境：没有找到退出确认按钮，自动秘境结束");
+                                return false;
+                            }
+                        }
+                    }
+                    
                     Logger.LogInformation("使用 {ResinType} 领取奖励", resinType[0]);
                     
                     // 根据树脂类型进行领取奖励
-                    if (resinType[0] == "浓缩树脂" && !useCondensedResinRa.IsEmpty())
+                    if (resinType[0] == "浓缩树脂" && !useCondensedResinRa.IsEmpty() && condensedResinUsedCount < _taskParam.ResinCount["浓缩树脂"])    
                     {
                         Logger.LogInformation("使用浓缩树脂");
+                        condensedResinUsedCount++;
                         useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2); //ra.Width / 3 要进行确认
                         Sleep(100, _ct);
                         useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2);
                         break;
                     }
 
-                    if (resinType[0] == "原粹树脂" && !useOriginalResinRa.IsEmpty())
+                    if (resinType[0] == "原粹树脂" && !useOriginalResinRa.IsEmpty() && originalResinUsedCount < _taskParam.ResinCount["原粹树脂"])
                     {
                         Logger.LogInformation("使用原粹树脂");
+                        originalResinUsedCount++;
                         useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
                         Sleep(100, _ct);
                         useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
                         break;
                     }
 
-                    if (resinType[0] == "须臾树脂" && !useMomentResinRa.IsEmpty())
+                    if (resinType[0] == "须臾树脂" && !useMomentResinRa.IsEmpty() && momentResinUsedCount < _taskParam.ResinCount["须臾树脂"])
                     {
                         Logger.LogInformation("使用须臾树脂");
+                        momentResinUsedCount++;
                         useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         Sleep(100, _ct);
                         useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         break;
                     }
                     
-                    if (resinType[0] == "脆弱树脂" && !useFragileResinRa.IsEmpty())
+                    if (resinType[0] == "脆弱树脂" && !useFragileResinRa.IsEmpty() && fragileResinUsedCount < _taskParam.ResinCount["脆弱树脂"])
                     {
                         Logger.LogInformation("使用脆弱树脂");
+                        fragileResinUsedCount++;
                         useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
                         Sleep(100, _ct);
                         useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
@@ -1271,17 +1329,22 @@ public class AutoDomainTask : ISoloTask
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
 
-                    if (_taskParam.ResinOrder.Contains("浓缩树脂"))
+                    if (_taskParam.ResinOrder.Contains("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
                     {
                         shouldExit &= (condensedResinCount == 0);
                     }
 
-                    if (_taskParam.ResinOrder.Contains("原粹树脂"))
+                    if (_taskParam.ResinOrder.Contains("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
                     {
-                        shouldExit &= (originalResinCount < 20);
+                        shouldExit &= (originalResinCount < 20); // 原粹树脂数量小于20
                     }
 
-                    if (_taskParam.ResinOrder.Contains("脆弱树脂"))
+                    if (_taskParam.ResinOrder.Contains("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
+                    {
+                        shouldExit &= (fragileResinCount == 0);
+                    }
+                    
+                    if (_taskParam.ResinOrder.Contains("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
                     {
                         shouldExit &= (fragileResinCount == 0);
                     }
