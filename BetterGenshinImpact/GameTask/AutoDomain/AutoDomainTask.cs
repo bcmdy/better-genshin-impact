@@ -1065,8 +1065,9 @@ public class AutoDomainTask : ISoloTask
         //默认模式下移除脆弱树脂和须臾树脂
         if (!_taskParam.SpecifyResinUse)
         {
-            resinType = resinType.Where(t => t == "浓缩树脂" && t == "原粹树脂").ToList();
-                        
+            //默认模式下移除脆弱树脂和须臾树脂
+            resinType = resinType.Where(t => t != "须臾树脂" && t != "脆弱树脂").ToList();
+            Logger.LogInformation("自动秘境：可使用的树脂类型：{ResinType}", resinType);
         }
         // 创建一个字典来映射树脂类型到对应的使用次数变量
         var resinUsedCountMap = new Dictionary<string, int>
@@ -1341,14 +1342,28 @@ public class AutoDomainTask : ISoloTask
                 
                 if (!confirmRectArea.IsEmpty() && done != null) //顶部树脂显示和确认按键不同步，双层确认
                 {
-                    Sleep(1000, _ct);
-                    var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
-                    if (skipAnimationRa.IsEmpty())
+                    // Sleep(200, _ct);
+                    //连续两次未检测到，才进行点击，
+                   int notDetectedCount = 0;
+                    for (int j = 0; j < 2; j++)
                     {
-                        Logger.LogInformation("检测到跳过动画未启动，启用跳过");
-                        Sleep(2000, _ct);
-                        GameCaptureRegion.GameRegion1080PPosClick(66, 50);//非凌晨4点，点击屏幕(66,50);
-                        Sleep(500, _ct);
+                        var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
+                        if (skipAnimationRa.IsEmpty())
+                        {
+                            notDetectedCount++;
+                            if (notDetectedCount == 2) 
+                            {
+                                Logger.LogInformation("连续两次检测到跳过动画未启动，启用跳过");
+                                Sleep(2000, _ct);
+                                GameCaptureRegion.GameRegion1080PPosClick(66, 50);//非凌晨4点，点击屏幕(66,50);
+                                Sleep(500, _ct);
+                            }
+                            Sleep(500, _ct);
+                        }
+                        else
+                        {
+                            Sleep(500, _ct);
+                        }
                     }
                     
                     if (isLastTurn)
