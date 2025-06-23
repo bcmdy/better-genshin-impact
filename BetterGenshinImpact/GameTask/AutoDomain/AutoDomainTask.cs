@@ -1390,12 +1390,12 @@ public class AutoDomainTask : ISoloTask
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
 
-                    if (resinType.Contains("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
+                    if (resinType.Contains("浓缩树脂") && ((condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"]) || !_taskParam.SpecifyResinUse))
                     {
                         shouldExit &= (condensedResinCount == 0);
                     }
 
-                    if (resinType.Contains("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
+                    if (resinType.Contains("原粹树脂") && (originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"] || !_taskParam.SpecifyResinUse))
                     {
                         shouldExit &= (originalResinCount < 20);
                     }
