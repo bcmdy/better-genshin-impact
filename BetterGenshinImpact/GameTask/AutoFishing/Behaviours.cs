@@ -16,7 +16,7 @@ using Pen = System.Drawing.Pen;
 using System.Linq;
 using Fischless.WindowsInput;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
-using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.Core.Simulator;   
 using BetterGenshinImpact.GameTask.Model;
 using System.Globalization;
 using Compunet.YoloSharp;
