@@ -1285,7 +1285,7 @@ public class AutoDomainTask : ISoloTask
                         Logger.LogInformation("使用须臾树脂");
                         momentResinUsedCount++;
                         resinUsedCountMap["须臾树脂"] = momentResinUsedCount; 
-                        useMomentResinRa.MoveTo(ra.Width / 3, useMomentResinRa.Height / 2);
+                        useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         Sleep(100, _ct);
                         useMomentResinRa.MoveTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         break;
