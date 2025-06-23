@@ -473,7 +473,6 @@ public class AutoDomainTask : ISoloTask
                     Regex.IsMatch(t.Text, this.matchingChallengeString));
                 if (done != null)
                 {
-                    
                     using var confirmRectArea2 = ra.Find(RecognitionObject.Ocr(ra.Width * 0.263, ra.Height * 0.32,
                         ra.Width - ra.Width * 0.263 * 2, ra.Height - ra.Height * 0.32 - ra.Height * 0.353));
                     if (confirmRectArea2.IsExist() && confirmRectArea2.Text.Contains("是否仍要挑战该秘境"))
@@ -520,6 +519,7 @@ public class AutoDomainTask : ISoloTask
             {
                 break;
             }
+            
             retryTimes++;
         }
 
