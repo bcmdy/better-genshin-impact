@@ -930,7 +930,7 @@
                                     Grid.RowSpan="2"
                                     MinWidth="100"
                                     Margin="10,0,10,0"
-                                    Content="领奖树脂顺序"
+                                    Content="领奖树脂设定"
                                     Command="{Binding ResinUsageSequenceCommand}"/>
                                 <ui:TextBlock Grid.Row="0"
                                               Grid.Column="1"
@@ -1025,6 +1025,10 @@
                                 MinWidth="150"
                                 MaxWidth="800"
                                 Margin="0,0,28,0"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
                                 Text="{Binding SelectedConfig.DailyRewardPartyName, Mode=TwoWay}"
                                 PlaceholderText="填写好感队名称"
                                 TextWrapping="Wrap" />
@@ -1092,6 +1096,10 @@
                             </ui:CardControl.Header>
                             <ComboBox MinWidth="150"
                                       Margin="0,0,28,0"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      VerticalContentAlignment="Center"
+                                      HorizontalContentAlignment="Center"
                                       SelectedItem="{Binding SelectedConfig.CompletionAction, Mode=TwoWay}"
                                       ItemsSource="{Binding CompletionActionList}" />
                         </ui:CardControl>
