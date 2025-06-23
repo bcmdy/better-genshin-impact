@@ -1082,7 +1082,7 @@ public class AutoDomainTask : ISoloTask
         while (true)
         {
             retryTimes++;
-            if (retryTimes > 4) //情况1：没找到石化古树的情况
+            if (retryTimes > 4) //情况1：首次和没找到石化古树的情况
             {
                 for (int i = 0; i < 2; i++) //防止卡顿
                 {
@@ -1138,7 +1138,7 @@ public class AutoDomainTask : ISoloTask
                     var replenishStringdone = replenishStringArea.LastOrDefault(t =>
                         Regex.IsMatch(t.Text, this.replenishString));//补充原粹树脂按钮文字
 
-                    Logger.LogInformation("自动秘境：树脂使用顺序：{ResinType}", resinType);
+                    // Logger.LogInformation("自动秘境：树脂使用顺序：{ResinType}", resinType);
 
                     if (resinType.Count > 0 && resinType[0] == "浓缩树脂" && useCondensedResinRa.IsEmpty())
                     {
@@ -1166,7 +1166,7 @@ public class AutoDomainTask : ISoloTask
 
                     // Logger.LogInformation("自动秘境：可使用的树脂类型：{ResinType}", resinType);
                     
-                    if (resinType.Count == 0) //情况2：没找到树脂的情况
+                    if (resinType.Count == 0) //情况2：第一次打完，没找到树脂的情况
                     {   
                         Simulation.ReleaseAllKey();
                         for (int i = 0; i < 62; i++) //防止卡顿
@@ -1200,7 +1200,7 @@ public class AutoDomainTask : ISoloTask
                         }
                     }
 
-
+                    //自定义模式下，检查树脂使用次数
                     if (_taskParam.SpecifyResinUse)
                     {
                         // 显示所有树脂类型的使用次数
@@ -1216,7 +1216,7 @@ public class AutoDomainTask : ISoloTask
                         {
                             if (resin.Value >= _taskParam.ResinCount[resin.Key])
                             {
-                                Logger.LogInformation("自动秘境：{ResinType} 使用次数已达上限", resin.Key);
+                                Logger.LogInformation("自动秘境（测试LOG）：{ResinType} 使用次数已达上限", resin.Key);
                                 resinType.Remove(resin.Key);
                             }
                         }
@@ -1262,7 +1262,7 @@ public class AutoDomainTask : ISoloTask
                     {
                         Logger.LogInformation("使用浓缩树脂");
                         condensedResinUsedCount++;
-                        resinUsedCountMap["浓缩树脂"] = condensedResinUsedCount; // 更新字典中的值
+                        resinUsedCountMap["浓缩树脂"] = condensedResinUsedCount;
                         useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2); //ra.Width / 3 要进行确认
                         Sleep(100, _ct);
                         useCondensedResinRa.ClickTo(ra.Width / 3, useCondensedResinRa.Height / 2);
@@ -1273,7 +1273,7 @@ public class AutoDomainTask : ISoloTask
                     {
                         Logger.LogInformation("使用原粹树脂");
                         originalResinUsedCount++;
-                        resinUsedCountMap["原粹树脂"] = originalResinUsedCount; // 更新字典中的值
+                        resinUsedCountMap["原粹树脂"] = originalResinUsedCount; 
                         useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
                         Sleep(100, _ct);
                         useOriginalResinRa.ClickTo(ra.Width / 3, useOriginalResinRa.Height / 2);
@@ -1284,10 +1284,10 @@ public class AutoDomainTask : ISoloTask
                     {
                         Logger.LogInformation("使用须臾树脂");
                         momentResinUsedCount++;
-                        resinUsedCountMap["须臾树脂"] = momentResinUsedCount; // 更新字典中的值
-                        useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
+                        resinUsedCountMap["须臾树脂"] = momentResinUsedCount; 
+                        useMomentResinRa.MoveTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         Sleep(100, _ct);
-                        useMomentResinRa.ClickTo(ra.Width / 3, useMomentResinRa.Height / 2);
+                        useMomentResinRa.MoveTo(ra.Width / 3, useMomentResinRa.Height / 2);
                         break;
                     }
                     
@@ -1295,7 +1295,7 @@ public class AutoDomainTask : ISoloTask
                     {
                         Logger.LogInformation("使用脆弱树脂");
                         fragileResinUsedCount++;
-                        resinUsedCountMap["脆弱树脂"] = fragileResinUsedCount; // 更新字典中的值
+                        resinUsedCountMap["脆弱树脂"] = fragileResinUsedCount; 
                         useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
                         Sleep(100, _ct);
                         useFragileResinRa.ClickTo(ra.Width / 3, useFragileResinRa.Height / 2);
@@ -1339,7 +1339,7 @@ public class AutoDomainTask : ISoloTask
                 
                 using var confirmRectArea = ra.Find(AutoFightAssets.Instance.ConfirmRa);//继续按键
                 
-                if (!confirmRectArea.IsEmpty() && done != null) //双层确认
+                if (!confirmRectArea.IsEmpty() && done != null) //顶部树脂显示和确认按键不同步，双层确认
                 {
                     Sleep(1000, _ct);
                     var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
@@ -1390,10 +1390,10 @@ public class AutoDomainTask : ISoloTask
                         shouldExit &= (fragileResinCount == 0);
                     }
                     
-                    if (_taskParam.ResinCount.ContainsKey("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
-                    {
-                        shouldExit &= (fragileResinCount == 0);
-                    }
+                    // if (_taskParam.ResinCount.ContainsKey("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
+                    // {
+                    //     shouldExit &= (momentResinCount == 0);
+                    // }
                     
                     //根据_taskParam.ResinOrder中是否有对应的树脂类型，判断是否有体力，//情况3：领奖后体力不足
                     if (shouldExit || shouldExit2) {
