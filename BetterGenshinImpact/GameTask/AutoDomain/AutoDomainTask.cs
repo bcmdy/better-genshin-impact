@@ -1217,7 +1217,7 @@ public class AutoDomainTask : ISoloTask
                         {
                             if (resin.Value >= _taskParam.ResinCount[resin.Key])
                             {
-                                Logger.LogInformation("自动秘境（测试LOG）：{ResinType} 使用次数已达上限", resin.Key);
+                                Logger.LogInformation("自动秘境：{ResinType} 使用次数已达上限", resin.Key);
                                 resinType.Remove(resin.Key);
                             }
                         }
