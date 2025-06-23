@@ -1390,25 +1390,20 @@ public class AutoDomainTask : ISoloTask
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
 
-                    if (_taskParam.ResinCount.ContainsKey("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
+                    if (resinType.Contains("浓缩树脂") && condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"])
                     {
                         shouldExit &= (condensedResinCount == 0);
                     }
 
-                    if (_taskParam.ResinCount.ContainsKey("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
+                    if (resinType.Contains("原粹树脂") && originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"])
                     {
-                        shouldExit &= (originalResinCount < 20); // 原粹树脂数量小于20
+                        shouldExit &= (originalResinCount < 20);
                     }
 
-                    if (_taskParam.ResinCount.ContainsKey("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
-                    {
+                    if (resinType.Contains("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
+                    { 
                         shouldExit &= (fragileResinCount == 0);
                     }
-                    
-                    // if (_taskParam.ResinCount.ContainsKey("须臾树脂") && momentResinUsedCount >= _taskParam.ResinCount["须臾树脂"])  
-                    // {
-                    //     shouldExit &= (momentResinCount == 0);
-                    // }
                     
                     //根据_taskParam.ResinOrder中是否有对应的树脂类型，判断是否有体力，//情况3：领奖后体力不足
                     if (shouldExit || shouldExit2) {
