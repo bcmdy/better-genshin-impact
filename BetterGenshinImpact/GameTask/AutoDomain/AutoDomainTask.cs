@@ -1390,17 +1390,17 @@ public class AutoDomainTask : ISoloTask
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
 
-                    if (resinType.Contains("浓缩树脂") && ((condensedResinUsedCount >= _taskParam.ResinCount["浓缩树脂"]) || !_taskParam.SpecifyResinUse))
+                    if (resinType.Contains("浓缩树脂") && ((condensedResinUsedCount < _taskParam.ResinCount["浓缩树脂"]) || !_taskParam.SpecifyResinUse))
                     {
                         shouldExit &= (condensedResinCount == 0);
                     }
 
-                    if (resinType.Contains("原粹树脂") && (originalResinUsedCount >= _taskParam.ResinCount["原粹树脂"] || !_taskParam.SpecifyResinUse))
+                    if (resinType.Contains("原粹树脂") && (originalResinUsedCount < _taskParam.ResinCount["原粹树脂"] || !_taskParam.SpecifyResinUse))
                     {
                         shouldExit &= (originalResinCount < 20);
                     }
 
-                    if (resinType.Contains("脆弱树脂") && fragileResinUsedCount >= _taskParam.ResinCount["脆弱树脂"])
+                    if (resinType.Contains("脆弱树脂") && fragileResinUsedCount < _taskParam.ResinCount["脆弱树脂"])
                     { 
                         shouldExit &= (fragileResinCount == 0);
                     }
@@ -1462,7 +1462,7 @@ public class AutoDomainTask : ISoloTask
             var condensedResinCountRa = ra.Find(AutoFightAssets.Instance.CondensedResinCountRa);
             if (!condensedResinCountRa.IsEmpty())
             {
-                Logger.LogInformation("测试LOG：检测到浓缩树脂图标");
+                // Logger.LogInformation("测试LOG：检测到浓缩树脂图标");
                 // 图像右侧就是浓缩树脂数量
                 using (var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
                     condensedResinCountRa.Y,
@@ -1481,7 +1481,7 @@ public class AutoDomainTask : ISoloTask
             var originalResinCountRa = ra.Find(AutoFightAssets.Instance.OriginalResinCountRa);
             if (!originalResinCountRa.IsEmpty())
             {
-                Logger.LogInformation("测试LOG：检测到原粹树脂图标");
+                // Logger.LogInformation("测试LOG：检测到原粹树脂图标");
                 // 图像右侧就是原粹树脂数量
                 using (var countArea = ra.DeriveCrop(originalResinCountRa.X + originalResinCountRa.Width,
                     originalResinCountRa.Y,
@@ -1545,7 +1545,7 @@ public class AutoDomainTask : ISoloTask
             var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
             if (!fragileResinCountRa.IsEmpty())
             {
-                Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
+                // Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
                 // 图像右侧就是脆弱树脂数量
                 using (var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
                     (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height))
