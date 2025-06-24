@@ -1133,7 +1133,7 @@ public partial class ScriptControlViewModel : ViewModel
     }
 
     [RelayCommand]
-    public  async void OnDeleteScriptByFolder(ScriptGroupProject? item)
+    public void OnDeleteScriptByFolder(ScriptGroupProject? item)
     {
         if (item == null)
         {
@@ -1145,17 +1145,17 @@ public partial class ScriptControlViewModel : ViewModel
             var toBeDeletedProjects = SelectedScriptGroup.Projects
                 .Where(item2 => item2.FolderName == item.FolderName)
                 .ToList();
-            //异步删除，解决删除文件多的时候卡死问题
-            await Task.Run(async () =>
+            foreach (var project in toBeDeletedProjects)
             {
-                foreach (var project in toBeDeletedProjects)
-                {
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        OnDeleteScript(project);
-                    });
-                }
-            });
+                SelectedScriptGroup.Projects.Remove(project);
+            }
+            _snackbarService.Show(
+                "脚本配置移除成功",
+                $"{toBeDeletedProjects.Count} 个关联配置已经移除",
+                ControlAppearance.Success,
+                null,
+                TimeSpan.FromSeconds(2)
+            );
         }
     }
 
