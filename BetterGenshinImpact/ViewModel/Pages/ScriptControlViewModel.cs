@@ -1145,7 +1145,7 @@ public partial class ScriptControlViewModel : ViewModel
             var toBeDeletedProjects = SelectedScriptGroup.Projects
                 .Where(item2 => item2.FolderName == item.FolderName)
                 .ToList();
-
+            //异步删除，解决删除文件多的时候卡死问题
             await Task.Run(async () =>
             {
                 foreach (var project in toBeDeletedProjects)
