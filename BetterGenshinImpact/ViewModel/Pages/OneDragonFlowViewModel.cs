@@ -2289,10 +2289,15 @@ public partial class OneDragonFlowViewModel : ViewModel
                 var exitPhone = capturedArea.FindMulti(_assets.ExitPhoneRo);
                 _exitPhoneCount = exitPhone.Count; // 获取账号数量
                 Logger.LogInformation("当前记录账号数量: {count}", _exitPhoneCount-1);
+                // 如果账号数量小于2大于3，报错
+                if (_exitPhoneCount < 3 || _exitPhoneCount > 4)
+                {
+                    throw new Exception("请检查账号数量是否正确，数量应为2或3");
+                }
                 // 确认记录账号数量==========================================================
                 
                 await Delay(500, cts.Cts.Token);
-                if (_exitPhoneCount == 3)
+                if (_exitPhoneCount == 3 || (_exitPhoneCount == 4 && switchTime == 1))
                 {
                     ra.ClickTo(ra.Width*0.5,ra.Height*2+ra.Height*1.3);//如果只有两账号，固定选另一个
                 }
