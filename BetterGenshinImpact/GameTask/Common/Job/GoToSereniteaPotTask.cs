@@ -133,6 +133,7 @@ internal class GoToSereniteaPotTask
             if (teleportBtn.IsExist())
             {
                 teleportBtn.Click();
+                await Delay(500, ct);
                 break; // 找到并点击后退出循环
             }
 
@@ -152,10 +153,15 @@ internal class GoToSereniteaPotTask
             if (teleportBtn.IsExist())
             {
                 teleportBtn.Click();
-                await Delay(1000, ct);
+                await Delay(1000, ct);//间隔1秒点一次
             }
             else
             {
+                if (i < 3)
+                {
+                    continue;// 尝试3次（3秒）
+                }
+                fail = true;
                 break;
             }
         }

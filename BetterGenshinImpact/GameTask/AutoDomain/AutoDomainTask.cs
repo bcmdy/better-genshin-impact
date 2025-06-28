@@ -446,11 +446,6 @@ public class AutoDomainTask : ISoloTask
                     Logger.LogWarning("周日设置秘境奖励序号错误，请检查配置页面");
                 }
             }
-            else
-            {
-                Logger.LogWarning("周日奖励选择：圣遗物副本无需选择奖励");
-            }
-
             await Delay(300, _ct);
             //await Delay(100000, _ct);//调试延时=========
         }
@@ -1342,30 +1337,7 @@ public class AutoDomainTask : ISoloTask
                 
                 if (!confirmRectArea.IsEmpty() && done != null) //顶部树脂显示和确认按键不同步，双层确认
                 {
-                    // Sleep(200, _ct);
-                    //连续两次未检测到，才进行点击，
-                   int notDetectedCount = 0;
-                    for (int j = 0; j < 2; j++)
-                    {
-                        var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
-                        if (skipAnimationRa.IsEmpty())
-                        {
-                            notDetectedCount++;
-                            if (notDetectedCount == 2) 
-                            {
-                                Logger.LogInformation("连续两次检测到跳过动画未启动，启用跳过");
-                                Sleep(2000, _ct);
-                                GameCaptureRegion.GameRegion1080PPosClick(66, 50);//非凌晨4点，点击屏幕(66,50);
-                                Sleep(500, _ct);
-                            }
-                            Sleep(500, _ct);
-                        }
-                        else
-                        {
-                            Sleep(500, _ct);
-                        }
-                    }
-                    
+                    Sleep(1050, _ct);
                     if (isLastTurn)
                     {
                         // 最后一回合 退出
@@ -1434,7 +1406,17 @@ public class AutoDomainTask : ISoloTask
                         }
                         Logger.LogInformation("自动秘境：没有找到确认按钮");
                         return false;
+                    } 
+                    
+                    var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
+                    if (skipAnimationRa.IsEmpty())
+                    {
+                        Logger.LogInformation("检测到跳过动画未启动，启用跳过");
+                        Sleep(1000, _ct);
+                        GameCaptureRegion.GameRegion1080PPosClick(66, 50);//点击屏幕(66,50);
+                        Sleep(1000, _ct);
                     }
+                    
                     // 有体力继续
                     Logger.LogInformation("自动秘境：还有树脂，继续执行自动秘境");
                     confirmRectArea.Click();
