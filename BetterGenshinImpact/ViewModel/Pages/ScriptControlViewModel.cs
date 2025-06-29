@@ -1145,13 +1145,15 @@ public partial class ScriptControlViewModel : ViewModel
             var toBeDeletedProjects = SelectedScriptGroup.Projects
                 .Where(item2 => item2.FolderName == item.FolderName)
                 .ToList();
+
             foreach (var project in toBeDeletedProjects)
             {
                 SelectedScriptGroup.Projects.Remove(project);
             }
+            
             _snackbarService.Show(
                 "脚本配置移除成功",
-                $"{toBeDeletedProjects.Count} 个关联配置已经移除",
+                $"已移除 {item.FolderName} 下的所有关联配置",
                 ControlAppearance.Success,
                 null,
                 TimeSpan.FromSeconds(2)

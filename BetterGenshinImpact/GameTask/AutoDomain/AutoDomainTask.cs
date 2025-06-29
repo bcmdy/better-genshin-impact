@@ -128,9 +128,10 @@ public class AutoDomainTask : ISoloTask
         _ct = ct;
 
         Init();
-        
-        // 3次复活重试
-        for (int i = 0; i < 3; i++)
+        Notify.Event(NotificationEvent.DomainStart).Success("自动秘境启动");
+
+        // 复活重试
+        for (var i = 0; i < _config.ReviveRetryCount; i++)
         {
             try
             {
@@ -655,6 +656,7 @@ public class AutoDomainTask : ISoloTask
             finally
             {
                 Logger.LogInformation("自动战斗线程结束");
+                Simulation.ReleaseAllKey();
             }
         }, cts.Token);
 
@@ -1037,7 +1039,7 @@ public class AutoDomainTask : ISoloTask
                     Simulation.SendInput.Mouse.MoveMouseBy(moveAngle, 0);
                 }
 
-                Sleep(100);
+                Sleep(100, _ct);
             }
 
             Logger.LogInformation("锁定东方向视角线程结束");

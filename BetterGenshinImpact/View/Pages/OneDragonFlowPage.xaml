@@ -673,6 +673,18 @@
                                 </Grid>
                             </ui:CardExpander.Header>
                             <StackPanel>
+                                
+                                <ui:TextBlock Grid.Row="0"
+                                              Grid.Column="0"
+                                              Margin="0,20,0,0"
+                                              HorizontalAlignment="Center"
+                                              FontTypography="Body"
+                                              FontSize="12"
+                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                              Text="周期始于凌晨 4:00 ，如周一 4:00 至周二 3:59 刷取周一秘境" 
+                                              TextWrapping="Wrap">
+                                </ui:TextBlock>
+                                
                                 <Grid Margin="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
