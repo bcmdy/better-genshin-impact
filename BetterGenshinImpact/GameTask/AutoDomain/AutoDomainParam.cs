@@ -32,8 +32,6 @@ public class AutoDomainParam : BaseTaskParam
     // 分解圣遗物的最大星级
     // 1~4
     public string MaxArtifactStar { get; set; } = "4";
-
-    public bool SpecifyResinUse { get; set; } = false;
     
     // 使用树脂优先级
     public List<string> ResinPriorityList { get; set; } = 

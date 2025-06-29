@@ -58,6 +58,9 @@ public class AutoStygianOnslaughtTask : ISoloTask
 
     public async Task Start(CancellationToken ct)
     {
+        // Logger.LogInformation("连续一条龙版本BGI暂不支持独立任务中的 <<幽境危战>> 功能！");
+        // return;
+        
         _lowerHeadThenWalkToTask = new LowerHeadThenWalkToTask("chest_tip.png", 20000);
         _ct = ct;
 

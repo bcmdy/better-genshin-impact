@@ -2,11 +2,7 @@
 
 	<PropertyGroup>
 		<AssemblyName>BetterGI</AssemblyName>
-<<<<<<< HEAD
-		<Version>0.46.3-alpha.1</Version>
-=======
 		<Version>0.47.0</Version>
->>>>>>> main
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
@@ -188,7 +184,6 @@
 	    <XamlRuntime>Wpf</XamlRuntime>
 	    <SubType>Designer</SubType>
 	  </Page>
-	  <Page Remove="View\Pages\OneDragonFlowPageInset.xaml" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -196,13 +191,6 @@
 	    <SubType>Code</SubType>
 	    <DependentUpon>WelcomeDialog.xaml</DependentUpon>
 	  </Compile>
-	  <Compile Remove="View\Pages\OneDragonFlowPageInset.xaml.cs" />
-		<Version>0.47.0</Version>
-		<None Update="Assets\Config\*"/>
-		<PackageReference Include="BetterGI.VCRuntime" Version="14.44.35208" />
-		</None>
-		<None Update="Assets\Config\**">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</ItemGroup>
 	
 </Project>
