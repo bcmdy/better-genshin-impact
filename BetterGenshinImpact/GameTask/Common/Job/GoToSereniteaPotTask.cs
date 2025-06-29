@@ -159,9 +159,9 @@ internal class GoToSereniteaPotTask
             {
                 if (i < 3)
                 {
-                    continue;// 尝试3次（3秒）
+                    continue;// 尝试3次点击传送（3秒）
                 }
-                fail = true;
+                fail = false;
                 break;
             }
         }
