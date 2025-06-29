@@ -759,6 +759,8 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private List<string> _secretTreasureObjectList = ["布匹","须臾树脂","大英雄的经验","流浪者的经验","精锻用魔矿","摩拉","祝圣精华","祝圣油膏"];
     
+    private string _lastUid = ""; // 上一次切换的UID
+    
     public AllConfig Config { get; set; } = TaskContext.Instance().Config;
     
     public  OneDragonFlowViewModel()
@@ -1734,7 +1736,8 @@ public partial class OneDragonFlowViewModel : ViewModel
     {
         await ScriptService.StartGameTask();
         _continuousExecutionMark = true;
-        _executionSuccessCount = 0; 
+        _executionSuccessCount = 0;
+        _lastUid = "";
         string todayNow = DateTime.Now.DayOfWeek switch
         {
             DayOfWeek.Monday => "周一",
@@ -1847,77 +1850,83 @@ public partial class OneDragonFlowViewModel : ViewModel
         int enabledTaskCountall = SelectedConfig.TaskEnabledList.Count(t => t.Value.Item1);
         _logger.LogInformation($"启用任务总数量: {enabledTaskCountall}");
 
-        await ScriptService.StartGameTask(); 
-        
-        // 验证UID
-        bool uidCheckResult = false;
-        bool switchAccountResult = false;
-        int reTrySwitchTimes = _exitPhoneCount; // 切换账号的最大次数
-        int reTrySwitchCount = 0; // 当前切换账号的次数
-        int retrySingleTimes = 3; // 当前账号的UID验证最大次数
-        int retrySingleCount = 0; // 当前账号的UID验证次数
-        
-        for (int i = 0; i < retrySingleTimes*reTrySwitchTimes; i++){
-            await new TaskRunner().RunCurrentAsync(async () =>
-            {
-                //月卡检测或主页检测
-                await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
-                //===============
-                
-                retrySingleCount++;
-                uidCheckResult = await VerifyUid(cts: new CancellationContext()); // 验证当前登录账号的UID
-            });
-            // 如果任务已经被取消，中断所有任务
-            if (CancellationContext.Instance.Cts.IsCancellationRequested)
-            {
-                _continuousExecutionMark = false;// 标记连续执行结束
-                _executionSuccessCount = 0;// 重置连续执行成功次数
-                _logger.LogInformation("连续一条龙：任务结束");
-                Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
-                return; // 后续的检查任务也不执行
-            }
-            if (!uidCheckResult)
-            {   
-                if (retrySingleCount >= retrySingleTimes)
+        await ScriptService.StartGameTask();
+
+        if (_lastUid != SelectedConfig.GenshinUid)
+        {
+            // 验证UID
+            bool uidCheckResult = false;
+            bool switchAccountResult = false;
+            int reTrySwitchTimes = _exitPhoneCount; // 切换账号的最大次数
+            int reTrySwitchCount = 0; // 当前切换账号的次数
+            int retrySingleTimes = 3; // 当前账号的UID验证最大次数
+            int retrySingleCount = 0; // 当前账号的UID验证次数
+            
+            for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
+                await new TaskRunner().RunCurrentAsync(async () =>
                 {
-                    reTrySwitchCount ++;
-                    if (reTrySwitchCount >= reTrySwitchTimes)
+                    await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
+                    
+                    retrySingleCount++;
+                    uidCheckResult = await VerifyUid(cts: new CancellationContext()); // 验证当前登录账号的UID
+                });
+                // 如果任务已经被取消，中断所有任务
+                 
+                if (CancellationContext.Instance.Cts.IsCancellationRequested)
+                {
+                    _continuousExecutionMark = false;// 标记连续执行结束
+                    _executionSuccessCount = 0;// 重置连续执行成功次数
+                    _logger.LogInformation("连续一条龙：任务结束");
+                    Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
+                    return; // 后续的检查任务也不执行
+                }
+                if (!uidCheckResult)
+                {   
+                    if (retrySingleCount >= retrySingleTimes)
                     {
-                        _logger.LogError("UID验证:  {SelectedConfig.Name} / {SelectedConfig.GenshinUid} 配置单任务," +
-                                         "切换账号 {reTrySwitchTimes} 次,验证UID仍然失败,退出执行",
-                            SelectedConfig.Name,SelectedConfig.GenshinUid,reTrySwitchTimes-1);
-                        return;
+                        reTrySwitchCount ++;
+                        if (reTrySwitchCount >= reTrySwitchTimes)
+                        {
+                            _logger.LogError("UID验证:  {SelectedConfig.Name} / {SelectedConfig.GenshinUid} 配置单任务," +
+                                             "切换账号 {reTrySwitchTimes} 次,验证UID仍然失败,退出执行",
+                                SelectedConfig.Name,SelectedConfig.GenshinUid,reTrySwitchTimes-1);
+                            return;
+                        }
+                        _logger.LogWarning("UID验证:失败 {retrySingleTimes} 次,第 {reTrySwitchCount} 次尝试切换账号",retrySingleTimes,reTrySwitchCount);
+                        await new TaskRunner().RunCurrentAsync(async () =>
+                        { 
+                            retrySingleCount = 0; // 重置UID验证次数
+                            switchAccountResult = await SwitchAccount(cts: new CancellationContext(), reTrySwitchCount); //失败后，切换账号
+                        });
+                        // 如果任务已经被取消，中断所有任务
+                        if (CancellationContext.Instance.Cts.IsCancellationRequested)
+                        {
+                            _continuousExecutionMark = false;// 标记连续执行结束
+                            _executionSuccessCount = 0;// 重置连续执行成功次数
+                            _logger.LogInformation("连续一条龙：任务结束");
+                            Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
+                            return; // 后续的检查任务也不执行
+                        }
+                        _logger.LogInformation($"切换账号: {(switchAccountResult ? "成功" : "失败")} ,继续UID验证");
                     }
-                    _logger.LogWarning("UID验证:失败 {retrySingleTimes} 次,第 {reTrySwitchCount} 次尝试切换账号",retrySingleTimes,reTrySwitchCount);
-                    await new TaskRunner().RunCurrentAsync(async () =>
-                    { 
-                        retrySingleCount = 0; // 重置UID验证次数
-                        switchAccountResult = await SwitchAccount(cts: new CancellationContext(), reTrySwitchCount); //失败后，切换账号
-                    });
-                    // 如果任务已经被取消，中断所有任务
-                    if (CancellationContext.Instance.Cts.IsCancellationRequested)
+                    else
                     {
-                        _continuousExecutionMark = false;// 标记连续执行结束
-                        _executionSuccessCount = 0;// 重置连续执行成功次数
-                        _logger.LogInformation("连续一条龙：任务结束");
-                        Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
-                        return; // 后续的检查任务也不执行
+                        _logger.LogWarning("UID验证:失败,第 {retrySingleCount} 次尝重试验证",retrySingleCount);
                     }
-                    _logger.LogInformation($"切换账号: {(switchAccountResult ? "成功" : "失败")} ,继续UID验证");
                 }
                 else
                 {
-                    _logger.LogWarning("UID验证:失败,第 {retrySingleCount} 次尝重试验证",retrySingleCount);
+                    _logger.LogInformation($"UID验证 {SelectedConfig.GenshinUid} ，继续执行");
+                    break;
                 }
             }
-            else
-            {
-                _logger.LogInformation($"UID验证 {SelectedConfig.GenshinUid} ，继续执行");
-                break;
-            }
+            // 验证UID结束
         }
-        // 验证UID结束
-
+        else
+        {
+            _logger.LogWarning("连续一条龙：绑定UID {GenshinUid} 一致，继续执行",SelectedConfig.GenshinUid);
+        }
+        
         if (taskListCopy.Count(t => t.IsEnabled) == 0)
         {
             Toast.Warning("请先选择任务");
@@ -2003,6 +2012,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             _executionSuccessCount++;
             await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
             await Task.Delay(500);
+            _lastUid = SelectedConfig.GenshinUid;//记录上一次切换的UID
             
             Notify.Event(NotificationEvent.DragonEnd).Success($"配置单 {SelectedConfig.Name} 绑定 {SelectedConfig.GenshinUid}，一条龙和配置组任务结束");
             _logger.LogInformation("配置单 {SelectedConfig.Name} 绑定UID {GenshinUid} 一条龙和配置组任务结束",
