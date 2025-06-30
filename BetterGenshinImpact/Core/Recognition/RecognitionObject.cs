@@ -101,10 +101,25 @@ public class RecognitionObject
         {
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = mat,
+            UseMask = false,  // 或者你希望的默认值
         };
         
         return ro.InitTemplate();
     }
+
+    public static RecognitionObject TemplateMatch(Mat mat, bool useMask, Color maskColor = default)
+    {
+        var ro = new RecognitionObject
+        {
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = mat,
+            UseMask = useMask,
+            MaskColor = maskColor == default? Color.FromArgb(0, 255, 0) : maskColor
+        };
+        
+        return ro.InitTemplate();
+    }
+
     
     public static RecognitionObject TemplateMatch(Mat mat, double x, double y, double w, double h)
     {
