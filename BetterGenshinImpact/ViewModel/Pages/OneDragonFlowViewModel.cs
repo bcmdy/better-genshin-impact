@@ -1770,6 +1770,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         int configIndex = 0;
         foreach (var config in boundConfigs)
         {
+            await Task.Delay(500);
             configIndex++;
             SelectedConfig = config;
             OnConfigDropDownChanged();
@@ -1779,6 +1780,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             
             await Task.Delay(1000);
             await OnOneKeyExecute();
+            await Task.Delay(3000);
             await new ReturnMainUiTask().Start(CancellationToken.None);
             // 如果任务已经被取消，中断所有任务
             if (CancellationContext.Instance.Cts.IsCancellationRequested)
@@ -1851,7 +1853,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         _logger.LogInformation($"启用任务总数量: {enabledTaskCountall}");
 
         await ScriptService.StartGameTask();
-
+        _logger.LogInformation($"上一个执行UID，{_lastUid}");
         if (_lastUid != SelectedConfig.GenshinUid)
         {
             // 验证UID
@@ -1926,6 +1928,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         {
             _logger.LogWarning("连续一条龙：绑定UID {GenshinUid} 一致，继续执行",SelectedConfig.GenshinUid);
         }
+        
+        _lastUid = SelectedConfig.GenshinUid;//记录上一次切换的UID
         
         if (taskListCopy.Count(t => t.IsEnabled) == 0)
         {
@@ -2009,14 +2013,13 @@ public partial class OneDragonFlowViewModel : ViewModel
         // 当次执行配置单完成后，检查和最终结束的任务
         await new TaskRunner().RunThreadAsync(async () =>
         {
-            _executionSuccessCount++;
-            await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
-            await Task.Delay(500);
-            _lastUid = SelectedConfig.GenshinUid;//记录上一次切换的UID
-            
             Notify.Event(NotificationEvent.DragonEnd).Success($"配置单 {SelectedConfig.Name} 绑定 {SelectedConfig.GenshinUid}，一条龙和配置组任务结束");
             _logger.LogInformation("配置单 {SelectedConfig.Name} 绑定UID {GenshinUid} 一条龙和配置组任务结束",
                 SelectedConfig.Name,string.IsNullOrEmpty(SelectedConfig.GenshinUid) ? "未绑定" : SelectedConfig.GenshinUid);
+
+            _executionSuccessCount++;
+            await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
+            await Task.Delay(500);
             
             // 单次执行完成后，不执行后续的完成任务
             if (!_continuousExecutionMark)
@@ -2040,6 +2043,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                 }
             }
         });
+        await Task.Delay(500);
     }
     
     // 新增方法：读取粘贴板内容
