@@ -13,6 +13,8 @@ using BetterGenshinImpact.Service.Notification.Model.Enum;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.Model.Area;
+
 
 
 namespace BetterGenshinImpact.GameTask.Common.Job;
@@ -25,12 +27,14 @@ public class CheckRewardsTask
     private readonly ILogger<CheckRewardsTask> _logger = App.GetLogger<CheckRewardsTask>();
 
     private readonly string dailyRewardsClaimedLocalizedString;
+    private readonly string dailyCommissionRewardsString;
 
     public CheckRewardsTask()
     {
         IStringLocalizer<CheckRewardsTask> stringLocalizer = App.GetService<IStringLocalizer<CheckRewardsTask>>() ?? throw new NullReferenceException();
         CultureInfo cultureInfo = new CultureInfo(TaskContext.Instance().Config.OtherConfig.GameCultureInfoName);
         this.dailyRewardsClaimedLocalizedString = stringLocalizer.WithCultureGet(cultureInfo, "今日奖励已领取");
+        this.dailyCommissionRewardsString = stringLocalizer.WithCultureGet(cultureInfo, "每日委托奖励");
     }
 
     public string Name => "检查奖励并通知的任务";
@@ -43,7 +47,9 @@ public class CheckRewardsTask
             Simulation.SendInput.SimulateAction(GIActions.OpenAdventurerHandbook); // F1 开书
             await Delay(2000, ct);
             // OCR识别每日是否完成
-            var assetScale = TaskContext.Instance().SystemInfo.AssetScale;
+            var assetScale = TaskContext.Instance().SystemInfo.AssetScale;//
+            GameCaptureRegion.GameRegion1080PPosClick(292,325);//点击委托
+            await Delay(2000, ct);
             using var ra = CaptureToRectArea();
             var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height - ra.Height / 3.0, 730 * assetScale, ra.Height / 3.0));
             var done = ocrList.FirstOrDefault(txt => Regex.IsMatch(txt.Text, this.dailyRewardsClaimedLocalizedString));

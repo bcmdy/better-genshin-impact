@@ -1731,10 +1731,12 @@ public partial class OneDragonFlowViewModel : ViewModel
     //连续执行一条龙配置单
     private bool _continuousExecutionMark = false;
     private int _executionSuccessCount = 0; 
+    private bool _finishMark = false;
     [RelayCommand]
     private async Task OnOneKeyContinuousExecutionOneKey()
     {
         await ScriptService.StartGameTask();
+        _finishMark = false;
         _continuousExecutionMark = true;
         _executionSuccessCount = 0;
         _lastUid = "";
@@ -1771,22 +1773,40 @@ public partial class OneDragonFlowViewModel : ViewModel
         foreach (var config in boundConfigs)
         {
             await Task.Delay(500);
-            configIndex++;
-            SelectedConfig = config;
-            OnConfigDropDownChanged();
+
+            for (int i = 0; i < 20; i++)
+            {
+                if (_finishMark || _executionSuccessCount == 0)
+                {
+                    configIndex++;
+                    SelectedConfig = config;
+                    OnConfigDropDownChanged();
+                    break;
+                }
+
+                if (i == 19)
+                {
+                    //报错退出
+                    _logger.LogWarning("连续一条龙：执行错误，退出执行...");
+                    throw new Exception("连续一条龙：执行错误，退出执行...");
+                }
+                await Task.Delay(500);
+            }
+            _finishMark = false;
             
             _logger.LogInformation("正在执行 {ScheduleName} 计划的第 {ConfigIndex} / {boundConfigs.Count} 个配置单：{Config.Name}，绑定UID {Config.GenshinUid}", 
                 Config.SelectedOneDragonFlowPlanName,configIndex,boundConfigs.Count,config.Name, config.GenshinUid);
             
-            await Task.Delay(1000);
+            await Task.Delay(500);
             await OnOneKeyExecute();
-            await Task.Delay(3000);
+            await Task.Delay(500);
             await new ReturnMainUiTask().Start(CancellationToken.None);
             // 如果任务已经被取消，中断所有任务
             if (CancellationContext.Instance.Cts.IsCancellationRequested)
             {
                 _continuousExecutionMark = false;// 标记连续执行结束
                 _executionSuccessCount = 0;// 重置连续执行成功次数
+                _finishMark = false;
                 _logger.LogInformation("连续一条龙：任务结束");
                 Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
                 return; // 后续的检查任务也不执行
@@ -1804,6 +1824,8 @@ public partial class OneDragonFlowViewModel : ViewModel
            
             _continuousExecutionMark = false;// 标记连续执行结束
             _executionSuccessCount = 0;// 重置连续执行成功次数
+            _finishMark = false;
+            
             if (SelectedConfig != null && !string.IsNullOrEmpty(Config.ContinuousCompletionAction))
             {
                 switch (Config.ContinuousCompletionAction)
@@ -1828,7 +1850,8 @@ public partial class OneDragonFlowViewModel : ViewModel
     public async Task OnOneKeyExecute()
     {
         if (!_continuousExecutionMark)
-        {
+        {  
+            _lastUid = "";
             InitConfigList();//初始化配置，保证当前选择的配置是最新的 
         }
         if (string.IsNullOrEmpty(SelectedConfig.Name) || string.IsNullOrEmpty(Config.SelectedOneDragonFlowConfigName))
@@ -1853,7 +1876,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         _logger.LogInformation($"启用任务总数量: {enabledTaskCountall}");
 
         await ScriptService.StartGameTask();
-        _logger.LogInformation($"上一个执行UID，{_lastUid}");
+        _logger.LogInformation($"上一个执行UID：{(string.IsNullOrEmpty(_lastUid) ? "无" : _lastUid)}");
+
         if (_lastUid != SelectedConfig.GenshinUid)
         {
             // 验证UID
@@ -1878,6 +1902,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                 {
                     _continuousExecutionMark = false;// 标记连续执行结束
                     _executionSuccessCount = 0;// 重置连续执行成功次数
+                    _finishMark = false;
                     _logger.LogInformation("连续一条龙：任务结束");
                     Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
                     return; // 后续的检查任务也不执行
@@ -1905,6 +1930,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                         {
                             _continuousExecutionMark = false;// 标记连续执行结束
                             _executionSuccessCount = 0;// 重置连续执行成功次数
+                            _finishMark = false;
                             _logger.LogInformation("连续一条龙：任务结束");
                             Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
                             return; // 后续的检查任务也不执行
@@ -2013,13 +2039,11 @@ public partial class OneDragonFlowViewModel : ViewModel
         // 当次执行配置单完成后，检查和最终结束的任务
         await new TaskRunner().RunThreadAsync(async () =>
         {
+            await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
+            await Task.Delay(500);
             Notify.Event(NotificationEvent.DragonEnd).Success($"配置单 {SelectedConfig.Name} 绑定 {SelectedConfig.GenshinUid}，一条龙和配置组任务结束");
             _logger.LogInformation("配置单 {SelectedConfig.Name} 绑定UID {GenshinUid} 一条龙和配置组任务结束",
                 SelectedConfig.Name,string.IsNullOrEmpty(SelectedConfig.GenshinUid) ? "未绑定" : SelectedConfig.GenshinUid);
-
-            _executionSuccessCount++;
-            await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
-            await Task.Delay(500);
             
             // 单次执行完成后，不执行后续的完成任务
             if (!_continuousExecutionMark)
@@ -2042,8 +2066,10 @@ public partial class OneDragonFlowViewModel : ViewModel
                     }
                 }
             }
+            _executionSuccessCount++;
+            await Task.Delay(2000);
+            _finishMark = true;
         });
-        await Task.Delay(500);
     }
     
     // 新增方法：读取粘贴板内容
