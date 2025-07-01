@@ -107,6 +107,14 @@ public partial class OneDragonFlowConfig : ObservableObject
     [ObservableProperty]
     private int _indexId = 1;
     
+    //下次执行的配置单
+    [ObservableProperty]
+    private bool _nextConfiguration= false;
+    
+    //下次执行的任务单
+    [ObservableProperty]
+    private int _nextTaskIndex = 0;
+    
     // 配置执行周期
     [ObservableProperty] private string _period = "每日";
     

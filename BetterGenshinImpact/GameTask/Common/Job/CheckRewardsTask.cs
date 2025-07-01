@@ -27,14 +27,12 @@ public class CheckRewardsTask
     private readonly ILogger<CheckRewardsTask> _logger = App.GetLogger<CheckRewardsTask>();
 
     private readonly string dailyRewardsClaimedLocalizedString;
-    private readonly string dailyCommissionRewardsString;
 
     public CheckRewardsTask()
     {
         IStringLocalizer<CheckRewardsTask> stringLocalizer = App.GetService<IStringLocalizer<CheckRewardsTask>>() ?? throw new NullReferenceException();
         CultureInfo cultureInfo = new CultureInfo(TaskContext.Instance().Config.OtherConfig.GameCultureInfoName);
         this.dailyRewardsClaimedLocalizedString = stringLocalizer.WithCultureGet(cultureInfo, "今日奖励已领取");
-        this.dailyCommissionRewardsString = stringLocalizer.WithCultureGet(cultureInfo, "每日委托奖励");
     }
 
     public string Name => "检查奖励并通知的任务";

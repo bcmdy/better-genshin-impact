@@ -103,6 +103,30 @@ public partial class AllConfig : ObservableObject
     [ObservableProperty]
     private ObservableCollection<string> _scheduleList = new();
     
+    // 计划表执行是否循环
+    [ObservableProperty]
+    private bool _scheduleLoop = false;
+    
+    // 计划表循环执行时间点
+    [ObservableProperty]
+    private string _cycleTime = "04:00";
+    
+    // 循环模式
+    [ObservableProperty]
+    private bool _cycleMode = false;
+    
+    //计划表执行超一天是否跳出循环
+    [ObservableProperty]
+    private bool _scheduleLoopSkip = false;
+    
+    // 计划表执行是否定时启动
+    [ObservableProperty]
+    private bool _scheduleStartOnTime = false;
+    
+    //计划表开始执行时间
+    [ObservableProperty]
+    private string _scheduleStartTime = "00:00";
+    
     public AllConfig()
     {
         if (_scheduleList.Count == 0)

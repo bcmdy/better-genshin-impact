@@ -10,6 +10,8 @@
              xmlns:oneDragonView="clr-namespace:BetterGenshinImpact.View.Pages.OneDragon"
              xmlns:pages="clr-namespace:BetterGenshinImpact.ViewModel.Pages"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:i="using:Microsoft.Xaml.Behaviors.Core"
+
              d:DataContext="{d:DesignInstance Type=pages:OneDragonFlowViewModel}"
              d:DesignHeight="600"
              d:DesignWidth="800"
@@ -31,16 +33,21 @@
         </Grid.ColumnDefinitions>
         
         <!--  左侧任务列表  -->
-       <DockPanel 
-           Grid.Column="0">
+       <DockPanel Grid.Column="0">
            <DockPanel.ContextMenu>
-               <ContextMenu Visibility="{Binding FilteredConfigList.IsEmpty, Converter={StaticResource BooleanToVisibilityRevertConverter}}">
-                   <MenuItem Command="{Binding AddTaskGroupCommand}" Header="新增任务" />
+               <ContextMenu Width="90" MinWidth="90" MaxWidth="200" Visibility="{Binding FilteredConfigList.IsEmpty, Converter={StaticResource BooleanToVisibilityRevertConverter}}">
+                   <MenuItem Command="{Binding AddTaskGroupCommand}" Header="新增任务" HorizontalAlignment="Center"/>
                    <MenuItem Command="{Binding DeleteTaskGroupCommand}"
                              CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ui:ListView}}"
-                             Header="删除任务" />
+                             Header="删除任务" HorizontalAlignment="Center"/>
+                   <MenuItem Command="{Binding NextTaskGroupCommand}"
+                             CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ui:ListView}}"
+                             Header="从此执行" HorizontalAlignment="Center"/>
+                   <MenuItem Command="{Binding ClearNextTaskGroupCommand}"
+                             CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=ui:ListView}}"
+                             Header="清除标记" HorizontalAlignment="Center" />
                </ContextMenu>
-       </DockPanel.ContextMenu>
+           </DockPanel.ContextMenu>
        <Grid DockPanel.Dock="Top"
         Margin="0,0,0,10">
         <Grid.ColumnDefinitions>
@@ -182,14 +189,27 @@
                                                 <!--          Margin="0,0,8,0" -->
                                                 <!--          Fill="{Binding StatusColor}" -->
                                                 <!--          IsHitTestVisible="False" /> -->
-                                                <TextBlock Grid.Column="2"
-                                                           GotFocus="ConfigRow_GotFocus"
-                                                           VerticalAlignment="Center"
-                                                           HorizontalAlignment="Left"
-                                                           IsHitTestVisible="False"
-                                                           Text="{Binding Name}" 
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Margin="0,0,5,0"/>
+                                               <TextBlock Grid.Column="2"
+                                                       GotFocus="ConfigRow_GotFocus"
+                                                       HorizontalAlignment="Stretch"
+                                                       Background="Transparent"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Name, Mode=OneWay}"
+                                                       Margin="0,0,3,0">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" /> <!-- 默认颜色 -->
+                                                        <Style.Triggers>
+                                                           <DataTrigger Binding="{Binding IsNextTask, Mode=OneWay}" Value="true">
+                                                                <Setter Property="Foreground" Value="DodgerBlue" /> 
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+
                                                 <ui:ToggleSwitch Grid.Column="3" GotFocus="ConfigRow_GotFocus" IsChecked="{Binding IsEnabled, Mode=TwoWay}" />
                                             </Grid>
                                         </ui:Card>
@@ -1225,7 +1245,7 @@
                         Grid.Column="0"
                         Margin="0,0,10,0"
                         Icon="{ui:SymbolIcon FolderAdd16}"
-                        Content="新增配置单"
+                        Content="新增"
                         Command="{Binding AddConfigCommand}" />
                     <ui:Button
                         Grid.Column="1"
@@ -1245,6 +1265,52 @@
                         Icon="{ui:SymbolIcon Delete24}"
                         Content="删除"
                         Command="{Binding DeleteConfigCommand}" />
+                    <ui:ToggleSwitch
+                        Grid.Column="4"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        ToolTip="是否循环执行计划单"
+                        Margin="0,0,5,0"
+                        Command="{Binding  SetCycleTimeSwitchButtonCommand}"
+                        IsChecked="{Binding Config.ScheduleLoop, Mode=TwoWay}"/>
+                    
+                   <Button
+                        Grid.Column="5"
+                        Visibility="{Binding Config.CycleMode, Converter={StaticResource BooleanToVisibilityRevertConverter}}"
+                        FontFamily="{StaticResource TextThemeFontFamily}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                        Margin="0,0,10,0"
+                        Command="{Binding SetCycleTimeButtonCommand}"
+                        BorderBrush="Transparent"
+                        Background="Transparent"
+                        Padding="0"
+                        ClickMode="Press">
+                        <Viewbox>
+                            <TextBlock Text="直接循环" TextWrapping="Wrap" />
+                        </Viewbox>
+                    </Button>
+                    <Button
+                        Grid.Column="5"
+                        Visibility="{Binding Config.CycleMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        FontFamily="{StaticResource TextThemeFontFamily}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                        Margin="0,0,10,0"
+                        Command="{Binding SetCycleTimeButtonCommand}"
+                        BorderBrush="Transparent"
+                        Background="Transparent"
+                        Padding="0"
+                        ClickMode="Press">
+                        <Viewbox>
+                            <TextBlock Text="定时循环" TextWrapping="Wrap" />
+                        </Viewbox>
+                    </Button>
+                    
+                    
+
                 </StackPanel>  
                 
                 <!-- 配置单列表 -->
@@ -1255,6 +1321,8 @@
                     Visibility="{Binding IsChecked, ElementName=PlanToggle, Converter={StaticResource BooleanToVisibilityConverter}}"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                     Margin="0,0,-10,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -1265,7 +1333,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
                     <!-- 列出配置单 -->
@@ -1273,6 +1341,7 @@
                         Grid.Column="0"
                         Grid.Row="0"
                         Grid.ColumnSpan="6"
+                        VerticalContentAlignment="Stretch"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Margin="0,0,15,0"
@@ -1285,7 +1354,7 @@
                         dd:DragDrop.SelectDroppedItems="True">
                         <ui:ListView.ItemTemplate>
                             <DataTemplate>
-                            <ui:Card
+                                <ui:Card
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
                                 Margin="0,-2,0,-5">
@@ -1320,8 +1389,21 @@
                                                FontSize="13"
                                                VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
-                                               Text="{Binding Name,Mode=OneWay}"
-                                               Margin="0,0,3,0" />
+                                               Text="{Binding Name, Mode=OneWay}"
+                                               Margin="0,0,3,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" /> <!-- 默认颜色设置为红色 -->
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding NextConfiguration}" Value="True">
+                                                        <Setter Property="Foreground" Value="DodgerBlue" /> <!-- NextConfiguration 为 True 时颜色设置为蓝色 -->
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    
                                     <!-- 计划表 -->
                                     <ComboBox Grid.Column="2"
                                               GotFocus="ConfigRow_GotFocus"
@@ -1388,6 +1470,12 @@
                             </ui:Card>
                         </DataTemplate>
                     </ui:ListView.ItemTemplate>
+                        <ListView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Command="{Binding SetNextConfigurationCommand}" Header="从此处开始执行计划表"/>
+                            <MenuItem Command="{Binding ClearNextConfigurationCommand}" Header="清除从此处执行的标志"/>
+                        </ContextMenu>
+                    </ListView.ContextMenu>
                     <ui:ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />

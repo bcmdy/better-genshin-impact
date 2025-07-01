@@ -24,6 +24,8 @@ public partial class OneDragonTaskItem : ObservableObject
 
     [ObservableProperty] private bool _isEnabled = true;
     
+    [ObservableProperty] private bool _isNextTask = false;
+    
     [ObservableProperty] private OneDragonBaseViewModel? _viewModel;
 
     public Func<Task>? Action { get; private set; }
@@ -33,11 +35,12 @@ public partial class OneDragonTaskItem : ObservableObject
         Name = name;
     }
     
-    public OneDragonTaskItem(int index,bool isEnabled,string name)
+    public OneDragonTaskItem(int index,bool isEnabled,string name,bool isNextTask = false)
     {
-        Name = name;
-        IsEnabled = isEnabled;
         Index = index;
+        IsEnabled = isEnabled;
+        Name = name;
+        IsNextTask = isNextTask;
     }
     
     // public OneDragonTaskItem(Type viewModelType, Func<Task> action)

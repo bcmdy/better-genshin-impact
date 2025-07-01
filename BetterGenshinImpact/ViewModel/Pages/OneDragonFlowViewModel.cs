@@ -83,6 +83,9 @@ using System.Windows.Input;
 using TextBox = Wpf.Ui.Controls.TextBox;
 using System.Windows.Media;
 using System.Reflection;
+using System.Windows.Controls;
+using System.Globalization;
+using Wpf.Ui.Controls;
 
 namespace BetterGenshinImpact.ViewModel.Pages;
 
@@ -1236,6 +1239,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                 if (newConfig != null)
                 {
                     newConfig.Name = newName; // 修改配置的 Name 属性
+                    newConfig.NextConfiguration = false; // 复制的配置单不作为下一配置单
                     newConfig.ScheduleName = Config.SelectedOneDragonFlowPlanName; // 更新计划表名称
                     WriteConfig(newConfig); // 保存修改后的配置
                     ConfigList.Add(newConfig); // 添加到配置列表
@@ -1437,7 +1441,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         {
             var taskItem = new OneDragonTaskItem(kvp.Key, kvp.Value.Item1, kvp.Value.Item2)
             {
-                IsEnabled = kvp.Value.Item1
+                IsEnabled = kvp.Value.Item1,
+                IsNextTask = kvp.Key == SelectedConfig.NextTaskIndex,
             };
             TaskList.Add(taskItem);
         }
@@ -1727,80 +1732,294 @@ public partial class OneDragonFlowViewModel : ViewModel
             OnOneKeyContinuousExecutionOneKey();
         }
     }
+
+    [RelayCommand]
+    private void SetNextConfiguration()
+    {
+        if (SelectedConfig == null || SelectedConfig.ScheduleName != Config.SelectedOneDragonFlowPlanName)
+        {
+            Toast.Warning("请先选择一条龙配置单");
+            return;
+        }
+        InitConfigList();
+        //把全部配置单的 NextConfiguration 属性设置为 false
+        foreach (var config in ConfigList)
+        {
+            if (config.NextConfiguration)
+            {
+                config.NextConfiguration = false;
+                WriteConfig(config);
+            }
+        }
+        SelectedConfig.NextConfiguration = true;
+        Toast.Success( $"配置单 {SelectedConfig.Name} 已设置为下一条配置单");
+    }
     
+    //清除所有配置单的下一条配置单标记
+    [RelayCommand]
+    private void ClearNextConfiguration()
+    {
+        if (SelectedConfig == null || SelectedConfig.ScheduleName != Config.SelectedOneDragonFlowPlanName)
+        {
+            Toast.Warning("请先选择一条龙配置单");
+            return;
+        }
+        InitConfigList();
+        //把全部配置单的 NextConfiguration 属性设置为 false
+        foreach (var config in ConfigList)
+        {
+            if (config.NextConfiguration)
+            {
+                config.NextConfiguration = false;
+                WriteConfig(config);
+            }
+        }
+        Toast.Success("已清除所有配置单的下一条配置单标记");
+    }
+
+    [RelayCommand]
+    private  void SetCycleTimeButton()
+    {
+        SetCycleTime(true);
+    }
+    
+    [RelayCommand]
+    private  void SetCycleTimeSwitchButton()
+    {
+        SetCycleTime(false);
+    }
+
+    private void SetCycleTime(bool isChecked = false)
+    {
+
+        if (!Config.ScheduleLoop && !isChecked)
+        {
+            return;
+        } 
+        
+        var line1 = new Separator
+        {
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+        var line2 = new Separator
+        {
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+        var line3 = new Separator
+        {
+            Margin = new Thickness(0, 0, 0, 5)
+        };
+        var startTimeHourTextBox = new TextBox
+        {
+            Name = "StartTimeHourTextBox",
+            Text = Config.ScheduleStartTime.Split(':')[0],
+            Width = 100,
+            IsEnabled = Config.ScheduleStartOnTime,
+            Margin = new Thickness(0, 0, 0, 5) // 添加一些间距
+        };
+        startTimeHourTextBox.SetBinding(TextBox.IsEnabledProperty, new Binding("ScheduleStartOnTime") { Source = Config });
+
+        var startTimeMinuteTextBox = new TextBox
+        {
+            Name = "StartTimeMinuteTextBox",
+            Text = Config.ScheduleStartTime.Split(':')[1],
+            IsEnabled = Config.ScheduleStartOnTime,
+            Width = 100,
+            Margin = new Thickness(5, 0, 0, 5) // 添加一些间距
+        };
+        startTimeMinuteTextBox.SetBinding(TextBox.IsEnabledProperty, new Binding("ScheduleStartOnTime") { Source = Config });
+
+        var checkBox0 = new CheckBox
+        {
+            Name = "ScheduleLoopSkipCheckBox",
+            Content = "执行计划表一天后跳出当前循环",
+            IsChecked = Config.ScheduleLoopSkip,
+            IsEnabled = Config.ScheduleLoop,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 10) // 添加一些间距
+        };
+        checkBox0.Checked += (s, e) => Config.ScheduleLoopSkip = true;
+        checkBox0.Unchecked += (s, e) => Config.ScheduleLoopSkip = false;
+
+        var checkBox = new CheckBox
+        {
+            Name = "ScheduleLoopCheckBox",
+            Content = "指定等待到以下的时间循环执行",
+            IsChecked = Config.CycleMode,
+            IsEnabled = Config.ScheduleLoop,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 5) // 添加一些间距
+        };
+
+        checkBox.Checked += (s, e) => Config.CycleMode = true;
+        checkBox.Unchecked += (s, e) => Config.CycleMode = false;
+
+        // 弹窗设定执行完后等待到什么时候再继续循环执行
+        var hourTextBox = new TextBox
+        {
+            Name = "HourTextBox",
+            Text = Config.CycleTime.Split(':')[0],
+            Width = 100,
+            IsEnabled = Config.CycleMode,
+            Margin = new Thickness(0, 0, 0, 5) // 添加一些间距
+        };
+        hourTextBox.SetBinding(TextBox.IsEnabledProperty, new Binding("CycleMode") { Source = Config });
+
+        var minuteTextBox = new TextBox
+        {
+            Name = "MinuteTextBox",
+            Text = Config.CycleTime.Split(':')[1],
+            IsEnabled = Config.CycleMode,
+            Margin = new Thickness(0, 0, 0, 5),
+            Width = 100
+        };
+        minuteTextBox.SetBinding(TextBox.IsEnabledProperty, new Binding("CycleMode") { Source = Config });
+
+        var startTimeCheckBox = new CheckBox
+        {
+            Name = "StartTimeCheckBox",
+            Content = "设定下方的时间定时启动计划表",
+            IsChecked = Config.ScheduleStartOnTime,
+            IsEnabled = true,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, 5) // 添加一些间距
+        };
+        startTimeCheckBox.Checked += (s, e) =>
+        {
+            Config.ScheduleStartOnTime = true;
+            startTimeHourTextBox.IsEnabled = true;
+            startTimeMinuteTextBox.IsEnabled = true;
+        };
+        startTimeCheckBox.Unchecked += (s, e) =>
+        {
+            Config.ScheduleStartOnTime = false;
+            startTimeHourTextBox.IsEnabled = false;
+            startTimeMinuteTextBox.IsEnabled = false;
+        };
+
+        var dialog = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = "循环配置",
+            Content = new StackPanel
+            {
+                Children =
+                {
+                    
+                    startTimeCheckBox,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Center, // 确保子 StackPanel 内容居中
+                        Margin = new Thickness(0, 0, 0, 10),
+                        Children =
+                        {
+                            startTimeHourTextBox,
+                            new TextBlock { Text = " ：", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(5, 0, 0, 0) },
+                            startTimeMinuteTextBox,
+                        }
+                    },
+                    line1,
+                    checkBox0,
+                    line2,
+                    checkBox,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Margin = new Thickness(0, 0, 0, 5),
+                        HorizontalAlignment = HorizontalAlignment.Center, // 确保子 StackPanel 内容居中
+                        Children =
+                        {
+                            hourTextBox,
+                            new TextBlock { Text = " ：", VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(5, 0, 0, 0) },
+                            minuteTextBox,
+                        }
+                    },
+                }
+            },
+            PrimaryButtonText = "确定",
+            CloseButtonText = "取消",
+            Height = 360,
+            Owner = Application.Current.MainWindow, // 设置 Owner 确保弹窗与主窗口关联
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, // 确保弹窗居中显示
+            SizeToContent = SizeToContent.Width // 根据内容自动调整大小
+        };
+
+        var result = dialog.ShowDialogAsync().Result;
+
+        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+        {
+            if (int.TryParse(hourTextBox.Text, out int hour) && hour >= 0 && hour <= 23 &&
+                int.TryParse(minuteTextBox.Text, out int minute) && minute >= 0 && minute <= 59)
+            {
+                Config.CycleTime = $"{hour:D2}:{minute:D2}";
+                Toast.Success(Config.CycleMode ? $"已设定<循环>时间为 {Config.CycleTime}" : "<直接>循环模式", ToastLocation.TopCenter, new Thickness(0, 20, 0, 0), 8000);
+            }
+            else
+            {
+                if (Config.CycleMode)
+                {
+                    Toast.Warning("请输入正确的时间（例如04:00）");
+                }
+            }
+
+            if (Config.ScheduleStartOnTime)
+            {
+                if (int.TryParse(startTimeHourTextBox.Text, out int startTimeHour) && startTimeHour >= 0 && startTimeHour <= 23 &&
+                    int.TryParse(startTimeMinuteTextBox.Text, out int startTimeMinute) && startTimeMinute >= 0 && startTimeMinute <= 59)
+                {
+                    Config.ScheduleStartTime = $"{startTimeHour:D2}:{startTimeMinute:D2}";
+                    Toast.Success($"已设定<启动>时间为 {Config.ScheduleStartTime}", ToastLocation.TopCenter, new Thickness(0, 50, 0, 0), 8000);
+                }
+                else
+                {
+                    Toast.Warning("请输入正确的启动时间（例如04:00）");
+                }
+            }
+        }
+    }
+
+
+
     //连续执行一条龙配置单
     private bool _continuousExecutionMark = false;
     private int _executionSuccessCount = 0; 
     private bool _finishMark = false;
+    private bool _nextModel =false;
     [RelayCommand]
     private async Task OnOneKeyContinuousExecutionOneKey()
     {
         await ScriptService.StartGameTask();
-        _finishMark = false;
-        _continuousExecutionMark = true;
-        _executionSuccessCount = 0;
-        _lastUid = "";
-        string todayNow = DateTime.Now.DayOfWeek switch
-        {
-            DayOfWeek.Monday => "周一",
-            DayOfWeek.Tuesday => "周二",
-            DayOfWeek.Wednesday => "周三",
-            DayOfWeek.Thursday => "周四",
-            DayOfWeek.Friday => "周五",
-            DayOfWeek.Saturday => "周六",
-            DayOfWeek.Sunday => "周日",
-            _ => "未知"
-        };
-        if (ConfigList.Count == 0)//命令行启动时，没有初始化，或者没有配置单，再次确认
-        { 
-            Toast.Warning("配置单空，尝试初始化！");
-            InitConfigList();
-        }
-        var boundConfigs = ConfigList.Where(config => config.AccountBinding == true 
-                                                      && (config.Period == todayNow || config.Period == "每日") 
-                                                      && config.ScheduleName == Config.SelectedOneDragonFlowPlanName)
-            .OrderBy(config => config.IndexId)
-            .ToList();
-        _logger.LogInformation("连续一条龙：今天 {todayNow} ，执行 {ScheduleName} 计划，生效配置单数量 {BoundConfigCount}",
-            todayNow,Config.SelectedOneDragonFlowPlanName,boundConfigs.Count);
+
+        _logger.LogInformation(
+            Config.ScheduleLoop 
+                ? (Config.CycleMode ? $"连续一条龙：执行结束后，等待到 {Config.CycleTime} 循环执行计划..." : "连续一条龙：执行结束后，直接循环执行计划...") 
+                : "连续一条龙：执行计划表一次...");
+        Notify.Event(NotificationEvent.DragonStart).Success(
+            Config.ScheduleLoop 
+                ? (Config.CycleMode ? $"连续一条龙：执行结束后，等待到 {Config.CycleTime} 循环执行计划..." : "连续一条龙：执行结束后，直接循环执行计划...") 
+                : "连续一条龙：执行计划表一次...");
+        var boundConfigs = new List<OneDragonFlowConfig>();
+        //记录任务开始时间
+        var startTime = DateTime.Now;
         
-        if (ConfigList.Count == 0 || boundConfigs.Count == 0) 
+        if (Config.ScheduleStartOnTime)
         {
-            Toast.Warning("连续一条龙需绑定UID,请先设定配置单");
-            return;
-        }
-        int configIndex = 0;
-        foreach (var config in boundConfigs)
-        {
-            await Task.Delay(500);
-
-            for (int i = 0; i < 20; i++)
+            var startTimeHour = Config.ScheduleStartTime.Split(':')[0];
+            var startTimeMinute = Config.ScheduleStartTime.Split(':')[1];
+            var now = DateTime.Now;
+            var start = new DateTime(now.Year, now.Month, now.Day, int.Parse(startTimeHour), int.Parse(startTimeMinute), 0);
+            if (start < now)
             {
-                if (_finishMark || _executionSuccessCount == 0)
-                {
-                    configIndex++;
-                    SelectedConfig = config;
-                    OnConfigDropDownChanged();
-                    break;
-                }
-
-                if (i == 19)
-                {
-                    //报错退出
-                    _logger.LogWarning("连续一条龙：执行错误，退出执行...");
-                    throw new Exception("连续一条龙：执行错误，退出执行...");
-                }
-                await Task.Delay(500);
+                start = start.AddDays(1); // 如果计划表启动时间已过，设置为明天的同一时间
             }
-            _finishMark = false;
-            
-            _logger.LogInformation("正在执行 {ScheduleName} 计划的第 {ConfigIndex} / {boundConfigs.Count} 个配置单：{Config.Name}，绑定UID {Config.GenshinUid}", 
-                Config.SelectedOneDragonFlowPlanName,configIndex,boundConfigs.Count,config.Name, config.GenshinUid);
-            
-            await Task.Delay(500);
-            await OnOneKeyExecute();
-            await Task.Delay(500);
-            await new ReturnMainUiTask().Start(CancellationToken.None);
+            var delay = start - now;
+            await new TaskRunner().RunThreadAsync(async () =>
+            {
+                Notify.Event(NotificationEvent.DragonStart).Success(
+                    $"计划表启动时间：{start.ToString("yyyy-MM-dd HH:mm:ss")}");                
+                _logger.LogInformation("连续一条龙：等待到计划表启动时间 {start}，等待时间 {delay}", start, delay.ToString(@"hh\:mm\:ss"));
+                await Task.Delay(delay, CancellationContext.Instance.Cts.Token);
+            });
             // 如果任务已经被取消，中断所有任务
             if (CancellationContext.Instance.Cts.IsCancellationRequested)
             {
@@ -1809,9 +2028,171 @@ public partial class OneDragonFlowViewModel : ViewModel
                 _finishMark = false;
                 _logger.LogInformation("连续一条龙：任务结束");
                 Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
-                return; // 后续的检查任务也不执行
+                return; // 后续的检查任务也不执行  
             }
         }
+        
+        _lastUid = "";
+        while (Config.ScheduleLoop || _lastUid == "")
+        {
+            _finishMark = false;
+            _continuousExecutionMark = true;
+            _executionSuccessCount = 0;
+            _lastUid = "";
+            _nextModel =false;
+            string todayNow = DateTime.Now.DayOfWeek switch
+            {
+                DayOfWeek.Monday => "周一",
+                DayOfWeek.Tuesday => "周二",
+                DayOfWeek.Wednesday => "周三",
+                DayOfWeek.Thursday => "周四",
+                DayOfWeek.Friday => "周五",
+                DayOfWeek.Saturday => "周六",
+                DayOfWeek.Sunday => "周日",
+                _ => "未知"
+            };
+
+            InitConfigList();
+
+            boundConfigs = ConfigList.Where(config => config.AccountBinding == true 
+                                                          && (config.Period == todayNow || config.Period == "每日") 
+                                                          && config.ScheduleName == Config.SelectedOneDragonFlowPlanName)
+                .OrderBy(config => config.IndexId)
+                .ToList();
+            _logger.LogInformation("连续一条龙：今天 {todayNow} ，执行 {ScheduleName} 计划，生效配置单数量 {BoundConfigCount}",
+                todayNow,Config.SelectedOneDragonFlowPlanName,boundConfigs.Count);
+            
+            if (ConfigList.Count == 0 || boundConfigs.Count == 0) 
+            {
+                Toast.Warning("连续一条龙需绑定UID,请先设定配置单");
+                return;
+            }
+            
+            int configIndex = 0;
+            foreach (var config in boundConfigs)
+            {
+                if (config.NextConfiguration)
+                {
+                    _nextModel = true;
+                    break;
+                }
+            }
+            foreach (var config in boundConfigs)
+            {
+                if (_nextModel){
+                    if (config.NextConfiguration == false){
+                         _logger.LogInformation("连续一条龙：配置单 {Config.Name} 跳过", config.Name);
+                         configIndex++;
+                        continue;
+                    }
+                    config.NextConfiguration = false;
+                    WriteConfig(config);
+                }
+                _nextModel = false;
+                
+                await Task.Delay(500);
+                for (int i = 0; i < 20; i++)
+                {
+                    if (_finishMark || _executionSuccessCount == 0)
+                    {
+                        configIndex++;
+                        SelectedConfig = config;
+                        OnConfigDropDownChanged();
+                        break;
+                    }
+
+                    if (i == 19)
+                    {
+                        //报错退出
+                        _logger.LogWarning("连续一条龙：执行错误，退出执行...");
+                        Notify.Event(NotificationEvent.DragonEnd).Error("连续一条龙：执行错误，退出执行...");
+                        throw new Exception("连续一条龙：执行错误，退出执行...");
+                    }
+                    await Task.Delay(500);
+                }
+                _finishMark = false;
+                
+                _logger.LogInformation("正在执行 {ScheduleName} 计划的第 {ConfigIndex} / {boundConfigs.Count} 个配置单：{Config.Name}，绑定UID {Config.GenshinUid}", 
+                    Config.SelectedOneDragonFlowPlanName,configIndex,boundConfigs.Count,config.Name, config.GenshinUid);
+                Notify.Event(NotificationEvent.DragonEnd).Success(
+                    $"正在执行 {Config.SelectedOneDragonFlowPlanName} 计划的第 {configIndex} / {boundConfigs.Count} 个配置单：{config.Name}，绑定UID {config.GenshinUid}");
+                
+                await Task.Delay(500);
+                await OnOneKeyExecute();
+                await Task.Delay(500);
+                await new ReturnMainUiTask().Start(CancellationToken.None);
+                // 如果任务已经被取消，中断所有任务
+                if (CancellationContext.Instance.Cts.IsCancellationRequested)
+                {
+                    _continuousExecutionMark = false;// 标记连续执行结束
+                    _executionSuccessCount = 0;// 重置连续执行成功次数
+                    _finishMark = false;
+                    _logger.LogInformation("连续一条龙：任务结束");
+                    Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
+                    return; // 后续的检查任务也不执行
+                }
+                //每次完成一个配置单后，检测执行时间是否超过一天，如果超过一天，直接进入下一个循环
+                if (DateTime.Now.Subtract(startTime).TotalDays >= 1 && Config.ScheduleLoopSkip)
+                {
+                    _logger.LogInformation("计划表执行时间超过一天，直接进入下一个循环");
+                    break;
+                }
+            }
+            _logger.LogInformation(Config.ScheduleLoop && Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
+            Notify.Event(NotificationEvent.DragonEnd).Success(Config.ScheduleLoop && Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
+            // 任务完成后，判断是否为循环执行
+            if (Config.ScheduleLoop && Config.CycleMode)
+            {
+                // 如果是循环执行，等待到指定时间
+                var cycleTime = Config.CycleTime.Split(':');
+                if (cycleTime.Length == 2 && int.TryParse(cycleTime[0], out int hour) &&
+                    int.TryParse(cycleTime[1], out int minute))
+                {
+                    var now = DateTime.Now;
+                    var nextCycleTime = new DateTime(now.Year, now.Month, now.Day, hour, minute, 0);
+                    if (nextCycleTime < now)
+                    {
+                        nextCycleTime = nextCycleTime.AddDays(1); // 如果指定时间已过，设置为明天的同一时间
+                    }
+
+                    // 计算任务总执行时间
+                    var taskExecutionTime = now - startTime;
+
+                    // 如果任务执行时间超过一天，直接进入下一个循环
+                    if (taskExecutionTime.TotalDays >= 1)
+                    {
+                        _logger.LogInformation("任务执行时间超过一天，直接进入下一个循环");
+                        Notify.Event(NotificationEvent.DragonEnd).Success("任务执行时间超过一天，直接进入下一个循环");
+                        // 任务执行的代码
+                    }
+                    else
+                    {
+                        var delay = nextCycleTime - now;
+                        await new TaskRunner().RunThreadAsync(async () =>
+                        {
+                            Notify.Event(NotificationEvent.DragonEnd).Success(
+                                $"计划表下次循环时间：{nextCycleTime.ToString("yyyy-MM-dd HH:mm:ss")}");
+                            _logger.LogInformation("连续一条龙：等待到下一个循环时间 {nextCycleTime}，等待时间 {delay}", nextCycleTime, delay.ToString(@"hh\:mm\:ss"));
+                            await Task.Delay(delay, CancellationContext.Instance.Cts.Token);
+                        });
+                        // 如果任务已经被取消，中断所有任务
+                        if (CancellationContext.Instance.Cts.IsCancellationRequested)
+                        {
+                            _continuousExecutionMark = false;// 标记连续执行结束
+                            _executionSuccessCount = 0;// 重置连续执行成功次数
+                            _finishMark = false;
+                            _logger.LogInformation("连续一条龙：任务结束");
+                            Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
+                            return; // 后续的检查任务也不执行
+                        }
+                    }
+                }
+            }
+
+            _logger.LogInformation(Config.ScheduleLoop ? "连续一条龙：循环执行计划，继续执行..." : "连续一条龙：执行计划单次完成...");
+            Notify.Event(NotificationEvent.DragonEnd).Success(Config.ScheduleLoop ? "连续一条龙：循环执行计划，继续执行..." : "连续一条龙：执行计划单次完成...");
+        }
+        
         // 连续执行完毕后，检查和最终结束的任务
         await new TaskRunner().RunThreadAsync(async () =>
         {
@@ -1846,6 +2227,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         });
     }
 
+    private bool _nextTaskModel = false; // 退出手机的最大次数
+    
     [RelayCommand]
     public async Task OnOneKeyExecute()
     {
@@ -1863,16 +2246,46 @@ public partial class OneDragonFlowViewModel : ViewModel
         ReadScriptGroup();
         
         var taskListCopy = new List<OneDragonTaskItem>(TaskList);//避免执行过程中修改TaskList
+        
+        if (SelectedConfig.NextTaskIndex > 0)
+        {
+            // 通过NextTaskIndex找到执行的任务名称
+            var taskName = TaskList.FirstOrDefault(t => t.Index == SelectedConfig.NextTaskIndex)?.Name;
+
+            if (!string.IsNullOrEmpty(taskName))
+            {
+                _logger.LogInformation("连续一条龙：任务将从 {taskName} 开始执行", taskName);
+                // 找到该任务在taskListCopy中的位置
+                int taskIndex = taskListCopy.FindIndex(t => t.Index == SelectedConfig.NextTaskIndex);
+
+                if (taskIndex >= 0)
+                {
+                    // 通过taskIndex，去除taskIndex之前的任务
+                    taskListCopy = taskListCopy.Skip(taskIndex).ToList();
+                }
+                else
+                {
+                    // 如果没有找到该任务，保持原样或处理错误
+                    _logger.LogWarning("连续一条龙：未找到指定的任务序号或被删除，将从头开始执行");
+                }
+            }else
+            {
+                _logger.LogWarning("连续一条龙：未找到指定的任务序号或被删除，将从头开始执行");
+            }
+            SelectedConfig.NextTaskIndex = 0;
+            LoadDisplayTaskListFromConfig();
+        }
+        
         foreach (var task in taskListCopy)
         {
             task.InitAction(SelectedConfig);
         }
-
+        
         int finishOneTaskcount = 1;
         int finishTaskcount = 1;
         int enabledTaskCount = 0;
         int enabledoneTaskCount = 0;
-        int enabledTaskCountall = SelectedConfig.TaskEnabledList.Count(t => t.Value.Item1);
+        int enabledTaskCountall = taskListCopy.Count(t => t.IsEnabled);
         _logger.LogInformation($"启用任务总数量: {enabledTaskCountall}");
 
         await ScriptService.StartGameTask();
@@ -1964,15 +2377,13 @@ public partial class OneDragonFlowViewModel : ViewModel
             Notify.Event(NotificationEvent.DragonEnd).Success("没有配置,退出执行!");
             return;
         }
-
-        var selectedConfigCopy = SelectedConfig; // 防止修改SelectedConfig导致死循环
         
         // 筛选出配置组任务
         var scriptGroupsDefaultNames = ScriptGroupsDefault.Select(sgd => sgd.Name).ToHashSet();
-        enabledTaskCount = selectedConfigCopy.TaskEnabledList.Count(t => t.Value.Item1 && !scriptGroupsDefaultNames.Contains(taskListCopy.FirstOrDefault(tl => tl.Index == t.Key)?.Name));
-        
+        enabledTaskCount = taskListCopy.Count(t => t.IsEnabled && !scriptGroupsDefaultNames.Contains(taskListCopy.FirstOrDefault(tl => tl.Index == t.Index)?.Name));
         enabledoneTaskCount = enabledTaskCountall - enabledTaskCount;
-         _logger.LogInformation($"启用一条龙任务的数量: {enabledoneTaskCount}");
+        
+        _logger.LogInformation($"启用一条龙任务的数量: {enabledoneTaskCount}");
          _logger.LogInformation($"启用配置组任务的数量: {enabledTaskCount}");
         
         await ScriptService.StartGameTask();
@@ -2135,7 +2546,70 @@ public partial class OneDragonFlowViewModel : ViewModel
             SaveConfig();
         }
     }
+
+    [RelayCommand]
+    private void NextTaskGroup()
+    {
+        //设置当前任务InputScriptGroupName的_nextTask标志为true其他所有任务的_nextTask标志为false
+        if (SelectedConfig == null || SelectedConfig.ScheduleName != Config.SelectedOneDragonFlowPlanName)
+        {
+            Toast.Warning("请先选择一条龙配置单");
+            return;
+        }
+        var taskList = TaskList.Where(t => t.IsEnabled).ToList();
+        if (taskList.Count == 0)
+        {
+            Toast.Warning("请先选择一条龙任务");
+            return;
+        }
+        //确认当前任务是否为IsEnabled=true
+        var currentTask = taskList.FirstOrDefault(t => t.Index == InputScriptGroupName);
+        if (currentTask == null)
+        {
+            // 显示当前任务名称，提示其是禁用状态,通过InputScriptGroupName找到任务名称
+            var taskName = TaskList.FirstOrDefault(t => t.Index == InputScriptGroupName)?.Name ?? "未知任务";
+            Toast.Warning($"当前任务 <{taskName}> 已禁用，请先启用后再从此开始执行");
+            return;
+        }
+        // 设置当前任务的InputScriptGroupName为_nextTaskIndex
+        SelectedConfig.NextTaskIndex= InputScriptGroupName;
+        //设定OneDragonTaskItem中对应的任务的_nextTask标志为true
+        foreach (var task in TaskList)
+        {
+            if (task.Index == InputScriptGroupName)
+            {
+                task.IsNextTask = true;
+            }
+            else
+            {
+                task.IsNextTask = false;
+            }
+        }
+        //通过InputScriptGroupName找到任务名称
+        var taskName2 = TaskList.FirstOrDefault(t => t.Index == InputScriptGroupName)?.Name ?? "未知任务";
+        Toast.Success($"设置从 <{taskName2}> 开始执行任务列表");
+        SaveConfig();
+    }
     
+    [RelayCommand]
+    private void ClearNextTaskGroup()
+    {
+        //设置SelectedConfig.NextTaskIndex为空
+        if (SelectedConfig == null || SelectedConfig.ScheduleName != Config.SelectedOneDragonFlowPlanName)
+        {
+            Toast.Warning("请先选择一条龙配置单");
+            return;
+        }
+        SelectedConfig.NextTaskIndex = 0;
+        //设定OneDragonTaskItem中所有任务的_nextTask标志为false
+        foreach (var task in TaskList)
+        {
+            task.IsNextTask = false;
+        }
+        Toast.Success("清除从此执行标记完成");
+        SaveConfig();
+    }
+
     //UID验证
     private async Task<bool> VerifyUid(CancellationContext cts)  
     {
