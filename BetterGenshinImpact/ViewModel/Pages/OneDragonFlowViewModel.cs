@@ -86,6 +86,7 @@ using System.Reflection;
 using System.Windows.Controls;
 using System.Globalization;
 using Wpf.Ui.Controls;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
 
 namespace BetterGenshinImpact.ViewModel.Pages;
 

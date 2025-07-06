@@ -633,7 +633,7 @@
                                                   Margin="17,0,20,0"
                                                   FontTypography="Body"
                                                   HorizontalAlignment="Right"
-                                                  Text="周日副本"
+                                                  Text="周日或限时"
                                                   Width="Auto"
                                                   TextWrapping="Wrap" />
                                     <ui:TextBlock Grid.Row="1"
@@ -641,7 +641,7 @@
                                                   Margin="17,0,20,0"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                                   HorizontalAlignment="Right"
-                                                  Text="选择序号"
+                                                  Text="选择的序号"
                                                   Width="Auto"
                                                   TextWrapping="Wrap" />
                                     <ComboBox Grid.Row="0"
@@ -922,7 +922,7 @@
                                             Padding="10">
                                         <ui:TextBlock FontTypography="Body"
                                                       FontSize="13" 
-                                                      Text="周日开放三种奖励,从上往下（1/2/3）序号:"
+                                                      Text="周日或限时三种奖励,从上往下（1/2/3）序号:"
                                                       TextAlignment="Justify"
                                                       TextWrapping="Wrap" />
                                     </Border>

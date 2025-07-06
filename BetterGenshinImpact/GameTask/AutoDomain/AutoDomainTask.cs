@@ -43,22 +43,7 @@ using BetterGenshinImpact.GameTask.AutoDomain.Model;
 using BetterGenshinImpact.GameTask.Common;
 using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Globalization;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Recognition;
-using BetterGenshinImpact.Core.Simulator;
-using BetterGenshinImpact.Core.Simulator.Extensions;
-using BetterGenshinImpact.GameTask.Common.Element.Assets;
-using BetterGenshinImpact.GameTask.Model.Area;
-using BetterGenshinImpact.Helpers;
-using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
-using Vanara.PInvoke;
-using static BetterGenshinImpact.GameTask.Common.TaskControl;
+
 
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
@@ -91,6 +76,7 @@ public class AutoDomainTask : ISoloTask
     private readonly string ancientTreeString;
     private readonly string skipAnimationString;
     private readonly string replenishString;
+    private readonly string limitedFullyString;
     
     private int condensedResinUsedCount = 0;
     private int originalResinUsedCount = 0;
@@ -121,6 +107,7 @@ public class AutoDomainTask : ISoloTask
         this.ancientTreeString = stringLocalizer.WithCultureGet(cultureInfo, "石化古树");
         this.skipAnimationString = stringLocalizer.WithCultureGet(cultureInfo, "自动跳过领奖动画");
         this.replenishString = stringLocalizer.WithCultureGet(cultureInfo, "补充");
+        this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
     }
 
     public async Task Start(CancellationToken ct)
@@ -386,9 +373,21 @@ public class AutoDomainTask : ISoloTask
                 await Delay(800, _ct);
             }
         }
-
+        
+        using var limitedFullyStringRa = CaptureToRectArea();
+        var limitedFullyStringRaocrList =
+            limitedFullyStringRa.FindMulti(RecognitionObject.Ocr(0, 0, limitedFullyStringRa.Width * 0.5,
+                limitedFullyStringRa.Height));
+        var limitedFullyStringRaocrListdone = limitedFullyStringRaocrList.LastOrDefault(t =>
+            Regex.IsMatch(t.Text, this.leyLineDisorderLocalizedString));
+        // 检测是否为限时全开秘境
+        if (limitedFullyStringRaocrListdone != null)
+        {
+            Logger.LogInformation("自动秘境：{Text}", "限时全开秘境");
+        }
+        
         DateTime now = DateTime.Now;
-        if (now.DayOfWeek == DayOfWeek.Sunday && now.Hour >= 4 || now.DayOfWeek == DayOfWeek.Monday && now.Hour < 4)
+        if ((now.DayOfWeek == DayOfWeek.Sunday && now.Hour >= 4 || now.DayOfWeek == DayOfWeek.Monday && now.Hour < 4) || limitedFullyStringRaocrListdone != null)
         {
             using var artifactArea = CaptureToRectArea().Find(fightAssets.ArtifactAreaRa); //检测是否为圣遗物副本
             if (artifactArea.IsEmpty())
@@ -397,7 +396,7 @@ public class AutoDomainTask : ISoloTask
                 {
                     if (sundaySelectedValue > 0)
                     {
-                        Logger.LogInformation("周日设置了秘境奖励序号 {sundaySelectedValue}", sundaySelectedValue);
+                        Logger.LogInformation(limitedFullyStringRaocrListdone != null ? "自动秘境：限时全开秘境奖励序号 {sundaySelectedValue}" : "自动秘境：周日设置了秘境奖励序号 {sundaySelectedValue}", sundaySelectedValue);
                         using var abnormalscreenRa = CaptureToRectArea();
                         GlobalMethod.MoveMouseTo(abnormalscreenRa.Width / 4, abnormalscreenRa.Height / 2); //移到左侧
                         for (var i = 0; i < 150; i++)
