@@ -439,12 +439,12 @@ public class AutoDomainTask : ISoloTask
                     }
                     else
                     {
-                        Logger.LogInformation("周日未设置秘境奖励序号，不进行奖励选择");
+                        Logger.LogInformation(limitedFullyStringRaocrListdone != null ? "自动秘境：限时全开秘境未设置特定秘境奖励" : "自动秘境：周日秘境未设置特定秘境奖励");
                     }
                 }
                 else
                 {
-                    Logger.LogWarning("周日设置秘境奖励序号错误，请检查配置页面");
+                    Logger.LogWarning("设置秘境奖励序号错误，请检查配置页面");
                 }
             }
             await Delay(300, _ct);
