@@ -108,6 +108,7 @@ public class AutoDomainTask : ISoloTask
         this.skipAnimationString = stringLocalizer.WithCultureGet(cultureInfo, "自动跳过领奖动画");
         this.replenishString = stringLocalizer.WithCultureGet(cultureInfo, "补充");
         this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
+        
     }
 
     public async Task Start(CancellationToken ct)
@@ -379,11 +380,11 @@ public class AutoDomainTask : ISoloTask
             limitedFullyStringRa.FindMulti(RecognitionObject.Ocr(0, 0, limitedFullyStringRa.Width * 0.5,
                 limitedFullyStringRa.Height));
         var limitedFullyStringRaocrListdone = limitedFullyStringRaocrList.LastOrDefault(t =>
-            Regex.IsMatch(t.Text, this.leyLineDisorderLocalizedString));
+            Regex.IsMatch(t.Text, this.limitedFullyString));
         // 检测是否为限时全开秘境
         if (limitedFullyStringRaocrListdone != null)
         {
-            Logger.LogInformation("自动秘境：{Text}", "限时全开秘境");
+            Logger.LogInformation("自动秘境：{Text}", "检测到秘境限时全开");
         }
         
         DateTime now = DateTime.Now;
