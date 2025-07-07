@@ -1555,8 +1555,8 @@ public class AutoDomainTask : ISoloTask
                     originalResinCount = 0;
                 }else
                 {
-                    Logger.LogInformation("未检测到补充原粹树脂按钮,强制设定树脂数量 20");
-                    originalResinCount = 20; // 强制设定树脂数量 20
+                    Logger.LogInformation("未检测到补充原粹树脂按钮,强制设定树脂数量 0");
+                    originalResinCount = 0; // 强制设定树脂数量 20
                 }
             }
             
