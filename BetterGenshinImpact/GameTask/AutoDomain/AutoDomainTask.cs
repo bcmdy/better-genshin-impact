@@ -513,13 +513,13 @@ public class AutoDomainTask : ISoloTask
             var confirmTextRa = RecognitionObject.OcrMatch((int)(CaptureToRectArea().Width * 0.5),
                 (int)(CaptureToRectArea().Height * 0.5), (int)(CaptureToRectArea().Width * 0.5),
                 (int)(CaptureToRectArea().Height * 0.5), confirmText);
-
             if (await NewRetry.WaitForElementAppear(
                     confirmTextRa,
                     () => Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE),
                     _ct,
                     3,
-                    2000)) {
+                    2000)) 
+            {
                 // 点击确认并等待“确认”文字消失
                 await NewRetry.WaitForElementDisappear(
                     confirmTextRa,
@@ -536,16 +536,16 @@ public class AutoDomainTask : ISoloTask
                             confirmDone.Dispose();
                         }
                     },
-                _ct,
-                20,
-                500);  
+                    _ct,
+                    20,
+                    500);  
             }
             else
             {
                 throw new Exception("可能在秘境里内，尝试退出秘境失败。");
             }
         }
-        // 载入动画
+        // 载入
         await Delay(1000, _ct);
     }
 
