@@ -161,12 +161,6 @@ public class AutoDomainTask : ISoloTask
         {
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);
         }
-
-        // while (true)//测试用
-        // {
-        //     GetRemainResinStatus();
-        //     await Delay(500, _ct);
-        // }
         
         // 传送到秘境
         await TpDomain();
@@ -355,10 +349,20 @@ public class AutoDomainTask : ISoloTask
     private async Task EnterDomain()
     {
         var fightAssets = AutoFightAssets.Instance;
-        string[] targetText = { "单人挑战" };//可以写成单个string，也可以写成数组进行多个匹配
-        // 等待F菜单界面文字出现--使用新增的OCR的方法
+        string[] targetText = { "单人挑战" };
+        // var confirmRa  = new RecognitionObject ()
+        // {
+        //     RecognitionType = RecognitionTypes.OcrMatch,
+        //     RegionOfInterest = new Rect((int)(CaptureToRectArea().Width*0.5), (int)(CaptureToRectArea().Height*0.5), (int)(CaptureToRectArea().Width*0.5), (int)(CaptureToRectArea().Height*0.5)),
+        //     OneContainMatchText = targetText?.ToList() ?? []
+        //     
+        // };
+        var confirmRa = RecognitionObject.OcrMatch((int)(CaptureToRectArea().Width * 0.5),
+            (int)(CaptureToRectArea().Height * 0.5), (int)(CaptureToRectArea().Width * 0.5),
+            (int)(CaptureToRectArea().Height * 0.5), targetText);
+        
         var menuFound = await NewRetry.WaitForElementAppear(
-            RecognitionObject.Ocr(CaptureToRectArea().Width*0.5, CaptureToRectArea().Height*0.5, CaptureToRectArea().Width*0.5, CaptureToRectArea().Height*0.5,targetText),
+            confirmRa,
             () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
             _ct,
             20,
@@ -366,7 +370,7 @@ public class AutoDomainTask : ISoloTask
         );
         if (!menuFound)
         {
-            throw new Exception( targetText + "未出现，请检查是否已进入秘境页面");
+            throw new Exception( targetText+ "未出现，请检查是否已进入秘境页面");
         }
         
         using var limitedFullyStringRa = CaptureToRectArea();
@@ -486,23 +490,61 @@ public class AutoDomainTask : ISoloTask
             throw new Exception("队伍选择界面未出现。");
         }
         
-        // 点击开始挑战确认并等待“快速编队”文字消失
+        // 点击开始挑战确认并等待“开始挑战”文字消失
         var startFightFound = await NewRetry.WaitForElementDisappear(
-            RecognitionObject.Ocr(CaptureToRectArea().Width*0.5, CaptureToRectArea().Height*0.5, CaptureToRectArea().Width*0.5, CaptureToRectArea().Height*0.5 ,"快速编队"),
-            screen => {screen.Find(fightAssets.ConfirmRa, ra => { 
-                ra.Click(); 
-                ra.Dispose(); 
-                Logger.LogInformation("自动秘境：点击 {Text}", "开始挑战");//看LOG是否要显示
-            });},
+            RecognitionObject.OcrMatch( CaptureToRectArea().Width * 0.5, CaptureToRectArea().Height * 0.5, 
+                CaptureToRectArea().Width * 0.5, CaptureToRectArea().Height * 0.5, 
+                "快速编队", "开始挑战" ),
+            screen => {
+                screen.Find(fightAssets.ConfirmRa, ra => { 
+                    ra.Click(); 
+                    ra.Dispose(); 
+                    Logger.LogInformation("自动秘境：点击 {Text}", "开始挑战");
+                });
+            },
             _ct,
             20,
             500
         );
         if (!startFightFound)
         {
-            throw new Exception("开始挑战按钮未出现或未能点击。");
-        }
+            //可能卡在秘境里，尝试退出秘境，按ESC，看有没有确认按键
+            string[] confirmText = { "确认" };
+            var confirmTextRa = RecognitionObject.OcrMatch((int)(CaptureToRectArea().Width * 0.5),
+                (int)(CaptureToRectArea().Height * 0.5), (int)(CaptureToRectArea().Width * 0.5),
+                (int)(CaptureToRectArea().Height * 0.5), confirmText);
 
+            if (await NewRetry.WaitForElementAppear(
+                    confirmTextRa,
+                    () => Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE),
+                    _ct,
+                    3,
+                    2000)) {
+                // 点击确认并等待“确认”文字消失
+                await NewRetry.WaitForElementDisappear(
+                    confirmTextRa,
+                    screen => {  // 接收当前截图作为参数
+                        // 截图并查找元素
+                        var confirm =
+                            screen.FindMulti(RecognitionObject.Ocr(screen.Width * 0.5,screen.Height * 0.5, screen.Width * 0.5,
+                                screen.Height* 0.5));
+                        var confirmDone = confirm.LastOrDefault(t =>
+                            Regex.IsMatch(t.Text, "确认"));
+                        if (confirmDone != null)
+                        {
+                            confirmDone.Click();
+                            confirmDone.Dispose();
+                        }
+                    },
+                _ct,
+                20,
+                500);  
+            }
+            else
+            {
+                throw new Exception("可能在秘境里内，尝试秘境失败。");
+            }
+        }
         // 载入动画
         await Delay(1000, _ct);
     }
