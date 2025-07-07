@@ -44,7 +44,6 @@ using BetterGenshinImpact.GameTask.Common;
 using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
 
-
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
 public class AutoDomainTask : ISoloTask
@@ -108,7 +107,6 @@ public class AutoDomainTask : ISoloTask
         this.skipAnimationString = stringLocalizer.WithCultureGet(cultureInfo, "自动跳过领奖动画");
         this.replenishString = stringLocalizer.WithCultureGet(cultureInfo, "补充");
         this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
-        
     }
 
     public async Task Start(CancellationToken ct)
@@ -358,22 +356,14 @@ public class AutoDomainTask : ISoloTask
     {
         var fightAssets = AutoFightAssets.Instance;
 
-        // 进入秘境
-        for (int i = 0; i < 3; i++) // 3次重试 有时候会拾取晶蝶
-        {
-            using var fRectArea = CaptureToRectArea().Find(AutoPickAssets.Instance.PickRo);
-            if (!fRectArea.IsEmpty())
-            {
-                Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk);
-                Logger.LogInformation("自动秘境：{Text}", "进入秘境");
-                // 秘境开门动画 5s
-                await Delay(5000, _ct);
-            }
-            else
-            {
-                await Delay(800, _ct);
-            }
-        }
+        // 等待F菜单界面出现并F
+        await NewRetry.WaitForElementAppear(
+            fightAssets.ConfirmRa,
+            () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
+            _ct,
+            20,
+            500
+        );
         
         using var limitedFullyStringRa = CaptureToRectArea();
         var limitedFullyStringRaocrList =
@@ -447,116 +437,116 @@ public class AutoDomainTask : ISoloTask
                     Logger.LogWarning("设置秘境奖励序号错误，请检查配置页面");
                 }
             }
+
             await Delay(300, _ct);
-            //await Delay(100000, _ct);//调试延时=========
         }
-
-        // 点击单人挑战,增加容错，点击失败则继续尝试
-        int retryTimes = 0;
-        while (retryTimes < 40)
-        {
-            retryTimes++;
-            using var confirmRectArea = CaptureToRectArea().Find(fightAssets.ConfirmRa);
-            if (!confirmRectArea.IsEmpty())
+        
+        // 点击单人挑战确认并等待队伍界面
+        await NewRetry.WaitForElementAppear(
+            ElementAssets.Instance.PartyBtnChooseView,
+            ()  => {  
+                using var ra = CaptureToRectArea();
+                var ra2 = ra.Find(fightAssets.ConfirmRa);
+                if (!ra2.IsEmpty())
+                {
+                    ra2.Click();
+                    ra2.Dispose();
+                    Logger.LogInformation("自动秘境：点击 {Text}", "单人挑战");//看LOG是否要显示
+                }
+                using var confirmRectArea2 = ra.Find(RecognitionObject.Ocr(ra.Width * 0.263, ra.Height * 0.32,
+                    ra.Width - ra.Width * 0.263 * 2, ra.Height - ra.Height * 0.32 - ra.Height * 0.353));
+                if (confirmRectArea2.IsExist() && confirmRectArea2.Text.Contains("是否仍要挑战该秘境"))
+                {
+                    Logger.LogWarning("自动秘境：检测到树脂不足提示：{Text}", confirmRectArea2.Text);
+                    throw new Exception("当前树脂不足，自动秘境停止运行。");
+                }
+            },
+            _ct,
+            20,
+            500
+        );
+        
+        // 等待队伍选择界面出现
+        var teamUiFound = await NewRetry.WaitForElementAppear(
+            ElementAssets.Instance.PartyBtnChooseView,
+            () =>
             {
-                await Delay(500, _ct);
-                confirmRectArea.Click();
-                await Delay(500, _ct);
-                var ra = CaptureToRectArea();
-                var matchingChallengeArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.64, ra.Height * 0.91,
-                    ra.Width * 0.13, ra.Height * 0.06));
-                var done = matchingChallengeArea.LastOrDefault(t =>
-                    Regex.IsMatch(t.Text, this.matchingChallengeString));
-                if (done != null)
-                {
-                    using var confirmRectArea2 = ra.Find(RecognitionObject.Ocr(ra.Width * 0.263, ra.Height * 0.32,
-                        ra.Width - ra.Width * 0.263 * 2, ra.Height - ra.Height * 0.32 - ra.Height * 0.353));
-                    if (confirmRectArea2.IsExist() && confirmRectArea2.Text.Contains("是否仍要挑战该秘境"))
-                    {
-                        Logger.LogWarning("自动秘境：检测到树脂不足提示：{Text}", confirmRectArea2.Text);
-                        throw new Exception("当前树脂不足，自动秘境停止运行。");
-                    }
-                    else
-                    {
-                        Logger.LogInformation("自动秘境：检测到匹配挑战提示，未进入秘境，尝试继续");
-                    }
-
-                    continue;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            await Delay(500, _ct);
+                Logger.LogInformation("自动秘境：进入 {Text}", "队伍选择界面"); //看LOG是否要显示 
+            },
+            _ct,
+            20,
+            500
+        );
+        if (!teamUiFound)
+        {
+            throw new Exception("队伍选择界面未出现。");
         }
-
-        //如果卡顿，可能会错过"是否仍要挑战该秘境"判断弹框,改为判断"快速编队"后进行点击进入
-        retryTimes = 0;
-        while (retryTimes < 30)
+        
+        // 点击开始挑战确认并等待消失
+        var startFightFound = await NewRetry.WaitForElementDisappear(
+            ElementAssets.Instance.PartyBtnChooseView,
+            screen => {screen.Find(fightAssets.ConfirmRa, ra => { 
+                ra.Click(); 
+                ra.Dispose(); 
+                Logger.LogInformation("自动秘境：点击 {Text}", "开始挑战");//看LOG是否要显示
+            });},
+            _ct,
+            20,
+            500
+        );
+        if (!startFightFound)
         {
-            await Delay(600, _ct);
-            var ra = CaptureToRectArea();
-            var rapidformationStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.64, ra.Height * 0.91,
-                ra.Width * 0.13, ra.Height * 0.06));
-            var done = rapidformationStringArea.LastOrDefault(t =>
-                Regex.IsMatch(t.Text, this.rapidformationString));
-            if (done != null)
-            {
-                using var confirmRectArea = CaptureToRectArea().Find(fightAssets.ConfirmRa);
-                if (!confirmRectArea.IsEmpty())
-                {
-                    confirmRectArea.Click();
-                    await Delay(500, _ct);
-                }
-            }
-            else
-            {
-                break;
-            }
-            
-            retryTimes++;
+            throw new Exception("开始挑战按钮未出现或未能点击。");
         }
 
         // 载入动画
-        await Delay(3000, _ct);
+        await Delay(1000, _ct);
     }
 
     private async Task CloseDomainTip()
     {
-        // 2min的载入时间总够了吧
-        var retryTimes = 0;
-        while (retryTimes < 120)
+        //先等待秘境提示出现,如果直接出现Enter也属于完成条件
+        var domainTipFound = await NewRetry.WaitForAction(() =>
         {
-            retryTimes++;
             using var ra = CaptureToRectArea();
             var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.2, ra.Width, ra.Height * 0.6));
+            var ocrListLeft = ra.FindMulti(RecognitionObject.Ocr(0, CaptureToRectArea().Height * 0.9, CaptureToRectArea().Width * 0.1,
+                CaptureToRectArea().Height * 0.07));
+            return (ocrList.Any(t => t.Text.Contains(leyLineDisorderLocalizedString) || t.Text.Contains(clickanywheretocloseLocalizedString)) || ocrListLeft.Any(t => t.Text.Contains(enterString))); 
+        }, _ct, 20, 500);
+        if (!domainTipFound)
+        {
+            throw new Exception("秘境提示未出现或未能点击。");
+        }
+
+        //持续点击，直到左下角出现目标文字
+        var leftBottomFound = await NewRetry.WaitForAction(() =>
+        {
+            using var ra = CaptureToRectArea();
+            var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.2, ra.Width, ra.Height * 0.6));
+            // 查找目标文字
             var done = ocrList.FirstOrDefault(t =>
                 Regex.IsMatch(t.Text, this.leyLineDisorderLocalizedString) ||
                 Regex.IsMatch(t.Text, this.clickanywheretocloseLocalizedString));
             if (done != null)
             {
-                await Delay(1000, _ct);
                 done.Click();
-                await Delay(500, _ct);
+                done.Dispose();
+                Logger.LogInformation("自动秘境：点击 {Text}", done.Text);
             }
-
-            // todo 添加小地图角标位置检测 防止有人手点了==>可改为OCR检测再次确认左下角是否有聊天框文字
-            using var reRa = CaptureToRectArea();
-            var reocrList =
-                reRa.FindMulti(RecognitionObject.Ocr(0, reRa.Height * 0.9, reRa.Width * 0.1, reRa.Height * 0.07));
-            var redone = reocrList.FirstOrDefault(t =>
-                Regex.IsMatch(t.Text, this.enterString));
-            if (redone != null)
-            {
-                break;
-            }
-
-            await Delay(500, _ct);
+            // 检查左下角区域是否还存在目标文字，消失则继续，存在则结束
+            using var leftBottom = CaptureToRectArea();
+            var leftBottomOcr = leftBottom.FindMulti(RecognitionObject.Ocr(0, CaptureToRectArea().Height * 0.9, CaptureToRectArea().Width * 0.1,
+                CaptureToRectArea().Height * 0.07));
+            return leftBottomOcr.Any(t =>
+                t.Text.Contains(enterString));
+        }, _ct, 20, 500);
+        if (!leftBottomFound)
+        {
+            throw new Exception("秘境提示未出现或未能点击。");
         }
-
-        await Delay(1000, _ct);
+        
+        await Delay(500, _ct);
     }
 
     private List<CombatCommand> FindCombatScriptAndSwitchAvatar(CombatScenes combatScenes)
