@@ -542,7 +542,7 @@ public class AutoDomainTask : ISoloTask
             }
             else
             {
-                throw new Exception("可能在秘境里内，尝试秘境失败。");
+                throw new Exception("可能在秘境里内，尝试退出秘境失败。");
             }
         }
         // 载入动画
