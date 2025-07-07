@@ -368,14 +368,6 @@ public class AutoDomainTask : ISoloTask
         {
             throw new Exception( targetText + "未出现，请检查是否已进入秘境页面");
         }
-        // // 等待F菜单界面出现---使用图像模板的方法
-        // await NewRetry.WaitForElementAppear(
-        //     fightAssets.ConfirmRa,
-        //     () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
-        //     _ct,
-        //     20,
-        //     500
-        // );
         
         using var limitedFullyStringRa = CaptureToRectArea();
         var limitedFullyStringRaocrList =
