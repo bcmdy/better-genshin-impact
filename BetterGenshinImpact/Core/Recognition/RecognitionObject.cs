@@ -102,7 +102,7 @@ public class RecognitionObject
         {
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = mat,
-            UseMask = false,  // 或者你希望的默认值
+            UseMask = false, 
         };
         
         return ro.InitTemplate();
@@ -120,7 +120,6 @@ public class RecognitionObject
         
         return ro.InitTemplate();
     }
-
     
     public static RecognitionObject TemplateMatch(Mat mat, double x, double y, double w, double h)
     {
