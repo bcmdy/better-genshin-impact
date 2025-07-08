@@ -2139,8 +2139,11 @@ public partial class OneDragonFlowViewModel : ViewModel
                     break;
                 }
             }
-            _logger.LogInformation(Config.ScheduleLoop && Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
-            Notify.Event(NotificationEvent.DragonEnd).Success(Config.ScheduleLoop && Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
+            if (Config.ScheduleLoop)
+            {
+                _logger.LogInformation(Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
+                Notify.Event(NotificationEvent.DragonEnd).Success(Config.CycleMode ? "连续一条龙：循环执行计划，等待到下一个循环..." : "连续一条龙：直接循环模式，继续执行...");
+            }
             // 任务完成后，判断是否为循环执行
             if (Config.ScheduleLoop && Config.CycleMode)
             {

@@ -1456,14 +1456,14 @@ public class AutoDomainTask : ISoloTask
                         return false;
                     } 
                     
-                    var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
-                    if (skipAnimationRa.IsEmpty())
-                    {
-                        Logger.LogInformation("检测到跳过动画未启动，启用跳过");
-                        Sleep(1000, _ct);
-                        GameCaptureRegion.GameRegion1080PPosClick(66, 50);//点击屏幕(66,50);
-                        Sleep(1000, _ct);
-                    }
+                    // var skipAnimationRa = ra.Find(AutoFightAssets.Instance.SkipanimationRa); //检测是否打开跳过动画
+                    // if (skipAnimationRa.IsEmpty())
+                    // {
+                    //     Logger.LogInformation("检测到跳过动画未启动，启用跳过");
+                    //     Sleep(1000, _ct);
+                    //     GameCaptureRegion.GameRegion1080PPosClick(66, 50);//点击屏幕(66,50);
+                    //     Sleep(1000, _ct);
+                    // }
                     
                     // 有体力继续
                     Logger.LogInformation("自动秘境：还有树脂，继续执行自动秘境");
@@ -1593,7 +1593,7 @@ public class AutoDomainTask : ISoloTask
                     {
                         var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
                         momentResinCount = StringUtils.TryParseInt(count);
-                        Logger.LogInformation("强制设定脆弱脂数量：{Count}", 1);
+                        Logger.LogInformation("强制设定脆弱脂数量：{Count}", 1);  
                         fragileResinCount = 1;
                     }
                 
