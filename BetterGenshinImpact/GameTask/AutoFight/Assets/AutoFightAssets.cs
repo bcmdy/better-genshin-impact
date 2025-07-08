@@ -282,20 +282,23 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "original_resin_count.png"),            
             RegionOfInterest = new Rect(CaptureRect.Width *3/ 4, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
-            DrawOnWindow = true
+            DrawOnWindow = false
         }.InitTemplate();
         FragileResinCountRa = new RecognitionObject //可以识别 √
         {
             Name = "FragileResinCount",
+            UseMask = true,
+            MaskColor = System.Drawing.Color.FromArgb(0, 255, 0), // 绿色
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "fragile_resin_count.png"),
-            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
+            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width *4/10, CaptureRect.Height / 10),
             DrawOnWindow = true
         }.InitTemplate();
         MomentResinCountRa = new RecognitionObject //可以识别 √
         {
             Name = "MomentResinCount",
             UseMask = true,
+            MaskColor = System.Drawing.Color.FromArgb(0, 255, 0), // 绿色
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "moment_resin_count.png"),
             RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),

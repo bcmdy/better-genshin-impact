@@ -161,6 +161,12 @@ public class AutoDomainTask : ISoloTask
         {
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);
         }
+
+        // while (true)
+        // {
+        //     GetRemainResinStatus();  
+        //     await Delay(1000, _ct);
+        // }
         
         // 传送到秘境
         await TpDomain();
@@ -1397,7 +1403,7 @@ public class AutoDomainTask : ISoloTask
                         return true;
                     }
                     
-                    var (condensedResinCount, originalResinCount,fragileResinCount, momentResinCount) = GetRemainResinStatus();
+                    var (condensedResinCount, originalResinCount,momentResinCount,fragileResinCount) = GetRemainResinStatus();
           
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
@@ -1417,9 +1423,9 @@ public class AutoDomainTask : ISoloTask
                         shouldExit &= (fragileResinCount == 0);
                     }
                     
-                    if (resinType.Contains("须臾树脂") && fragileResinUsedCount < _taskParam.ResinCount["须臾树脂"])
+                    if (resinType.Contains("须臾树脂") && momentResinCount < _taskParam.ResinCount["须臾树脂"])
                     { 
-                        shouldExit &= (fragileResinCount == 0);
+                        shouldExit &= (momentResinCount == 0);
                     }
                     
                     //根据_taskParam.ResinOrder中是否有对应的树脂类型，判断是否有体力，//情况3：领奖后体力不足
@@ -1573,6 +1579,7 @@ public class AutoDomainTask : ISoloTask
             var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
             if (!fragileResinCountRa.IsEmpty())
             {
+                Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
                 using (var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
                     (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height))
                 {
@@ -1582,9 +1589,11 @@ public class AutoDomainTask : ISoloTask
             }
             else
             {
+                Logger.LogInformation("测试LOG：未检测到脆弱树脂图标");
                 // 须臾树脂
                 var momentResinCountRa = ra.Find(AutoFightAssets.Instance.MomentResinCountRa); 
-                if (!momentResinCountRa.IsEmpty()) 
+                if (!momentResinCountRa.IsEmpty()) {
+                    Logger.LogInformation("测试LOG：检测到须臾树脂图标");
                     using (var countArea = ra.DeriveCrop(momentResinCountRa.X + momentResinCountRa.Width, momentResinCountRa.Y,
                                (int)(momentResinCountRa.Width * 3), momentResinCountRa.Height))
                     {
@@ -1593,7 +1602,11 @@ public class AutoDomainTask : ISoloTask
                         Logger.LogInformation("强制设定脆弱脂数量：{Count}", 1);  
                         fragileResinCount = 1;
                     }
-                
+                }
+                else
+                {
+                    Logger.LogInformation("测试LOG：未检测到须臾树脂图标");  
+                }
             }
         }
         Logger.LogInformation("剩余：浓缩树脂 {CondensedResinCount} 原粹树脂 {OriginalResinCount} 须臾树脂 {MomentResinCount} 脆弱树脂 {FragileResinCount}  ", condensedResinCount,originalResinCount,
