@@ -349,17 +349,14 @@ public class AutoDomainTask : ISoloTask
     private async Task EnterDomain()
     {
         var fightAssets = AutoFightAssets.Instance;
+
+        var screenArea = CaptureToRectArea();
+        
         string[] targetText = { "单人挑战" };
-        // var confirmRa  = new RecognitionObject ()
-        // {
-        //     RecognitionType = RecognitionTypes.OcrMatch,
-        //     RegionOfInterest = new Rect((int)(CaptureToRectArea().Width*0.5), (int)(CaptureToRectArea().Height*0.5), (int)(CaptureToRectArea().Width*0.5), (int)(CaptureToRectArea().Height*0.5)),
-        //     OneContainMatchText = targetText?.ToList() ?? []
-        //     
-        // };
-        var confirmRa = RecognitionObject.OcrMatch((int)(CaptureToRectArea().Width * 0.5),
-            (int)(CaptureToRectArea().Height * 0.5), (int)(CaptureToRectArea().Width * 0.5),
-            (int)(CaptureToRectArea().Height * 0.5), targetText);
+
+        var confirmRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
+            (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
+            (int)(screenArea.Height * 0.5), targetText);
         
         var menuFound = await NewRetry.WaitForElementAppear(
             confirmRa,
@@ -492,8 +489,8 @@ public class AutoDomainTask : ISoloTask
         
         // 点击开始挑战确认并等待“开始挑战”文字消失
         var startFightFound = await NewRetry.WaitForElementDisappear(
-            RecognitionObject.OcrMatch( CaptureToRectArea().Width * 0.5, CaptureToRectArea().Height * 0.5, 
-                CaptureToRectArea().Width * 0.5, CaptureToRectArea().Height * 0.5, 
+            RecognitionObject.OcrMatch( screenArea.Width * 0.5,screenArea.Height * 0.5, 
+                screenArea.Width * 0.5, screenArea.Height * 0.5, 
                 "快速编队", "开始挑战" ),
             screen => {
                 screen.Find(fightAssets.ConfirmRa, ra => { 
@@ -510,9 +507,9 @@ public class AutoDomainTask : ISoloTask
         {
             //可能卡在秘境里，尝试退出秘境，按ESC，看有没有确认按键
             string[] confirmText = { "确认" };
-            var confirmTextRa = RecognitionObject.OcrMatch((int)(CaptureToRectArea().Width * 0.5),
-                (int)(CaptureToRectArea().Height * 0.5), (int)(CaptureToRectArea().Width * 0.5),
-                (int)(CaptureToRectArea().Height * 0.5), confirmText);
+            var confirmTextRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
+                (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
+                (int)(screenArea.Height * 0.5), confirmText);
             if (await NewRetry.WaitForElementAppear(
                     confirmTextRa,
                     () => Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE),
@@ -556,8 +553,8 @@ public class AutoDomainTask : ISoloTask
         {
             using var ra = CaptureToRectArea();
             var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.2, ra.Width, ra.Height * 0.6));
-            var ocrListLeft = ra.FindMulti(RecognitionObject.Ocr(0, CaptureToRectArea().Height * 0.9, CaptureToRectArea().Width * 0.1,
-                CaptureToRectArea().Height * 0.07));
+            var ocrListLeft = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.9, ra.Width * 0.1,
+                ra.Height * 0.07));
             return (ocrList.Any(t => t.Text.Contains(leyLineDisorderLocalizedString) || t.Text.Contains(clickanywheretocloseLocalizedString)) || ocrListLeft.Any(t => t.Text.Contains(enterString))); 
         }, _ct, 20, 500);
         if (!domainTipFound)
@@ -582,8 +579,8 @@ public class AutoDomainTask : ISoloTask
             }
             // 检查左下角区域是否还存在目标文字，消失则继续，存在则结束
             using var leftBottom = CaptureToRectArea();
-            var leftBottomOcr = leftBottom.FindMulti(RecognitionObject.Ocr(0, CaptureToRectArea().Height * 0.9, CaptureToRectArea().Width * 0.1,
-                CaptureToRectArea().Height * 0.07));
+            var leftBottomOcr = leftBottom.FindMulti(RecognitionObject.Ocr(0, leftBottom.Height * 0.9, leftBottom.Width * 0.1,
+                leftBottom.Height * 0.07));
             return leftBottomOcr.Any(t =>
                 t.Text.Contains(enterString));
         }, _ct, 20, 500);
