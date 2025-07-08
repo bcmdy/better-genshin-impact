@@ -33,6 +33,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public RecognitionObject CondensedResinCountRa;
     public RecognitionObject OriginalResinCountRa;
     public RecognitionObject FragileResinCountRa;
+    public RecognitionObject MomentResinCountRa;
     
     // public RecognitionObject LockIconRa; // 锁定辅助图标
     public RecognitionObject CondensedResinTopIconRa;
@@ -288,6 +289,15 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             Name = "FragileResinCount",
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "fragile_resin_count.png"),
+            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
+            DrawOnWindow = true
+        }.InitTemplate();
+        MomentResinCountRa = new RecognitionObject //可以识别 √
+        {
+            Name = "MomentResinCount",
+            UseMask = true,
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "moment_resin_count.png"),
             RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
             DrawOnWindow = true
         }.InitTemplate();

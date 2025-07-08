@@ -1167,6 +1167,13 @@ public class AutoDomainTask : ISoloTask
                     var useMomentResinRa = ra.Find(AutoFightAssets.Instance.UseMomentResinRa); 
                     var useFragileResinRa = ra.Find(AutoFightAssets.Instance.UseFragileResinRa);
                     
+
+                    //如果设定包含了脆弱树脂和须臾树脂，如果存在须臾树脂，脆弱树脂将无法使用，用LOG提示
+                    if (!useMomentResinRa.IsEmpty() && resinType.Contains("脆弱树脂"))
+                    {
+                        Logger.LogWarning("自动秘境：须臾树脂存在，脆弱树脂将无法使用");
+                    }
+                    
                     var replenishStringArea = ra.FindMulti(RecognitionObject.Ocr(ra.Width * 0.5, ra.Height * 0.3,
                         ra.Width * 0.25, ra.Height * 0.3));
                     var replenishStringdone = replenishStringArea.LastOrDefault(t =>
@@ -1289,8 +1296,6 @@ public class AutoDomainTask : ISoloTask
                         }
                     }
                     
-                    // Logger.LogInformation("尝试使用 {ResinType} 领取奖励", resinType[0]);
-                    
                     // 根据树脂类型进行领取奖励
                     if (resinType[0] == "浓缩树脂" && !useCondensedResinRa.IsEmpty() && ((condensedResinUsedCount < _taskParam.ResinCount["浓缩树脂"]) || !_taskParam.SpecifyResinUse))
                     {
@@ -1395,7 +1400,7 @@ public class AutoDomainTask : ISoloTask
                         return true;
                     }
                     
-                    var (condensedResinCount, originalResinCount,fragileResinCount) = GetRemainResinStatus();
+                    var (condensedResinCount, originalResinCount,fragileResinCount, momentResinCount) = GetRemainResinStatus();
           
                     // 根据 _taskParam.ResinOrder 中是否有对应的树脂类型，判断是否有体力
                     bool shouldExit = true;
@@ -1411,6 +1416,11 @@ public class AutoDomainTask : ISoloTask
                     }
 
                     if (resinType.Contains("脆弱树脂") && fragileResinUsedCount < _taskParam.ResinCount["脆弱树脂"])
+                    { 
+                        shouldExit &= (fragileResinCount == 0);
+                    }
+                    
+                    if (resinType.Contains("须臾树脂") && fragileResinUsedCount < _taskParam.ResinCount["须臾树脂"])
                     { 
                         shouldExit &= (fragileResinCount == 0);
                     }
@@ -1470,11 +1480,12 @@ public class AutoDomainTask : ISoloTask
     /// <summary>
     /// 获取剩余树脂状态
     /// </summary>
-    private (int, int, int) GetRemainResinStatus()
+    private (int, int, int, int) GetRemainResinStatus()
     {
         var condensedResinCount = 0; //浓缩树脂
         var originalResinCount = 0; //原粹树脂
         var fragileResinCount = 0; //脆弱树脂
+        var momentResinCount = 0; //须臾树脂
 
         using (var ra = CaptureToRectArea())
         {
@@ -1565,8 +1576,6 @@ public class AutoDomainTask : ISoloTask
             var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
             if (!fragileResinCountRa.IsEmpty())
             {
-                // Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
-                // 图像右侧就是脆弱树脂数量
                 using (var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
                     (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height))
                 {
@@ -1576,12 +1585,23 @@ public class AutoDomainTask : ISoloTask
             }
             else
             {
-                Logger.LogInformation("未检测到脆弱树脂数量");
+                // 须臾树脂
+                var momentResinCountRa = ra.Find(AutoFightAssets.Instance.MomentResinCountRa); 
+                if (!momentResinCountRa.IsEmpty()) 
+                    using (var countArea = ra.DeriveCrop(momentResinCountRa.X + momentResinCountRa.Width, momentResinCountRa.Y,
+                               (int)(momentResinCountRa.Width * 3), momentResinCountRa.Height))
+                    {
+                        var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                        momentResinCount = StringUtils.TryParseInt(count);
+                        Logger.LogInformation("强制设定脆弱脂数量：{Count}", 1);
+                        fragileResinCount = 1;
+                    }
+                
             }
         }
-        Logger.LogInformation("剩余：浓缩树脂 {CondensedResinCount} 原粹树脂 {OriginalResinCount} 脆弱树脂 {MentResinCount}", condensedResinCount,originalResinCount,
-            fragileResinCount);
-        return (condensedResinCount , originalResinCount , fragileResinCount);
+        Logger.LogInformation("剩余：浓缩树脂 {CondensedResinCount} 原粹树脂 {OriginalResinCount} 须臾树脂 {MomentResinCount} 脆弱树脂 {FragileResinCount}  ", condensedResinCount,originalResinCount,
+            momentResinCount,fragileResinCount);
+        return (condensedResinCount , originalResinCount , momentResinCount, fragileResinCount);
 
     }
 
