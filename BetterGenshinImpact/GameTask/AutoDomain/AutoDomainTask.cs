@@ -108,6 +108,18 @@ public class AutoDomainTask : ISoloTask
         this.replenishString = stringLocalizer.WithCultureGet(cultureInfo, "补充");
         this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
     }
+    
+    private static RecognitionObject GetConfirmRa(string targetText)
+    {
+        var screenArea = CaptureToRectArea();
+        return RecognitionObject.OcrMatch(
+            (int)(screenArea.Width * 0.5),
+            (int)(screenArea.Height * 0.5),
+            (int)(screenArea.Width * 0.5),
+            (int)(screenArea.Height * 0.5),
+            targetText
+        );
+    }
 
     public async Task Start(CancellationToken ct)
     {
@@ -178,19 +190,12 @@ public class AutoDomainTask : ISoloTask
             Logger.LogDebug("0. 关闭秘境提示");
             await CloseDomainTip();
             
+            //0.5. 初始化队伍，只执行一次
             if (i == 0)
             {
-                for (var j = 0; j < 3; j++){
-                    combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());   
-                    if (combatScenes.CheckTeamInitialized())
-                    {
-                       break;
-                    }
-                }
+                combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());   
             }
-            
-            // 队伍没初始化成功则重试
-            RetryTeamInit(combatScenes);
+            RetryTeamInit(combatScenes);// 队伍没初始化成功则重试
 
             // 0. 切换到第一个角色
             var combatCommands = FindCombatScriptAndSwitchAvatar(combatScenes);
@@ -286,58 +291,71 @@ public class AutoDomainTask : ISoloTask
                 await new TpTask(_ct).Tp(domainPosition.X, domainPosition.Y);
                 await Delay(1000, _ct);
                 await Bv.WaitForMainUi(_ct);
-                await Delay(1000, _ct);
 
+                var menuFound = false;
                 if ("芬德尼尔之顶".Equals(_taskParam.DomainName))
                 {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                    Thread.Sleep(3000);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
-                }
-                else if ("无妄引咎密宫".Equals(_taskParam.DomainName))
-                {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                    Thread.Sleep(500);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                    Thread.Sleep(100);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                    Thread.Sleep(1600);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
-                }
-                else if ("太山府".Equals(_taskParam.DomainName))
-                {
-                    // 直接F即可
-                    // nothing to do
-                }
-                else
-                {
-                    var menuFound = await NewRetry.WaitForElementAppear(
+                        menuFound = await NewRetry.WaitForElementAppear(
                         AutoPickAssets.Instance.FRo,
-                        () => Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown),
+                        () => Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown),
                         _ct,
                         20,
                         500
                     );
+                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
+                }
+                else if ("无妄引咎密宫".Equals(_taskParam.DomainName))
+                {
+                    
+                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                    Thread.Sleep(500);
                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                    if (!menuFound)
-                    {
-                        throw new Exception("请检查是否在秘境门前");
-                    }   
+
+                    menuFound = await NewRetry.WaitForElementAppear(
+                        AutoPickAssets.Instance.FRo,
+                        () =>  Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown),
+                        _ct,
+                        20,
+                        500
+                    );
+                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
+                    
+                }
+                else if ("太山府".Equals(_taskParam.DomainName))
+                {
+                    menuFound = await NewRetry.WaitForElementAppear(
+                        AutoPickAssets.Instance.FRo,
+                        () => { },
+                    _ct,
+                        20,
+                        500
+                    );
+                }
+                else
+                {
+                    menuFound = await NewRetry.WaitForElementAppear(
+                    AutoPickAssets.Instance.FRo,
+                    () => Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown),
+                    _ct,
+                    20,
+                    500
+                    );
+                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                 }
                 
-                var screenArea = CaptureToRectArea();
-                string[] targetText = { "单人挑战" };
-                var confirmRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
-                    (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
-                    (int)(screenArea.Height * 0.5), targetText);
-                var menuFound2 = await NewRetry.WaitForElementAppear(
-                    confirmRa,
+                if (!menuFound)
+                {
+                    throw new Exception("请检查是否在秘境门前");
+                }  
+                
+                var menu = await NewRetry.WaitForElementAppear(
+                    GetConfirmRa("单人挑战"),
                     () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
                     _ct,
                     20,
                     500
                 );
-                if (!menuFound2)
+                if (!menu)
                 {
                     throw new Exception("请检查是否已进入秘境页面");
                 }
@@ -371,17 +389,9 @@ public class AutoDomainTask : ISoloTask
     private async Task EnterDomain()
     {
         var fightAssets = AutoFightAssets.Instance;
-
-        var screenArea = CaptureToRectArea();
-        
-        string[] targetText = { "单人挑战" };
-
-        var confirmRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
-            (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
-            (int)(screenArea.Height * 0.5), targetText);
         
         var menuFound = await NewRetry.WaitForElementAppear(
-            confirmRa,
+            GetConfirmRa("单人挑战"),
             () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
             _ct,
             20,
@@ -389,7 +399,7 @@ public class AutoDomainTask : ISoloTask
         );
         if (!menuFound)
         {
-            throw new Exception( targetText+ "未出现，请检查是否已进入秘境页面");
+            throw new Exception( "单人挑战 按键未出现，请检查是否已进入秘境页面");
         }
         
         using var limitedFullyStringRa = CaptureToRectArea();
@@ -509,13 +519,11 @@ public class AutoDomainTask : ISoloTask
             throw new Exception("队伍选择界面未出现。");
         }
         
-        await SwitchParty(_taskParam.PartyName);
+        await SwitchParty(_taskParam.PartyName);//现在如果切换失败，抛出异常，停止运行，要不要继续进行？
         
         // 点击开始挑战确认并等待“开始挑战”文字消失
         var startFightFound = await NewRetry.WaitForElementDisappear(
-            RecognitionObject.OcrMatch( screenArea.Width * 0.5,screenArea.Height * 0.5, 
-                screenArea.Width * 0.5, screenArea.Height * 0.5, 
-                "快速编队", "开始挑战" ),
+            GetConfirmRa("开始挑战"),
             screen => {
                 screen.Find(fightAssets.ConfirmRa, ra => { 
                     ra.Click(); 
@@ -530,12 +538,8 @@ public class AutoDomainTask : ISoloTask
         if (!startFightFound)
         {
             //可能卡在秘境里，尝试退出秘境，按ESC，看有没有确认按键
-            string[] confirmText = { "确认" };
-            var confirmTextRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
-                (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
-                (int)(screenArea.Height * 0.5), confirmText);
             if (await NewRetry.WaitForElementAppear(
-                    confirmTextRa,
+                    GetConfirmRa("确认"),
                     () => Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE),
                     _ct,
                     3,
@@ -543,7 +547,7 @@ public class AutoDomainTask : ISoloTask
             {
                 // 点击确认并等待“确认”文字消失
                 await NewRetry.WaitForElementDisappear(
-                    confirmTextRa,
+                    GetConfirmRa("确认"),
                     screen => {  // 接收当前截图作为参数
                         // 截图并查找元素
                         var confirm =
