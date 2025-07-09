@@ -349,7 +349,7 @@ public class AutoDomainTask : ISoloTask
                 }  
                 
                 var menu = await NewRetry.WaitForElementAppear(
-                    GetConfirmRa("单人挑战", "快速编队"),
+                    GetConfirmRa("单人挑战", "匹配挑战"),
                     () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
                     _ct,
                     20,
@@ -427,7 +427,7 @@ public class AutoDomainTask : ISoloTask
                         Logger.LogInformation(limitedFullyStringRaocrListdone != null ? "自动秘境：限时全开秘境奖励序号 {sundaySelectedValue}" : "自动秘境：周日设置了秘境奖励序号 {sundaySelectedValue}", sundaySelectedValue);
                         using var abnormalscreenRa = CaptureToRectArea();
                         GlobalMethod.MoveMouseTo(abnormalscreenRa.Width / 4, abnormalscreenRa.Height / 2); //移到左侧
-                        for (var i = 0; i < 150; i++)
+                        for (var i = 0; i < 100; i++)
                         {
                             Simulation.SendInput.Mouse.VerticalScroll(-1);
                             await Delay(10, _ct);
@@ -471,7 +471,7 @@ public class AutoDomainTask : ISoloTask
                 }
                 else
                 {
-                    Logger.LogWarning("设置秘境奖励序号错误，请检查配置页面");
+                    Logger.LogWarning(_taskParam.SundaySelectedValue == "" ? "未设置秘境奖励序号" : "设置秘境奖励序号错误，请检查配置页面");
                 }
             }
 
@@ -583,7 +583,8 @@ public class AutoDomainTask : ISoloTask
             var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.2, ra.Width, ra.Height * 0.6));
             var ocrListLeft = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.9, ra.Width * 0.1,
                 ra.Height * 0.07));
-            return (ocrList.Any(t => t.Text.Contains(leyLineDisorderLocalizedString) || t.Text.Contains(clickanywheretocloseLocalizedString)) || ocrListLeft.Any(t => t.Text.Contains(enterString))); 
+            return (ocrList.Any(t => t.Text.Contains(leyLineDisorderLocalizedString) || 
+                                     t.Text.Contains(clickanywheretocloseLocalizedString)) || ocrListLeft.Any(t => t.Text.Contains(enterString))); 
         }, _ct, 20, 500);
         if (!domainTipFound)
         {
