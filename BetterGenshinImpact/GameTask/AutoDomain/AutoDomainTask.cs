@@ -161,29 +161,34 @@ public class AutoDomainTask : ISoloTask
         {
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);
         }
-
-        // while (true)
-        // {
-        //     GetRemainResinStatus();  
-        //     await Delay(1000, _ct);
-        // }
         
         // 传送到秘境
         await TpDomain();
+        
         // 切换队伍
-        await SwitchParty(_taskParam.PartyName);
-
-        var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+        // await SwitchParty(_taskParam.PartyName);
 
         // 前置进入秘境
         await EnterDomain();
         
+        var combatScenes = new CombatScenes();
         for (var i = 0; i < _taskParam.DomainRoundNum; i++)
         {
             // 0. 关闭秘境提示
             Logger.LogDebug("0. 关闭秘境提示");
             await CloseDomainTip();
-
+            
+            if (i == 0)
+            {
+                for (var j = 0; j < 3; j++){
+                    combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());   
+                    if (combatScenes.CheckTeamInitialized())
+                    {
+                       break;
+                    }
+                }
+            }
+            
             // 队伍没初始化成功则重试
             RetryTeamInit(combatScenes);
 
@@ -281,51 +286,71 @@ public class AutoDomainTask : ISoloTask
                 await new TpTask(_ct).Tp(domainPosition.X, domainPosition.Y);
                 await Delay(1000, _ct);
                 await Bv.WaitForMainUi(_ct);
-                await Delay(1000, _ct);
+                // await Delay(1000, _ct);
 
-                if ("芬德尼尔之顶".Equals(_taskParam.DomainName))
-                {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                    Thread.Sleep(3000);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
-                }
-                else if ("无妄引咎密宫".Equals(_taskParam.DomainName))
-                {
+                // if ("芬德尼尔之顶".Equals(_taskParam.DomainName))
+                // {
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
+                //     Thread.Sleep(3000);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
+                // }
+                // else if ("无妄引咎密宫".Equals(_taskParam.DomainName))
+                // {
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                //     Thread.Sleep(500);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                //     Thread.Sleep(100);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
+                //     Thread.Sleep(1600);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
+                // }
+                // else if ("苍白的遗荣".Equals(_taskParam.DomainName))
+                // {
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                //     Thread.Sleep(2000);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                // }
+                // else if ("塞西莉亚苗圃".Equals(_taskParam.DomainName))
+                // {
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                //     Thread.Sleep(2500);
+                //     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                // }
+                // else if ("太山府".Equals(_taskParam.DomainName))
+                // {
+                //     // 直接F即可
+                //     // nothing to do
+                // }
+                // else
+                // {
                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                    Thread.Sleep(500);
+                
+                    var screenArea = CaptureToRectArea();
+                    string[] targetText = { "单人挑战" };
+                    var confirmRa = RecognitionObject.OcrMatch((int)(screenArea.Width * 0.5),
+                        (int)(screenArea.Height * 0.5), (int)(screenArea.Width * 0.5),
+                        (int)(screenArea.Height * 0.5), targetText);
+                    
+                    var menuFound = await NewRetry.WaitForElementAppear(
+                        confirmRa,
+                        () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
+                        _ct,
+                        20,
+                        500
+                    );
                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                    Thread.Sleep(100);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                    Thread.Sleep(1600);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
-                }
-                else if ("苍白的遗荣".Equals(_taskParam.DomainName))
-                {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                    Thread.Sleep(2000);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                }
-                else if ("塞西莉亚苗圃".Equals(_taskParam.DomainName))
-                {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                    Thread.Sleep(2500);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                }
-                else if ("太山府".Equals(_taskParam.DomainName))
-                {
-                    // 直接F即可
-                    // nothing to do
-                }
-                else
-                {
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                    Thread.Sleep(2000);
-                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                }
+                    if (!menuFound)
+                    {
+                        throw new Exception("请检查是否已进入秘境页面");
+                    }
+                    // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                    // Thread.Sleep(2000);
+                    
+                // }
 
-                await Delay(100, _ct);
-                Simulation.SendInput.SimulateAction(GIActions.Drop); // 可能爬上去了，X键下来
-                await Delay(3000, _ct); // 站稳
+                // await Delay(100, _ct);
+                // Simulation.SendInput.SimulateAction(GIActions.Drop); // 可能爬上去了，X键下来
+                // await Delay(3000, _ct); // 站稳
             }
             else
             {
@@ -492,6 +517,8 @@ public class AutoDomainTask : ISoloTask
         {
             throw new Exception("队伍选择界面未出现。");
         }
+        
+        await SwitchParty(_taskParam.PartyName);
         
         // 点击开始挑战确认并等待“开始挑战”文字消失
         var startFightFound = await NewRetry.WaitForElementDisappear(
