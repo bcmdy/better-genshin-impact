@@ -109,7 +109,7 @@ public class AutoDomainTask : ISoloTask
         this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
     }
     
-    private static RecognitionObject GetConfirmRa(string targetText)
+    private static RecognitionObject GetConfirmRa(params string[] targetText)
     {
         var screenArea = CaptureToRectArea();
         return RecognitionObject.OcrMatch(
@@ -349,7 +349,7 @@ public class AutoDomainTask : ISoloTask
                 }  
                 
                 var menu = await NewRetry.WaitForElementAppear(
-                    GetConfirmRa("单人挑战"),
+                    GetConfirmRa("单人挑战", "快速编队"),
                     () => Simulation.SendInput.Keyboard.KeyPress(AutoPickAssets.Instance.PickVk),
                     _ct,
                     20,
@@ -1560,7 +1560,7 @@ public class AutoDomainTask : ISoloTask
                         }
 
                         // 使用正则表达式提取 1 或 / 前面的纯数值
-                        var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/1]\s*(2|20|200)");
+                        var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/17]\s*(2|20|200)");
                         // var match = System.Text.RegularExpressions.Regex.Match(count, @"(\d+)\s*[/1]\s*200");
                         if (match.Success)
                         {
