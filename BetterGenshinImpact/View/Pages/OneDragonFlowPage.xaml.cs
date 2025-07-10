@@ -1,10 +1,10 @@
 ﻿using BetterGenshinImpact.ViewModel.Pages;
 using System.Windows;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using BetterGenshinImpact.View.Windows;
 using Wpf.Ui.Violeta.Controls;
+using System.Windows.Input; 
 
 
 namespace BetterGenshinImpact.View.Pages;
@@ -57,22 +57,26 @@ public partial class OneDragonFlowPage
             else
             {
                 var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} / UID {uid} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
-                                                      $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置",new Size(400, 250), string.Empty);
+                                                      $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置",new Size(400, 250), "无效绑定码");
                 if (IsValidBindingCode(bindingCode) && ViewModel.SelectedConfig != null)
                 {
                     ViewModel.SelectedConfig.AccountBindingCode = bindingCode;
+                    FocusManager.SetFocusedElement(FocusManager.GetFocusScope(textBox), null);
                     Toast.Success($"UID: {uid} 已经绑定 {ViewModel.SelectedConfig.AccountBindingCode}");
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(bindingCode))
+                    var textBox2 = sender as TextBox;
+                    var someOtherControl = FindParent<FrameworkElement>(textBox2);
+                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "无效绑定码")
                     {
                         ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
+                        FocusManager.SetFocusedElement(FocusManager.GetFocusScope(textBox), someOtherControl);
                         Toast.Warning("绑定码为空，将使用轮切方式切换账号");
                         return;
                     }
                     Toast.Warning("绑定码长度为 2 位，且只能包含字母或数字");
-                    textBox.Text = textBox.Text.Remove(textBox.Text.Length - 1);
+                    GenshinUid_TextChanged(sender, e);
                 }
             }
         }
@@ -94,8 +98,8 @@ public partial class OneDragonFlowPage
                 {
                     var size = new Size(400, 200);
                     var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
-                                                          $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置", new Size(400, 250), string.Empty);
-                    if (string.IsNullOrEmpty(bindingCode))
+                                                          $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置", new Size(400, 250), "无效绑定码");
+                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "无效绑定码")
                     {
                         ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
                         Toast.Warning("绑定码为空，将使用轮切方式切换账号");

@@ -2871,16 +2871,47 @@ public partial class OneDragonFlowViewModel : ViewModel
                     {
                         if (phone.Text.Any( c => c == '*'))
                         {
-                            //提取最后两位数字作为索引
-                            
-                            var index = phone.Text.Substring(phone.Text.Length - 2);
-
-                            if (index == "om")
+                            string text = phone.Text;
+                            if (text.Length < 2)
                             {
-                                index = phone.Text.Substring(0, 2);
+                                Logger.LogWarning("字符长度不足2位");
+                            }
+
+                            int index = text.Length - 1;
+                            string comfirmWord = "";
+
+                            while (index >= 0 && comfirmWord.Length < 2)
+                            {
+                                char currentChar = text[index];
+                                if (char.IsDigit(currentChar))
+                                {
+                                    comfirmWord = currentChar + comfirmWord;
+                                }
+                                index--;
+                            }
+
+                            if (comfirmWord.Length != 2)
+                            {
+                                index = 0;
+                                string firstTwoChars = "";
+
+                                while (index < text.Length && firstTwoChars.Length < 2)
+                                {
+                                    char currentChar = text[index];
+                                    if (char.IsLetterOrDigit(currentChar))
+                                    {
+                                        firstTwoChars += currentChar;
+                                    }
+                                    index++;
+                                }
+
+                                if (firstTwoChars.Length == 2)
+                                {
+                                    comfirmWord = firstTwoChars;
+                                }
                             }
                             
-                            if (index == SelectedConfig.AccountBindingCode)
+                            if (comfirmWord == SelectedConfig.AccountBindingCode)
                             {
                                // 如果账号绑定成功，点击该账号
                                 Logger.LogInformation("UID: {0} 已绑定 {1}", SelectedConfig.GenshinUid, SelectedConfig.AccountBindingCode);
@@ -2900,6 +2931,10 @@ public partial class OneDragonFlowViewModel : ViewModel
                 //识别识别后用旧办法
                 if (isAccountBinding == false)
                 {
+                    Logger.LogWarning("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
+                    Logger.LogWarning("尝试使用轮切方式切换账号...");
+                    Notify.Event("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
+                    
                     await Delay(500, cts.Cts.Token);
                     if (_exitPhoneCount == 3 || (_exitPhoneCount == 4 && switchTime == 1))
                     {
@@ -2909,8 +2944,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                     {
                         GameCaptureRegion.GameRegion1080PPosClick(735,742);;//如果有三个账号，切换到第3个
                     }
-                    Logger.LogWarning("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
-                    Notify.Event("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
+                    
                 }
                 
                 await Delay(1000, cts.Cts.Token);     
