@@ -202,6 +202,7 @@ public partial class OneDragonFlowConfig : ObservableObject
     [ObservableProperty] private bool _specifyResinUse = false;
     
     private string _genshinUid = string.Empty;
+    
     public string GenshinUid
     {
         get => _genshinUid;
@@ -228,10 +229,14 @@ public partial class OneDragonFlowConfig : ObservableObject
         }
     }
     
+    //绑定账号的后两位字符
+    [ObservableProperty] private string _accountBindingCode = string.Empty;
+    
     // public int IndexID { get; set; }
     
-    private bool? _accountBinding  = false;
-    public bool? AccountBinding
+    private bool _accountBinding  = false;
+    
+    public bool AccountBinding
     {
         get => _accountBinding;
         set
@@ -259,7 +264,6 @@ public partial class OneDragonFlowConfig : ObservableObject
                 }
             }
         }
-
     }
     
     #region 每周秘境配置

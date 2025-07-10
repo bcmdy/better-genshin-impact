@@ -14,7 +14,7 @@ public class AutoWoodAssets : BaseAssets<AutoWoodAssets>
     public RecognitionObject ConfirmRo;
     public RecognitionObject EnterGameRo;
     public RecognitionObject ExitSwitchRo;
-    public RecognitionObject ExitPhoneRo;
+
 
     // 木头数量
     public Rect WoodCountUpperRect;
@@ -75,14 +75,6 @@ public class AutoWoodAssets : BaseAssets<AutoWoodAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoWood", "exit_switch.png"),
             RegionOfInterest = new Rect(CaptureRect.Width*9/10, (int)(CaptureRect.Height*0.85), CaptureRect.Width/10,(int)(CaptureRect.Height*0.15)),
-            DrawOnWindow = false
-        }.InitTemplate();
-        ExitPhoneRo = new RecognitionObject
-        {
-            Name = "ExitPhone",
-            RecognitionType = RecognitionTypes.TemplateMatch,
-            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoWood", "exit_phone.png"),
-            RegionOfInterest = new Rect(CaptureRect.Width/3, CaptureRect.Height / 4, CaptureRect.Width/8,CaptureRect.Height/2),
             DrawOnWindow = false
         }.InitTemplate();
     }

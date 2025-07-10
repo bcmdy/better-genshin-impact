@@ -1445,19 +1445,39 @@
                                     <!-- 游戏UID -->
                                     <TextBox Grid.Column="4"
                                              GotFocus="ConfigRow_GotFocus"
+                                             TextChanged="GenshinUid_TextChanged"
+                                             Visibility="{Binding AccountBindingCode.IsEmpty, Converter={StaticResource BooleanToVisibilityRevertConverter}}"
                                                Width="70"
                                                MinWidth="70"
                                                MaxWidth="70"
                                                Background="Transparent"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"
-                                               Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                               Foreground="LightSkyBlue"
                                                FontSize="9"
                                                Text="{Binding GenshinUid,Mode=TwoWay}"
                                                Margin="0,0" />
+                                    
+                                    <TextBox Grid.Column="4"
+                                             GotFocus="ConfigRow_GotFocus"
+                                             TextChanged="GenshinUid_TextChanged"
+                                             Visibility="{Binding AccountBindingCode.IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                             Width="70"
+                                             MinWidth="70"
+                                             MaxWidth="70"
+                                             Background="Transparent"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"
+                                             Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                             FontSize="9"
+                                             Text="{Binding GenshinUid,Mode=TwoWay}"
+                                             Margin="0,0" />
+                                    
+                                    
                                     <!-- 绑定状态 -->
                                     <CheckBox Grid.Column="5"
                                               GotFocus="ConfigRow_GotFocus"
+                                              Checked="AccountBinding_Checked"
                                               Width="Auto"
                                               MaxWidth="50"
                                               Background="Transparent"

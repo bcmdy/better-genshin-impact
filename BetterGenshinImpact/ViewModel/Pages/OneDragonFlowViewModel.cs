@@ -1777,9 +1777,41 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
         Toast.Success("已清除所有配置单的下一条配置单标记");
     }
+    
+    [RelayCommand]
+    private void SetAccountBindingCodeSwitchButton()
+    {
+        Toast.Success("11111...");
+        if (SelectedConfig == null)
+        {
+            Toast.Warning("请先选择一条龙配置单");
+            return;
+        }
+        if (!SelectedConfig.AccountBinding)
+        {
+            Toast.Success("账号绑定码已关闭");
+            return;
+        }
+        Toast.Success("正在设置账号绑定码...");
+        if (string.IsNullOrEmpty(SelectedConfig.AccountBindingCode) && !string.IsNullOrEmpty(SelectedConfig.GenshinUid))
+        {
+            //弹窗设置账号绑定码SelectedConfig.AccountBindingCode
+            var bindingCode = PromptDialog.Prompt("请输入账号绑定码", "账号绑定码设置");
+            if (string.IsNullOrEmpty(bindingCode))
+            {
+                return;
+            }
+            SelectedConfig.AccountBindingCode = bindingCode;
+            Toast.Success($"UID: {SelectedConfig.GenshinUid} 已经绑定 {SelectedConfig.AccountBindingCode}");
+        }
+        else
+        {
+            Toast.Success($"UID {SelectedConfig.GenshinUid} 绑定码为 {SelectedConfig.AccountBindingCode}");
+        }
+    }
 
     [RelayCommand]
-    private  void SetCycleTimeButton()
+    private void SetCycleTimeButton()
     {
         SetCycleTime(true);
     }
@@ -2667,6 +2699,17 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
     }
   
+    private static RecognitionObject GetConfirmRa(params string[] targetText)
+    {
+        var screenArea = CaptureToRectArea();
+        return RecognitionObject.OcrMatch(
+            (int)(screenArea.Width * 0.2),
+            (int)(screenArea.Height * 0.5),
+            (int)(screenArea.Width * 0.5),
+            (int)(screenArea.Height * 0.5),
+            targetText
+        );
+    }
     //切换账号
     private AutoWoodAssets _assets;
     private readonly Login3rdParty _login3RdParty = new();
@@ -2790,42 +2833,91 @@ public partial class OneDragonFlowViewModel : ViewModel
         for (var i = 0; i < 20; i++)
         {
             await Delay(1, cts.Cts.Token);
-            using var contentRegion = CaptureToRectArea();
-            using var ra = contentRegion.Find(_assets.ExitPhoneRo);
-            if (!ra.IsEmpty())
+            
+            var mainRegion= await NewRetry.WaitForElementAppear(
+                GetConfirmRa("进入游戏"),
+                () => {},
+                cts.Cts.Token,
+                20,
+                500
+            );
+            if (mainRegion)
             {
                 Logger.LogInformation("执行 {text} 动作","选择账号");
-                await Delay(500, cts.Cts.Token);
-                ra.Click();
+                await NewRetry.WaitForElementDisappear(
+                    GetConfirmRa("进入游戏"),
+                    () => {GameCaptureRegion.GameRegion1080PPosClick(1200,494);},
+                    cts.Cts.Token,
+                    5,
+                    1500
+                );
                 
                 await Delay(300, cts.Cts.Token);
-                ra.MoveTo(ra.Width*2,ra.Height/2);//移开鼠标
-                await Delay(1000, cts.Cts.Token);
                 
-                // 确认记录账号数量==========================================================
                 var capturedArea = CaptureToRectArea();
-                var exitPhone = capturedArea.FindMulti(_assets.ExitPhoneRo);
-                _exitPhoneCount = exitPhone.Count; // 获取账号数量
-                Logger.LogInformation("当前记录账号数量: {count}", _exitPhoneCount-1);
-                // 如果账号数量小于2大于3，报错
-                if (_exitPhoneCount < 3 || _exitPhoneCount > 4)
+                bool isAccountBinding = false;
+                var phoneList = capturedArea.FindMulti(RecognitionObject.Ocr(new Rect(760 , 455 , 330, 390)));
+                if (phoneList.Count > 0 && SelectedConfig != null && !string.IsNullOrEmpty(SelectedConfig.AccountBindingCode))
                 {
-                    throw new Exception("请检查账号数量是否正确，数量应为2或3");
+                    _exitPhoneCount = phoneList.Count(p => p.Text.Any(c => c == '*'));
+                    Logger.LogInformation("当前记录账号数量: {count}", _exitPhoneCount-1);
+                    
+                    if (_exitPhoneCount < 3 || _exitPhoneCount > 4)
+                    {
+                        Logger.LogWarning("请检查账号数量是否正确，数量应为2或3");
+                    }
+
+                    foreach (var phone in phoneList)
+                    {
+                        if (phone.Text.Any( c => c == '*'))
+                        {
+                            //提取最后两位数字作为索引
+                            
+                            var index = phone.Text.Substring(phone.Text.Length - 2);
+
+                            if (index == "om")
+                            {
+                                index = phone.Text.Substring(0, 2);
+                            }
+                            
+                            if (index == SelectedConfig.AccountBindingCode)
+                            {
+                               // 如果账号绑定成功，点击该账号
+                                Logger.LogInformation("UID: {0} 已绑定 {1}", SelectedConfig.GenshinUid, SelectedConfig.AccountBindingCode);
+                                phone.Click();
+                                isAccountBinding = true;
+                                await Delay(500, cts.Cts.Token);
+                                break;
+                            }
+                        }
+                    }
                 }
-                // 确认记录账号数量==========================================================
+                else
+                {
+                    Logger.LogWarning(string.IsNullOrEmpty(SelectedConfig?.AccountBindingCode) ? "UID为绑定码为空，重新绑定UID可设置绑定码" : "未检测到账号列表");
+                }
                 
-                await Delay(500, cts.Cts.Token);
-                if (_exitPhoneCount == 3 || (_exitPhoneCount == 4 && switchTime == 1))
+                //识别识别后用旧办法
+                if (isAccountBinding == false)
                 {
-                    ra.ClickTo(ra.Width*0.5,ra.Height*2+ra.Height*1.3);//如果只有两账号，固定选另一个
+                    await Delay(500, cts.Cts.Token);
+                    if (_exitPhoneCount == 3 || (_exitPhoneCount == 4 && switchTime == 1))
+                    {
+                        GameCaptureRegion.GameRegion1080PPosClick(732,670);;//如果只有两账号，固定选另一个
+                    }
+                    else if (_exitPhoneCount == 4 && switchTime >= 2)
+                    {
+                        GameCaptureRegion.GameRegion1080PPosClick(735,742);;//如果有三个账号，切换到第3个
+                    }
+                    Logger.LogWarning("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
+                    Notify.Event("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
                 }
-                else if (_exitPhoneCount == 4 && switchTime >= 2)
-                {
-                    ra.ClickTo(ra.Width*0.5,ra.Height*2+ra.Height*switchTime*1.3);//如果有三个账号，切换到第3个
-                }
+                
                 await Delay(1000, cts.Cts.Token);     
-                ra.ClickTo(0,ra.Height+ra.Height*1.5);//进入游戏
+                GameCaptureRegion.GameRegion1080PPosClick(1158,626);;//进入游戏
                 await Delay(1000, cts.Cts.Token);  
+                GameCaptureRegion.GameRegion1080PPosClick(1158,626);;//进入游戏
+                await Delay(1000, cts.Cts.Token);   
                 break;
             }
             else

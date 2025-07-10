@@ -3,6 +3,9 @@ using System.Windows;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using BetterGenshinImpact.View.Windows;
+using Wpf.Ui.Violeta.Controls;
+
 
 namespace BetterGenshinImpact.View.Pages;
 
@@ -34,4 +37,84 @@ public partial class OneDragonFlowPage
         return parent as T;
     }
     // private object _previousSelectedItem;
+    
+    private bool IsValidBindingCode(string bindingCode)
+    {
+        return !string.IsNullOrEmpty(bindingCode) && bindingCode.Length == 2 &&
+               char.IsLetterOrDigit(bindingCode[0]) && char.IsLetterOrDigit(bindingCode[1]);
+    }
+    
+    private void GenshinUid_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var textBox = sender as TextBox;
+        if (textBox != null)
+        {
+            var uid = textBox.Text;
+            if (string.IsNullOrEmpty(uid) || uid.Length != 9 || !int.TryParse(uid, out _))
+            {
+                Toast.Warning("无效UID，长度 " + uid.Length + " 位，请输入 9 位纯数字的UID");
+            }
+            else
+            {
+                var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} / UID {uid} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
+                                                      $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置",new Size(400, 250), string.Empty);
+                if (IsValidBindingCode(bindingCode) && ViewModel.SelectedConfig != null)
+                {
+                    ViewModel.SelectedConfig.AccountBindingCode = bindingCode;
+                    Toast.Success($"UID: {uid} 已经绑定 {ViewModel.SelectedConfig.AccountBindingCode}");
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(bindingCode))
+                    {
+                        ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
+                        Toast.Warning("绑定码为空，将使用轮切方式切换账号");
+                        return;
+                    }
+                    Toast.Warning("绑定码长度为 2 位，且只能包含字母或数字");
+                    textBox.Text = textBox.Text.Remove(textBox.Text.Length - 1);
+                }
+            }
+        }
+    }
+    
+    private void AccountBinding_Checked(object sender, RoutedEventArgs e)
+    {
+        var checkBox = sender as CheckBox;
+        if (checkBox != null)
+        {
+            if (checkBox.IsChecked == true && ViewModel.SelectedConfig != null)
+            {
+                if (!string.IsNullOrEmpty(ViewModel.SelectedConfig.AccountBindingCode))
+                {
+                    Toast.Success($"UID: {ViewModel.SelectedConfig.GenshinUid} 绑定码 {ViewModel.SelectedConfig.AccountBindingCode}");
+                    checkBox.IsChecked = true;
+                }
+                else
+                {
+                    var size = new Size(400, 200);
+                    var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
+                                                          $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置", new Size(400, 250), string.Empty);
+                    if (string.IsNullOrEmpty(bindingCode))
+                    {
+                        ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
+                        Toast.Warning("绑定码为空，将使用轮切方式切换账号");
+                        return;
+                    }
+                    if (IsValidBindingCode(bindingCode) && ViewModel.SelectedConfig != null)
+                    {
+                        ViewModel.SelectedConfig.AccountBindingCode = bindingCode;
+                        Toast.Success($"UID: {ViewModel.SelectedConfig.GenshinUid} 绑定码 {ViewModel.SelectedConfig.AccountBindingCode}");
+                        checkBox.IsChecked = true;
+                    }
+                    else
+                    {
+                        Toast.Warning("绑定码长度为 2 位，且只能包含字母或数字");
+                        checkBox.IsChecked = false;
+                    }
+                }
+            }
+        }
+    }
+
 }
