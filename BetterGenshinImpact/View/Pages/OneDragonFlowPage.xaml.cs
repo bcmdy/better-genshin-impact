@@ -57,7 +57,7 @@ public partial class OneDragonFlowPage
             else
             {
                 var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} / UID {uid} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
-                                                      $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置",new Size(400, 250), "无效绑定码");
+                                                      $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置",new Size(400, 250), "如不设置绑定码，则使用轮切方式切换账号");
                 if (IsValidBindingCode(bindingCode) && ViewModel.SelectedConfig != null)
                 {
                     ViewModel.SelectedConfig.AccountBindingCode = bindingCode;
@@ -68,7 +68,7 @@ public partial class OneDragonFlowPage
                 {
                     var textBox2 = sender as TextBox;
                     var someOtherControl = FindParent<FrameworkElement>(textBox2);
-                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "无效绑定码")
+                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "如不设置绑定码，则使用轮切方式切换账号")
                     {
                         ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
                         FocusManager.SetFocusedElement(FocusManager.GetFocusScope(textBox), someOtherControl);
@@ -98,8 +98,8 @@ public partial class OneDragonFlowPage
                 {
                     var size = new Size(400, 200);
                     var bindingCode = PromptDialog.Prompt($"请输入 {ViewModel.SelectedConfig?.Name} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
-                                                          $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置", new Size(400, 250), "无效绑定码");
-                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "无效绑定码")
+                                                          $"\n邮箱登录的账户：切换账号列表显示的前2位 ", "UID辅助切换绑定码设置", new Size(400, 250), "如不设置绑定码，则使用轮切方式切换账号");
+                    if (string.IsNullOrEmpty(bindingCode) || bindingCode == "如不设置绑定码，则使用轮切方式切换账号")
                     {
                         ViewModel.SelectedConfig.AccountBindingCode = string.Empty;
                         Toast.Warning("绑定码为空，将使用轮切方式切换账号");
