@@ -171,7 +171,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     private readonly string _configPath = Global.Absolute(@"User\OneDragon");
     private readonly string _basePath = AppDomain.CurrentDomain.BaseDirectory;
     
-   private void ReadScriptGroup()
+   public void ReadScriptGroup()
     {
         try
         {
@@ -755,7 +755,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private List<string> _adventurersGuildCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
-    [ObservableProperty] private List<string> _domainNameList = ["",..MapLazyAssets.Instance.DomainNameList];
+    // [ObservableProperty] private List<string> _domainNameList = ["","新建自定义任务",.._customDomainList,..MapLazyAssets.Instance.DomainNameList];
 
     [ObservableProperty] private List<string> _completionActionList = ["无", "关闭游戏", "关闭游戏和软件", "关机"];
 
@@ -769,7 +769,35 @@ public partial class OneDragonFlowViewModel : ViewModel
     
     private string _lastUid = ""; // 上一次切换的UID
     
+    [ObservableProperty] private List<string> _domainNameList = new List<string> { "", "新建自定义任务" };
+
+    [ObservableProperty] private List<string> _customDomainList;
+    
     public AllConfig Config { get; set; } = TaskContext.Instance().Config;
+    
+     public void InitializeDomainNameList()
+    {
+        if (SelectedConfig != null)
+        {
+            DomainNameList.Clear();
+            
+            DomainNameList.AddRange(
+                new List<string> { "","删除自定义任务","新建自定义任务"}
+            );
+            
+            // 添加自定义域名列表中的元素，确保不重复
+            DomainNameList.AddRange(
+                SelectedConfig.CustomDomainList
+                    .Where(domain => !DomainNameList.Contains(domain))
+            );
+            
+            // 添加 MapLazyAssets 中的域名列表中的元素，确保不重复
+            DomainNameList.AddRange(
+                MapLazyAssets.Instance.DomainNameList
+                    .Where(domain => !DomainNameList.Contains(domain))
+            );
+        }
+    }
     
     public  OneDragonFlowViewModel()
     {
@@ -837,6 +865,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         FilteredConfigList = CollectionViewSource.GetDefaultView(ConfigList);
         FilteredConfigList.Filter = FilterLogic;
         if(_autoRun) AdaptVersions();//自动适配版本，一两个大版本后可以注释掉，后续有改动再用
+        _customDomainList = new List<string>(); // 或者根据需要进行初始化
     }
     
     [RelayCommand]
@@ -1487,6 +1516,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         try
         {
             SetSomeSelectedConfig(SelectedConfig);
+            InitializeDomainNameList();
         }
         finally
         {

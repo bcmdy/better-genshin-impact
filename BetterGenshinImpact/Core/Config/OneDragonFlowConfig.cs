@@ -136,7 +136,7 @@ public partial class OneDragonFlowConfig : ObservableObject
    [ObservableProperty] private string _scheduleName = "默认计划表";
    
    //自定义秘境名称
-   public static List<string> CustomDomainList { get; } = new();
+   [ObservableProperty] private List<string> _customDomainList = new();
    
     /// <summary>
     /// 所有任务的开关状态

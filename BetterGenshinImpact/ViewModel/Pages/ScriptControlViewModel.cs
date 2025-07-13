@@ -53,6 +53,8 @@ public partial class ScriptControlViewModel : ViewModel
     private readonly IScriptService _scriptService;
     
     [ObservableProperty] private Boolean _isInsetMode = false;
+    
+    [ObservableProperty] private OneDragonFlowViewModel? _viewModel;
 
     public static class AppPaths
     {
@@ -61,6 +63,8 @@ public partial class ScriptControlViewModel : ViewModel
         public const string MouseScripts = @"User\KeyMouseScript";
     }
     
+    private readonly List<String> _scriptGroupsDefault = new List<string> { "领取邮件","合成树脂","自动秘境","领取每日奖励","领取尘歌壶奖励" };
+
     /// <summary>
     /// 配置组配置
     /// </summary>
@@ -113,11 +117,11 @@ public partial class ScriptControlViewModel : ViewModel
         if (!string.IsNullOrEmpty(str))
         {
             // 检查是否已存在
-            if (ScriptGroups.Any(x => x.Name == str))
+            if (ScriptGroups.Any(x => x.Name == str) ||  _scriptGroupsDefault.Any(x => x == str))
             {
                 _snackbarService.Show(
-                    "配置组已存在",
-                    $"配置组 {str} 已经存在，请勿重复添加",
+                    "配置组已存在",_scriptGroupsDefault.Any(x => x == str)? 
+                        $"不能与系统一条龙 {str} 同名，请勿重复添加": $"配置组 {str} 已经存在，请勿重复添加",
                     ControlAppearance.Caution,
                     null,
                     TimeSpan.FromSeconds(2)
