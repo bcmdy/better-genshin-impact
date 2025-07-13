@@ -134,8 +134,10 @@ public partial class OneDragonFlowViewModel : ViewModel
     
     private void RefreshFilteredConfigList()
     {
+        // if (_isLoading) return;
         FilteredConfigList.Filter = FilterLogic;
         FilteredConfigList.Refresh();
+        // _isLoading = false;
     }
 
     [ObservableProperty] private OneDragonTaskItem? _selectedTask;
@@ -747,11 +749,11 @@ public partial class OneDragonFlowViewModel : ViewModel
         if (!string.IsNullOrEmpty(value.Name))
         {
             _selectedConfigCache = value; 
+            InitializeDomainNameList();
         }
+        _isLoading = false;
     }
-    
-    [ObservableProperty] private List<string> _domainNameList2 = ["",..MapLazyAssets.Instance.DomainNameList];
-    
+
     [ObservableProperty] private List<string> _craftingBenchCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
     [ObservableProperty] private List<string> _adventurersGuildCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
@@ -867,6 +869,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         FilteredConfigList.Filter = FilterLogic;
         if(_autoRun) AdaptVersions();//自动适配版本，一两个大版本后可以注释掉，后续有改动再用
         _customDomainList = new List<string>(); // 或者根据需要进行初始化
+        InitializeDomainNameList();
     }
     
     [RelayCommand]
@@ -1102,9 +1105,9 @@ public partial class OneDragonFlowViewModel : ViewModel
       {
           Config.SelectedOneDragonFlowPlanName = selectedPlan;
           
-          _isLoading = true;
+          // _isLoading = true;
           InitConfigList();
-          _isLoading = false;
+          // _isLoading = false;
           
           RefreshFilteredConfigList();
           var lastConfig = ConfigList.LastOrDefault(c => c.ScheduleName == selectedPlan);
@@ -1421,6 +1424,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     public void InitConfigList()
     {
+        _isLoading = true;
         Directory.CreateDirectory(OneDragonFlowConfigFolder);
         // 读取文件夹内所有json配置，按创建时间正序
         var configFiles = Directory.GetFiles(OneDragonFlowConfigFolder, "*.json");
@@ -1466,6 +1470,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         SelectedConfig = selected;
         LoadDisplayTaskListFromConfig();
         OnConfigDropDownChanged();
+        _isLoading = false;
     }
     
     private void LoadDisplayTaskListFromConfig()
@@ -1517,16 +1522,14 @@ public partial class OneDragonFlowViewModel : ViewModel
     [RelayCommand]
     private void OnConfigDropDownChanged()
     {
-        if (_isLoading) return;
-        
         _isLoading = true;
         try
         {
             SetSomeSelectedConfig(SelectedConfig);
-            InitializeDomainNameList();
         }
         finally
         {
+            InitializeDomainNameList();
             _isLoading = false;
         }
     }
