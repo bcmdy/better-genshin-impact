@@ -140,8 +140,8 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private OneDragonTaskItem? _selectedTask;
 
-    partial void OnSelectedTaskChanged(OneDragonTaskItem value)
-    {
+    partial void OnSelectedTaskChanged(OneDragonTaskItem value) {
+        
         if (value != null)
         {
             InputScriptGroupName = value.Index;
@@ -743,6 +743,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     private OneDragonFlowConfig _selectedConfigCache;
     partial void OnSelectedConfigChanged(OneDragonFlowConfig? value)
     {
+        if (_isLoading) return;
         if (!string.IsNullOrEmpty(value.Name))
         {
             _selectedConfigCache = value; 
@@ -1100,7 +1101,11 @@ public partial class OneDragonFlowViewModel : ViewModel
       if (result == Wpf.Ui.Controls.MessageBoxResult.Primary && listBox.SelectedItem is string selectedPlan)
       {
           Config.SelectedOneDragonFlowPlanName = selectedPlan;
+          
+          _isLoading = true;
           InitConfigList();
+          _isLoading = false;
+          
           RefreshFilteredConfigList();
           var lastConfig = ConfigList.LastOrDefault(c => c.ScheduleName == selectedPlan);
           if (lastConfig != null)
@@ -1512,6 +1517,8 @@ public partial class OneDragonFlowViewModel : ViewModel
     [RelayCommand]
     private void OnConfigDropDownChanged()
     {
+        if (_isLoading) return;
+        
         _isLoading = true;
         try
         {

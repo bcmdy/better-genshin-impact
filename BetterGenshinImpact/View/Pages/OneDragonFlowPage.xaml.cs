@@ -132,45 +132,49 @@ public partial class OneDragonFlowPage
 
     private void DomainComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is ComboBox comboBox && comboBox.SelectedItem != null)
+        if (sender is ComboBox comboBox && !string.IsNullOrEmpty(comboBox.SelectedItem.ToString()))
         {
             if (comboBox.SelectedItem is string selectedItem && string.IsNullOrEmpty(selectedItem))
             {
                 return;
             }
             
+            string oldSelectedItem = string.Empty;
+            if (e.RemovedItems.Count > 0 && e.RemovedItems[0] is string oldSelected)
+            {
+                oldSelectedItem = oldSelected;
+            }
+
             var list = ViewModel?.SelectedConfig?.CustomDomainList ?? new List<string>();
             string selectedItemContent = comboBox.SelectedItem.ToString() ?? string.Empty;
-            
+
             if (selectedItemContent == "新建自定义任务")
             {
-                Toast.Warning("11111");
-                var newTaskWindow = PromptDialog.Prompt("请输入自定义任务名称：", "创建自定义任务", new Size(400, 200), "");
-                //等待用户点击确定按钮
+                var newTaskWindow = PromptDialog.Prompt("请输入自定义任务名称（配置组名称）：", "创建自定义任务", new Size(400, 200), "");
                 if (!string.IsNullOrEmpty(newTaskWindow))
                 {
                     if (ViewModel.SelectedConfig?.CustomDomainList.Contains(newTaskWindow) == true)
                     {
-                        comboBox.SelectedItem = string.Empty;
+                        comboBox.SelectedItem = oldSelectedItem;
                         Toast.Warning("已经存在同名的自定义任务");
                         return;
                     }
+
                     ViewModel.SelectedConfig?.CustomDomainList.AddRange(new[] { newTaskWindow });
-                    ViewModel.SaveConfig(); 
-                    ViewModel.InitializeDomainNameList(); 
-                    comboBox.Items.Refresh(); 
-                    comboBox.SelectedItem = newTaskWindow; 
+                    ViewModel.SaveConfig();
+                    ViewModel.InitializeDomainNameList();
+                    comboBox.Items.Refresh();
+                    comboBox.SelectedItem = newTaskWindow;
                     return;
                 }
-                comboBox.SelectedItem = string.Empty;
+                //保持原有选择
+                comboBox.SelectedItem = oldSelectedItem;
             }
             else if (selectedItemContent == "删除自定义任务")
             {
-                Toast.Warning("2222");
                 if (list.Count == 0)
                 {
-                    comboBox.SelectedItem = string.Empty;
-                    Toast.Warning("没有可删除的自定义任务");
+                    comboBox.SelectedItem = oldSelectedItem;
                     return;
                 }
 
@@ -184,28 +188,13 @@ public partial class OneDragonFlowPage
                 {
                     string taskToDelete = comboBox1.SelectedItem.ToString();
                     ViewModel.SelectedConfig?.CustomDomainList.Remove(taskToDelete);
-                    ViewModel.SaveConfig(); // 保存配置文件
-                    ViewModel.InitializeDomainNameList(); // 初始化域名列表
-                    comboBox.Items.Refresh(); // 刷新ComboBox项
+                    ViewModel.SaveConfig();
+                    ViewModel.InitializeDomainNameList();
+                    comboBox.Items.Refresh();
                     Toast.Success("已删除自定义任务：" + taskToDelete);
-                    comboBox.SelectedItem = string.Empty;
-                }
-                else
-                {
-                    comboBox.SelectedItem = string.Empty;
-                    Toast.Warning("未选择要删除的自定义任务");
+                    comboBox.SelectedItem = oldSelectedItem;
                 }
             }
-            else
-            {
-                Toast.Success(list.Any(x => x == selectedItemContent && !string.IsNullOrEmpty(x))
-                    ? $"自动秘境：已选自定义配置组任务：{comboBox.SelectedItem}"
-                    : $"自动秘境：已选秘境名称：{comboBox.SelectedItem}");
-            }
-        }
-        else
-        {
-            Toast.Warning("未知错误");
         }
     }
 }
