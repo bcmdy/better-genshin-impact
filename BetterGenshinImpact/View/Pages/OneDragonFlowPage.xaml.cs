@@ -9,6 +9,8 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 
+using System;
+using System.Threading.Tasks;
 
 
 
@@ -148,10 +150,10 @@ public partial class OneDragonFlowPage
             var list = ViewModel?.SelectedConfig?.CustomDomainList ?? new List<string>();
             string selectedItemContent = comboBox.SelectedItem.ToString() ?? string.Empty;
 
-            if (selectedItemContent == "新建自定义任务")
+            if (selectedItemContent == "新建自定义任务" )
             {
                 var newTaskWindow = PromptDialog.Prompt("请输入自定义任务名称（配置组名称）：", "创建自定义任务", new Size(400, 200), "");
-                if (!string.IsNullOrEmpty(newTaskWindow))
+                if (!string.IsNullOrEmpty(newTaskWindow) && !string.IsNullOrEmpty(newTaskWindow))
                 {
                     if (ViewModel.SelectedConfig?.CustomDomainList.Contains(newTaskWindow) == true)
                     {
@@ -167,7 +169,6 @@ public partial class OneDragonFlowPage
                     comboBox.SelectedItem = newTaskWindow;
                     return;
                 }
-                //保持原有选择
                 comboBox.SelectedItem = oldSelectedItem;
             }
             else if (selectedItemContent == "删除自定义任务")
@@ -184,7 +185,7 @@ public partial class OneDragonFlowPage
 
                 var result = PromptDialog.Prompt("请选择要删除的自定义任务名称？", "删除自定义任务", stackPanel, new Size(400, 200), null);
 
-                if (comboBox1.SelectedItem != null)
+                if (comboBox1.SelectedItem != null && !string.IsNullOrEmpty(result) )
                 {
                     string taskToDelete = comboBox1.SelectedItem.ToString();
                     ViewModel.SelectedConfig?.CustomDomainList.Remove(taskToDelete);
@@ -192,8 +193,10 @@ public partial class OneDragonFlowPage
                     ViewModel.InitializeDomainNameList();
                     comboBox.Items.Refresh();
                     Toast.Success("已删除自定义任务：" + taskToDelete);
-                    comboBox.SelectedItem = oldSelectedItem;
+                    if (oldSelectedItem == taskToDelete) comboBox.SelectedItem = string.Empty;
+                    return;
                 }
+                comboBox.SelectedItem = oldSelectedItem;
             }
         }
     }

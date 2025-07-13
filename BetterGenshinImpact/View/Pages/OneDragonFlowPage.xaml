@@ -731,6 +731,8 @@
                                                 PlaceholderText="填写队伍名称 " />
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Width="140"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
@@ -760,6 +762,8 @@
                                                 PlaceholderText="填写队伍名称 " />
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Width="140"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
@@ -789,6 +793,8 @@
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
                                               Width="140"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
                                               SelectedItem="{Binding SelectedConfig.WednesdayDomainName, Mode=TwoWay}" />
@@ -817,6 +823,8 @@
                                                 PlaceholderText="填写队伍名称 " />
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Width="140"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
@@ -846,6 +854,8 @@
                                                 PlaceholderText="填写队伍名称 " />
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Width="140"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
@@ -876,6 +886,8 @@
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
                                               Width="140"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
                                               SelectedItem="{Binding SelectedConfig.SaturdayDomainName, Mode=TwoWay}" />
@@ -910,6 +922,8 @@
                                     <ComboBox Grid.Row="0"
                                               Grid.Column="2"
                                               Width="140"
+                                              GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="DomainComboBox_SelectionChanged"
                                               Margin="0,0,36,0"
                                               ItemsSource="{Binding DomainNameList}"
                                               SelectedItem="{Binding SelectedConfig.SundayDomainName, Mode=TwoWay}" />
