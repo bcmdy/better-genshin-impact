@@ -198,6 +198,10 @@ public partial class OneDragonFlowPage
                 }
                 comboBox.SelectedItem = oldSelectedItem;
             }
+            else
+            {
+                comboBox.Items.Refresh();
+            }
         }
     }
 }
