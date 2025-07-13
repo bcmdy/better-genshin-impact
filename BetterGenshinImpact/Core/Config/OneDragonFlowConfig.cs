@@ -129,10 +129,14 @@ public partial class OneDragonFlowConfig : ObservableObject
         "周六",
         "周日"
     };
+    
     public ReadOnlyObservableCollection<string> SelectedPeriodList => new(_selectedPeriodList);
     
    // 计划表
    [ObservableProperty] private string _scheduleName = "默认计划表";
+   
+   //自定义秘境名称
+   public static List<string> CustomDomainList { get; } = new();
    
     /// <summary>
     /// 所有任务的开关状态

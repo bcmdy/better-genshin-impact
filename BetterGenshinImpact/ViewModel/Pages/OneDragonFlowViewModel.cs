@@ -748,12 +748,14 @@ public partial class OneDragonFlowViewModel : ViewModel
             _selectedConfigCache = value; 
         }
     }
-
+    
+    [ObservableProperty] private List<string> _domainNameList2 = ["",..MapLazyAssets.Instance.DomainNameList];
+    
     [ObservableProperty] private List<string> _craftingBenchCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
     [ObservableProperty] private List<string> _adventurersGuildCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
-    [ObservableProperty] private List<string> _domainNameList = ["", ..MapLazyAssets.Instance.DomainNameList];
+    [ObservableProperty] private List<string> _domainNameList = ["",..MapLazyAssets.Instance.DomainNameList];
 
     [ObservableProperty] private List<string> _completionActionList = ["无", "关闭游戏", "关闭游戏和软件", "关机"];
 
@@ -2431,13 +2433,20 @@ public partial class OneDragonFlowViewModel : ViewModel
         {
             _logger.LogInformation("没有一条龙任务!");
         }
+
+        //获取今天天设置的秘境名称
+ 
+        var domainConfig = SelectedConfig.GetDomainConfig();
+        var jSmodel = ScriptGroups.Any(scriptGroup => scriptGroup.Name == domainConfig.domainName);
         
         Notify.Event(NotificationEvent.DragonStart).Success("一条龙启动");
         foreach (var task in taskListCopy)
         {
             if (task is { IsEnabled: true, Action: not null })
             {
-                if (ScriptGroupsDefault.Any(defaultSg => defaultSg.Name == task.Name))
+                var scriptGroupsDefault2 = ScriptGroupsDefault.Where(defaultSg => defaultSg.Name != "自动秘境").ToList();
+
+                if (scriptGroupsDefault2.Any(defaultSg => defaultSg.Name == task.Name) || (!jSmodel && task.Name == "自动秘境"))
                 {
                     _logger.LogInformation($"一条龙任务执行: {finishOneTaskcount++}/{enabledoneTaskCount}");
                     await new TaskRunner().RunThreadAsync(async () =>
@@ -2450,19 +2459,29 @@ public partial class OneDragonFlowViewModel : ViewModel
                 {
                     try
                     {
-                        if (enabledTaskCount <= 0)
+                       
+                        if (enabledTaskCount <= 0 && !jSmodel)
                         {
                             _logger.LogInformation("没有配置组任务,退出执行!");
                             return;
                         }
-
+                        
                         Notify.Event(NotificationEvent.DragonStart).Success("配置组任务启动");
 
-                        if (SelectedConfig.TaskEnabledList.ContainsKey(task.Index) && SelectedConfig.TaskEnabledList[task.Index].Item1)
+                        if (SelectedConfig.TaskEnabledList.ContainsKey(task.Index) && SelectedConfig.TaskEnabledList[task.Index].Item1 || jSmodel)
                         {
-                            _logger.LogInformation($"配置组任务执行: {finishTaskcount++}/{enabledTaskCount}");
+                            _logger.LogInformation(jSmodel ? $"一条龙任务执行：执行自动秘境自定义任务 {finishOneTaskcount++}/{enabledoneTaskCount}" : $"配置组任务执行: {finishTaskcount++}/{enabledTaskCount}");
+                            
                             await Task.Delay(500);
-                            string filePath = Path.Combine(_basePath, _scriptGroupPath, $"{task.Name}.json");
+                            var filePath = "";
+                            if (jSmodel)
+                            { 
+                                filePath = Path.Combine(_basePath, _scriptGroupPath, $"{domainConfig.domainName}.json");  
+                            }
+                            else
+                            {
+                                filePath = Path.Combine(_basePath, _scriptGroupPath, $"{task.Name}.json");  
+                            }
                             var group = ScriptGroup.FromJson(await File.ReadAllTextAsync(filePath));
                             IScriptService? scriptService = App.GetService<IScriptService>();
                             await scriptService!.RunMulti(ScriptControlViewModel.GetNextProjects(group), group.Name);
