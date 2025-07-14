@@ -2476,8 +2476,6 @@ public partial class OneDragonFlowViewModel : ViewModel
                 
                 if (ScriptGroupsDefault.Any(defaultSg => defaultSg.Name == task.Name && defaultSg.Name != "自动秘境") || (!custoModel && task.Name == "自动秘境"))
                 {
-                    // 如果是默认的一条龙任务，直接执行
-                    enabledoneTaskCount++;
                     _logger.LogInformation($"一条龙任务执行: {finishTaskcount++}/{enabledoneTaskCount}");
                     await new TaskRunner().RunThreadAsync(async () =>
                     {
