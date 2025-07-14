@@ -771,7 +771,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     
     private string _lastUid = ""; // 上一次切换的UID
     
-    [ObservableProperty] private List<string> _domainNameList = new List<string> { "", "新建自定义任务" };
+    [ObservableProperty] private List<string> _domainNameList = new List<string>();
 
     [ObservableProperty] private List<string> _customDomainList;
     
@@ -784,7 +784,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             DomainNameList.Clear();
             
             DomainNameList.AddRange(
-                new List<string> { "","删除自定义任务","新建自定义任务"}
+                new List<string> { ""}
             );
             
             DomainNameList.AddRange(
@@ -1578,7 +1578,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
     }
     
-    private bool _isLoading = false;
+    public bool _isLoading = false;
     private async void TaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_isLoading) return;
