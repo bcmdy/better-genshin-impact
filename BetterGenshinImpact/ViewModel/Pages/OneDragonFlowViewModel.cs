@@ -2487,22 +2487,25 @@ public partial class OneDragonFlowViewModel : ViewModel
                 {
                     try
                     {
-                        if (!(custoModel && task.Name == "自动秘境")){
-                            if (enabledTaskCount <= 0)
-                            {
-                                _logger.LogInformation("没有配置组任务,退出执行!");
-                                return;
-                            }
-                        }  
+                        if (!(custoModel && task.Name == "自动秘境") && enabledTaskCount <= 0)
+                        {
+                            _logger.LogInformation("没有配置组任务,退出执行!");
+                            return;
+                        }
                         Notify.Event(NotificationEvent.DragonStart).Success("配置组任务启动");
 
                         if ((SelectedConfig.TaskEnabledList.ContainsKey(task.Index) && SelectedConfig.TaskEnabledList[task.Index].Item1) || custoModel && task.Name == "自动秘境")
                         {
-                            _logger.LogInformation(custoModel && task.Name == "自动秘境" ? $"一条龙任务执行：执行自动秘境自定义任务 {finishOneTaskcount++}/{enabledoneTaskCount}" : $"配置组任务执行: {finishTaskcount++}/{enabledTaskCount}");
+                            _logger.LogInformation(custoModel && task.Name == "自动秘境" ? 
+                                $"一条龙任务执行：执行自动秘境自定义任务 {finishOneTaskcount++}/{enabledoneTaskCount}" 
+                                : $"配置组任务执行: {finishTaskcount++}/{enabledTaskCount}");
+                            
                             await Task.Delay(500);
                             
-                            var filePath = custoModel && task.Name == "自动秘境" ? Path.Combine(_basePath, _scriptGroupPath, $"{domainConfig.domainName}.json") 
+                            var filePath = custoModel && task.Name == "自动秘境" ? 
+                                Path.Combine(_basePath, _scriptGroupPath, $"{domainConfig.domainName}.json") 
                                 : Path.Combine(_basePath, _scriptGroupPath, $"{task.Name}.json");
+                            
                             var group = ScriptGroup.FromJson(await File.ReadAllTextAsync(filePath));
                             IScriptService? scriptService = App.GetService<IScriptService>();
                             await scriptService!.RunMulti(ScriptControlViewModel.GetNextProjects(group), group.Name);
