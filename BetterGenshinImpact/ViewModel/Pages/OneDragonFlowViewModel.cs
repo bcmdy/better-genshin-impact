@@ -140,8 +140,8 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private OneDragonTaskItem? _selectedTask;
 
-    partial void OnSelectedTaskChanged(OneDragonTaskItem value) {
-        
+    partial void OnSelectedTaskChanged(OneDragonTaskItem value)
+    {
         if (value != null)
         {
             InputScriptGroupName = value.Index;
@@ -744,10 +744,9 @@ public partial class OneDragonFlowViewModel : ViewModel
     partial void OnSelectedConfigChanged(OneDragonFlowConfig? value)
     {
         if (_isLoading) return;
-        _isLoading = true;
         if (!string.IsNullOrEmpty(value.Name))
         {
-            _selectedConfigCache = value; 
+            _selectedConfigCache = value;
             InitializeDomainNameList();
         }
         _isLoading = false;
@@ -779,6 +778,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     
      public void InitializeDomainNameList()
     {
+        if (_isLoading) return;
         if (SelectedConfig != null)
         {
             DomainNameList.Clear();
@@ -1461,7 +1461,6 @@ public partial class OneDragonFlowViewModel : ViewModel
         SelectedConfig = selected;
         LoadDisplayTaskListFromConfig();
         OnConfigDropDownChanged();
-        
     }
     
     private void LoadDisplayTaskListFromConfig()
@@ -1521,7 +1520,6 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
         finally
         {
-            InitializeDomainNameList();
             _isLoading = false;
         }
     }
@@ -2503,17 +2501,10 @@ public partial class OneDragonFlowViewModel : ViewModel
                         if (SelectedConfig.TaskEnabledList.ContainsKey(task.Index) && SelectedConfig.TaskEnabledList[task.Index].Item1 || jSmodel)
                         {
                             _logger.LogInformation(jSmodel ? $"一条龙任务执行：执行自动秘境自定义任务 {finishOneTaskcount++}/{enabledoneTaskCount}" : $"配置组任务执行: {finishTaskcount++}/{enabledTaskCount}");
-                            
                             await Task.Delay(500);
-                            var filePath = "";
-                            if (jSmodel)
-                            { 
-                                filePath = Path.Combine(_basePath, _scriptGroupPath, $"{domainConfig.domainName}.json");  
-                            }
-                            else
-                            {
-                                filePath = Path.Combine(_basePath, _scriptGroupPath, $"{task.Name}.json");  
-                            }
+                            
+                            var filePath = jSmodel ? Path.Combine(_basePath, _scriptGroupPath, $"{domainConfig.domainName}.json") 
+                                : Path.Combine(_basePath, _scriptGroupPath, $"{task.Name}.json");
                             var group = ScriptGroup.FromJson(await File.ReadAllTextAsync(filePath));
                             IScriptService? scriptService = App.GetService<IScriptService>();
                             await scriptService!.RunMulti(ScriptControlViewModel.GetNextProjects(group), group.Name);
