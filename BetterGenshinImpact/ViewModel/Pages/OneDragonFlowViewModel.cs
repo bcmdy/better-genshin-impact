@@ -1102,10 +1102,10 @@ public partial class OneDragonFlowViewModel : ViewModel
           Config.SelectedOneDragonFlowPlanName = selectedPlan;
           InitConfigList();
           RefreshFilteredConfigList();
-          var lastConfig = ConfigList.LastOrDefault(c => c.ScheduleName == selectedPlan);
+          var lastConfig = ConfigList.FirstOrDefault(c => c.ScheduleName == selectedPlan);
           if (lastConfig != null)
           {
-              Toast.Warning($"计划表 \"{selectedPlan}\" 下有配置单，将自动选择最后一条配置单");
+              // Toast.Warning($"计划表 \"{selectedPlan}\" 下有配置单，将自动选择最后一条配置单");
               SelectedConfig = lastConfig;
               OnConfigDropDownChanged();
           }
