@@ -142,7 +142,7 @@ public partial class OneDragonFlowPage
         var comboBox = new ComboBox { ItemsSource = list, SelectedItem = list?[0] };
         stackPanel.Children.Add(comboBox);
         
-        var newTaskWindow = PromptDialog.Prompt("请输入自定义任务名称（配置组名称）：", "创建自定义任务",stackPanel, new Size(400, 200));
+        var newTaskWindow = PromptDialog.Prompt("请选择自定义任务名称（配置组名称）：", "创建自定义任务",stackPanel, new Size(400, 200));
         if (!string.IsNullOrEmpty(newTaskWindow) && !string.IsNullOrEmpty(comboBox.SelectedItem?.ToString()))
         {
             if (ViewModel.SelectedConfig?.CustomDomainList.Contains(comboBox.SelectedItem?.ToString()) == true)
@@ -172,13 +172,12 @@ public partial class OneDragonFlowPage
         stackPanel.Children.Add(comboBox1);
     
         var result = PromptDialog.Prompt("请选择要删除的自定义任务名称？", "删除自定义任务", stackPanel, new Size(400, 200), null);
-        Toast.Success("已选择：" + result);
         if (comboBox1.SelectedItem != null && !string.IsNullOrEmpty(result) )
         {
             string taskToDelete = comboBox1.SelectedItem.ToString();
-            ViewModel.SelectedConfig?.CustomDomainList.Remove(taskToDelete);
-            ViewModel.SaveConfig();
-            ViewModel.InitializeDomainNameList();
+            ViewModel?.SelectedConfig?.CustomDomainList.Remove(taskToDelete);
+            ViewModel?.SaveConfig();
+            ViewModel?.InitializeDomainNameList();
             Toast.Success("已删除自定义秘境任务：" + taskToDelete);
         }
     }

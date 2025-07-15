@@ -41,6 +41,7 @@ using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
 using TextBlock = Wpf.Ui.Controls.TextBlock;
 using  Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace BetterGenshinImpact.ViewModel.Pages;
 
@@ -640,8 +641,8 @@ public partial class ScriptControlViewModel : ViewModel
             }
             else
             {
-                var result = MessageBox.Show("所有配置单中名为 < " + item.Name + " > 配置组将重命名为 < " + str + " > ，是否继续？", 
-                    "重名配置组", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var result = MessageBox.Show("所有名为 < " + item.Name + " > 的自定义秘境任务和配置单中的任务将重命名为 < " + str + " > ，是否继续？", 
+                    "重名配置组关联修改", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
                 
                 if (result != System.Windows.MessageBoxResult.Yes)
                 {
@@ -655,9 +656,35 @@ public partial class ScriptControlViewModel : ViewModel
                // 读取ConfigList中所有的配置单，检查每个配置单中的TaskEnabledList，如果含有和item.Name相同的配置组，则把这个TaskEnabledList中的配置组改为str
                 foreach (var config in configList)
                 {
+                    var oldName = item.Name;
+                    
+                    if (config.CustomDomainList.Any(task => task == item.Name)) 
+                    {   
+                        for (int i = 0; i < config.CustomDomainList.Count; i++)
+                        {
+                            if (config.CustomDomainList[i] == oldName)
+                            {
+                                config.CustomDomainList[i] = str;
+                            }
+                        }
+                        ViewModel.WriteConfig(config);
+                    }
+                    
+                    // 使用反射检查和修改所有以 "DomainName" 结尾的属性
+                    var properties = config.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Where(prop => prop.Name.EndsWith("DomainName") && prop.PropertyType == typeof(string));
+                    
+                    foreach (var prop in properties)
+                    {
+                        if (prop.GetValue(config) as string == oldName)
+                        {
+                            prop.SetValue(config, str);
+                        }
+                        ViewModel.WriteConfig(config);
+                    }
+                    
                     if (config.TaskEnabledList.Any(task => task.Value.Item2 == item.Name))
                     {
-                        var oldName = item.Name;
                         foreach (var task in config.TaskEnabledList)
                         {
                             if (task.Value.Item2 == oldName)
@@ -668,6 +695,7 @@ public partial class ScriptControlViewModel : ViewModel
                         ViewModel.WriteConfig(config);
                     }
                 }
+                
                 File.Move(Path.Combine(ScriptGroupPath, $"{item.Name}.json"), Path.Combine(ScriptGroupPath, $"{str}.json"));
                 item.Name = str;
                 if (item.NextFlag)
@@ -688,8 +716,8 @@ public partial class ScriptControlViewModel : ViewModel
         }
         
         //弹窗提示"配置单中的所有同名配置组将被删除，是否继续？，取消退出，确认执行删除操作"
-        var result = MessageBox.Show("所有配置单中名为 < " + item.Name + " > 配置组将被删除，是否继续？", 
-            "删除配置组", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
+        var result = MessageBox.Show("所有名为 < " + item.Name + " > 的自定义秘境任务和配置单的任务将被删除？", 
+            "删除配置组关联修改", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
         
         if (result != System.Windows.MessageBoxResult.Yes)
         {
@@ -704,9 +732,37 @@ public partial class ScriptControlViewModel : ViewModel
             // 读取ConfigList中所有的配置单，检查每个配置单中的TaskEnabledList，如果含有和item.Name相同的配置组，则把这个TaskEnabledList中的配置组删除
             foreach (var config in configList)
             {
+                var oldName = item.Name;
+                // 删除 CustomDomainList 中的元素
+                if (config.CustomDomainList.Any(task => task == oldName))
+                {
+                    for (int i = 0; i < config.CustomDomainList.Count; i++)
+                    {
+                        if (config.CustomDomainList[i] == oldName)
+                        {
+                            config.CustomDomainList.RemoveAt(i);
+                            i--; // 调整索引以避免跳过元素
+                        }
+                    }
+                    ViewModel.WriteConfig(config);
+                }
+
+                // 使用反射检查和修改所有以 "DomainName" 结尾的属性（删除）
+                var propertiesToDelete = config.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(prop => prop.Name.EndsWith("DomainName") && prop.PropertyType == typeof(string));
+
+                // 删除 DomainName 中的属性
+                foreach (var prop in propertiesToDelete)
+                {
+                    if (prop.GetValue(config) as string == oldName)
+                    {
+                        prop.SetValue(config, string.Empty); 
+                    }
+                    ViewModel.WriteConfig(config);
+                }
+                
                 if (config.TaskEnabledList.Any(task => task.Value.Item2 == item.Name))
                 {
-                    var oldName = item.Name;
                     foreach (var task in config.TaskEnabledList)
                     {
                         if (task.Value.Item2 == oldName)
@@ -717,9 +773,6 @@ public partial class ScriptControlViewModel : ViewModel
                     ViewModel.WriteConfig(config);
                 }
             }
-            
-            
-            
             
             ScriptGroups.Remove(item);
             File.Delete(Path.Combine(ScriptGroupPath, $"{item.Name}.json"));

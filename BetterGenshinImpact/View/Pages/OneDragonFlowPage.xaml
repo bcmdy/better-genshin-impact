@@ -764,7 +764,7 @@
                                                   FontTypography="Body"
                                                   FontSize="12"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="自定义增减秘境任务：">
+                                                  Text="自定义增减配置组到自动秘境任务：">
                                     </ui:TextBlock>
                                     <Button
                                         Grid.Row="0"
