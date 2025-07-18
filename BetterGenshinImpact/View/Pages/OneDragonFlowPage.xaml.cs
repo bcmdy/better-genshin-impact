@@ -191,7 +191,7 @@ public partial class OneDragonFlowPage
         }
     }
     
-   private  void ConfigComboBox_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+   private void ConfigComboBox_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         var comboBox = sender as ComboBox;
         if (comboBox != null)
