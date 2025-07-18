@@ -14,7 +14,6 @@ using BetterGenshinImpact.GameTask.Common.Exceptions;
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using System.Text.RegularExpressions;
-using BetterGenshinImpact.GameTask.Common;
 
 namespace BetterGenshinImpact.GameTask.Common.Job;
 
@@ -106,13 +105,13 @@ public class SwitchPartyTask
             
             return true;
         }
-       
+
         var menu = await NewRetry.WaitForElementAppear(
             ElementAssets.Instance.PartyBtnDelete,
             () => partyViewBtn.Click(),// 点击队伍选择按钮
             ct,
-            5,
-            1000
+            4,
+            500
         );
         if (!menu)
         {
