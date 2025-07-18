@@ -626,6 +626,8 @@
                                               MinWidth="100"
                                               GotFocus="ConfigRow_GotFocus"
                                               PreviewMouseLeftButtonDown="ConfigComboBox_Clicked"
+                                              PreviewMouseRightButtonDown="ConfigComboBox_MouseRightButtonDown"
+                                              ContextMenu="{x:Null}"
                                               HorizontalAlignment="Left"
                                               HorizontalContentAlignment="Center"
                                               Margin="5,0,10,0"

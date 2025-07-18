@@ -869,12 +869,20 @@ public partial class OneDragonFlowViewModel : ViewModel
     }
     
     [RelayCommand]
-    private async Task ScriptControlPageAsync()
+    public async Task ScriptControlPageAsync(ScriptGroup? selectedProject = null)
     {
-        ReadScriptGroup(); 
-        _selectedProject = ScriptGroups.FirstOrDefault(sg => sg.Name == SelectedTask.Name)??
-                           ScriptGroups.FirstOrDefault()?? null;
-        
+        ReadScriptGroup();
+
+        if (selectedProject == null)
+        {
+            _selectedProject = ScriptGroups.FirstOrDefault(sg => sg.Name == SelectedTask.Name) ??
+                               ScriptGroups.FirstOrDefault() ?? null;
+        }
+        else
+        {
+            _selectedProject = selectedProject;
+        }
+
         _scriptControlViewModel = new ScriptControlViewModel( _snackbarService, 
             _scriptService,ScriptGroups,_selectedProject,true);
         

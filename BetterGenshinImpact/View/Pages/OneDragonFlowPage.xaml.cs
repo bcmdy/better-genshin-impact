@@ -190,4 +190,23 @@ public partial class OneDragonFlowPage
             comboBox.Items.Refresh();
         }
     }
+    
+   private  void ConfigComboBox_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var comboBox = sender as ComboBox;
+        if (comboBox != null)
+        {
+            ViewModel.ReadScriptGroup();
+            var selectedItem = comboBox.SelectedItem?.ToString();
+            if (selectedItem != null && ViewModel.SelectedConfig != null)
+            {
+                if (ViewModel.SelectedConfig.CustomDomainList.Any(c => c.Equals(selectedItem)))
+                {
+                    ViewModel.ScriptControlPageAsync(ViewModel?.ScriptGroups?.FirstOrDefault(x => x.Name == selectedItem));
+                }
+                
+            }
+        }
+    }
+
 }
