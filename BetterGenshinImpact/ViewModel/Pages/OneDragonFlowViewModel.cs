@@ -104,6 +104,8 @@ public partial class OneDragonFlowViewModel : ViewModel
     private ScriptGroup _selectedProject;
     
     private ScriptControlViewModel _scriptControlViewModel;
+    
+    private readonly BlessingOfTheWelkinMoonTask _blessingOfTheWelkinMoonTask = new();
 
     [ObservableProperty] private ObservableCollection<OneDragonTaskItem> _taskList =
     [
@@ -2208,6 +2210,8 @@ public partial class OneDragonFlowViewModel : ViewModel
                 //每次完成一个配置单后，检测执行时间是否超过一天，如果超过一天，直接进入下一个循环
                 if (DateTime.Now.Subtract(startTime).TotalDays >= 1 && Config.ScheduleLoopSkip)
                 {
+                    //月卡检测
+                    await _blessingOfTheWelkinMoonTask.Start(CancellationContext.Instance.Cts.Token);
                     _logger.LogInformation("计划表执行时间超过一天，直接进入下一个循环");
                     break;
                 }
