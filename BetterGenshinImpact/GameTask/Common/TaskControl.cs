@@ -23,7 +23,7 @@ public class TaskControl
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
-    private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);//默认5秒，可配置
     private static readonly Ping PingSender = new Ping();
     
     private static  Task CheckNetworkStatusAsync()
