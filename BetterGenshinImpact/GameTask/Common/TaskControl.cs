@@ -21,7 +21,7 @@ public class TaskControl
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
-    private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds((int)(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval));//默认5秒，可配置
+    private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly Ping PingSender = new Ping();
     
     private static Task CheckNetworkStatusAsync()
@@ -30,7 +30,6 @@ public class TaskControl
         {
           return Task.CompletedTask;
         }
-
         _lastCheckTime = DateTime.Now;
 
         var isSuspend = true; 
@@ -38,7 +37,6 @@ public class TaskControl
         {
             var reply = PingSender.Send(TaskContext.Instance().Config.OtherConfig.NetworkDetectionUrl);
             isSuspend = reply.Status != IPStatus.Success;
-
             if (isSuspend)
             {
                 Logger.LogWarning("网络状态检查：失败");

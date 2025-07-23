@@ -29,13 +29,6 @@ public class NetworkRecovery
     
     public static async Task Start(CancellationToken ct)
     {
-        var ra = CaptureToRectArea();
-        if (!ra.Find(ElementAssets.Instance.PaimonMenuRo).IsEmpty() && 
-            ra.Find(GetConfirmRa(true,"连接超时","连接已断开","网络错误","无法登录服务器","提示","通知")).IsEmpty())
-        {
-            return;
-        }
-
         await NewRetry.WaitForElementDisappear(
             GetConfirmRa(true,"连接超时","连接已断开","网络错误","无法登录服务器","提示","通知"),
             screen => { 
