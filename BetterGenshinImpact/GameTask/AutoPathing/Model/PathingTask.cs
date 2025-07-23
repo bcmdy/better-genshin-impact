@@ -14,7 +14,6 @@ using Microsoft.Extensions.Logging;
 using BetterGenshinImpact.Model;
 using System.Linq;
 
-
 namespace BetterGenshinImpact.GameTask.AutoPathing.Model;
 
 [Serializable]
@@ -72,8 +71,8 @@ public class PathingTask
         var conditionDefinition = ConditionDefinitions.Definitions["采集物"];
         var materialList = conditionDefinition.ObjectOptions?.ToList() ?? new List<string>();
         
-        //对比每一个采集物名称
-        for (var i = 0; i < level; i++)
+        //跳过第一个目录（一级目录必定不是采集物），对比每一个采集物名称
+        for (var i = 1; i < level; i++)
         {
             var materialName = fileNames[i];
             if (materialList.Contains(materialName))
