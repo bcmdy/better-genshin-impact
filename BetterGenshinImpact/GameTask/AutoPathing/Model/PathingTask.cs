@@ -59,10 +59,10 @@ public class PathingTask
         // 获取 FullPath 相对于 basePath 的相对路径
         var relativePath = Path.GetRelativePath(basePath, FullPath);
 
-        // 分割相对路径，获取第一个文件夹名称
-        var firstFolder = relativePath.Split(Path.DirectorySeparatorChar)[0];
+        // 分割相对路径，获取第二个文件夹名称
+        var secondFolder = relativePath.Split(Path.DirectorySeparatorChar)[2];
 
-        return firstFolder;
+        return secondFolder;
     }
 
     public static PathingTask BuildFromFilePath(string filePath)
