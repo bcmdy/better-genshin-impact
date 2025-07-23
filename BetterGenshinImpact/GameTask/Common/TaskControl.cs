@@ -41,7 +41,7 @@ public class TaskControl
 
             if (isSuspend)
             {
-                Logger.LogWarning("网络状态检查:失败");
+                Logger.LogWarning("网络状态检查：失败");
             }
             else if (RunnerContext.Instance.IsSuspend)
             {
@@ -51,7 +51,7 @@ public class TaskControl
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "网络状态检查错误");
+            Logger.LogError(ex, "网络状态检查：错误");
             isSuspend = true;
         }
         finally
