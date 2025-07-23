@@ -125,12 +125,16 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     private bool FilterLogic(object item)
     {
+        if(_isLoading) return false;
+        _isLoading = true;
         if (item is OneDragonFlowConfig config)
         {
             SelectedConfig = config;
             OnConfigDropDownChanged();
+            _isLoading = false;
             return config.ScheduleName == Config.SelectedOneDragonFlowPlanName;
         }
+        _isLoading = false;
         return false;
     }
     
