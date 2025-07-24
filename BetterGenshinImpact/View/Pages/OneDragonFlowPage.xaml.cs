@@ -208,5 +208,117 @@ public partial class OneDragonFlowPage
             }
         }
     }
+   
+   private async void TextBox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+   {
+       var stackPanel = new StackPanel
+       {
+           Orientation = Orientation.Vertical,
+           VerticalAlignment = VerticalAlignment.Center,
+           HorizontalAlignment = HorizontalAlignment.Center
+       };
+       var checkBoxes = new Dictionary<string, CheckBox>(); 
+       CheckBox selectedCheckBox = null;
+       
+       var grid = new Grid
+       {
+           ColumnDefinitions = 
+           { 
+               new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+               new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+               new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) },
+               new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+           },
+           RowDefinitions = 
+           { 
+               new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
+               new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }
+           }
+       };
+
+       int columnIndex = 0;
+       int rowIndex = 0;
+
+       foreach (var day in ViewModel.SelectedConfig.PeriodList.Take(8))
+       {
+           var checkBox = new CheckBox
+           {
+               Content = day.Key,
+               Tag = day.Key,
+               MinWidth = 100,
+               VerticalAlignment = VerticalAlignment.Center,
+               HorizontalAlignment = HorizontalAlignment.Center,
+               IsChecked = ViewModel.SelectedConfig.PeriodList[day.Key]
+           };
+           checkBoxes[day.Key] = checkBox;
+           Grid.SetRow(checkBox, rowIndex);
+           Grid.SetColumn(checkBox, columnIndex);
+           grid.Children.Add(checkBox);
+
+           columnIndex++;
+           if (columnIndex >= 4)
+           {
+               columnIndex = 0;
+               rowIndex++;
+           }
+       }
+       
+       stackPanel.Children.Add(grid);
+       var uiMessageBox = new Wpf.Ui.Controls.MessageBox
+       {
+           Title = "配置单周期配置",
+           Content = new ScrollViewer
+           {
+               Content = stackPanel,
+               VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+           },
+           CloseButtonText = "关闭",
+           PrimaryButtonText = "确认",
+           Owner = Application.Current.ShutdownMode == ShutdownMode.OnMainWindowClose ? null : Application.Current.MainWindow,
+           WindowStartupLocation = WindowStartupLocation.CenterOwner,
+           SizeToContent = SizeToContent.Width,
+           MaxHeight = 200,
+       };
+       
+       var result = await uiMessageBox.ShowDialogAsync();
+       if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+       {
+           if (checkBoxes.Values.All(x => x.IsChecked == false))
+           {
+               Toast.Warning("至少选择一个周期");
+               return;
+           }
+           
+           foreach (var day in checkBoxes)
+           {
+               if (day.Key == "每日" && day.Value.IsChecked == true)
+               {
+                   ViewModel.SelectedConfig.PeriodList[day.Key] = true;
+                   foreach (var otherDay in checkBoxes)
+                   {
+                       if (otherDay.Key!= "每日")
+                       {
+                           ViewModel.SelectedConfig.PeriodList[otherDay.Key] = false;
+                       }
+                   }
+                   break;
+               }
+
+               if (day.Value.IsChecked == true)
+               {
+                   ViewModel.SelectedConfig.PeriodList[day.Key] = true;
+               }
+               else
+               {
+                   ViewModel.SelectedConfig.PeriodList[day.Key] = false;
+               } 
+              
+           }
+          
+           ViewModel.SaveConfig();
+           Toast.Success("配置单执行周期配置已保存");
+           ViewModel.RefreshFilteredConfigList();
+       }
+   }
 
 }

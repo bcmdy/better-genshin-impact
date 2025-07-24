@@ -109,7 +109,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         return false;
     }
     
-    private void RefreshFilteredConfigList()
+    public void RefreshFilteredConfigList()
     {
         FilteredConfigList.Filter = FilterLogic;
         FilteredConfigList.Refresh();
@@ -1730,10 +1730,9 @@ public partial class OneDragonFlowViewModel : ViewModel
                     };
                     //确认配置单是否存在
                     var boundConfigs = ConfigList.Where(config => config.AccountBinding == true 
-                                                                  && (config.Period == "每日" 
-                                || config.Period == todayNow) && config.ScheduleName == argsOneDragonPlan)
-                        .OrderBy(config => config.IndexId)
-                        .ToList();
+                                                                && ((config.PeriodList.ContainsKey("每日") && config.PeriodList["每日"]) 
+                                                                    || (config.PeriodList.ContainsKey(todayNow) && config.PeriodList[todayNow])) 
+                                                                && config.ScheduleName == Config.SelectedOneDragonFlowPlanName).ToList();
                     
                     if (boundConfigs.Count == 0)
                     {
@@ -2029,7 +2028,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
     }
 
-
+    //根据
+    
 
     //连续执行一条龙配置单
     private bool _continuousExecutionMark = false;
@@ -2040,7 +2040,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     private async Task OnOneKeyContinuousExecutionOneKey()
     {
         await ScriptService.StartGameTask();
-
+        
         _logger.LogInformation(
             Config.ScheduleLoop 
                 ? (Config.CycleMode ? $"连续一条龙：执行结束后，等待到 {Config.CycleTime} 循环执行计划..." : "连续一条龙：执行结束后，直接循环执行计划...") 
@@ -2106,10 +2106,9 @@ public partial class OneDragonFlowViewModel : ViewModel
             InitConfigList();
 
             boundConfigs = ConfigList.Where(config => config.AccountBinding == true 
-                                                          && (config.Period == todayNow || config.Period == "每日") 
-                                                          && config.ScheduleName == Config.SelectedOneDragonFlowPlanName)
-                .OrderBy(config => config.IndexId)
-                .ToList();
+                                                      && ((config.PeriodList.ContainsKey("每日") && config.PeriodList["每日"]) 
+                                                          || (config.PeriodList.ContainsKey(todayNow) && config.PeriodList[todayNow])) 
+                                                      && config.ScheduleName == Config.SelectedOneDragonFlowPlanName).ToList();
             _logger.LogInformation("连续一条龙：今天 {todayNow} ，执行 {ScheduleName} 计划，生效配置单数量 {BoundConfigCount}",
                 todayNow,Config.SelectedOneDragonFlowPlanName,boundConfigs.Count);
             

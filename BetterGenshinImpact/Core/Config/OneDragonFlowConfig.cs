@@ -118,19 +118,71 @@ public partial class OneDragonFlowConfig : ObservableObject
     // 配置执行周期
     [ObservableProperty] private string _period = "每日";
     
-    private readonly ObservableCollection<string> _selectedPeriodList = new()
+    // 配置执行周期列表
+    [ObservableProperty] private Dictionary<string, bool> _periodList = new()
     {
-        "每日",
-        "周一",
-        "周二",
-        "周三",
-        "周四",
-        "周五",
-        "周六",
-        "周日"
+        { "每日", true },
+        { "周一", false },
+        { "周二", false },
+        { "周三", false },
+        { "周四", false },
+        { "周五", false },
+        { "周六", false },
+        { "周日", false }
     };
     
-    public ReadOnlyObservableCollection<string> SelectedPeriodList => new(_selectedPeriodList);
+    // 根据每周7天是否执行，转换成1到7的一个字符串，用逗号分隔
+    private string _eEverySelectedValueListConverter = "1,2,3,4,5,6,7";
+
+    public string EverySelectedValueListConverter
+    {
+        get
+        {
+            List<int> days = new List<int>();
+        
+            foreach (var kvp in PeriodList)
+            {
+                if (kvp.Value)
+                {
+                    switch (kvp.Key)
+                    {
+                        case "每日":
+                            // 添加1到7
+                            for (int i = 1; i <= 7; i++)
+                            {
+                                days.Add(i);
+                            }
+                            _eEverySelectedValueListConverter = string.Join("/", days);
+                            return _eEverySelectedValueListConverter;
+                        case "周一":
+                            days.Add(1);
+                            break;
+                        case "周二":
+                            days.Add(2);
+                            break;
+                        case "周三":
+                            days.Add(3);
+                            break;
+                        case "周四":
+                            days.Add(4);
+                            break;
+                        case "周五":
+                            days.Add(5);
+                            break;
+                        case "周六":
+                            days.Add(6);
+                            break;
+                        case "周日":
+                            days.Add(7);
+                            break;
+                    }
+                }
+            }
+            
+            _eEverySelectedValueListConverter = string.Join("/", days);
+            return _eEverySelectedValueListConverter;
+        }
+    }
     
    // 计划表
    [ObservableProperty] private string _scheduleName = "默认计划表";
