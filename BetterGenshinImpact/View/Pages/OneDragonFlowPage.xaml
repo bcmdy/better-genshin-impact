@@ -1537,6 +1537,7 @@
                                     <!-- 计划表 -->
                                     <ComboBox Grid.Column="2"
                                               GotFocus="ConfigRow_GotFocus"
+                                              SelectionChanged="ScheduleComboBox_SelectionChanged"
                                               VerticalAlignment="Center"
                                               Width="110"
                                               MaxWidth="110"

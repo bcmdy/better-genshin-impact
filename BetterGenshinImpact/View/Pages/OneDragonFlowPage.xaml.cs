@@ -320,5 +320,10 @@ public partial class OneDragonFlowPage
            ViewModel.RefreshFilteredConfigList();
        }
    }
+   
+   private void ScheduleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+   {
+       ViewModel.RefreshFilteredConfigList(); 
+   }
 
 }
