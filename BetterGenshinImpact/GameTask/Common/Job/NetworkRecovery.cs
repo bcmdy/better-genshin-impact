@@ -49,11 +49,11 @@ public class NetworkRecovery
                 }
             },
             ct,
-            5,
+            3,
             1000
         );
         
-        await Task.Delay(3000, ct);
+        await Task.Delay(1000, ct);
         
         await NewRetry.WaitForElementDisappear(
             GetConfirmRa(true,"连接超时","连接已断开","网络错误","无法登录服务器","提示","通知"),
@@ -69,7 +69,7 @@ public class NetworkRecovery
                 }
             },
             ct,
-            5,
+            3,
             1000
         );
         
@@ -79,7 +79,7 @@ public class NetworkRecovery
                 
                 if (_recoveryNetworkDone)
                 {
-                    return;
+                    return;//回到主页一次后，后续异步执行的所有操作都取消
                 }
                 IsSuspendedByNetwork = true;
                 
