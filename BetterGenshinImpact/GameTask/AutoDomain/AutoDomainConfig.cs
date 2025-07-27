@@ -74,19 +74,19 @@ public partial class AutoDomainConfig : ObservableObject
     
     // 使用原粹树脂刷取副本次数
     [ObservableProperty]
-    private int _originalResinUseCount = 0;
+    public int _originalResinUseCount = 0;
     
     //使用浓缩树脂刷取副本次数
     [ObservableProperty]
-    private int _condensedResinUseCount = 0;
+    public int _condensedResinUseCount = 0;
 
     // 使用须臾树脂刷取副本次数
     [ObservableProperty]
-    private int _transientResinUseCount = 0;
+    public int _transientResinUseCount = 0;
     
     // 使用脆弱树脂刷取副本次数
     [ObservableProperty]
-    private int _fragileResinUseCount = 0;
+    public int _fragileResinUseCount = 0;
 
     // 战斗死亡后重试次数
     [ObservableProperty]

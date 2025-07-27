@@ -9,12 +9,15 @@ using BetterGenshinImpact.GameTask.AutoWood;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation;
 using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 using System.Threading;
+using BetterGenshinImpact.Core.Config;
 
 namespace BetterGenshinImpact.Core.Script.Dependence;
 
 public class Dispatcher
 {
     private object _config = null;
+    
+    private AllConfig AllConfig { get; set; } = TaskContext.Instance().Config;
 
     public Dispatcher(object config)
     {
@@ -154,8 +157,9 @@ public class Dispatcher
                 {
                     return;
                 }
-
+                AllConfig.AutoDomainEnable = true;
                 await new AutoDomainTask(new AutoDomainParam(0, path)).Start(cancellationToken);
+                AllConfig.AutoDomainEnable = false;
                 break;
 
             case "AutoFishing":

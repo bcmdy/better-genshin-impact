@@ -43,12 +43,15 @@ using BetterGenshinImpact.GameTask.AutoDomain.Model;
 using BetterGenshinImpact.GameTask.Common;
 using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
+using BetterGenshinImpact.Core.Config;
 
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
 public class AutoDomainTask : ISoloTask
 {
     public string Name => "自动秘境";
+    
+    private AllConfig AllConfig { get; set; } = TaskContext.Instance().Config;
 
     private readonly AutoDomainParam _taskParam;
 
@@ -169,6 +172,26 @@ public class AutoDomainTask : ISoloTask
     {
         //显示树脂使用模式
         Logger.LogInformation("树脂使用模式：{ResinMode}", _taskParam.SpecifyResinUse? "按以下配置使用树脂类型和数量" : "先用浓缩，再用原粹，其他不使用");
+        if (AllConfig.AutoDomainEnable)
+        {
+            if (_taskParam.SpecifyResinUse)
+            {
+                _taskParam.ResinCount = new Dictionary<string, int>() {
+                    { "浓缩树脂", _taskParam.CondensedResinUseCount },
+                    { "原粹树脂", _taskParam.OriginalResinUseCount },
+                    { "脆弱树脂", _taskParam.FragileResinUseCount },
+                    { "须臾树脂", _taskParam.TransientResinUseCount }
+                };
+            }
+            else
+            {
+                _taskParam.ResinCount = new Dictionary<string, int>() {
+                    { "浓缩树脂", _taskParam.CondensedResinUseCount },
+                    { "原粹树脂", _taskParam.OriginalResinUseCount }
+                };
+            }
+        }
+            
         if (_taskParam.SpecifyResinUse)
         {
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);

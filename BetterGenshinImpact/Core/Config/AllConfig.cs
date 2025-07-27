@@ -201,6 +201,8 @@ public partial class AllConfig : ObservableObject
     /// </summary>
     public AutoDomainConfig AutoDomainConfig { get; set; } = new();
     
+    //自动秘境使能
+    public bool AutoDomainEnable { get; set; } = false;
     
     /// <summary>
     ///     自动秘境配置
