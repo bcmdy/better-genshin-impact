@@ -601,6 +601,7 @@ public class AutoDomainTask : ISoloTask
         var domainTipFound = await NewRetry.WaitForAction(() =>
         {
             using var ra = CaptureToRectArea();
+            
             var ocrList = ra.FindMulti(RecognitionObject.Ocr(0, ra.Height * 0.2, ra.Width, ra.Height * 0.6));
             var ocrListLeft = ra.Find(AutoFightAssets.Instance.AbnormalIconRa);
             return (ocrList.Any(t => t.Text.Contains(leyLineDisorderLocalizedString) || 
