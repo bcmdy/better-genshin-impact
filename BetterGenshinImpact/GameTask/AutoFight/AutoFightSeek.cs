@@ -32,7 +32,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2, connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
-            logger.LogInformation($"检测数量：{numLabels2 - 1}");
+            logger.LogInformation("检测数量：{numLabels2}", numLabels2 - 1);
 
             if (numLabels2 > 1)
             {
@@ -220,11 +220,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                 int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-                logger.LogInformation($"检测数量首次： {numLabels - 1}");
+                logger.LogInformation("初检数量： {numLabels}", numLabels - 1);
 
                 if (numLabels > 1)
                 {
-                    logger.LogInformation("首次检测画面内疑似有怪物，继续战斗...");
+                    logger.LogInformation("检测画面内疑似有怪物，继续战斗...");
                     // 获取第一个连通对象的统计信息（标签1）
                     Mat firstRow = stats.Row(1); // 获取第1行（标签1）的数据
                     int[] statsArray;
@@ -283,7 +283,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                  numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-                logger.LogInformation($"检测数量第 {retryCount + 1} 次： {numLabels - 1}");
+                logger.LogInformation("检测数量第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
 
                 if (numLabels > 1)
                 {
@@ -335,7 +335,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 retryCount++;
             }
 
-            return false;
+            return null;
         }
         
         private static bool IsYellow(int r, int g, int b)

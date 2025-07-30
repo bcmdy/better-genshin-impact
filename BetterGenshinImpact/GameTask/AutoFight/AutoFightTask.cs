@@ -515,8 +515,6 @@ public class AutoFightTask : ISoloTask
                 }
                     
             }
-            
-
         }
 
         if (_taskParam is { PickDropsAfterFightEnabled: true } )
