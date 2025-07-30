@@ -18,28 +18,7 @@ using BetterGenshinImpact.GameTask.Common.Job;
 using OpenCvSharp;
 using BetterGenshinImpact.Helpers;
 using Vanara;
-using Vanara.PInvoke;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Recognition;
-using BetterGenshinImpact.Core.Simulator;
-using BetterGenshinImpact.GameTask.AutoSkip.Assets;
-using BetterGenshinImpact.GameTask.AutoSkip;
-using BetterGenshinImpact.GameTask.Common.BgiVision;
-using BetterGenshinImpact.GameTask.Model.Area;
-using OpenCvSharp;
-using Vanara.PInvoke;
-using static BetterGenshinImpact.GameTask.Common.TaskControl;
-using System.Text.RegularExpressions;
-using BetterGenshinImpact.Core.Config;
-using Microsoft.Extensions.Logging;
-using BetterGenshinImpact.Core.Recognition.OpenCv;
-
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -575,12 +554,10 @@ public class AutoFightTask : ISoloTask
                 result = false;
             }
 
-            if (result == true)
+            if (result != null)
             {
-                return true;
+                return result.Value;
             }
-            
-            return false; 
         }
 
         if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
