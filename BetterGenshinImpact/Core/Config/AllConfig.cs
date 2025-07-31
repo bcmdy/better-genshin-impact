@@ -22,6 +22,7 @@ using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
 using System.Collections.ObjectModel;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.GetGridIcons;
+using BetterGenshinImpact.GameTask.AutoFight.Config;
 
 namespace BetterGenshinImpact.Core.Config;
 
