@@ -165,7 +165,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             logger.LogInformation("敌人在中心且高度大于6，不移动");
                         }
-                        else if (firstPixel.Y < 300)
+                        else if (firstPixel.Y < 300 && height > 2)
                         {
                             logger.LogInformation("敌人在上方，向前移动");
                             Task.Run(() =>
@@ -175,7 +175,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                             }, ct);
                         }
-                        else if (firstPixel.Y > 920)
+                        else if (firstPixel.Y > 920 && height > 2)
                         {
                             logger.LogInformation("敌人在下方，向后移动");
                             Task.Run(() =>
@@ -185,9 +185,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
                             }, ct);
                         }
-                        else
+                        else if (height < 3)
                         {
-                            logger.LogInformation("敌人在中心，不移动");
+                            logger.LogInformation("敌人血量高度小于3，不移动");
                         }
                     }
                 }
