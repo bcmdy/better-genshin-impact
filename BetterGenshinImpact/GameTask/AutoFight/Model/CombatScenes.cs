@@ -23,6 +23,7 @@ using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoFight.Config;
 using BetterGenshinImpact.Core.Config;
+using OpenCvSharp; 
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -36,7 +37,7 @@ public class CombatScenes : IDisposable
     /// <summary>
     /// 当前配队
     /// </summary>
-    private Avatar[] Avatars { set; get; } = [];
+    public Avatar[] Avatars { set; get; } = [];
 
     public int AvatarCount => Avatars.Length;
 
@@ -159,6 +160,20 @@ public class CombatScenes : IDisposable
         return (avatar.Name, costumeName);
     }
 
+    public static Mat ConvertRgb24ToMat(Image<Rgb24> img)
+    {
+        Mat mat = new Mat(img.Height, img.Width, MatType.CV_8UC3);
+        for (int y = 0; y < img.Height; y++)
+        {
+            for (int x = 0; x < img.Width; x++)
+            {
+                var pixel = img[x, y];
+                mat.At<Vec3b>(y, x) = new Vec3b(pixel.B, pixel.G, pixel.R); // 注意 OpenCV 使用 BGR 格式
+            }
+        }
+        return mat;
+    }
+    
     public string ClassifyAvatarName(Image<Rgb24> img, int index)
     {
         SpeedTimer speedTimer = new();
@@ -193,6 +208,40 @@ public class CombatScenes : IDisposable
         }
         else
         {
+
+            if (topClass.Confidence < Config.CustomAvatarConfigOut.CustomAvatar1Confidence 
+                || topClass.Confidence < Config.CustomAvatarConfigOut.CustomAvatar2Confidence)
+            {
+                // 通过OCR识别角色名称
+               
+                var Ra = CaptureToRectArea();
+                Mat matImage = ConvertRgb24ToMat(Ra.CacheImage);
+                int frameIndex = 1; 
+                double timerInterval = 16.67; 
+
+                CaptureContent captureContent = new CaptureContent(matImage, frameIndex, timerInterval);
+                
+                var ocrResult = InitializeTeamOldOcr(captureContent);
+
+                if (ocrResult.Avatars.Length < 4)
+                {
+                    Logger.LogWarning($"无法识别第{index}位角色，置信度{topClass.Confidence:F1}，结果：{topClass.Name.Name}");
+                }
+                if (ocrResult.Avatars.Length > index-1)
+                {
+                    var name = ocrResult.Avatars[index-1].Name;
+                    
+                    Logger.LogInformation("置信度过低{Text1}，通过OCR识别第{Index}位角色为{Text}", topClass.Confidence,index, name);
+
+                    if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(DefaultAutoFightConfig.CombatAvatarMap[name].NameEn))
+                    {
+                        return DefaultAutoFightConfig.CombatAvatarMap[name].NameEn;
+                    }
+                    
+                    Logger.LogWarning("没有找到OCR识别的角色{Text}，可以进行自定义添加角色或设置识别成老角色。", name);
+                }
+            }
+            
             foreach (var (customAvatarName, customAvatarDisplayName, customAvatarConfidence) in new[]
                      {
                          (Config.CustomAvatarConfigOut.CustomAvatar1Name, Config.CustomAvatarConfigOut.CustomAvatar1DisplayName, Config.CustomAvatarConfigOut.CustomAvatar1Confidence),
@@ -210,14 +259,12 @@ public class CombatScenes : IDisposable
                     
                     if (topClass.Name.Name.Contains(customAvatarNameEn))
                     {
-                        Logger.LogInformation("正式版本发布支持新角色后，请关闭假装识别功能");
                         Logger.LogInformation("{Text1} 假装识别为 {Text2}", customAvatarName, customAvatarDisplayName);
                         return customAvatarEn;
                     }
 
                     if (topClass.Confidence < customAvatarConfidence)
                     {
-                        Logger.LogInformation("正式版本发布支持新角色后，请关闭假装识别功能");
                         Logger.LogInformation("置信度 {Text1} 低于设置的阈值 {Text2} 假装识别为 {Text3}", topClass.Confidence, customAvatarConfidence, customAvatarDisplayName);
                         return customAvatarEn;
                     }
@@ -228,7 +275,7 @@ public class CombatScenes : IDisposable
         return topClass.Name.Name;
     }
 
-    private void InitializeTeamFromConfig(string teamNames)
+    public void InitializeTeamFromConfig(string teamNames)
     {
         var names = teamNames.Split(["，", ","], StringSplitOptions.TrimEntries);
         if (names.Length != 4)
@@ -245,6 +292,25 @@ public class CombatScenes : IDisposable
         Logger.LogInformation("强制指定队伍角色:{Text}", string.Join(",", names));
         TaskContext.Instance().Config.AutoFightConfig.TeamNames = string.Join(",", names);
         Avatars = BuildAvatars([.. names]);
+    }
+    
+    public CombatScenes InitializeTeamForced(string teamNames)
+    {
+        var names = teamNames.Split(["，", ","], StringSplitOptions.TrimEntries);
+        if (names.Length != 4)
+        {
+            throw new Exception($"强制指定队伍角色数量不正确，必须是4个，当前{names.Length}个");
+        }
+
+        // 别名转换为标准名称
+        for (var i = 0; i < names.Length; i++)
+        {
+            names[i] = DefaultAutoFightConfig.AvatarAliasToStandardName(names[i]);
+        }
+        
+        Logger.LogInformation("强制指定队伍角色:{Text}", string.Join(",", names));
+        Avatars = BuildAvatars([.. names]);
+        return this;
     }
 
     public bool CheckTeamInitialized()

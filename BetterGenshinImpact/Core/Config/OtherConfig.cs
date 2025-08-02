@@ -50,7 +50,7 @@ public partial class OtherConfig : ObservableObject
         public string CustomAvatar1Name3 { get; set; } = "芭芭拉";
     
         // 自定义角色1假装名称
-        public string CustomAvatar1DisplayName { get; set; } = "琴";
+        public string CustomAvatar1DisplayName { get; set; } = "伊涅芙";
     
         // 自定义角色2名称
         public string CustomAvatar2Name { get; set; } = "凯亚";
@@ -65,6 +65,9 @@ public partial class OtherConfig : ObservableObject
     
         // 自定义置信度2
         public double CustomAvatar2Confidence { get; set; } = 0.7;
+        
+        //识别错误后强制使用角色
+        public string CustomAvatarForceUseList { get; set; } = "钟离, 纳西妲, 雷电将军, 芙宁娜";
     }
     
     public partial class AutoRestart : ObservableObject

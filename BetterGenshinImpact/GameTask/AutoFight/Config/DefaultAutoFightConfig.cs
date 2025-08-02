@@ -38,20 +38,31 @@ public class DefaultAutoFightConfig
     }
     
     // //添加自定义角色-假装识别够用了，后续再考虑
-    // public static void AddCombatAvatar(CombatAvatar newAvatar)
-    // {
-    //     // 读取现有的 JSON 文件内容
-    //     var json = File.ReadAllText(Global.Absolute(@"GameTask\AutoFight\Assets\combat_avatar.json"));
-    //     var combatAvatars = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CombatAvatar>>(json) ?? new List<CombatAvatar>();
-    //
-    //     // 添加新角色
-    //     combatAvatars.Add(newAvatar);
-    //
-    //     // 将更新后的角色列表序列化回 JSON 格式
-    //     var updatedJson = Newtonsoft.Json.JsonConvert.SerializeObject(combatAvatars, Newtonsoft.Json.Formatting.Indented);
-    //
-    //     // 将更新后的 JSON 写回到文件
-    //     File.WriteAllText(Global.Absolute(@"GameTask\AutoFight\Assets\combat_avatar.json"), updatedJson);
-    // }
+    public void AddCombatAvatar(CombatAvatar newAvatar)
+    {
+        // 读取现有的 JSON 文件内容
+        var json = File.ReadAllText(Global.Absolute(@"GameTask\AutoFight\Assets\combat_avatar.json"));
+        var combatAvatars = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CombatAvatar>>(json) ?? new List<CombatAvatar>();
     
+        // 添加新角色
+        combatAvatars.Add(newAvatar);
+    
+        // 将更新后的角色列表序列化回 JSON 格式
+        var updatedJson = Newtonsoft.Json.JsonConvert.SerializeObject(combatAvatars, Newtonsoft.Json.Formatting.Indented);
+    
+        // 将更新后的 JSON 写回到文件
+        File.WriteAllText(Global.Absolute(@"GameTask\AutoFight\Assets\combat_avatar.json"), updatedJson);
+    }
+    
+    //跟新读取的角色列表
+    public void UpdateCombatAvatarList()
+    {
+        var json = File.ReadAllText(Global.Absolute(@"GameTask\AutoFight\Assets\combat_avatar.json"));
+        var config = Newtonsoft.Json.JsonConvert.DeserializeObject<IEnumerable<CombatAvatar>>(json) ?? throw new Exception("combat_avatar.json deserialize failed");
+        //CombatAvatars = config;
+        CombatAvatarNames = config.Select(x => x.Name).ToList();
+        CombatAvatarMap = config.ToDictionary(x => x.Name); // 这里更新了角色列表
+        CombatAvatarNameEnMap = config.ToDictionary(x => x.NameEn);
+        CombatAvatarAliasToNameMap = config.SelectMany(c => c.Alias.Select(a => new KeyValuePair<string, string>(a, c.Name))).ToFrozenDictionary();
+    }
 }

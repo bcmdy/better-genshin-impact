@@ -13,6 +13,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Config;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using BetterGenshinImpact.GameTask.Common.Job;
 using OpenCvSharp;
@@ -38,6 +39,7 @@ public class AutoFightTask : ISoloTask
 
     private readonly double _dpi = TaskContext.Instance().DpiScale;
 
+    public static OtherConfig Config { get; set; } = TaskContext.Instance().Config.OtherConfig;
 
     private class TaskFightFinishDetectConfig
     {
@@ -203,14 +205,16 @@ public class AutoFightTask : ISoloTask
             {
                 return combatScenes;
             }
-
+        
             if (attempt < maxRetries)
             {
                 Thread.Sleep(retryDelayMs); // 可选：延迟再试
             }
         }
 
-        throw new Exception("识别队伍角色失败（已重试 5 次）");
+        if (!Config.CustomAvatarConfigOut.CustomAvatarEnabled) throw new Exception("识别队伍角色失败（已重试 5 次）");
+        
+        return new CombatScenes().InitializeTeamForced(Config.CustomAvatarConfigOut.CustomAvatarForceUseList);
     }
     // 方法1：判断是否是单个数字
 

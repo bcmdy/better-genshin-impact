@@ -12,9 +12,6 @@ using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 
-
-
-
 namespace BetterGenshinImpact.View.Pages;
 
 public partial class OneDragonFlowPage
