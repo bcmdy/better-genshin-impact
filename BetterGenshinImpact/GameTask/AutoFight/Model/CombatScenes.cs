@@ -556,7 +556,7 @@ public class CombatScenes : IDisposable
             }
         }
 
-        Logger.LogInformation("识别到的队伍角色:{Text}", string.Join(",", names));
+        Logger.LogInformation("OCR识别到的队伍角色:{Text}", string.Join(",", names));
         Avatars = BuildAvatars(names, nameRects);
     }
 

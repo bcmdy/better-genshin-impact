@@ -243,7 +243,7 @@ public partial class OneDragonFlowConfig : ObservableObject
     
     // 尘歌壶洞天购买商品
     [ObservableProperty]
-    private List<string> _secretTreasureObjects = new();
+    private List<string>? _secretTreasureObjects  = new();
     
     //四种树脂类型的对应数量
     [ObservableProperty] private Dictionary<string, int> _resinCount = new()

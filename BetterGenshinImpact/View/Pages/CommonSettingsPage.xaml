@@ -15,12 +15,13 @@
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       FontFamily="{StaticResource TextThemeFontFamily}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      mc:Ignorable="d">
+      mc:Ignorable="d"
+      x:Name="CommonSettings">
 
-    <StackPanel Margin="42,16,42,12">
+    <StackPanel Margin="42,16,42,12"> 
         <ui:TextBlock Margin="0,0,0,8"
                       FontTypography="BodyStrong"
-                      Text="软件设置" />
+                      Text="软件设置"/>
 
         <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon LocalLanguage24}">
             <ui:CardControl.Header>
@@ -1447,7 +1448,7 @@
                 <ui:FontIcon Glyph="&#xe533;" Style="{StaticResource FaFontIconStyle}" />
             </ui:CardExpander.Icon>
             <ui:CardExpander.Header>
-                <Grid>
+                <Grid x:Name="MaskGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -1696,26 +1697,29 @@
                                       FontTypography="Body"
                                       Text="增减自定义角色(基础信息，临时使用)："
                                       TextWrapping="Wrap" />
-                        <Button
-                                Grid.Row="0"
-                                Grid.Column="3"
-                                Margin="5,0,5,0"
-                                Click="AddButtonClick"
-                                FontFamily="{StaticResource TextThemeFontFamily}"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Right"
-                                HorizontalContentAlignment="Center"
-                                Width="16"
-                                Height="16"
-                                BorderThickness="1" 
-                                Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                Background="Transparent"
-                                Padding="0"
-                                ClickMode="Press">
-                                <Viewbox>
-                                    <TextBlock Text="+" TextWrapping="Wrap" />
-                                </Viewbox>
-                        </Button>
+                        
+                        <!-- 使用 Button 控制弹窗 -->
+                        <ToggleButton                                         
+                            Grid.Row="0"
+                            Grid.Column="3"
+                            Margin="5,0,5,0"
+                            FontFamily="{StaticResource TextThemeFontFamily}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            HorizontalContentAlignment="Center"
+                            Width="16"
+                            Height="16"
+                            BorderThickness="1"
+                            Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                            Background="Transparent"
+                            Padding="0"
+                            ClickMode="Press"
+                            x:Name="ToggleButton">
+                            <Viewbox>
+                                <TextBlock Text="+" TextWrapping="Wrap" />
+                            </Viewbox>
+                        </ToggleButton>
+                        
                         <Button
                                 Grid.Row="0"
                                 Grid.Column="4"
@@ -1735,35 +1739,240 @@
                                     <TextBlock Text="-" TextWrapping="Wrap" />
                                 </Viewbox>
                             </Button>
+                        
+                        <!-- 弹窗 -->
+                                <Popup Grid.Row="0" Grid.Column="0" x:Name="Popup"
+                                       Placement="Center"
+                                       VerticalOffset="500"
+                                       PlacementTarget="{Binding ElementName=CommonSettings}"
+                                       IsOpen="{Binding IsChecked, ElementName=ToggleButton}"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Fade"
+                                       HorizontalAlignment="Center"
+                                       Focusable="False" 
+                                       StaysOpen="False"
+                                       Margin="12">
+                                    <Border CornerRadius="12"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Background="{DynamicResource  ApplicationBackgroundBrush}"
+                                            BorderBrush="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                            BorderThickness="1"
+                                            MaxWidth="300"
+                                            Margin="12">
+                                    
+                                        <StackPanel Margin="12">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBlock Grid.Row="0" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="名字:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="自定义角色一"
+                                                            x:Name="NameTextBox"/>
+                                                <ui:TextBlock Grid.Row="1" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="英文名字:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="CustomAvatar1"
+                                                            x:Name="NameEnTextBox"/>
+                                                <ui:TextBlock Grid.Row="2" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="武器类型:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <!-- <TextBox Grid.Row="2" -->
+                                                <!--          Grid.Column="1" -->
+                                                <!--          MinWidth="130" -->
+                                                <!--          MaxHeight="35" -->
+                                                <!--          HorizontalAlignment="Left" -->
+                                                <!--          HorizontalContentAlignment="Center" -->
+                                                <!--          VerticalAlignment="Top" -->
+                                                <!--          Margin="5,5,5,5" -->
+                                                <!--          Text="13" -->
+                                                <!--          x:Name="WeaponTextBox"/> -->
+                                                <TextBox Grid.Row="2" 
+                                                         Grid.Column="1"
+                                                         Margin="5,5,5,5"
+                                                         MinWidth="130"
+                                                         MaxHeight="35"
+                                                         FontSize="14"
+                                                         HorizontalAlignment="Left"
+                                                         HorizontalContentAlignment="Center"
+                                                         VerticalAlignment="Top"
+                                                         Text="13"
+                                                         Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                         x:Name="WeaponTextBox">
+                                                    <TextBox.ToolTip>
+                                                        <ToolTip Content="单手剑：1
+                                                        法器：10 
+                                                        双手剑：11
+                                                        弓箭：12
+                                                        长柄武器：13" Placement="Top" />
+                                                    </TextBox.ToolTip>
+                                                </TextBox>
+                                                
+                                                
+                                                <ui:TextBlock Grid.Row="3" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="短E战技冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="3"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="16"
+                                                            x:Name="SkillCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="4" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="长E战技冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="4"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="16"
+                                                            x:Name="SkillHoldCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="5"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="Q爆发冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="5"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="20"
+                                                            x:Name="BurstCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="6"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="别名:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="6"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="Alias1"
+                                                            x:Name="AliasTextBox"/>
+                                            </Grid>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBlock Grid.Row="0"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,0"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Right"
+                                                              VerticalAlignment="Center"
+                                                              Text="建立新角色："
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ToggleButton
+                                                    Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Right"
+                                                    Width="60"
+                                                    Margin="0,5,5,0"
+                                                    Content="确定" 
+                                                    Click="AddButtonClick"/>
+                                                <ToggleButton
+                                                    Grid.Row="0"
+                                                    Grid.Column="2"
+                                                    HorizontalAlignment="Right"
+                                                    Width="60"
+                                                    Margin="5,5,5,0"
+                                                    Content="取消" 
+                                                    Click="PopupCloseButtonClick"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
                     </Grid>
-                    
-                    <!-- <Grid Margin="16,0,45,16"> -->
-                    <!--     <Grid.RowDefinitions> -->
-                    <!--         <RowDefinition Height="Auto" /> -->
-                    <!--     </Grid.RowDefinitions> -->
-                    <!--     <Grid.ColumnDefinitions> -->
-                    <!--         <ColumnDefinition Width="*" /> -->
-                    <!--         <ColumnDefinition Width="Auto" /> -->
-                    <!--     </Grid.ColumnDefinitions> -->
-                    <!-- <ui:TextBlock Grid.Row="0" -->
-                    <!--               Grid.Column="0" -->
-                    <!--               VerticalAlignment="Center" -->
-                    <!--               HorizontalAlignment="Right" -->
-                    <!--               Margin="0,0,10,0" -->
-                    <!--               FontTypography="Body" -->
-                    <!--               Text="识别失败后，强制指定队伍角色：" -->
-                    <!--               TextWrapping="Wrap" /> -->
-                    <!-- <ui:TextBox Grid.Row="0" -->
-                    <!--             Grid.Column="1" -->
-                    <!--             MinWidth="300" -->
-                    <!--             MaxWidth="270" -->
-                    <!--             HorizontalAlignment="Right" -->
-                    <!--             HorizontalContentAlignment="Center" -->
-                    <!--             VerticalAlignment="Center" -->
-                    <!--             Margin="0,0,5,0" -->
-                    <!--             Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatarForceUseList, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" /> -->
-                    <!-- </Grid> -->
-                    
                 </StackPanel>
             </StackPanel>
         </ui:CardExpander>

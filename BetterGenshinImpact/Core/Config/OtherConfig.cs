@@ -61,10 +61,10 @@ public partial class OtherConfig : ObservableObject
         public string CustomAvatar2DisplayName { get; set; } = "夜兰";
     
         // 自定义置信度1
-        public double CustomAvatar1Confidence { get; set; } = 0.7;
+        public double CustomAvatar1Confidence { get; set; } = 0.8;
     
         // 自定义置信度2
-        public double CustomAvatar2Confidence { get; set; } = 0.7;
+        public double CustomAvatar2Confidence { get; set; } = 0.8;
         
         //识别错误后强制使用角色
         public string CustomAvatarForceUseList { get; set; } = "钟离, 纳西妲, 雷电将军, 芙宁娜";

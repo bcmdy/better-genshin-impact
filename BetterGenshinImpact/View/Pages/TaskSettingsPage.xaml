@@ -590,7 +590,7 @@
                                               Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                               HorizontalAlignment="Stretch"
                                               VerticalAlignment="Stretch"
-                                              Text="(建议配合开启“更快检测结束战斗”使用) 在打开队伍界面检测战斗结束前，会先检测画面中如果存在敌人，再判断是否需要移动靠近敌人，并跳过检测战斗结束，如果画面内没有敌人，则进行旋转寻找敌人。"
+                                              Text="(建议设1秒左右“更快检测结束战斗”配合使用) 在打开队伍界面检测战斗结束前，会先检测画面中如果存在敌人，再判断是否需要移动靠近敌人，并跳过检测战斗结束，如果画面内没有敌人，则进行旋转寻找敌人。"
                                               TextWrapping="Wrap" />
                                 <ui:ToggleSwitch Grid.Row="0"
                                                  Grid.RowSpan="2"
