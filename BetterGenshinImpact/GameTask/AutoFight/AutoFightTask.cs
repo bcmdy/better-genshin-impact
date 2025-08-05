@@ -20,6 +20,10 @@ using OpenCvSharp;
 using BetterGenshinImpact.Helpers;
 using Vanara;
 using Microsoft.Extensions.DependencyInjection;
+using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.GameTask.AutoFight.Script;
+
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -280,6 +284,8 @@ public class AutoFightTask : ISoloTask
         //所有角色是否都可被跳过
         var allCanBeSkipped = commandAvatarNames.All(a => canBeSkippedAvatarNames.Contains(a));
         
+        var guardianAvatar = _taskParam.GuardianAvatar == " " ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+        
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
@@ -308,17 +314,19 @@ public class AutoFightTask : ISoloTask
                     var skipFightName = "";
 
                     #endregion
-
+                    
                     for (var i = 0; i < combatCommands.Count; i++)
                     {
                         var command = combatCommands[i];
-
+                        var lastCommand = i == 0 ? command : combatCommands[i - 1];
+                        if (guardianAvatar != null && lastFightName != command.Name) await EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName, ct);
+                        
                         var avatar = combatScenes.SelectAvatar(command.Name);
-                        if (avatar is null)
+                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && _taskParam.GuardianCombatSkip))
+                        // if (avatar is null)
                         {
                             continue;
                         }
-
 
                         #region 每个命令的跳过战斗判定
 
@@ -525,6 +533,24 @@ public class AutoFightTask : ISoloTask
         {
             // 执行自动拾取掉落物的功能
             await new ScanPickTask().Start(ct);
+        }
+    }
+    
+    private async Task EnsureGuardianSkill(Avatar guardianAvatar, CombatCommand command,string lastFightName ,CancellationToken ct)
+    {
+        if (guardianAvatar.IsSkillReady())
+        {
+            // if (command.Method == Method.Charge && lastFightName == "那维莱特") Simulation.SendInput.SimulateAction(GIActions.Jump);
+            // if (command.Method == Method.Skill && lastFightName == "枫原万叶") Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+            if (guardianAvatar.TrySwitch(15, false))
+            {
+                Simulation.ReleaseAllKey();
+                await Task.Delay(100, ct);
+                Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放E技能",_taskParam.GuardianAvatar, guardianAvatar.Name);
+                guardianAvatar.UseSkill();
+                Simulation.ReleaseAllKey();
+                await Task.Delay(100, ct);
+            }
         }
     }
 

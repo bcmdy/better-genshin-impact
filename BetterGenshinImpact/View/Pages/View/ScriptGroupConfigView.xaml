@@ -1228,6 +1228,88 @@
                                     Margin="0,0,36,0"
                                     Text="{Binding PathingConfig.AutoFightConfig.Timeout}" />
                     </Grid>
+                    
+                    <Grid Margin="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                       
+                        <Grid.Resources>
+                            <Style x:Key="GuardianVisibilityStyle" TargetType="FrameworkElement">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Resources>
+                        
+                        <ComboBox Grid.Row="0"
+                                  Grid.RowSpan="2"
+                                  Grid.Column="0"
+                                  MinWidth="80"
+                                  HorizontalContentAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  ItemsSource=' 1234'
+                                  SelectedIndex="{Binding PathingConfig.AutoFightConfig.GuardianAvatar, Mode=TwoWay}"
+                                  SelectedItem="{Binding PathingConfig.AutoFightConfig.GuardianAvatar, Mode=TwoWay}" />
+                    
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="1"
+                                  FontTypography="Body"
+                                  Text="盾奶位角色在队伍中的位置"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="1"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="每次切换战斗角色检测盾奶位战技CD"
+                                  TextWrapping="Wrap" />
+                   
+                         <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="2"
+                                  Margin="0,0,8,0"
+                                  HorizontalAlignment="Right"
+                                  FontTypography="Body"
+                                  Text="禁用该角色的战斗策略"
+                                  TextWrapping="Wrap"
+                                  Style="{StaticResource GuardianVisibilityStyle}"/>
+
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="2"
+                                  Margin="0,0,10,0"
+                                  HorizontalAlignment="Right"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="只释放盾奶技能(E战技)"
+                                  TextWrapping="Wrap"
+                                  Style="{StaticResource GuardianVisibilityStyle}"/>
+
+                    <ui:ToggleSwitch Grid.Row="0"
+                                     Grid.RowSpan="2"
+                                     Grid.Column="3"
+                                     Margin="0,0,36,0"
+                                     IsChecked="{Binding PathingConfig.AutoFightConfig.GuardianCombatSkip, Mode=TwoWay}">
+                        
+                        <ui:ToggleSwitch.Style>
+                            <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:ToggleSwitch.Style>
+                    </ui:ToggleSwitch>
+                    </Grid>
+                    
                 </StackPanel>
             </ui:CardExpander>
             <ui:CardExpander Margin="0,0,0,12"
