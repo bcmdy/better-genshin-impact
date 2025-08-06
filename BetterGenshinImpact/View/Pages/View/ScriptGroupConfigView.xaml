@@ -1233,6 +1233,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -1308,6 +1309,20 @@
                             </Style>
                         </ui:ToggleSwitch.Style>
                     </ui:ToggleSwitch>
+                        
+                        <ui:TextBlock Grid.Row="2"
+                                      Grid.Column="0" 
+                                      Grid.ColumnSpan="3"
+                                      Margin="0,10,0,0"
+                                      FontTypography="Body"
+                                      Text="临时测试按键（切换命令前或切人前检测盾奶位），启用为命令前，禁用为切人前"
+                                      TextWrapping="Wrap" />
+                        <ui:ToggleSwitch
+                            Grid.Row="2"
+                            Grid.Column="3"
+                            Margin="0,0,36,0"
+                            IsChecked="{Binding PathingConfig.AutoFightConfig.SkipModel, Mode=TwoWay}" />
+                        
                     </Grid>
                     
                 </StackPanel>

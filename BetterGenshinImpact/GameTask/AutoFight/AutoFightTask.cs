@@ -319,9 +319,14 @@ public class AutoFightTask : ISoloTask
                     {
                         var command = combatCommands[i];
                         var lastCommand = i == 0 ? command : combatCommands[i - 1];
-                        if (guardianAvatar != null && lastFightName != command.Name) await EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName, ct);
                         
+                        var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
+                        
+                        if (skipModel) await EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName, ct);
+                        
+                       
                         var avatar = combatScenes.SelectAvatar(command.Name);
+                        
                         if (avatar is null || (avatar.Name == guardianAvatar?.Name && _taskParam.GuardianCombatSkip))
                         // if (avatar is null)
                         {
