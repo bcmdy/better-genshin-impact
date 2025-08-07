@@ -1,5 +1,5 @@
 ﻿using System;
-using System.DirectoryServices.ActiveDirectory;
+using BetterGenshinImpact.Core.Recognition;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BetterGenshinImpact.Core.Config;
@@ -22,6 +22,9 @@ public partial class OtherConfig : ObservableObject
     
     [ObservableProperty]
     private Miyoushe _miyousheConfig = new();
+    //OCR配置
+    [ObservableProperty]
+    private Ocr _ocrConfig = new();
     
     //网络检测
     [ObservableProperty]
@@ -136,6 +139,15 @@ public partial class OtherConfig : ObservableObject
         [ObservableProperty]
         private int _dailyMobCap = 2000;
         
+    }
+    
+    public partial class Ocr : ObservableObject
+    {
+        /// <summary>
+        ///     PaddleOCR模型配置
+        /// </summary>
+        [ObservableProperty]
+        private PaddleOcrModelConfig _paddleOcrModelConfig = PaddleOcrModelConfig.V4;
     }
     
     //public partial class OtherConfig : ObservableObject

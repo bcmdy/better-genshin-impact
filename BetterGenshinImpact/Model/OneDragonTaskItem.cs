@@ -7,6 +7,7 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoDomain;
+using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.Common.Job;
 using BetterGenshinImpact.ViewModel.Pages;
@@ -122,6 +123,24 @@ public partial class OneDragonTaskItem : ObservableObject
                         SpecifyResinUse = specifyResinUse
                     };
                     await new AutoDomainTask(autoDomainParam).Start(CancellationContext.Instance.Cts.Token);
+                };
+                break;
+            case "自动幽境危战":
+                Action = async () =>
+                {
+                    if (string.IsNullOrEmpty(TaskContext.Instance().Config.AutoStygianOnslaughtConfig.StrategyName))
+                    {
+                        TaskContext.Instance().Config.AutoStygianOnslaughtConfig.StrategyName = "根据队伍自动选择";
+                    }
+
+                    var taskSettingsPageViewModel = App.GetService<TaskSettingsPageViewModel>();
+                    if (taskSettingsPageViewModel!.GetFightStrategy(out var path))
+                    {
+                        TaskControl.Logger.LogError("自动幽境危战战斗策略{Msg}，跳过", "未配置");
+                        return;
+                    }
+
+                    await new AutoStygianOnslaughtTask(TaskContext.Instance().Config.AutoStygianOnslaughtConfig, path).Start(CancellationContext.Instance.Cts.Token);
                 };
                 break;
             case "领取每日奖励":
