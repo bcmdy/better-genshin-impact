@@ -60,22 +60,30 @@ public class CombatScriptParser
 
     public static CombatScript ParseContext(string context, bool validate = true)
     {
-        var lines = context.Split(["\r\n", "\r", "\n", ";"], StringSplitOptions.RemoveEmptyEntries);
+        var lines = context.Split(["\r\n", "\r", "\n"], StringSplitOptions.RemoveEmptyEntries);
         var result = new List<string>();
         foreach (var line in lines)
         {
             var l = line.Trim()
                 .Replace("（", "(")
                 .Replace(")", ")")
-                .Replace("，", ",");
+                .Replace("，", ",")
+                .Replace("；", ";");
             if (l.StartsWith("//") || l.StartsWith('#') || string.IsNullOrEmpty(l))
             {
                 continue;
             }
 
-            result.Add(l);
+            if (l.Contains(';'))
+            {
+                result.AddRange(l.Split(';', StringSplitOptions.RemoveEmptyEntries));
+            }
+            else
+            {
+                result.Add(l);
+            }
         }
-
+        
         return ParseLines(result, validate);
     }
 

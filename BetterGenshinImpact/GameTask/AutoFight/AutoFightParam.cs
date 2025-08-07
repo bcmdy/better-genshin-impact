@@ -48,6 +48,7 @@ public class AutoFightParam : BaseTaskParam
         GuardianAvatar = autoFightConfig.GuardianAvatar;
         GuardianCombatSkip = autoFightConfig.GuardianCombatSkip;
         SkipModel = autoFightConfig.SkipModel;
+        GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -67,4 +68,5 @@ public class AutoFightParam : BaseTaskParam
     public string GuardianAvatar { get; set; } = " ";
     public bool GuardianCombatSkip { get; set; } = false;
     public bool SkipModel = false;
+    public bool GuardianAvatarHold = false;
 }

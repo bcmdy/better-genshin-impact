@@ -284,7 +284,10 @@ public class AutoFightTask : ISoloTask
         //所有角色是否都可被跳过
         var allCanBeSkipped = commandAvatarNames.All(a => canBeSkippedAvatarNames.Contains(a));
         
+        //盾奶优先功能角色预处理
         var guardianAvatar = _taskParam.GuardianAvatar == " " ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+        
+        AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -323,7 +326,7 @@ public class AutoFightTask : ISoloTask
                         #region 盾奶位技能优先功能
                         
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
-                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,_taskParam.GuardianAvatar,5,ct);
+                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,_taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct);
                         var avatar = combatScenes.SelectAvatar(command.Name);
                         
                         #endregion
@@ -379,9 +382,9 @@ public class AutoFightTask : ISoloTask
 
                         #endregion
 
-                        if (timeoutStopwatch.Elapsed > fightTimeout)
+                        if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= 6)
                         {
-                            Logger.LogInformation("战斗超时结束");
+                            Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
                             fightEndFlag = true;
                             timeOutFlag = true;
                             break;
@@ -561,14 +564,17 @@ public class AutoFightTask : ISoloTask
             bool? result = null;
             try
             {
-                result = await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime,delayTime, _ct);
+                result = await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, _ct);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "SeekAndFightAsync 方法发生异常");
                 result = false;
             }
-
+            
+            AutoFightSeek.RotationCount = (result == null) ? 
+                AutoFightSeek.RotationCount + 1 :  0;
+            
             if (result != null)
             {
                 return result.Value;

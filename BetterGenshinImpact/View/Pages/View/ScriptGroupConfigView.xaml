@@ -1065,6 +1065,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -1170,6 +1171,37 @@
                                 </Style>
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
+                        
+                        <ui:TextBlock Grid.Row="3"
+                                      Grid.Column="0" 
+                                      Grid.ColumnSpan="3"
+                                      Margin="0,10,10,0"
+                                      FontTypography="Body"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Text="检测盾奶位战技短按或长按，禁用:短按 / 启用:长按"
+                                      TextWrapping="Wrap" 
+                                      Style="{StaticResource GuardianVisibilityStyle}"/>
+                        
+                        <ui:ToggleSwitch Grid.Row="3"
+                                         Grid.Column="3"
+                                         Margin="0,10,36,0" 
+                                         VerticalAlignment="Center"
+                                         IsChecked="{Binding PathingConfig.AutoFightConfig.GuardianAvatarHold,Mode=TwoWay}">
+                            
+                            <ui:ToggleSwitch.Style>
+                                <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:ToggleSwitch.Style>
+                        </ui:ToggleSwitch>
+                        
+                        
                     </Grid>
                 </ui:CardExpander>
                     
