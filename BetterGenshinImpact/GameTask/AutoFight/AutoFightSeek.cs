@@ -444,10 +444,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                     var skillAra = skills
                         ? new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
-                            image2.Width * 13 / 1920, image2.Height * 7 / 1080) //E技能区域（已支持）
+                            image2.Width * 12 / 1920, image2.Height * 7 / 1080) //E技能区域
                         
-                        : new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
-                            image2.Width * 13 / 1920, image2.Height * 6 / 1080); //Q技能区域（未支持）
+                        : new Rect(image2.Width * 1819 / 1920, image2.Height * 977 / 1080,
+                            image2.Width * 13 / 1920, image2.Height * 6 / 1080); //Q技能区域
                     
                     var mask2 = OpenCvCommonHelper.Threshold(
                         image2.DeriveCrop(skillAra).SrcMat,
