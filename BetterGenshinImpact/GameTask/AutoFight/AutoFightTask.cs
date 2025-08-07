@@ -320,15 +320,15 @@ public class AutoFightTask : ISoloTask
                         var command = combatCommands[i];
                         var lastCommand = i == 0 ? command : combatCommands[i - 1];
                         
+                        #region 盾奶位技能优先功能
+                        
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
-                        
-                        if (skipModel) await EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName, ct);
-                        
-                       
+                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,_taskParam.GuardianAvatar,5,ct);
                         var avatar = combatScenes.SelectAvatar(command.Name);
                         
+                        #endregion
+                        
                         if (avatar is null || (avatar.Name == guardianAvatar?.Name && _taskParam.GuardianCombatSkip))
-                        // if (avatar is null)
                         {
                             continue;
                         }
@@ -538,24 +538,6 @@ public class AutoFightTask : ISoloTask
         {
             // 执行自动拾取掉落物的功能
             await new ScanPickTask().Start(ct);
-        }
-    }
-    
-    private async Task EnsureGuardianSkill(Avatar guardianAvatar, CombatCommand command,string lastFightName ,CancellationToken ct)
-    {
-        if (guardianAvatar.IsSkillReady())
-        {
-            // if (command.Method == Method.Charge && lastFightName == "那维莱特") Simulation.SendInput.SimulateAction(GIActions.Jump);
-            // if (command.Method == Method.Skill && lastFightName == "枫原万叶") Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-            if (guardianAvatar.TrySwitch(15, false))
-            {
-                Simulation.ReleaseAllKey();
-                await Task.Delay(100, ct);
-                Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放E技能",_taskParam.GuardianAvatar, guardianAvatar.Name);
-                guardianAvatar.UseSkill();
-                Simulation.ReleaseAllKey();
-                await Task.Delay(100, ct);
-            }
         }
     }
 

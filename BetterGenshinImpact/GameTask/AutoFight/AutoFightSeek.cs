@@ -6,6 +6,31 @@ using System.Threading.Tasks;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using OpenCvSharp;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Core.Recognition.ONNX;
+using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.Core.Simulator.Extensions;
+using BetterGenshinImpact.GameTask.AutoFight.Model;
+using BetterGenshinImpact.GameTask.AutoFight.Script;
+using BetterGenshinImpact.GameTask.Model.Area;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Config;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.Common.Job;
+using OpenCvSharp;
+using BetterGenshinImpact.Helpers;
+using Vanara;
+using Microsoft.Extensions.DependencyInjection;
+using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.GameTask.AutoFight.Script;
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -207,7 +232,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         }
     }
 
-    public  class AutoFightSeek
+    public class AutoFightSeek
     {
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime, CancellationToken ct)
         {
@@ -360,6 +385,96 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             return (r >= 240 && r <= 255) &&
                    (g >= 240 && g <= 255) &&
                    (b >= 240 && b <= 255);
+        }
+    }
+
+    public class AutoFightSkill
+    {
+        public static async Task EnsureGuardianSkill(Avatar guardianAvatar, CombatCommand command,string lastFightName ,string GuardianAvatar,int retryCount,CancellationToken ct)
+        {
+            int attempt = 0;
+            
+            while (attempt < retryCount)
+            {
+                if (guardianAvatar.IsSkillReady())
+                {
+                    if (guardianAvatar.TrySwitch(15))
+                    {
+                        Simulation.ReleaseAllKey();
+                        await Task.Delay(100, ct);
+                        Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放E技能",GuardianAvatar, guardianAvatar.Name);
+                        guardianAvatar.UseSkill();
+                        Simulation.ReleaseAllKey();
+                        await Task.Delay(100, ct);
+                        
+                        //重新用现有OCR识别
+                        if (guardianAvatar.AfterUseSkill() > 0 && guardianAvatar.TrySwitch())
+                        {
+                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放E技能：成功", GuardianAvatar, guardianAvatar.Name);
+                            guardianAvatar.ManualSkillCd = -1;
+                            return;
+                        }
+                        
+                        //新办法：色块识别，带角色切换确认，不管OCR结果。避免OCR技能CD错误
+                        // if (await AvatarSkillAsync(Logger, guardianAvatar,false, 5, ct))
+                        // {
+                        //     guardianAvatar.ManualSkillCd = -1;
+                        //     return;
+                        // }
+                        
+                        guardianAvatar.ManualSkillCd= 0;
+                    }
+                }
+                attempt++;
+            } 
+        }
+
+        //新方法，备用，非OCR识别，判断色块进行，速度更快
+        //检测技能图标中释放含有白色色块，检测前进行角色切换的确认，skills：false为E技能，true为Q技能（未开发）
+        public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, CancellationToken ct)
+        {
+            if (guardianAvatar.TrySwitch())
+            {
+                Scalar bloodLower = new Scalar(255, 255, 255);
+                int attempt = 0;
+
+                while (attempt < retryCount)
+                {
+                    var image2 = CaptureToRectArea();
+
+                    var skillAra = skills
+                        ? new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
+                            image2.Width * 13 / 1920, image2.Height * 7 / 1080) //E技能区域（已支持）
+                        
+                        : new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
+                            image2.Width * 13 / 1920, image2.Height * 6 / 1080); //Q技能区域（未支持）
+                    
+                    var mask2 = OpenCvCommonHelper.Threshold(
+                        image2.DeriveCrop(skillAra).SrcMat,
+                        bloodLower,
+                        bloodLower
+                    );
+
+                    var labels2 = new Mat();
+                    var stats2 = new Mat();
+                    var centroids2 = new Mat();
+
+                    int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
+                        connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                    logger.LogInformation("盾奶位 {guardianAvatar.Name} 战技状态：{text}", guardianAvatar.Name , numLabels2 > 1 ? "已释放" : "未释放");
+
+                    if (numLabels2 > 1)
+                    {
+                        return true;
+                    }
+
+                    attempt++;
+                    await Task.Delay(100, ct);
+                }
+            }
+            guardianAvatar.AfterUseSkill();
+            return false;
         }
     }
 
