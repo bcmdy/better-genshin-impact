@@ -115,6 +115,12 @@ public partial class AutoSkipConfig : ObservableObject
     private bool _submitGoodsEnabled = true;
 
     /// <summary>
+    /// 交付物品
+    /// </summary>
+    [ObservableProperty]
+    private bool _submitGoodsFinallyConfirm = true;
+
+    /// <summary>
     /// 关闭弹出层
     /// </summary>
     [ObservableProperty]

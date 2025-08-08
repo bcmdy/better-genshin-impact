@@ -748,16 +748,24 @@ public partial class AutoSkipTrigger : ITaskTrigger
                 }
             }
 
-            TaskControl.Sleep(500);
-
-            using var ra = TaskControl.CaptureToRectArea(forceNew: true);
-            using var btnWhiteConfirmRa = ra.Find(ElementAssets.Instance.BtnWhiteConfirm);
-            if (!btnWhiteConfirmRa.IsEmpty())
+            // 根据新配置决定是否点击「交付」
+            if (TaskContext.Instance().Config.AutoSkipConfig.SubmitGoodsFinallyConfirm)
             {
-                btnWhiteConfirmRa.Click();
-                _logger.LogInformation("提交物品：{Text}", "3. 交付");
+                TaskControl.Sleep(500);
 
-                VisionContext.Instance().DrawContent.ClearAll();
+                using var ra = TaskControl.CaptureToRectArea(forceNew: true);
+                using var btnWhiteConfirmRa = ra.Find(ElementAssets.Instance.BtnWhiteConfirm);
+                if (!btnWhiteConfirmRa.IsEmpty())
+                {
+                    btnWhiteConfirmRa.Click();
+                    _logger.LogInformation("提交物品：{Text}", "3. 交付");
+
+                    VisionContext.Instance().DrawContent.ClearAll();
+                }
+            } 
+            else
+            {
+                _logger.LogInformation("提交物品：{Text}", "已放入物品，等待玩家手动交付");
             }
 
             // 最多4个物品 现在就支持一个
