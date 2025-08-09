@@ -83,7 +83,7 @@ public partial class ScriptGroupConfigViewModel : ObservableObject, IViewModel
         else
         {
             int diff = (cfg.Index - todayOrder + cfg.Cycle) % cfg.Cycle;
-             int daysUntil = diff == 0 ? cfg.Cycle : diff;   // 0 表示今天正好轮到，按“今天”算 1 天
+             int daysUntil = diff == 0 ? cfg.Cycle : diff + 1;
             Toast.Success($"当前执行序号为：{daysUntil}");
         }
     }
