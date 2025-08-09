@@ -28,4 +28,7 @@ public partial class ScriptConfig : ObservableObject
     
     // 选择的更新渠道URL
     [ObservableProperty] private string _selectedRepoUrl = "";
+    
+    // 在线脚本仓库地址
+    [ObservableProperty] private string _onlineRepoUrl = "";
 }

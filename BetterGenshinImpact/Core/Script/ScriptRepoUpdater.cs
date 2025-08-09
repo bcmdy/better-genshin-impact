@@ -23,6 +23,10 @@ using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 using Vanara.PInvoke;
 using Wpf.Ui.Violeta.Controls;
+using System.Windows.Threading;
+using System.Windows.Interop; // 用于 HwndSource
+using System.Runtime.InteropServices;
+using BetterGenshinImpact.View; // 用于 DllImport
 
 namespace BetterGenshinImpact.Core.Script;
 
@@ -1009,6 +1013,14 @@ public class ScriptRepoUpdater : Singleton<ScriptRepoUpdater>
     public void OpenLocalRepoInWebView()
     {
         UpdateSubscribedScriptPaths();
+        
+        var scriptConfig = TaskContext.Instance().Config.ScriptConfig;
+        if ((scriptConfig.SelectedRepoUrl == scriptConfig.OnlineRepoUrl))
+        {
+            ScriptRepoUpdater.Instance.OpenLocalRepoInDefaultBrowser();
+            return;
+        }
+        
         if (_webWindow is not { IsVisible: true })
         {
             _webWindow = new WebpageWindow
@@ -1045,6 +1057,123 @@ public class ScriptRepoUpdater : Singleton<ScriptRepoUpdater>
         }
     }
 
+    private async Task OpenLocalRepoInDefaultBrowser()
+    {
+        var scriptRepoWindow = new ScriptRepoWindow();
+
+       var open = await scriptRepoWindow.UpdateRepo();
+        if (!open)
+        {
+            return;
+        }
+        
+        var scriptConfig = TaskContext.Instance().Config.ScriptConfig;
+        string url = scriptConfig.OnlineRepoUrl;
+        
+        string title = "BetterGI脚本在线中央仓库";
+        
+        var windowCheckTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+
+        // 创建一个包含JavaScript的临时HTML文件
+        var tempFilePath = Path.GetTempFileName() + ".html";
+        var htmlContent = $@"
+           <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{title}</title>
+            <script type='text/javascript'>
+                window.onload = function() {{
+                    // 打开目标URL并获取新窗口引用
+                    const newWindow = window.open('{url}', '{title}', 'width=3840,height=600');
+                    
+                    // 新窗口关闭时关闭当前窗口
+                    const checkClose = setInterval(() => {{
+                        if (newWindow.closed) {{
+                            clearInterval(checkClose);
+                            window.close();
+                        }}
+                    }}, 1000);
+                }};
+            </script>
+        </head>
+        <body>
+            <p>正在打开仓库页面，请稍候...</p>
+        </body>
+        </html>";
+        
+        await File.WriteAllTextAsync(tempFilePath, htmlContent);
+
+        // 使用默认浏览器打开临时HTML文件
+        var psi = new ProcessStartInfo
+        {
+            UseShellExecute = true, 
+            FileName = tempFilePath,
+            Verb = "open",
+            WindowStyle = ProcessWindowStyle.Minimized
+        };
+        
+        try
+        {
+            Process.Start(psi);
+            var startTime = DateTime.Now;
+            Clipboard.Clear();
+            windowCheckTimer.Start();
+            
+            windowCheckTimer.Tick += (s, e) => 
+            { 
+                var clipboardContent = Clipboard.GetText();
+                if (!string.IsNullOrEmpty(clipboardContent))
+                {
+                    if (clipboardContent.Contains("bettergi://"))
+                    {
+                        var handle = (nint)User32.FindWindow(null, "更好的原神");
+                        if (handle != nint.Zero)
+                        {
+                            SystemControl.FocusWindow(handle);
+                            Clipboard.Clear();
+                        }
+                        else
+                        {
+                            MessageBox.Show("无法找到BetterGI窗口", "错误", 
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                        }  
+                    }
+                }
+                
+                var handleUrl = (nint)User32.FindWindow(null, title);
+                if (handleUrl == nint.Zero  || DateTime.Now - startTime > TimeSpan.FromSeconds(240))
+                {
+                    windowCheckTimer.Stop();
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            await MessageBox.ShowAsync("无法打开浏览器", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            Debug.WriteLine($"无法打开浏览器: {ex.Message}");
+        }
+        finally
+        {
+            windowCheckTimer.Tick += (s, e) =>
+            {
+                if (File.Exists(tempFilePath))
+                {
+                    try
+                    {
+                        File.Delete(tempFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"无法删除临时文件: {ex.Message}");
+                    }
+                }
+            };
+        }
+    }
+    
     public void OpenScriptRepoWindow()
     {
         var scriptRepoWindow = new ScriptRepoWindow { Owner = Application.Current.MainWindow };

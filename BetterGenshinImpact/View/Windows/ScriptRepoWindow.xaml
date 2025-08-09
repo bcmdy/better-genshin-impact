@@ -70,7 +70,7 @@
                     <!--  第三行：脚本仓库  -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal">
                         <ui:Button Margin="0,0,8,0"
-                                   Command="{Binding UpdateRepoCommand}"
+                                   Command="{Binding UpdateRepoInCommand}"
                                    Content="更新仓库"
                                    Icon="{ui:SymbolIcon CloudSync24}" />
                         <ui:Button Margin="0,0,8,0"
