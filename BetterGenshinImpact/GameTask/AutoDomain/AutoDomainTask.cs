@@ -321,7 +321,7 @@ public class AutoDomainTask : ISoloTask
                 if ("芬德尼尔之顶".Equals(_taskParam.DomainName))
                 {
                         menuFound = await NewRetry.WaitForElementAppear(
-                        AutoPickAssets.Instance.FRo,
+                        AutoPickAssets.Instance.PickRo,
                         () => Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown),
                         _ct,
                         20,
@@ -337,7 +337,7 @@ public class AutoDomainTask : ISoloTask
                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
 
                     menuFound = await NewRetry.WaitForElementAppear(
-                        AutoPickAssets.Instance.FRo,
+                        AutoPickAssets.Instance.PickRo,
                         () =>  Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown),
                         _ct,
                         20,
@@ -349,7 +349,7 @@ public class AutoDomainTask : ISoloTask
                 else if ("太山府".Equals(_taskParam.DomainName))
                 {
                     menuFound = await NewRetry.WaitForElementAppear(
-                        AutoPickAssets.Instance.FRo,
+                        AutoPickAssets.Instance.PickRo,
                         () => { },
                     _ct,
                         20,
@@ -359,7 +359,7 @@ public class AutoDomainTask : ISoloTask
                 else
                 {
                     menuFound = await NewRetry.WaitForElementAppear(
-                    AutoPickAssets.Instance.FRo,
+                    AutoPickAssets.Instance.PickRo,
                     () => Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown),
                     _ct,
                     20,

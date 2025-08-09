@@ -67,23 +67,22 @@ public class CombatScriptParser
             var l = line.Trim()
                 .Replace("（", "(")
                 .Replace(")", ")")
-                .Replace("，", ",")
-                .Replace("；", ";");
+                .Replace("，", ",");
             if (l.StartsWith("//") || l.StartsWith('#') || string.IsNullOrEmpty(l))
             {
                 continue;
             }
 
-            if (l.Contains(';'))
+            if (l.Contains(";"))
             {
-                result.AddRange(l.Split(';', StringSplitOptions.RemoveEmptyEntries));
+                result.AddRange(l.Split(";", StringSplitOptions.RemoveEmptyEntries));
             }
             else
             {
                 result.Add(l);
             }
         }
-        
+
         return ParseLines(result, validate);
     }
 
