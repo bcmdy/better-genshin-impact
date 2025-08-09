@@ -34,7 +34,7 @@ public partial class PathingPartyTaskCycleConfig : ObservableObject
 
             // 修正时间：如果当前时间小于当天的分界时间，则视为前一天
             DateTime boundaryTimeToday = new DateTime(now.Year, now.Month, now.Day, _boundaryTime, 0, 0);
-            if (now < boundaryTimeToday)
+            if (now <= boundaryTimeToday)
             {
                 now = now.AddDays(-1); // 归属到前一天
             }
