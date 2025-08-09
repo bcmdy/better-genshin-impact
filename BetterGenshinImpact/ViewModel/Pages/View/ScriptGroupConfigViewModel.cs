@@ -74,14 +74,17 @@ public partial class ScriptGroupConfigViewModel : ObservableObject, IViewModel
     [RelayCommand]
     public void OnGetExecutionOrder()
     {
-        var index = _pathingConfig.TaskCycleConfig.GetExecutionOrder(DateTime.Now);
-        if (index == -1)
+        var cfg = _pathingConfig.TaskCycleConfig;
+        int todayOrder = cfg.GetExecutionOrder(DateTime.Now);
+        if (todayOrder == -1)
         {
             Toast.Error("计算失败，请检查参数！");
         }
         else
         {
-            Toast.Success("当前执行序号为："+index);
+            int diff = (cfg.Index - todayOrder + cfg.Cycle) % cfg.Cycle;
+             int daysUntil = diff == 0 ? cfg.Cycle : diff;   // 0 表示今天正好轮到，按“今天”算 1 天
+            Toast.Success($"当前执行序号为：{daysUntil}");
         }
     }
 
