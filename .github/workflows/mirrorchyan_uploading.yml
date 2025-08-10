@@ -2,8 +2,8 @@ name: mirrorchyan_uploading
 
 on:
   workflow_dispatch:
-  release:
-    types: [released]
+  # release:
+  #   types: [released]
 
 jobs:
   mirrorchyan:
