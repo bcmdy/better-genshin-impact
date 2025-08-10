@@ -204,6 +204,7 @@ public partial class ScriptRepoWindow
                 return false;
             }
             Toast.Warning($"更新失败，正在尝试渠道 {_repoChannels[retryCount].Name} 进行。",ToastLocation.Center);
+            IsUpdating = true;
             return await UpdateRepo(retryCount);
         }
         finally
@@ -217,9 +218,10 @@ public partial class ScriptRepoWindow
     [RelayCommand]
     private void OpenLocalScriptRepo()
     {
-        TaskContext.Instance().Config.ScriptConfig.ScriptRepoHintDotVisible = false;
+        TaskContext.Instance().Config.ScriptConfig.ScriptRepoHintDotVisible = false; ;
         ScriptRepoUpdater.Instance.OpenLocalRepoInWebView();
-        Close();
+        if (SelectedRepoChannel?.Name != "在线仓库") Close();
+        IsUpdating = true;
     }
 
     [RelayCommand]
