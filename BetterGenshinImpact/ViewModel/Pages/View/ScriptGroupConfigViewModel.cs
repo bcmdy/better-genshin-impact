@@ -83,8 +83,12 @@ public partial class ScriptGroupConfigViewModel : ObservableObject, IViewModel
         else
         {
             int diff = (cfg.Index - todayOrder + cfg.Cycle) % cfg.Cycle;
-             int daysUntil = diff == 0 ? cfg.Cycle : diff + 1;
-            Toast.Success($"当前执行序号为：{daysUntil}");
+            int distance = diff == 0 ? 1 : diff + 1;
+            int daysUntil = diff == 0 ? cfg.Cycle : diff;
+            Toast.Success(
+                $"当前执行序号：{todayOrder}，" +
+                $"当前任务周期内序号：{distance}，" +
+                $"目标序号 {cfg.Index} 距离今天 {daysUntil} 天");
         }
     }
 
