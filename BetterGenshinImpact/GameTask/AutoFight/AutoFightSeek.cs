@@ -30,7 +30,8 @@ using Vanara;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.AutoFight.Script;
-
+using BetterGenshinImpact.GameTask.AutoFight.Model;
+using BetterGenshinImpact.GameTask.AutoFight.Script;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {

@@ -1,4 +1,4 @@
-<Page x:Class="BetterGenshinImpact.View.Pages.TaskSettingsPage"
+﻿<Page x:Class="BetterGenshinImpact.View.Pages.TaskSettingsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
@@ -1001,6 +1001,7 @@
                 </Grid>
             </StackPanel>
         </ui:CardExpander>
+
         
         <!--  自动刷本  -->
         <ui:CardExpander Margin="0,0,0,12" ContentPadding="0">
