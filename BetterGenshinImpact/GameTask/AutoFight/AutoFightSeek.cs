@@ -284,7 +284,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         return false;
                     }
-                    if (height < 3) return null;
+                    if (height < 3 || height > 25) return null;
                 }
                 
                 if (retryCount == 0)
@@ -316,9 +316,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 if (retryCount <= 2)
                 {
                    var offsets = new (int x, int y)[] {
-                        (image.Width / 6, -image.Height / 5), 
+                        (image.Width / 6, image.Height / 6), 
                         (image.Width / 6, 0),                 
-                        (image.Width / 6, image.Height / 6) 
+                        (image.Width / 6, -image.Height / 5) 
                     };
 
                     var offsetIndex = RotationCount < 3 ? 0 : (RotationCount == 3) ? 1 : 2;
@@ -364,7 +364,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         return false; 
                     }
 
-                    if (height2 < 3) return null;
+                    if (height2 < 3 || height2 > 25) return null;
 
                 }
                 
