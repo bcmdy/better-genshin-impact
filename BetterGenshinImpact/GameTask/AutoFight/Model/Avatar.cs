@@ -421,6 +421,11 @@ public class Avatar
             else
             {
                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                
+                if (Name == "枫原万叶")
+                {
+                    Sleep(200, Ct);//LCB
+                }
             }
 
             Sleep(200, Ct);

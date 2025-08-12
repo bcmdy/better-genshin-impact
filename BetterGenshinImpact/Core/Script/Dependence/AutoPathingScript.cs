@@ -29,7 +29,7 @@ public class AutoPathingScript
             {
                 pathExecutor.PartyConfig = patyConfig;
             }
-
+            
             await pathExecutor.Pathing(task);
         }
         catch (Exception e)
@@ -44,6 +44,10 @@ public class AutoPathingScript
         try
         {
             var json = await new LimitedFile(_rootPath).ReadText(path);
+            
+            var pathExecutor = new PathExecutor(CancellationContext.Instance.Cts.Token);
+            pathExecutor.GetCountryName(path);
+            
             await Run(json);
         }
         catch (Exception e)

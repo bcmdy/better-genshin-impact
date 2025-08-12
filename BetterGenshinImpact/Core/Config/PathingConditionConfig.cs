@@ -33,6 +33,9 @@ public partial class PathingConditionConfig : ObservableObject
     // 启用自动吃药功能
     [ObservableProperty]
     private bool _autoEatEnabled = true;
+    
+    // 锄地国家和类型
+    [ObservableProperty] private string?[] _countryName = ["自动"];
 
     public static PathingConditionConfig Default => new()
     {

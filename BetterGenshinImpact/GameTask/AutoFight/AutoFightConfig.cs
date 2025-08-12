@@ -3,10 +3,6 @@ using System;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
-
-
-
-
 /// <summary>
 /// 自动战斗配置
 /// </summary>
@@ -14,6 +10,17 @@ namespace BetterGenshinImpact.GameTask.AutoFight;
 public partial class AutoFightConfig : ObservableObject
 {
     [ObservableProperty] private string _strategyName = "";
+    
+    /// <summary>
+    /// 战斗策略国家列表（策略文件名检测）
+    /// </summary>
+    [ObservableProperty]
+    private string[] _countryNamesList = { "自动","纳塔", "枫丹", "须弥", "稻妻", "璃月", "蒙德", "精英" ,"小怪" };
+    
+    /// <summary>
+    /// 自动战斗策略所属国家
+    /// </summary>
+    [ObservableProperty] private string?[] _countryName = ["自动"];
 
     /// <summary>
     /// 英文逗号分割 强制指定队伍角色

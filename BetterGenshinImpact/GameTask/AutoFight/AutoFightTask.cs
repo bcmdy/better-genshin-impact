@@ -20,8 +20,7 @@ using OpenCvSharp;
 using BetterGenshinImpact.Helpers;
 using Vanara;
 using Microsoft.Extensions.DependencyInjection;
-using BetterGenshinImpact.GameTask.AutoPathing;
-using BetterGenshinImpact.GameTask.AutoFight.Script;
+
 
 
 
@@ -34,6 +33,8 @@ public class AutoFightTask : ISoloTask
     private readonly AutoFightParam _taskParam;
 
     private readonly CombatScriptBag _combatScriptBag;
+    
+    private readonly CombatScriptBag _combatScriptBagSecond;
 
     private CancellationToken _ct;
 
@@ -43,7 +44,9 @@ public class AutoFightTask : ISoloTask
 
     private readonly double _dpi = TaskContext.Instance().DpiScale;
 
-    public static OtherConfig Config { get; set; } = TaskContext.Instance().Config.OtherConfig;
+    private static OtherConfig Config { get; set; } = TaskContext.Instance().Config.OtherConfig;
+    
+    private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
 
     private class TaskFightFinishDetectConfig
     {
@@ -188,7 +191,51 @@ public class AutoFightTask : ISoloTask
     public AutoFightTask(AutoFightParam taskParam)
     {
         _taskParam = taskParam;
-        _combatScriptBag = CombatScriptParser.ReadAndParse(_taskParam.CombatStrategyPath);
+        
+        var combatScriptBagAll = CombatScriptParser.ReadAndParse(_taskParam.CombatStrategyPath);
+        
+        _combatScriptBagSecond= combatScriptBagAll;
+        
+        #region 指定国家战斗脚本解析
+
+        var isAutoSelectTeam = FightConfig.StrategyName.Contains("根据队伍自动选择");
+        var isSelectAuto = _taskParam.CountryName.Contains("自动");
+        
+        if (isAutoSelectTeam)
+        {
+            var countryNamesList = FightConfig.CountryNamesList;
+            
+            // 对combatScriptBagAll进行重新排序，把含国家脚步名称排后面
+            combatScriptBagAll.CombatScripts = combatScriptBagAll.CombatScripts
+                .OrderBy(script => countryNamesList.Any(country => script.Name.Contains(country)))
+                .ThenBy(script => countryNamesList.FirstOrDefault(country => script.Name.Contains(country)) ?? "")
+                .ToList();
+            
+            var filteredCombatScripts = combatScriptBagAll.CombatScripts
+                .Where(script => 
+                    _taskParam.CountryName.Length >= 2 
+                        ? _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country))
+                        : _taskParam.CountryName.All(country => country != null && script.Name.Contains(country)))
+                .ToList();
+            
+            // 如果没有找到对应国家的脚本，则使用所有脚本
+            if (filteredCombatScripts.Count == 0 && isAutoSelectTeam && isSelectAuto)
+            {
+                Logger.LogWarning("没有找到符合 {CountryName} 的战斗脚本，将使用所有策略进行匹配", string.Join(", ", _taskParam.CountryName));
+                filteredCombatScripts = combatScriptBagAll.CombatScripts;
+            }
+            
+            var combatScriptBagByCountry = new CombatScriptBag(filteredCombatScripts.Count == 0 ?combatScriptBagAll.CombatScripts : filteredCombatScripts);
+            
+            _combatScriptBag = isSelectAuto || combatScriptBagAll.CombatScripts.Count <= 1 ? combatScriptBagAll : combatScriptBagByCountry;
+            
+        }
+        #endregion
+
+        else
+        {
+            _combatScriptBag = combatScriptBagAll;
+        }
 
         if (_taskParam.FightFinishDetectEnabled)
         {
@@ -238,9 +285,11 @@ public class AutoFightTask : ISoloTask
             throw new Exception("识别队伍角色失败");
         }*/
 
-
         // var actionSchedulerByCd = ParseStringToDictionary(_taskParam.ActionSchedulerByCd);
-        var combatCommands = _combatScriptBag.FindCombatScript(combatScenes.GetAvatars());
+    var combatCommands = _combatScriptBag.FindCombatScript(combatScenes.GetAvatars(),
+        FightConfig.StrategyName.Contains("根据队伍自动选择")) ??
+                         _combatScriptBagSecond.FindCombatScript(combatScenes.GetAvatars());
+        
         // 命令用到的角色名 筛选交集
         var commandAvatarNames = combatCommands.Select(c => c.Name).Distinct()
             .Select(n => combatScenes.SelectAvatar(n)?.Name)

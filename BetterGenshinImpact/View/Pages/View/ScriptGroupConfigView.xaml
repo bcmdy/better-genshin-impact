@@ -795,6 +795,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
@@ -822,8 +823,8 @@
                         <ComboBox Grid.Row="0"
                                   Grid.RowSpan="2"
                                   Grid.Column="3"
-                                  Width="180"
-                                  Margin="0,0,36,0"
+                                  Width="170"
+                                  Margin="0,0,12,0"
                                   ItemsSource="{Binding AutoFightViewModel.CombatStrategyList}"
                                   SelectedItem="{Binding PathingConfig.AutoFightConfig.StrategyName, Mode=TwoWay}">
                             <b:Interaction.Triggers>
@@ -832,6 +833,26 @@
                                 </b:EventTrigger>
                             </b:Interaction.Triggers>
                         </ComboBox>
+                        
+                        <ComboBox Grid.Row="0" 
+                                  Grid.RowSpan="2" 
+                                  Grid.Column="4" 
+                                  Width="80" 
+                                  Margin="0,0,36,0" 
+                                  ItemsSource="{Binding PathingConfig.AutoFightConfig.CountryNamesList}" 
+                                  SelectedItem="{Binding PathingConfig.AutoFightConfig.CountryName[0], Mode=TwoWay}">
+                            <ComboBox.Style>
+                                <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.StrategyName}" Value="根据队伍自动选择">
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ComboBox.Style>
+                        </ComboBox>
+                        
                     </Grid>
                     <Grid Margin="16">
                         <Grid.RowDefinitions>

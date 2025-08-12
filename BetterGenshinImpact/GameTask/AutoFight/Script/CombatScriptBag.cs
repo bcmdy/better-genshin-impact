@@ -9,13 +9,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight.Script;
 
 public class CombatScriptBag(List<CombatScript> combatScripts)
 {
-    private List<CombatScript> CombatScripts { get; set; } = combatScripts;
+    public List<CombatScript> CombatScripts { get; set; } = combatScripts;
 
+    private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
+    
     public CombatScriptBag(CombatScript combatScript) : this([combatScript])
     {
     }
 
-    public List<CombatCommand> FindCombatScript(ReadOnlyCollection<Avatar> avatars)
+    public List<CombatCommand>? FindCombatScript(ReadOnlyCollection<Avatar> avatars,bool isFirstRound = false)
     {
         foreach (var combatScript in CombatScripts)
         {
@@ -33,6 +35,11 @@ public class CombatScriptBag(List<CombatScript> combatScripts)
             }
 
             combatScript.MatchCount = matchCount;
+        }
+        
+        if (isFirstRound)
+        {
+           return null;
         }
 
         // 没有找到匹配的战斗脚本
