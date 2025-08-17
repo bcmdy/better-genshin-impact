@@ -333,6 +333,9 @@ public class AutoFightTask : ISoloTask
         //所有角色是否都可被跳过
         var allCanBeSkipped = commandAvatarNames.All(a => canBeSkippedAvatarNames.Contains(a));
         
+        var delayTime = _finishDetectConfig.DelayTime;
+        var detectDelayTime = _finishDetectConfig.DetectDelayTime;
+        
         //盾奶优先功能角色预处理
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
@@ -460,8 +463,7 @@ public class AutoFightTask : ISoloTask
                                 ))
                             {
                                 checkFightFinishStopwatch.Restart();
-                                var delayTime = _finishDetectConfig.DelayTime;
-                                var detectDelayTime = _finishDetectConfig.DetectDelayTime;
+                               
                                 if (_finishDetectConfig.DelayTimes.TryGetValue(command.Name, out var time))
                                 {
                                     delayTime = time;

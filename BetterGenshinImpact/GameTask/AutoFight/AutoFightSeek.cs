@@ -416,7 +416,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 战技Cd检测：{cd} 秒", guardianAvatarName, guardianAvatar.Name, cd1);
                             guardianAvatar.ManualSkillCd = -1;
-                            return;
+                            break;
                         }
                         
                         guardianAvatar.UseSkill(guardianAvatarHold);
@@ -428,7 +428,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技成功，cd:{cd2} 秒", guardianAvatarName, guardianAvatar.Name, cd2);
                             guardianAvatar.ManualSkillCd = -1;
-                            return;
+                            break;
                         }
                         
                         //新方法法：色块识别，带角色切换确认，不管OCR结果。避免OCR技能CD错误
@@ -443,6 +443,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                     attempt++;
                 }
+
+                // await AutoFightSeek.SeekAndFightAsync(Logger,500, 500 , ct);
             } 
         }
 
