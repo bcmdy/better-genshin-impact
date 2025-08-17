@@ -15,7 +15,7 @@ public partial class AutoFightConfig : ObservableObject
     /// 战斗策略国家列表（策略文件名检测）
     /// </summary>
     [ObservableProperty]
-    private string[] _countryNamesList = { "自动","纳塔", "枫丹", "须弥", "稻妻", "璃月", "蒙德", "精英" ,"小怪" };
+    private string[] _countryNamesList = { "自动","小怪", "精英", "蒙德", "璃月", "稻妻", "须弥", "枫丹", "纳塔" };
     
     /// <summary>
     /// 自动战斗策略所属国家
