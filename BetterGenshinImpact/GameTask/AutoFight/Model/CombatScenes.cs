@@ -24,6 +24,8 @@ using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoFight.Config;
 using BetterGenshinImpact.Core.Config;
 using OpenCvSharp; 
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
+using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -343,11 +345,13 @@ public class CombatScenes : IDisposable
         for (var i = 0; i < namesCount; i++)
         {
             var nameRect = nameRects?[i] ?? default;
+            var elementConfig = ElementalCollectAvatarConfigs.Lists.FirstOrDefault(x => x.Name == names[i]);
             // 根据手动写的出招表来优化CD
             var cd = Avatar.ParseActionSchedulerByCd(names[i], cdConfig);
             avatars[i] = new Avatar(this, names[i], i + 1, nameRect, cd ?? -1)
             {
-                IndexRect = avatarIndexRectList[i]
+                IndexRect = avatarIndexRectList[i],
+                ElementType = elementConfig?.ElementalType ?? ElementalType.Omni
             };
         }
 

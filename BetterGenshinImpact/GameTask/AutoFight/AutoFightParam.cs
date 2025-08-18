@@ -46,6 +46,8 @@ public class AutoFightParam : BaseTaskParam
         GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
         
         CountryName = autoFightConfig.CountryName;
+        
+        BurstEnabled = autoFightConfig.BurstEnabled;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -67,4 +69,5 @@ public class AutoFightParam : BaseTaskParam
     public bool SkipModel = false;
     public bool GuardianAvatarHold = false;
     public string?[] CountryName = ["自动"];
+    public bool BurstEnabled { get; set; } = false;
 }

@@ -378,12 +378,15 @@ public class AutoFightTask : ISoloTask
                         #region 盾奶位技能优先功能
                         
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
-                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,_taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct);
+                        
+                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
+                            _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
+                        
                         var avatar = combatScenes.SelectAvatar(command.Name);
                         
                         #endregion
                         
-                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && _taskParam.GuardianCombatSkip))
+                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
                         {
                             continue;
                         }

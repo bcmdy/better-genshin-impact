@@ -6,32 +6,13 @@ using System.Threading.Tasks;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using OpenCvSharp;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
-using BetterGenshinImpact.Core.Recognition.ONNX;
-using BetterGenshinImpact.Core.Simulator;
-using BetterGenshinImpact.Core.Simulator.Extensions;
 using BetterGenshinImpact.GameTask.AutoFight.Model;
 using BetterGenshinImpact.GameTask.AutoFight.Script;
-using BetterGenshinImpact.GameTask.Model.Area;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Globalization;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Config;
-using static BetterGenshinImpact.GameTask.Common.TaskControl;
-using BetterGenshinImpact.GameTask.Common.Job;
-using OpenCvSharp;
-using BetterGenshinImpact.Helpers;
-using Vanara;
-using Microsoft.Extensions.DependencyInjection;
-using BetterGenshinImpact.GameTask.AutoPathing;
-using BetterGenshinImpact.GameTask.AutoFight.Script;
-using BetterGenshinImpact.GameTask.AutoFight.Model;
-using BetterGenshinImpact.GameTask.AutoFight.Script;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -543,59 +524,115 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
     public class AutoFightSkill
     {
-        public static async Task EnsureGuardianSkill(Avatar guardianAvatar, CombatCommand command,string lastFightName,
-            string guardianAvatarName,bool guardianAvatarHold,int retryCount,CancellationToken ct)
+        public static async Task EnsureGuardianSkill(Avatar guardianAvatar, CombatCommand command, string lastFightName,
+            string guardianAvatarName, bool guardianAvatarHold, int retryCount, CancellationToken ct,bool guardianCombatSkip = false,
+            bool burstEnabled = false)
         {
             int attempt = 0;
-            
-            if (guardianAvatar.IsSkillReady())
+
+            if (guardianCombatSkip && guardianAvatar.IsSkillReady())
             {
                 while (attempt < retryCount)
                 {
-                    if (guardianAvatar.TrySwitch(15,false))
+                    if (guardianAvatar.TrySwitch(15, false))
                     {
                         Simulation.ReleaseAllKey();
-                        
+            
                         await Task.Delay(100, ct);
-                        
+            
                         guardianAvatar.ManualSkillCd = -1;
                         var cd1 = guardianAvatar.AfterUseSkill();
-                        if (cd1 > 0 )
+                        if (cd1 > 0)
                         {
-                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 战技Cd检测：{cd} 秒", guardianAvatarName, guardianAvatar.Name, cd1);
+                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 战技Cd检测：{cd} 秒", guardianAvatarName,
+                                guardianAvatar.Name, cd1);
                             guardianAvatar.ManualSkillCd = -1;
-                            break;
+                            return;
                         }
-                        
+            
                         guardianAvatar.UseSkill(guardianAvatarHold);
                         Simulation.ReleaseAllKey();
                         await Task.Delay(200, ct);
-                        
+            
                         var cd2 = guardianAvatar.AfterUseSkill();
-                        if ( cd2 > 0 && guardianAvatar.TrySwitch(4,false))
+                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false))
                         {
-                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技成功，cd:{cd2} 秒", guardianAvatarName, guardianAvatar.Name, cd2);
+                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技成功，cd:{cd2} 秒",
+                                guardianAvatarName, guardianAvatar.Name, cd2);
                             guardianAvatar.ManualSkillCd = -1;
-                            break;
+                            return;
                         }
                         
-                        //新方法法：色块识别，带角色切换确认，不管OCR结果。避免OCR技能CD错误
-                        // if (await AvatarSkillAsync(Logger, guardianAvatar,false, 5, ct))
-                        // {
-                        //     guardianAvatar.ManualSkillCd = -1;
-                        //     return;
-                        // }
-                        
-                        Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：失败重试 {attempt} 次", guardianAvatarName, guardianAvatar.Name , attempt+1);
+                        //普攻一下，防止在纳塔飞天
+                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                        Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：失败重试 {attempt} 次",
+                            guardianAvatarName, guardianAvatar.Name, attempt + 1);
                         guardianAvatar.ManualSkillCd = 0;
                     }
                     attempt++;
                 }
+            }
+            else if (burstEnabled)
+            {
+                // Logger.LogInformation("角色 {Name} 属于 {elementalType} 元素", guardianAvatar.Name, guardianAvatar.ElementType.ToChinese());
+                var image = CaptureToRectArea();
+                if (!guardianAvatar.IsActive(image))
+                {
+                    var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[guardianAvatar.Index - 1];
+                    var colors = AutoFightAssets.Colors[guardianAvatar.ElementType];
+                    
+                    // 提取具体的 Scalar 对象
+                    var scalar1 = colors[0]; 
+                    var scalar2 = colors[1]; 
+                    
+                    var mask2 = OpenCvCommonHelper.Threshold(
+                        image.DeriveCrop(skillArea).SrcMat,
+                        scalar1,
+                        scalar2
+                    );
+                    
+                    var labels2 = new Mat();
+                    var stats2 = new Mat();
+                    var centroids2 = new Mat();
 
-                // await AutoFightSeek.SeekAndFightAsync(Logger,500, 500 , ct);
-            } 
+                    var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
+                        connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
+                    
+                    //释放资源
+                    mask2.Dispose();
+                    labels2.Dispose();
+                    stats2.Dispose();
+                    
+                    if (numLabels2 > 1)
+                    {
+                        Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发状态：{attempt}，尝试释放",
+                            guardianAvatarName, guardianAvatar.Name,"就绪");
+                        
+                        // Logger.LogInformation("检测到 {GuardianAvatar} Q技能，准备释放", guardianAvatarName);
+                        if (guardianAvatar.TrySwitch(15, false))
+                        {
+                            Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                            Sleep(200, ct);
+                            Simulation.ReleaseAllKey();
+                            
+                            //普攻一下，防止在纳塔飞天
+                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            
+                            //不等待不检测，反正会重新检测，目前有肯定能检测到，误判率低，误判也没关系
+                            // var region = CaptureToRectArea();
+                            // var notActiveCount = guardianAvatar.CombatScenes.GetAvatars().Count(a => !a.IsActive(region));
+                            // if (notActiveCount == 0)
+                            // {
+                                // Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发释放",
+                                //     guardianAvatarName, guardianAvatar.Name);
+                                // return;
+                            // }
+                        }
+                    }
+                }
+            }
         }
-
+        
         //新方法，备用，非OCR识别，判断色块进行，速度更快
         //检测技能图标中释放含有白色色块，检测前进行角色切换的确认，skills：false为E技能，true为Q技能（未开发）
         public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, CancellationToken ct)

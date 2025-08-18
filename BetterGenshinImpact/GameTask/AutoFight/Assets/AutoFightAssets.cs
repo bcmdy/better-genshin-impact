@@ -2,6 +2,7 @@
 using BetterGenshinImpact.GameTask.Model;
 using OpenCvSharp;
 using System.Collections.Generic;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Assets;
 
@@ -11,6 +12,8 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public Rect TeamRect;
     public List<Rect> AvatarSideIconRectList; // 侧边栏角色头像 非联机状态下
     public List<Rect> AvatarIndexRectList; // 侧边栏角色头像对应的白色块 非联机状态下
+    public List<Rect> AvatarQRectListMap; // 角色头像对应的Q技能图标 
+    
     public Rect ERect;
     public Rect ECooldownRect;
     public Rect QRect;
@@ -53,6 +56,18 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public Rect GadgetRect;
     
     public RecognitionObject AbnormalIconRa;
+    
+    // 定义7种元素要检测的Q技能颜色，每种元素两种颜色
+    public static readonly Dictionary<ElementalType, List<Scalar>> Colors = new Dictionary<ElementalType, List<Scalar>> {
+        { ElementalType.Cryo, new List<Scalar> { new Scalar(117, 212, 233), new Scalar(176, 255, 255) } }, // 冰 √ 
+        { ElementalType.Anemo, new List<Scalar> { new Scalar(47, 189, 147), new Scalar(172, 255, 239) } }, // 风 待确定优化 1
+        { ElementalType.Geo, new List<Scalar> { new Scalar(226, 147, 21), new Scalar(255, 218, 121) } }, // 岩 待确定优化 1
+        { ElementalType.Dendro, new List<Scalar> { new Scalar(111, 179, 30), new Scalar(219, 255, 136) } }, // 草 待确定优化 1
+        { ElementalType.Electro, new List<Scalar> { new Scalar(158, 100, 235), new Scalar(244, 205, 255) } }, // 雷 待确定优化 1
+        { ElementalType.Hydro, new List<Scalar> { new Scalar(21, 149, 252), new Scalar(123, 245, 255) } }, // 水 待确定优化 1
+        { ElementalType.Pyro, new List<Scalar> { new Scalar(222, 88, 60), new Scalar(255, 185, 170) } } ,// 火 待确定优化 1
+        { ElementalType.Omni, new List<Scalar> { new Scalar(0, 0, 0), new Scalar(0, 0, 0) } } // 无效果
+    };
 
     private AutoFightAssets()
     {
@@ -83,6 +98,14 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             new Rect(CaptureRect.Width - (int)(61 * AssetScale), (int)(352 * AssetScale), (int)(28 * AssetScale), (int)(24 * AssetScale)),
             new Rect(CaptureRect.Width - (int)(61 * AssetScale), (int)(448 * AssetScale), (int)(28 * AssetScale), (int)(24 * AssetScale)),
             new Rect(CaptureRect.Width - (int)(61 * AssetScale), (int)(544 * AssetScale), (int)(28 * AssetScale), (int)(24 * AssetScale)),
+        ];
+        
+        AvatarQRectListMap =
+        [
+            new Rect(CaptureRect.Width - (int)(330 * AssetScale), (int)(228 * AssetScale), (int)(62 * AssetScale), (int)(70 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(330 * AssetScale), (int)(328 * AssetScale), (int)(62 * AssetScale), (int)(70 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(330 * AssetScale), (int)(428 * AssetScale), (int)(62 * AssetScale), (int)(70 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(330 * AssetScale), (int)(518 * AssetScale), (int)(62 * AssetScale), (int)(70 * AssetScale)),
         ];
 
         AvatarSideIconRectList =
