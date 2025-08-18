@@ -1109,7 +1109,7 @@ public class ScriptRepoUpdater : Singleton<ScriptRepoUpdater>
             <script type='text/javascript'>
                 window.onload = function() {{
                     // 打开目标URL并获取新窗口引用
-                    const newWindow = window.open('{url}', '{title}', 'width=3840,height=600');
+                    const newWindow = window.open('{url}', '{title}', 'width=3840,height=2000');
                     
                     // 新窗口关闭时关闭当前窗口
                     const checkClose = setInterval(() => {{

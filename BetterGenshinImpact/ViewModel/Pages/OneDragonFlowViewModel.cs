@@ -1484,8 +1484,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         _isLoading = true;
         try
         {
-            
-            if (SelectedConfig.ScheduleName == Config.SelectedOneDragonFlowPlanName)
+            if (SelectedConfig != null && SelectedConfig.ScheduleName == Config.SelectedOneDragonFlowPlanName)
             {
                 SaveConfig();
             } 
@@ -1496,11 +1495,11 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
         finally
         {
-            if (e.PropertyName == nameof(OneDragonFlowConfig.ScheduleName))
+            if (SelectedConfig != null &&e.PropertyName == nameof(OneDragonFlowConfig.ScheduleName))
             {
                 // 获取与 SelectedConfig.ScheduleName 相同的配置项并按 IndexId 排序
                 var configs = ConfigList
-                    .Where(c => c.ScheduleName == SelectedConfig.ScheduleName)
+                    .Where(c => c.ScheduleName == SelectedConfig?.ScheduleName)
                     .OrderBy(c => c.IndexId) 
                     .ToList();
                 int newIndexCount = configs.Count;
