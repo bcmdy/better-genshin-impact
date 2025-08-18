@@ -340,6 +340,9 @@ public class AutoFightTask : ISoloTask
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
+
+        //基于文件路径的万叶拾取
+        var isKazuhaPickup = (_taskParam.CountryName.Contains("精英") || _taskParam.CountryName.Contains("自动")) && _taskParam.FullPathKazuhaPickup;
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -513,7 +516,9 @@ public class AutoFightTask : ISoloTask
             return;
         }
         
-        if (_taskParam.KazuhaPickupEnabled)
+        Logger.LogInformation("基于锄地路径判断，{text} 万叶拾取", isKazuhaPickup? "执行" : "不执行");
+        
+        if (_taskParam.KazuhaPickupEnabled && isKazuhaPickup) //LCB
         {
             // 队伍中存在万叶的时候使用一次长E
             var kazuha = combatScenes.SelectAvatar("枫原万叶");

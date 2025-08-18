@@ -1363,11 +1363,21 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
                                       Text="战斗结束后执行万叶长E"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      Margin="155,0,5,0"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      FontSize="10"
+                                      FontTypography="Body"
+                                      VerticalAlignment="Bottom"
+                                      Text="(可选：基于锄地路径是否有精英字符自动拾取)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
@@ -1377,8 +1387,27 @@
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="1"
-                                         Margin="0,0,36,0"
+                                         Margin="0,0,5,0"
                                          IsChecked="{Binding PathingConfig.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="2"
+                                         x:Name="KazuhaPickupEnabledButton"
+                                         Margin="0,0,38,0"
+                                         IsEnabled="{Binding PathingConfig.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
+                                         IsChecked="{Binding PathingConfig.AutoFightConfig.FullPathKazuhaPickup, Mode=TwoWay}" />
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="2"
+                                      x:Name="KazuhaPickupEnabledButtonByFullpath"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontSize="8"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Margin="0,0,38,26"
+                                      FontTypography="Body"
+                                      Text="基于路径"
+                                      TextWrapping="Wrap" />
                     </Grid>
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
@@ -1428,9 +1457,10 @@
                         <ComboBox Grid.Row="0"
                                   Grid.RowSpan="2"
                                   Grid.Column="1"
-                                  MinWidth="100"
+                                  MinWidth="75"
                                   SelectedValuePath="Key"
                                   DisplayMemberPath="Value"
+                                  Margin="0,0,36,0"
                                   ItemsSource="{Binding OnlyPickEliteDropsSource}"
                                   SelectedValue="{Binding PathingConfig.AutoFightConfig.OnlyPickEliteDropsMode}" />
                     </Grid>
