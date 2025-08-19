@@ -107,11 +107,7 @@ public partial class OneDragonFlowPage
         if (textBox != null)
         {
             var uid = textBox.Text;
-            if (string.IsNullOrEmpty(uid) || uid.Length != 9 || !int.TryParse(uid, out _))
-            {
-                Toast.Warning("无效UID，长度 " + uid.Length + " 位，请输入 9 位纯数字的UID");
-            }
-            else
+            if (uid.Length == 9 && string.IsNullOrWhiteSpace(ViewModel.SelectedConfig.AccountBindingCode))
             {
                 var bindingCode = PromptDialog.Prompt(
                     $"请输入 {ViewModel.SelectedConfig?.Name} / UID {uid} 的绑定码：\n手机登录的账户：切换账号列表显示的后2位 " +
@@ -138,6 +134,11 @@ public partial class OneDragonFlowPage
                     GenshinUid_TextChanged(sender, e);
                 }
             }
+            else if (string.IsNullOrWhiteSpace(uid) || uid.Length != 9 || !int.TryParse(uid, out _))
+            {
+                Toast.Warning("无效UID，长度 " + uid.Length + " 位，请输入 9 位纯数字的UID");
+                if (uid.Length == 0) ViewModel.SelectedConfig.AccountBindingCode = String.Empty;
+            } 
         }
     }
 
