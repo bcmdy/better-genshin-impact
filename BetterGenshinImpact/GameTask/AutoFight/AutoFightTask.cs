@@ -214,9 +214,17 @@ public class AutoFightTask : ISoloTask
             var filteredCombatScripts = combatScriptBagAll.CombatScripts
                 .Where(script => 
                     _taskParam.CountryName.Length >= 2 
-                        ? _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country))
-                        : _taskParam.CountryName.All(country => country != null && script.Name.Contains(country)))
+                        ? _taskParam.CountryName.All(country => country != null && script.Name.Contains(country))
+                        : _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country)))
                 .ToList();
+            
+            if (filteredCombatScripts.Count == 0)
+            {
+                //可能在 _taskParam.CountryName.Length >= 2 可能是因为没有符合条件的脚本，尝试Any
+                filteredCombatScripts = combatScriptBagAll.CombatScripts
+                    .Where(script => _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country)))
+                    .ToList();
+            }
             
             // 如果没有找到对应国家的脚本，则使用所有脚本
             if (filteredCombatScripts.Count == 0 && isAutoSelectTeam && isSelectAuto)
