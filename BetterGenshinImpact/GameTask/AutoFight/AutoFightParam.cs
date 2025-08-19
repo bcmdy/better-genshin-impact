@@ -49,6 +49,7 @@ public class AutoFightParam : BaseTaskParam
         
         BurstEnabled = autoFightConfig.BurstEnabled;
         FullPathKazuhaPickup = autoFightConfig.FullPathKazuhaPickup;
+        IsFirstCheck = autoFightConfig.IsFirstCheck;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -72,4 +73,5 @@ public class AutoFightParam : BaseTaskParam
     public string?[] CountryName = ["自动"];
     public bool BurstEnabled { get; set; } = false;
     public bool FullPathKazuhaPickup  { get; set; } = false;
+    public bool IsFirstCheck { get; set; } = true;
 }

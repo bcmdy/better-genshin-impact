@@ -218,10 +218,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
     {
         public static int RotationCount = 0;
         
-        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct)
+        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false)
         {
             Scalar bloodLower = new Scalar(255, 90, 90);
-            int retryCount = 0;
+            int retryCount = isEndCheck? 1 : 0;
 
             while (retryCount < 27)
             {
@@ -345,7 +345,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         return false; 
                     }
 
-                    if (height2 < 3 || height2 > 25) return null;
+                    if (height2 < 3 || height2 > 25)
+                    {
+                        return isEndCheck ? true : null;
+                    }
 
                 }
                 

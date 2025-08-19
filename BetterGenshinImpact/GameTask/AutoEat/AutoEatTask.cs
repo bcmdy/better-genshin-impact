@@ -121,6 +121,9 @@ public class AutoEatTask : BaseIndependentTask, ISoloTask
     /// </summary>
     private async Task AutoEatLoop()
     {
+        //错误次数
+        int errorCount = 0;
+        
         var lastEatTime = DateTime.MinValue;
 
         while (!_ct.IsCancellationRequested)
@@ -140,6 +143,7 @@ public class AutoEatTask : BaseIndependentTask, ISoloTask
 
                         _logger.LogInformation("检测到红血，自动吃药");
                     }
+                    errorCount = 0;
                 }
 
                 await Delay(_config.CheckInterval, _ct);
@@ -153,6 +157,14 @@ public class AutoEatTask : BaseIndependentTask, ISoloTask
             {
                 _logger.LogDebug(e, "自动吃药检测时发生异常");
                 await Delay(1000, _ct); // 异常时稍作等待
+                
+                // 出现错误次数过多，退出任务
+                errorCount++;
+                if (errorCount >= 20)
+                {
+                    _logger.LogError("自动吃药任务异常多次退出");
+                    break;
+                }
             }
         }
     }

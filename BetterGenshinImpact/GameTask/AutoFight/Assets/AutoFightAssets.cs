@@ -60,12 +60,12 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     // 定义7种元素要检测的Q技能颜色，每种元素两种颜色
     public static readonly Dictionary<ElementalType, List<Scalar>> Colors = new Dictionary<ElementalType, List<Scalar>> {
         { ElementalType.Cryo, new List<Scalar> { new Scalar(117, 212, 233), new Scalar(176, 255, 255) } }, // 冰 √ 
-        { ElementalType.Anemo, new List<Scalar> { new Scalar(47, 189, 147), new Scalar(172, 255, 239) } }, // 风 待确定优化 1
-        { ElementalType.Geo, new List<Scalar> { new Scalar(226, 147, 21), new Scalar(255, 218, 121) } }, // 岩 待确定优化 1
-        { ElementalType.Dendro, new List<Scalar> { new Scalar(111, 179, 30), new Scalar(219, 255, 136) } }, // 草 待确定优化 1
-        { ElementalType.Electro, new List<Scalar> { new Scalar(158, 100, 235), new Scalar(244, 205, 255) } }, // 雷 待确定优化 1
-        { ElementalType.Hydro, new List<Scalar> { new Scalar(21, 149, 252), new Scalar(123, 245, 255) } }, // 水 待确定优化 1
-        { ElementalType.Pyro, new List<Scalar> { new Scalar(222, 88, 60), new Scalar(255, 185, 170) } } ,// 火 待确定优化 1
+        { ElementalType.Anemo, new List<Scalar> { new Scalar(47, 189, 147), new Scalar(172, 255, 239) } }, // 风 待确定优化 1 √ 
+        { ElementalType.Geo, new List<Scalar> { new Scalar(226, 147, 21), new Scalar(255, 218, 121) } }, // 岩 待确定优化 1 √ 
+        { ElementalType.Dendro, new List<Scalar> { new Scalar(111, 179, 30), new Scalar(219, 255, 136) } }, // 草 待确定优化 1 √ 
+        { ElementalType.Electro, new List<Scalar> { new Scalar(158, 100, 235), new Scalar(244, 205, 255) } }, // 雷 待确定优化 1  new Scalar(158, 100, 235), new Scalar(244, 205, 255)
+        { ElementalType.Hydro, new List<Scalar> { new Scalar(21, 149, 252), new Scalar(123, 245, 255) } }, // 水 待确定优化 1 √ 
+        { ElementalType.Pyro, new List<Scalar> { new Scalar(222, 88, 60), new Scalar(255, 185, 170) } } ,// 火 待确定优化 1 √ 
         { ElementalType.Omni, new List<Scalar> { new Scalar(0, 0, 0), new Scalar(0, 0, 0) } } // 无效果
     };
 
