@@ -158,10 +158,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             // 非上述区域且非中心区域，判断左右
                             if (firstPixel.X < 920 && height > 6)
                             {
+                                Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
                                 logger.LogInformation("敌人在左侧，不移动");
                             }
                             else if (firstPixel.X > 920 && height > 6)
                             {
+                                Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
                                 logger.LogInformation("敌人在右侧，不移动");
                             }
                         }
@@ -170,6 +172,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     {
                         if (height > 6)
                         {
+                            Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
                             logger.LogInformation("敌人在中心且高度大于6，不移动");
                         }
                         else if (firstPixel.X < 1315 && firstPixel.X > 500 && firstPixel.Y < 800 && height > 2)
@@ -194,10 +197,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         else if (height < 3)
                         {
+                            Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
                             logger.LogInformation("敌人血量高度小于3，不移动");
                         }
                         else
                         {
+                            Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
                             logger.LogInformation("不移动");
                         }
                     }
@@ -250,22 +255,24 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     stats.Dispose();
                     centroids.Dispose();
                     
-                    if (success && height > 2)
+                    if (success && (height > 2 && height < 7))
                     {
-                        if (height < 7)
+                        logger.LogInformation("敌人血量高度小于7且大于2，向前移动");
+                        Task.Run(() =>
                         {
-                            logger.LogInformation("敌人血量高度小于7且大于2，向前移动");
-                            Task.Run(() =>
-                            {
-                                MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct);
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(1000, ct).Wait();
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                            }, ct);
-                        }
+                            MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct);
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                            Task.Delay(1000, ct).Wait();
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                        }, ct);
                         return false;
                     }
-                    if (height < 3 || height > 25) return null;
+
+                    if (height < 3 || height > 25)
+                    {
+                        Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                        return null;
+                    }
                 }
                 
                 if (retryCount == 0)
@@ -335,18 +342,16 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     stats.Dispose();
                     centroids.Dispose();
                     
-                    if (success2 && height2 > 2)
+                    if (success2 && (height2 > 2 && height2 < 7))
                     {
-                        if (height2 < 7)
-                        {
-                            logger.LogInformation("画面内有找到敌人，继续战斗...");
-                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);  
-                        }
+                        logger.LogInformation("画面内有找到敌人，继续战斗...");
+                        Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);  
                         return false; 
                     }
 
                     if (height2 < 3 || height2 > 25)
                     {
+                        Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                         return isEndCheck ? true : null;
                     }
 
