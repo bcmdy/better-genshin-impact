@@ -902,7 +902,7 @@ public class Avatar
                 break;
             default:
                 Simulation.SendInput.Keyboard.KeyUp(vk);
-                if (Name == "枫原万叶" && vk == User32.VK.VK_E)
+                if (vk == User32.VK.VK_E)
                 {
                     Thread.Sleep(200);
                     var attemptCount = 0;
@@ -924,7 +924,7 @@ public class Avatar
                             Math.Round(cd, 2));
                     }else
                     {
-                        Logger.LogWarning("{Name} cd未正确计算", Name);
+                        Logger.LogWarning("{Name} 战技cd未更新", Name);
                     }
                 }
                 break;
