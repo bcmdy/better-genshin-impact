@@ -255,23 +255,32 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     stats.Dispose();
                     centroids.Dispose();
                     
-                    if (success && (height > 2 && height < 7))
+                    if (success)
                     {
-                        logger.LogInformation("敌人血量高度小于7且大于2，向前移动");
-                        Task.Run(() =>
+                        if (isEndCheck) await Task.Run(() =>
                         {
-                            MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct);
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                            Task.Delay(1000, ct).Wait();
+                            Task.Delay(100, ct).Wait();;
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                         }, ct);
-                        return false;
-                    }
+                        
+                        if (height > 2 && height < 7)
+                        {
+                            logger.LogInformation("画面内有找到敌人，尝试移动...");
+                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
+                            return false;
+                        }
 
-                    if (height < 3 || height > 25)
-                    {
-                        Simulation.SendInput.SimulateAction(GIActions.MoveForward);
-                        return null;
+                        if (height > 6 && height < 25)
+                        {
+                            logger.LogInformation("画面内有找到敌人，继续战斗...");
+                            return false;
+                        }
+
+                        if (height < 3 || height > 25)
+                        {
+                            return  null;
+                        }
                     }
                 }
                 
@@ -341,20 +350,34 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     labels.Dispose();
                     stats.Dispose();
                     centroids.Dispose();
-                    
-                    if (success2 && (height2 > 2 && height2 < 7))
-                    {
-                        logger.LogInformation("画面内有找到敌人，继续战斗...");
-                        Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);  
-                        return false; 
-                    }
 
-                    if (height2 < 3 || height2 > 25)
+                    if (success2)
                     {
-                        Simulation.SendInput.SimulateAction(GIActions.MoveForward);
-                        return isEndCheck ? true : null;
-                    }
+                        if (isEndCheck) await Task.Run(() =>
+                        {
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                            Task.Delay(100, ct).Wait();
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                        }, ct);
+                        
+                        if (height2 > 2 && height2 < 7)
+                        {
+                            logger.LogInformation("画面内有找到敌人，尝试移动...");
+                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
+                            return false;
+                        }
 
+                        if (height2 > 6 && height2 < 25)
+                        {
+                            logger.LogInformation("画面内有找到敌人，继续战斗...");
+                            return false;
+                        }
+
+                        if (height2 < 3 || height2 > 25)
+                        {
+                            return null;
+                        }
+                    }
                 }
                 
                 retryCount++;

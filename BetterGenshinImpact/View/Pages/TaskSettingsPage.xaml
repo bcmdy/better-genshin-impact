@@ -617,7 +617,7 @@
                                                   VerticalAlignment="Stretch"
                                                   Margin="0,0,5,0"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="(建议配合1秒左右“更快检测结束战斗”) 打开队伍界面检测战斗结束前，先检测画面中如果存在敌人，再判断是否需要靠近敌人，如画面内没敌人，则旋转寻找敌人。 (初始寻敌：开始战斗前寻敌一次)"
+                                                  Text="(建议配合1秒左右“更快检测结束战斗”) 打开队伍界面检测战斗结束前，先检测画面中如果存在敌人，再判断是否需要靠近敌人，如画面内没敌人，则旋转寻找敌人。(尝试面敌：开战寻敌，战斗尝试面向敌人)"
                                                   TextWrapping="Wrap" />
                                     <ui:ToggleSwitch Grid.Row="1"
                                                      Grid.Column="1"
@@ -639,7 +639,7 @@
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                                   Margin="0,0,25,-26"
                                                   FontTypography="Body"
-                                                  Text="初始寻敌"
+                                                  Text="尝试面敌"
                                                   TextWrapping="Wrap" />
                                 </Grid>
 

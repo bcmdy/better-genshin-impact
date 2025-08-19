@@ -390,16 +390,12 @@ public class AutoFightTask : ISoloTask
                         #endregion
                         
                         #region 初始寻敌处理
+
                         if (i == 0 && _taskParam.IsFirstCheck)
                         {
-                            var result = await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, _ct,true);
-                            if (result != null)
-                            {
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                await Task.Delay(100);
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                            }
+                            await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, _ct,true);
                         }
+                        
                         #endregion
                         
                         if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
