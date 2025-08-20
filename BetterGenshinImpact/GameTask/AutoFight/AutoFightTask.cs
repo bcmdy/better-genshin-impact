@@ -20,9 +20,9 @@ using OpenCvSharp;
 using BetterGenshinImpact.Helpers;
 using Vanara;
 using Microsoft.Extensions.DependencyInjection;
-
-
-
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -47,7 +47,9 @@ public class AutoFightTask : ISoloTask
     private static OtherConfig Config { get; set; } = TaskContext.Instance().Config.OtherConfig;
     
     private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
-
+    
+    private volatile bool fightEndFlag;
+    
     private class TaskFightFinishDetectConfig
     {
         public int DelayTime = 1500;
@@ -333,7 +335,8 @@ public class AutoFightTask : ISoloTask
         // if (await CheckFightFinish()) {
         //     return;
         // }
-        var fightEndFlag = false;
+        // var fightEndFlag = false;
+        fightEndFlag = false;
         var timeOutFlag = false;
         string lastFightName = "";
 
@@ -354,19 +357,65 @@ public class AutoFightTask : ISoloTask
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
-
-        //基于文件路径的万叶拾取
-        var isKazuhaPickup = (_taskParam.CountryName.Contains("小怪")) && _taskParam.FullPathKazuhaPickup;
+        
+        var isExperiencePickup =  Task.FromResult(false);
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
+            
+            #region 基于战斗检测经验值开关万叶拾取功能
+            Action findExp = () =>
+            {
+                try  
+                {
+                    Task.Run(() =>
+                    {
+                        while (!(isExperiencePickup.Result || fightEndFlag) && !cts2.Token.IsCancellationRequested)
+                        {
+                            cts2.Token.ThrowIfCancellationRequested();
+
+                            isExperiencePickup = NewRetry.WaitForAction(() =>
+                            {
+                                using (var ra = CaptureToRectArea())
+                                {
+                                    var experienceRas = new[]
+                                    {
+                                        AutoFightAssets.Instance.Experience60Ra,
+                                        AutoFightAssets.Instance.Experience58Ra,
+                                        AutoFightAssets.Instance.Experience57Ra
+                                    };
+
+                                    return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
+                                }
+
+                            }, cts2.Token, 1, 200);
+                        }
+                        
+                        Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
+                            isExperiencePickup.Result ? "启用" : "关闭");
+                        
+                    }, cts2.Token); 
+                }
+                catch (OperationCanceledException ex)
+                {
+                    Console.WriteLine($"检测经验发生异常: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
+                }
+            };
+            
+            if (_taskParam.ExpKazuhaPickup) findExp();
+            
+            #endregion
+            
             try
             {
                 while (!cts2.Token.IsCancellationRequested)
                 {
-                    // 所有战斗角色都可以被取消
-
+                   // 所有战斗角色都可以被取消
                     #region 本次战斗的跳过战斗判定
 
                     //如果所有角色都可以被跳过，且没有任何一个cd大于0的(技能都还没好)
@@ -533,15 +582,15 @@ public class AutoFightTask : ISoloTask
         }, cts2.Token);
 
         await fightTask;
-        if (_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot)
+        if ((_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot) && !isExperiencePickup.Result)
         {
             Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             return;
         }
         
-        // Logger.LogInformation("基于锄地路径判断，{text} 万叶拾取", isKazuhaPickup? "执行" : "不执行");
+        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", isExperiencePickup.Result? "执行" : "不执行");
         
-        if (_taskParam.KazuhaPickupEnabled && !isKazuhaPickup) //LCB
+        if (_taskParam.KazuhaPickupEnabled && isExperiencePickup.Result) 
         {
             // 队伍中存在万叶的时候使用一次长E
             var kazuha = combatScenes.SelectAvatar("枫原万叶");

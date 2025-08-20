@@ -160,7 +160,7 @@ public class AutoEatTask : BaseIndependentTask, ISoloTask
                 
                 // 出现错误次数过多，退出任务
                 errorCount++;
-                if (errorCount >= 20)
+                if (errorCount >= 10)
                 {
                     _logger.LogError("自动吃药任务异常多次退出");
                     break;

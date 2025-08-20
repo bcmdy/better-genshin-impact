@@ -1054,7 +1054,7 @@
                                       FontSize="10"
                                       FontTypography="Body"
                                       VerticalAlignment="Bottom"
-                                      Text="(可选：基于锄地路径是否有小怪字符禁止万叶拾取)"
+                                      Text="(可选：基于怪物死亡经验值检测开关万叶拾取)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
@@ -1072,7 +1072,7 @@
                                          x:Name="KazuhaPickupEnabledButton"
                                          Margin="0,0,38,0"
                                          IsEnabled="{Binding Config.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
-                                         IsChecked="{Binding Config.AutoFightConfig.FullPathKazuhaPickup, Mode=TwoWay}" />
+                                         IsChecked="{Binding Config.AutoFightConfig.ExpKazuhaPickup, Mode=TwoWay}" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.RowSpan="2"
                                       Grid.Column="2"
@@ -1083,7 +1083,7 @@
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Margin="0,0,38,26"
                                       FontTypography="Body"
-                                      Text="基于路径"
+                                      Text="基于经验值"
                                       TextWrapping="Wrap" />
                     </Grid>
                 <Grid Margin="16">

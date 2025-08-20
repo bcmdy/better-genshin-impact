@@ -57,6 +57,11 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     
     public RecognitionObject AbnormalIconRa;
     
+    // 经验图标
+    public RecognitionObject Experience60Ra;
+    public RecognitionObject Experience58Ra;
+    public RecognitionObject Experience57Ra;
+    
     // 定义7种元素要检测的Q技能颜色，每种元素两种颜色
     public static readonly Dictionary<ElementalType, List<Scalar>> Colors = new Dictionary<ElementalType, List<Scalar>> {
         { ElementalType.Cryo, new List<Scalar> { new Scalar(117, 212, 233), new Scalar(176, 255, 255) } }, // 冰 √ 
@@ -373,6 +378,36 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "abnormal_icon.png"),
             RegionOfInterest = new Rect(0,(int)(CaptureRect.Height*0.08), (int)(CaptureRect.Width*0.04), (int)(CaptureRect.Height*0.07)),
             DrawOnWindow = false
+        }.InitTemplate();
+        Experience60Ra = new RecognitionObject
+        {
+            Name = "Experience_60",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "experience_60.png"),
+            RegionOfInterest = new Rect((int)(CaptureRect.Width*0.145),(int)(CaptureRect.Height*0.5), (int)(CaptureRect.Width*0.02), (int)(CaptureRect.Height*0.22)),
+            DrawOnWindow = true,
+            UseMask = true,
+            Threshold = 0.85,
+        }.InitTemplate();
+        Experience58Ra = new RecognitionObject
+        {
+            Name = "Experience_58",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "experience_58.png"),
+            RegionOfInterest = new Rect((int)(CaptureRect.Width*0.145),(int)(CaptureRect.Height*0.5), (int)(CaptureRect.Width*0.02), (int)(CaptureRect.Height*0.22)),
+            DrawOnWindow = true,
+            UseMask = true,
+            Threshold = 0.85,
+        }.InitTemplate();
+        Experience57Ra = new RecognitionObject
+        {
+            Name = "Experience_57",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "experience_57.png"),
+            RegionOfInterest = new Rect((int)(CaptureRect.Width*0.145),(int)(CaptureRect.Height*0.5), (int)(CaptureRect.Width*0.02), (int)(CaptureRect.Height*0.22)),
+            DrawOnWindow = true,
+            UseMask = true,
+            Threshold = 0.85,
         }.InitTemplate();
         
     }
