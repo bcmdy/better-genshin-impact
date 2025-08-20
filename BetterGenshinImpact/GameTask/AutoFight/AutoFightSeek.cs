@@ -404,6 +404,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                    (b >= 240 && b <= 255);
         }
     
+        //备用方法，用于后续指定角色适配旋转
         public static  bool AvatarSeekAsync(ILogger logger,Avatar avatarName,CancellationToken ct,bool isAuto = false)
         {
             if (isAuto)
@@ -614,7 +615,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     
                     // 提取具体的 Scalar 对象
                     var scalar1 = colors[0]; 
-                    var scalar2 = colors[1]; 
+                    var scalar2 = colors[1];
                     
                     var mask2 = OpenCvCommonHelper.Threshold(
                         image.DeriveCrop(skillArea).SrcMat,
@@ -628,41 +629,56 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                     var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
+
+                    // Logger.LogInformation("元素爆发图标数量：{numLabels2}", numLabels2);
+                    
+                    if (numLabels2 > 5)
+                    {
+                        Mat firstRow = stats2.Row(1);
+                        int[] statsArray;
+                        bool success = firstRow.GetArray(out statsArray); 
+                        int width = statsArray[2];
+                        int height = statsArray[3];
+                        // int pCount = statsArray[4];
+                        // Logger.LogInformation("元素爆发图标高度：{height2} 宽度：{width2} 像素点数：{pCount}", height, width, pCount);
+
+                        if (success && height > 5  && width > 5)
+                        {
+                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发状态：{attempt}，尝试释放",
+                                guardianAvatarName, guardianAvatar.Name, "就绪");
+
+                            Logger.LogInformation("检测到 {GuardianAvatar} Q技能，准备释放", guardianAvatarName);
+                            if (guardianAvatar.TrySwitch(15, false))
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                Sleep(200, ct);
+                                Simulation.ReleaseAllKey();
+
+                                //普攻一下，防止在纳塔飞天
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+
+                                //不等待不检测，反正会重新检测，目前有肯定能检测到，误判率低，误判也没关系
+                                // var region = CaptureToRectArea();
+                                // var notActiveCount = guardianAvatar.CombatScenes.GetAvatars().Count(a => !a.IsActive(region));
+                                // if (notActiveCount == 0)
+                                // {
+                                // Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发释放",
+                                //     guardianAvatarName, guardianAvatar.Name);
+                                // return;
+                                // }
+                            }
+                        }
+                    }
                     
                     //释放资源
                     mask2.Dispose();
                     labels2.Dispose();
                     stats2.Dispose();
-                    
-                    if (numLabels2 > 1)
-                    {
-                        Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发状态：{attempt}，尝试释放",
-                            guardianAvatarName, guardianAvatar.Name,"就绪");
-                        
-                        // Logger.LogInformation("检测到 {GuardianAvatar} Q技能，准备释放", guardianAvatarName);
-                        if (guardianAvatar.TrySwitch(15, false))
-                        {
-                            Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                            Sleep(200, ct);
-                            Simulation.ReleaseAllKey();
-                            
-                            //普攻一下，防止在纳塔飞天
-                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            
-                            //不等待不检测，反正会重新检测，目前有肯定能检测到，误判率低，误判也没关系
-                            // var region = CaptureToRectArea();
-                            // var notActiveCount = guardianAvatar.CombatScenes.GetAvatars().Count(a => !a.IsActive(region));
-                            // if (notActiveCount == 0)
-                            // {
-                                // Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发释放",
-                                //     guardianAvatarName, guardianAvatar.Name);
-                                // return;
-                            // }
-                        }
-                    }
+                    centroids2.Dispose();
                 }
             }
         }
+        
         
         //新方法，备用，非OCR识别，判断色块进行，速度更快
         //检测技能图标中释放含有白色色块，检测前进行角色切换的确认，skills：false为E技能，true为Q技能（未开发）
