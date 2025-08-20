@@ -428,23 +428,18 @@ public class Avatar
             }
 
             Sleep(200, Ct);
-
             var region = CaptureToRectArea();
-            ThrowWhenDefeated(region, Ct); // 检测是不是要跑神像
-            
-            var attemptCount = 0;
+            ThrowWhenDefeated(region, Ct);
+
             double cd = 0;
-            while (attemptCount < 2) 
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                if (attemptCount != 0) region = CaptureToRectArea();//第一次不用截图
+                if (attempt > 0) region = CaptureToRectArea(); // 非首次尝试时重新截图
                 cd = AfterUseSkill(region);
-                if (cd > 0)
-                {
-                    break;
-                }
-                attemptCount++;
+                if (cd > 0) break;
                 Thread.Sleep(100);
             }
+            
             if (cd > 0)
             {
                 Logger.LogInformation(hold ? "{Name} 长按元素战技，cd:{Cd} 秒" : "{Name} 点按元素战技，cd:{Cd} 秒", Name,
@@ -905,24 +900,32 @@ public class Avatar
                 if (vk == User32.VK.VK_E)
                 {
                     Thread.Sleep(200);
-                    var attemptCount = 0;
                     double cd = 0;
-                    while (attemptCount < 2)
+                    var cooldownDetected = false;
+    
+                    for (var attempt = 0; attempt < 2; attempt++)
                     {
                         var region = CaptureToRectArea();
                         cd = AfterUseSkill(region);
+        
                         if (cd > 0)
                         {
+                            cooldownDetected = true;
                             break;
                         }
-                        attemptCount++;
-                        Thread.Sleep(100);
+        
+                        if (attempt < 2 - 1)
+                        {
+                            Thread.Sleep(100);
+                        }
                     }
-                    if (cd > 0)
+
+                    if (cooldownDetected)
                     {
-                        Logger.LogInformation("{Name} 元素战技，cd:{Cd} 秒", Name,
-                            Math.Round(cd, 2));
-                    }else
+                        Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
+                            Name, Math.Round(cd, 2));
+                    }
+                    else
                     {
                         Logger.LogWarning("{Name} 战技cd未更新", Name);
                     }
