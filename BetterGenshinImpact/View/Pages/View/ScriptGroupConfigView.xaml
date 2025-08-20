@@ -1398,7 +1398,7 @@
                                       FontSize="10"
                                       FontTypography="Body"
                                       VerticalAlignment="Bottom"
-                                      Text="(可选：基于锄地路径是否有精英字符自动拾取)"
+                                      Text="(可选：基于锄地路径是否有小怪字符禁止万叶拾取)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
