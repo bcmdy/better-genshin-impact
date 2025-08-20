@@ -90,7 +90,7 @@ public partial class ScriptRepoWindow
             // new("Gitee", "https://gitee.com/babalae/bettergi-scripts-list"),
             new("GitHub", "https://github.com/babalae/bettergi-scripts-list"),
             new("自定义", "https://example.com/custom-repo"),
-            new("在线仓库", scriptConfig.OnlineRepoUrl?? "https://bgi.sh/")
+            new("在线仓库", scriptConfig.OnlineRepoUrl== "" ? "https://bgi.sh/" : scriptConfig.OnlineRepoUrl)
         };
 
         if (string.IsNullOrEmpty(Config.SelectedRepoUrl))

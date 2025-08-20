@@ -30,5 +30,5 @@ public partial class ScriptConfig : ObservableObject
     [ObservableProperty] private string _selectedRepoUrl = "";
     
     // 在线脚本仓库地址
-    [ObservableProperty] private string _onlineRepoUrl = "";
+    [ObservableProperty] private string _onlineRepoUrl = "https://bgi.sh/";
 }
