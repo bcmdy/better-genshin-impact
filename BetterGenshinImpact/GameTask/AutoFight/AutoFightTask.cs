@@ -222,8 +222,14 @@ public class AutoFightTask : ISoloTask
             {
                 //可能在 _taskParam.CountryName.Length >= 2 可能是因为没有符合条件的脚本，尝试Any
                 filteredCombatScripts = combatScriptBagAll.CombatScripts
-                    .Where(script => _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country)))
+                    .Where(script => _taskParam.CountryName.Any(country => country != "精英" && country != "小怪" && script.Name.Contains(country)))
                     .ToList();
+                if (filteredCombatScripts.Count == 0)
+                {
+                    filteredCombatScripts = combatScriptBagAll.CombatScripts
+                        .Where(script => _taskParam.CountryName.Any(country => country != null && script.Name.Contains(country)))
+                        .ToList();
+                }
             }
             
             // 如果没有找到对应国家的脚本，则使用所有脚本
