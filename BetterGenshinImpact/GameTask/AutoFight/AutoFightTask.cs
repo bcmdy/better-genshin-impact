@@ -382,6 +382,7 @@ public class AutoFightTask : ISoloTask
                                     var experienceRas = new[]
                                     {
                                         AutoFightAssets.Instance.Experience60Ra,
+                                        // AutoFightAssets.Instance.Experience59Ra,
                                         AutoFightAssets.Instance.Experience58Ra,
                                         AutoFightAssets.Instance.Experience57Ra
                                     };
