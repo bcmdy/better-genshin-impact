@@ -562,7 +562,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         {
             int attempt = 0;
 
-            if (guardianCombatSkip && guardianAvatar.IsSkillReady())
+            if (guardianAvatar.IsSkillReady())
             {
                 while (attempt < retryCount)
                 {
