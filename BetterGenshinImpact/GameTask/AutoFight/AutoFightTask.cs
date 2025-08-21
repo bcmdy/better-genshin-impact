@@ -371,8 +371,8 @@ public class AutoFightTask : ISoloTask
                 {
                     Task.Run(() =>
                     {
-                        int confirmationsNeeded = 2; // 需要连续确认的次数
-                        int confirmationCount = 0;
+                        var confirmationsNeeded = 2;
+                        var confirmationCount = 0;
                         while (!(confirmationCount >= confirmationsNeeded || fightEndFlag) && !cts2.Token.IsCancellationRequested)
                         {
                             cts2.Token.ThrowIfCancellationRequested();
@@ -391,16 +391,10 @@ public class AutoFightTask : ISoloTask
 
                                     return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
                                 }
-                            }, cts2.Token, 1, 200); // 注意：重试参数为1和200，可能只尝试一次检测
+                            }, cts2.Token, 1, 150); 
 
-                            if (isExperiencePickup.Result)
-                            {
-                                confirmationCount++;
-                            }
-                            else
-                            {
-                                confirmationCount = 0; // 重置计数器，确保连续成功
-                            }
+                         confirmationCount = isExperiencePickup.Result ? confirmationCount + 1 : 0;
+
                         }
                         
                         Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
