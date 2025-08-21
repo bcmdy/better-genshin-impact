@@ -37,6 +37,7 @@ using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
+using BetterGenshinImpact.ViewModel.Pages.View;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -357,7 +358,9 @@ public class PathExecutor
     
         var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
         
-        TaskContext.Instance().Config.PathingConditionConfigNew.CountryName = foundCountries.Length > 0 ? foundCountries : new string?[] { "自动" };
+        PathingConfigViewModel pathingConfig = new PathingConfigViewModel();
+        
+        pathingConfig.CountryChanged(foundCountries.Length > 0 ? foundCountries : new string?[] { "自动" });
     }
     
     private void InitializePathing(PathingTask task)

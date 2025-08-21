@@ -371,7 +371,9 @@ public class AutoFightTask : ISoloTask
                 {
                     Task.Run(() =>
                     {
-                        while (!(isExperiencePickup.Result || fightEndFlag) && !cts2.Token.IsCancellationRequested)
+                        int confirmationsNeeded = 2; // 需要连续确认的次数
+                        int confirmationCount = 0;
+                        while (!(confirmationCount >= confirmationsNeeded || fightEndFlag) && !cts2.Token.IsCancellationRequested)
                         {
                             cts2.Token.ThrowIfCancellationRequested();
 
@@ -389,8 +391,16 @@ public class AutoFightTask : ISoloTask
 
                                     return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
                                 }
+                            }, cts2.Token, 1, 200); // 注意：重试参数为1和200，可能只尝试一次检测
 
-                            }, cts2.Token, 1, 200);
+                            if (isExperiencePickup.Result)
+                            {
+                                confirmationCount++;
+                            }
+                            else
+                            {
+                                confirmationCount = 0; // 重置计数器，确保连续成功
+                            }
                         }
                         
                         Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
@@ -591,7 +601,7 @@ public class AutoFightTask : ISoloTask
         
         if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", isExperiencePickup.Result? "执行" : "不执行");
         
-        if (_taskParam.KazuhaPickupEnabled && isExperiencePickup.Result) 
+        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || isExperiencePickup.Result))
         {
             // 队伍中存在万叶的时候使用一次长E
             var kazuha = combatScenes.SelectAvatar("枫原万叶");

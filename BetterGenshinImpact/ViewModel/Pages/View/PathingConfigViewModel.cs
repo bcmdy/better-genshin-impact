@@ -49,4 +49,9 @@ public partial class PathingConfigViewModel : ObservableObject, IViewModel
     {
         TaskContext.Instance().Config.OnAnyChangedAction?.Invoke();
     }
+    
+    public void CountryChanged(string?[] countryName)
+    {
+        Config.PathingConditionConfig.CountryName = countryName;
+    }
 }
