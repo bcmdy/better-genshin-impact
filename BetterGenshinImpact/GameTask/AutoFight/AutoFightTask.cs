@@ -369,36 +369,47 @@ public class AutoFightTask : ISoloTask
             {
                 try  
                 {
-                    Task.Run(() =>
+                    Task.Run( async () =>
                     {
                         var confirmationsNeeded = 2;
                         var confirmationCount = 0;
                         while (!(confirmationCount >= confirmationsNeeded || fightEndFlag) && !cts2.Token.IsCancellationRequested)
                         {
-                            cts2.Token.ThrowIfCancellationRequested();
-
-                            isExperiencePickup = NewRetry.WaitForAction(() =>
+                            try
                             {
-                                using (var ra = CaptureToRectArea())
+                                cts2.Token.ThrowIfCancellationRequested();
+
+                                isExperiencePickup = NewRetry.WaitForAction(() =>
                                 {
-                                    var experienceRas = new[]
+                                    using (var ra = CaptureToRectArea())
                                     {
-                                        AutoFightAssets.Instance.Experience60Ra,
-                                        // AutoFightAssets.Instance.Experience59Ra,
-                                        AutoFightAssets.Instance.Experience58Ra,
-                                        AutoFightAssets.Instance.Experience57Ra
-                                    };
+                                        var experienceRas = new[]
+                                        {
+                                            AutoFightAssets.Instance.Experience60Ra,
+                                            // AutoFightAssets.Instance.Experience59Ra,
+                                            AutoFightAssets.Instance.Experience58Ra,
+                                            AutoFightAssets.Instance.Experience57Ra
+                                        };
 
-                                    return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
-                                }
-                            }, cts2.Token, 1, 150); 
+                                        return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
+                                    }
+                                }, cts2.Token, 1, 150);
 
-                         confirmationCount = isExperiencePickup.Result ? confirmationCount + 1 : 0;
+                                confirmationCount = isExperiencePickup.Result ? confirmationCount + 1 : 0;
+                            }
+                            catch (OperationCanceledException ex)
+                            {
+                                Console.WriteLine($"检测经验发生异常: {ex.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
+                            }
 
                         }
                         
                         Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
-                            isExperiencePickup.Result ? "启用" : "关闭");
+                                confirmationCount >= confirmationsNeeded ? "启用" : "关闭");
                         
                     }, cts2.Token); 
                 }
