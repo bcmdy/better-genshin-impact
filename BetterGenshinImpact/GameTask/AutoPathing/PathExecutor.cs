@@ -160,8 +160,6 @@ public class PathExecutor
 
         InitializePathing(task);
         
-        GetCountryName(task.FullPath);
-        
         // 转换、按传送点分割路径
         var waypointsList = ConvertWaypointsForTrack(task.Positions, task);
 
@@ -344,23 +342,6 @@ public class PathExecutor
         }
 
         return true;
-    }
-
-    public  void GetCountryName(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
-    
-        var config = TaskContext.Instance().Config.AutoFightConfig;
-        var countryNamesList = config.CountryNamesList;
-    
-        var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
-        
-        PathingConfigViewModel pathingConfig = new PathingConfigViewModel();
-        
-        pathingConfig.CountryChanged(foundCountries.Length > 0 ? foundCountries : new string?[] { "自动" });
     }
     
     private void InitializePathing(PathingTask task)

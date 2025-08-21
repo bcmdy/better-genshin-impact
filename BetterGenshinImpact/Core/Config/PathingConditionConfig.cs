@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using BetterGenshinImpact.GameTask;
 
 namespace BetterGenshinImpact.Core.Config;
 
@@ -199,4 +200,20 @@ public partial class PathingConditionConfig : ObservableObject
 
         return partyConfig;
     }
+    
+    public  void GetCountryName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+    
+        var config = TaskContext.Instance().Config.AutoFightConfig;
+        var countryNamesList = config.CountryNamesList;
+    
+        var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
+
+        CountryName = foundCountries;
+    }
+    
 }

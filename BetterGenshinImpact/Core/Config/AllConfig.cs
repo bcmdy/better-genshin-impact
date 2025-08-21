@@ -247,8 +247,6 @@ public partial class AllConfig : ObservableObject
     /// 地图追踪配置
     /// </summary>
     public PathingConditionConfig PathingConditionConfig { get; set; } = PathingConditionConfig.Default;
-
-    public PathingConditionConfig PathingConditionConfigNew { get; set; } = new();
     
     /// <summary>
     ///     快捷键配置

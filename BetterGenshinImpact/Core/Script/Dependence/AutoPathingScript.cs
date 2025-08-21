@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common;
 using Microsoft.Extensions.Logging;
+using BetterGenshinImpact.GameTask;
+
 
 namespace BetterGenshinImpact.Core.Script.Dependence;
 
@@ -45,8 +47,7 @@ public class AutoPathingScript
         {
             var json = await new LimitedFile(_rootPath).ReadText(path);
             
-            var pathExecutor = new PathExecutor(CancellationContext.Instance.Cts.Token);
-            pathExecutor.GetCountryName(path);
+            TaskContext.Instance().Config.PathingConditionConfig.GetCountryName(path);
             
             await Run(json);
         }
