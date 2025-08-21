@@ -49,7 +49,8 @@ public class AutoFightParam : BaseTaskParam
         
         BurstEnabled = autoFightConfig.BurstEnabled;
         ExpKazuhaPickup = autoFightConfig.ExpKazuhaPickup;
-        IsFirstCheck = autoFightConfig.IsFirstCheck;
+        IsFirstCheck = autoFightConfig.FinishDetectConfig.IsFirstCheck;
+        RotaryFactor = autoFightConfig.FinishDetectConfig.RotaryFactor;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -74,4 +75,6 @@ public class AutoFightParam : BaseTaskParam
     public bool BurstEnabled { get; set; } = false;
     public bool ExpKazuhaPickup  { get; set; } = false;
     public bool IsFirstCheck { get; set; } = true;
+    
+    public int RotaryFactor { get; set; } = 10;
 }
