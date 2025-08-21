@@ -67,7 +67,7 @@ public class PathExecutor
         set => _partyConfig = value;
     }
     
-    private readonly PathingConditionConfig  _pathingConfig = TaskContext.Instance().Config.PathingConditionConfig;
+
 
     /// <summary>
     /// 判断是否中止地图追踪的条件
@@ -357,7 +357,7 @@ public class PathExecutor
     
         var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
         
-        _pathingConfig.CountryName = foundCountries.Length > 0 ? foundCountries : new string?[] { "自动" };
+        TaskContext.Instance().Config.PathingConditionConfigNew.CountryName = foundCountries.Length > 0 ? foundCountries : new string?[] { "自动" };
     }
     
     private void InitializePathing(PathingTask task)

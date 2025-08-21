@@ -248,6 +248,8 @@ public partial class AllConfig : ObservableObject
     /// </summary>
     public PathingConditionConfig PathingConditionConfig { get; set; } = PathingConditionConfig.Default;
 
+    public PathingConditionConfig PathingConditionConfigNew { get; set; } = new();
+    
     /// <summary>
     ///     快捷键配置
     /// </summary>
