@@ -1,45 +1,7 @@
 ﻿using BetterGenshinImpact.ViewModel.Pages;
 using System.Windows.Controls;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Dynamic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using BetterGenshinImpact.Core.Config;
-using BetterGenshinImpact.Core.Script;
-using BetterGenshinImpact.Core.Script.Group;
-using BetterGenshinImpact.Core.Script.Project;
-using BetterGenshinImpact.GameTask;
-using BetterGenshinImpact.GameTask.AutoPathing.Model;
-using BetterGenshinImpact.GameTask.LogParse;
-using BetterGenshinImpact.Helpers.Ui;
-using BetterGenshinImpact.Model;
-using BetterGenshinImpact.Service.Interface;
-using BetterGenshinImpact.View.Controls.Webview;
-using BetterGenshinImpact.View.Pages.View;
-using BetterGenshinImpact.View.Windows;
-using BetterGenshinImpact.View.Windows.Editable;
-using BetterGenshinImpact.ViewModel.Pages.View;
-using BetterGenshinImpact.ViewModel.Windows.Editable;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.Logging;
-using Wpf.Ui;
-using Wpf.Ui.Controls;
-using Wpf.Ui.Violeta.Controls;
-using StackPanel = Wpf.Ui.Controls.StackPanel;
-using TextBox = Wpf.Ui.Controls.TextBox;
-using Button = Wpf.Ui.Controls.Button;
-using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
-using TextBlock = Wpf.Ui.Controls.TextBlock;
+using System.Windows.Media;
 
 
 namespace BetterGenshinImpact.View.Pages;
@@ -52,5 +14,24 @@ public partial class ScriptControlPage
     {
         DataContext = ViewModel = viewModel;
         InitializeComponent();
+    }
+    
+    //聚焦函数
+    private void ConfigRow_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext != null)
+        {
+            var listView = FindParent<ListView>(fe);
+            if (listView != null)
+                listView.SelectedItem = fe.DataContext;
+            
+        }
+    }
+    private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
+    {
+        var parent = VisualTreeHelper.GetParent(child);
+        while (parent != null && !(parent is T))
+            parent = VisualTreeHelper.GetParent(parent);
+        return parent as T;
     }
 }

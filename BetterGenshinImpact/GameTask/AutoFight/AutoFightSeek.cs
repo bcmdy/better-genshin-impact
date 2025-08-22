@@ -238,7 +238,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
             int retryCount = isEndCheck? 1 : 0;
 
-            while (retryCount < 27-(int)(adjustedX / 10))
+            while (retryCount < 27+(int)(adjustedX / 5))
             {
                 var image = CaptureToRectArea();
                 Mat mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
@@ -336,7 +336,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
                 }
 
-                await Task.Delay(50+(int)(adjustedX/10),ct);
+                await Task.Delay(50+(int)(adjustedX/2),ct);
 
                 image = CaptureToRectArea();
                 mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);

@@ -16,13 +16,35 @@
              FontFamily="{StaticResource TextThemeFontFamily}"
              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
              mc:Ignorable="d">
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/View/Controls/Style/ListViewEx.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
+   <UserControl.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary Source="/View/Controls/Style/ListViewEx.xaml" />
+        </ResourceDictionary.MergedDictionaries>
+
+        <Style x:Key="GuardianVisibilityStyle" TargetType="Button">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Type}" Value="Javascript">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="Transparent"/> <!-- 鼠标悬停时的背景色 -->
+                    <Setter Property="BorderBrush" Value="Transparent"/> <!-- 鼠标悬停时的边框色 -->
+                    <Setter Property="Foreground" Value="Transparent"/> <!-- 鼠标悬停时的边框色 -->
+                </Trigger>
+            </Style.Triggers>
+            
+        </Style>
+    </ResourceDictionary>
+</UserControl.Resources>
+
+    
     <Grid Margin="8,0,8,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150" />
@@ -204,6 +226,48 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
+                
+                <Grid.Resources>
+                            <Storyboard x:Key="TextFadeStoryboard">
+                                <!-- 文字逐渐出现 -->
+                                <DoubleAnimation Storyboard.TargetName="ConfigTextBlock"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="0"
+                                                 To="1"
+                                                 Duration="0:0:1" 
+                                                 BeginTime="0:0:0" />
+                                <!-- 文字逐渐消失 -->
+                                <DoubleAnimation Storyboard.TargetName="ConfigTextBlock"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="1"
+                                                 To="0"
+                                                 Duration="0:0:0"
+                                                 BeginTime="0:0:3" />
+                                <!-- 文字逐渐出现 -->
+                                <DoubleAnimation Storyboard.TargetName="ConfigTextBlock"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="0"
+                                                 To="1"
+                                                 Duration="0:0:1" 
+                                                 BeginTime="0:0:3" />
+                                <!-- 文字逐渐消失 -->
+                                <DoubleAnimation Storyboard.TargetName="ConfigTextBlock"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="1"
+                                                 To="0"
+                                                 Duration="0:0:1"
+                                                 BeginTime="0:0:6" />
+                                <!-- 文字直接隐藏 -->
+                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ConfigTextBlock"
+                                                               Storyboard.TargetProperty="(UIElement.Visibility)">
+                                    <DiscreteObjectKeyFrame KeyTime="0:0:8">
+                                        <DiscreteObjectKeyFrame.Value>
+                                            <Visibility>Collapsed</Visibility>
+                                        </DiscreteObjectKeyFrame.Value>
+                                    </DiscreteObjectKeyFrame>
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </Grid.Resources>
 
                 <StackPanel Grid.Row="0" 
                             Visibility="{Binding IsInsetMode, Converter={StaticResource BooleanToVisibilityRevertConverter}, ConverterParameter=Visible}"
@@ -259,7 +323,25 @@
                     <Separator Width="10" Opacity="0" />
                     <ui:Button Command="{Binding OpenScriptGroupSettingsCommand}"
                                Content="设置"
-                               Icon="{ui:SymbolIcon Settings24}" />
+                               Icon="{ui:SymbolIcon Settings24}"
+                               Background="DodgerBlue" />
+                    <TextBlock x:Name="ConfigTextBlock"
+                               Grid.Column="2"
+                               Margin="5,0,5,0"
+                               FontSize="12"
+                               FontWeight="Bold"
+                               Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Text="&lt;--点击设置可修改设定"
+                               Opacity="0">
+                        <TextBlock.Triggers>
+                            <EventTrigger RoutedEvent="TextBlock.Loaded">
+                                <BeginStoryboard Storyboard="{StaticResource TextFadeStoryboard}" />
+                            </EventTrigger>
+                        </TextBlock.Triggers>
+                    </TextBlock>
+
                     <!-- <Separator Width="10" Opacity="0" /> -->
                     <!-- <ui:Button Command="{Binding OpenLocalScriptRepoCommand}" -->
                     <!--            Content="仓库" -->
@@ -340,8 +422,39 @@
                             </GridViewColumn>
                             
                             <GridViewColumn Width="{Binding ElementName=Col3, Path=ActualWidth}"
-                                            DisplayMemberBinding="{Binding TypeDesc}"
-                                            Header="类型" />
+                                            Header="类型">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button
+                                                Command="{Binding DataContext.EditJsScriptSettingsCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}, Path=SelectedItem}"
+                                                Margin="0,0,0,0"
+                                                FontFamily="{StaticResource TextThemeFontFamily}"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Left"
+                                                GotFocus="ConfigRow_GotFocus"
+                                                Width="16"
+                                                Height="16"
+                                                BorderThickness="1" 
+                                                Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                ClickMode="Press"
+                                                Style="{StaticResource GuardianVisibilityStyle}">
+                                                <Viewbox>
+                                                    <TextBlock Text="⚙️" TextWrapping="Wrap" />
+                                                </Viewbox>
+                                            </Button>
+                                            <TextBlock Text="{Binding TypeDesc}" 
+                                                       FontStyle="Normal"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+
                             <GridViewColumn Width="{Binding ElementName=Col4, Path=ActualWidth}" Header="启用状态">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
@@ -353,8 +466,8 @@
                         </GridView>
                         
                     </ListView.View>
-                    <ListView.ContextMenu>
-                        <ContextMenu>
+                    <ListView.ContextMenu >
+                        <ContextMenu x:Name="ProjectContextMenu">
                             <MenuItem Command="{Binding AddJsScriptCommand}" Header="添加JS脚本" />
                             <MenuItem Command="{Binding AddPathingCommand}" Header="添加地图追踪任务" />
                             <MenuItem Command="{Binding AddKmScriptCommand}" Header="添加键鼠脚本" />

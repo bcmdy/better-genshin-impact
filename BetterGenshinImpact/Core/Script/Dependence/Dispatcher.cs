@@ -16,18 +16,30 @@ using System.Threading;
 using Microsoft.ClearScript;  
 using BetterGenshinImpact.Helpers;
 using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Script.Dependence.Model;
-using BetterGenshinImpact.GameTask;
-using BetterGenshinImpact.ViewModel.Pages;
+using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
+using BetterGenshinImpact.GameTask.AutoWood.Assets;
+using BetterGenshinImpact.GameTask.AutoWood.Utils;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.View.Drawable;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Threading.Tasks;
-using BetterGenshinImpact.GameTask.AutoDomain;
-using BetterGenshinImpact.GameTask.AutoFishing;
-using BetterGenshinImpact.GameTask.AutoWood;
-using BetterGenshinImpact.GameTask.AutoGeniusInvokation;
-using BetterGenshinImpact.GameTask.AutoPathing.Handler;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
-using BetterGenshinImpact.Core.Config;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Simulator.Extensions;
+using Vanara.PInvoke;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using static Vanara.PInvoke.User32;
+using GC = System.GC;
+using OpenCvSharp;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Common.Job;
 
 namespace BetterGenshinImpact.Core.Script.Dependence;
 
@@ -109,6 +121,102 @@ public class Dispatcher
             customCts.Token,
             CancellationContext.Instance.Cts.Token);
         await RunTask(soloTask, linkedCts.Token);
+    }
+
+    public async Task<List<string>> RunTask(SoloTask soloTask,bool isWoodExecute)
+    {
+        if (soloTask == null || soloTask.Name != "AutoWood")
+        {
+            throw new ArgumentNullException(nameof(soloTask), "独立任务对象不能为空或非自动伐木任务");
+        }
+
+        var taskSettingsPageViewModel = App.GetService<TaskSettingsPageViewModel>();
+        if (taskSettingsPageViewModel == null)
+        {
+            throw new ArgumentNullException(nameof(taskSettingsPageViewModel), "内部视图模型对象为空");
+        }
+
+        CancellationToken cancellationToken = CancellationContext.Instance.Cts.Token;
+        
+        var autoWoodConfig = TaskContext.Instance().Config.AutoWoodConfig;
+        // 是否开启识别木材数量
+        autoWoodConfig.WoodCountOcrEnabled = soloTask.Config == null ? false : ScriptObjectConverter.GetValue<bool>((ScriptObject)soloTask.Config, "WoodCountOcrEnabled", false);
+        // 设置自动伐木次数
+        taskSettingsPageViewModel.AutoWoodRoundNum = soloTask.Config == null ? 0 : ScriptObjectConverter.GetValue<int>((ScriptObject)soloTask.Config, "AutoWoodRoundNum", 0);
+        // 识别木材相关参数
+        if (autoWoodConfig.WoodCountOcrEnabled)
+        {
+            // 木材上限类型
+            autoWoodConfig.MaxWoodType = soloTask.Config == null
+                ? "总数上限"
+                : ScriptObjectConverter.GetValue<string>((ScriptObject)soloTask.Config, "MaxWoodType", "总数上限");
+
+            if (autoWoodConfig.MaxWoodType == "指定木材上限")
+            {
+                if (string.IsNullOrEmpty(ScriptObjectConverter.GetValue<string>((ScriptObject)soloTask.Config,
+                        "SingleWoodLimit", "")))
+                {
+                    _logger.LogError("缺少 {Text} 配置 {text2}，跳过指定木材上限, 请检查JS脚本配置", "单个木材上限", "SingleWoodLimit");
+                    return string.Empty.Split(',').ToList();
+                }
+
+                // 单个木材上限的名称
+                autoWoodConfig.SingleWoodLimit = soloTask.Config == null
+                    ? string.Empty
+                    : ScriptObjectConverter.GetValue<string>((ScriptObject)soloTask.Config, "SingleWoodLimit", "");
+                // 校验设置的单个木材上限是否在指定木材种类范围内
+                if (!autoWoodConfig.ExistWoods.Contains(autoWoodConfig.SingleWoodLimit))
+                {
+                    _logger.LogError("配置 {Text} 参数 {text2} ： {text3} 不在指定木材种类范围内，请检查JS脚本编写的参数", "单个木材上限",
+                        "SingleWoodLimit", autoWoodConfig.SingleWoodLimit);
+                    return string.Empty.Split(',').ToList();
+                }
+            }
+
+            // 木材上限的数量
+            taskSettingsPageViewModel.AutoWoodDailyMaxCount = soloTask.Config == null
+                ? 2000
+                : ScriptObjectConverter.GetValue<int>((ScriptObject)soloTask.Config, "DailyMaxCount", 2000);
+            // 使用小道具后的检测时间
+            autoWoodConfig.AfterZSleepDelay = soloTask.Config == null
+                ? 3000
+                : ScriptObjectConverter.GetValue<int>((ScriptObject)soloTask.Config, "AfterZSleepDelay", 3000);
+        }
+
+        // 仅更新伐木参数，不启动任务
+        if (!isWoodExecute)
+        {
+            _logger.LogWarning("仅更新伐木参数，不启动任务。");
+            _logger.LogInformation("自动伐木次数 AutoWoodRoundNum ：{AutoWoodRoundNum}",
+                taskSettingsPageViewModel.AutoWoodRoundNum);
+            _logger.LogInformation("是否开启识别木材数量 WoodCountOcrEnabled ：{WoodCountOcrEnabled}",
+                autoWoodConfig.WoodCountOcrEnabled);
+
+            if (autoWoodConfig.WoodCountOcrEnabled)
+            {
+                _logger.LogInformation("木材上限类型 MaxWoodType ：{MaxWoodType}", autoWoodConfig.MaxWoodType);
+                if (autoWoodConfig.MaxWoodType == "指定木材上限")
+                    _logger.LogInformation("指定木材上限 SingleWoodLimit ：{SingleWoodLimit}", autoWoodConfig.SingleWoodLimit);
+                _logger.LogInformation("木材上限数量 DailyMaxCount ：{DailyMaxCount}",
+                    taskSettingsPageViewModel.AutoWoodDailyMaxCount);
+                _logger.LogInformation("使用小道具后的检测时间 AfterZSleepDelay ：{AfterZSleepDelay}",
+                    autoWoodConfig.AfterZSleepDelay);
+            }
+
+            return string.Empty.Split(',').ToList();
+        }
+
+        await new AutoWoodTask(new WoodTaskParam(taskSettingsPageViewModel.AutoWoodRoundNum,
+            taskSettingsPageViewModel.AutoWoodDailyMaxCount)).Start(cancellationToken);
+        
+        var combinedResults = new List<string>();
+        foreach (var kvp in AutoWoodTask.GlobalResultDict)
+        {
+            combinedResults.Add(kvp.Key); 
+            combinedResults.Add(kvp.Value.ToString());  
+        }
+        
+        return combinedResults.ToList();
     }
 
 

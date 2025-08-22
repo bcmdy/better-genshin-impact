@@ -220,12 +220,12 @@
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="循环次数"
+                                  Text="循环次数，输入 0 则为无限循环，直到手动终止"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="循环伐木多少次，输入 0 则为无限循环直到手动终止"
+                                  Text="启用数量识别时，则到上限终止，注意次数判断优先上限的判断"
                                   TextWrapping="Wrap" />
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
@@ -246,12 +246,12 @@
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="启用OCR伐木数量限制（需1080P以上分辨率）"
+                                  Text="启用识别伐木数量（需1080P以上分辨率）"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="伐木后OCR识别并累计木材数，达到上限后自动停止伐木"
+                                  Text="伐木后识别并累计木材数，达到上限后自动停止伐木"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"
@@ -259,7 +259,7 @@
                                      Margin="0,0,36,0"
                                      IsChecked="{Binding Config.AutoWoodConfig.WoodCountOcrEnabled, Mode=TwoWay}" />
                 </Grid>
-                <Grid Margin="16">
+                <Grid Margin="16" Visibility="{Binding Config.AutoWoodConfig.WoodCountOcrEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -267,25 +267,53 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="伐木数量上限（原神每日每种木材最多2000）"
+                                  Text="伐木数量上限控制"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="启用伐木数量限制后生效，达到配置上限后自动停止伐木"
+                                  Text="原神每日每种木材最多2000"
                                   TextWrapping="Wrap" />
+                    <ComboBox Grid.Row="0"
+                              Grid.RowSpan="2"
+                              Grid.Column="1"
+                              Width="150"
+                              Margin="0,0,10,0"
+                              ItemsSource="{Binding Config.AutoWoodConfig.MaxWoodTypeList, Mode=TwoWay}"
+                              SelectedItem="{Binding Config.AutoWoodConfig.MaxWoodType, Mode=TwoWay}">
+                    </ComboBox>
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
-                                Grid.Column="1"
-                                MinWidth="90"
-                                Margin="0,0,36,0"
+                                Grid.Column="2"
+                                MinWidth="60"
+                                Margin="0,0,10,0"
                                 Text="{Binding AutoWoodDailyMaxCount, Mode=TwoWay}" />
+                    <ComboBox Grid.Row="0"
+                              Grid.RowSpan="2"
+                              Grid.Column="3"
+                              Width="150"
+                              Margin="0,0,36,0"
+                              ItemsSource="{Binding Config.AutoWoodConfig.ExistWoods, Mode=TwoWay}"
+                              SelectedItem="{Binding Config.AutoWoodConfig.SingleWoodLimit, Mode=TwoWay}">
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                <Setter Property="IsEnabled" Value="False"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Config.AutoWoodConfig.MaxWoodType}" Value="指定木材上限">
+                                        <Setter Property="IsEnabled" Value="True"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
                 </Grid>
-                <Grid Margin="16">
+                <Grid Margin="16" Visibility="{Binding Config.AutoWoodConfig.WoodCountOcrEnabled, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -297,12 +325,12 @@
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="使用小道具后的额外延迟（毫秒）"
+                                  Text="使用小道具后的开始识别伐木数量超时时间（毫秒）"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="如果希望看到使用小道具后获得木材的提示，可以调整这个值"
+                                  Text="识别木材掉落数量如果不准，可以适当增加这个值"
                                   TextWrapping="Wrap" />
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
