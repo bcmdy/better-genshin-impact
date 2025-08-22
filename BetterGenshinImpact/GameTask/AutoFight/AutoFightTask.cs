@@ -472,7 +472,7 @@ public class AutoFightTask : ISoloTask
 
                         if (i == 0 && _taskParam.IsFirstCheck)
                         {
-                            await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, _ct,true,_taskParam.RotaryFactor);
+                            await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, ct,true,_taskParam.RotaryFactor);
                         }
                         
                         #endregion
