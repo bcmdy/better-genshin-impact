@@ -23,6 +23,10 @@ using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
+using BetterGenshinImpact.View.Drawable;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask.AutoPathing;
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -359,7 +363,7 @@ public class AutoFightTask : ISoloTask
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
         var isExperiencePickup =  Task.FromResult(false);
-        
+        AutoFightAssets autoFightAssets = new AutoFightAssets();
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
@@ -373,22 +377,24 @@ public class AutoFightTask : ISoloTask
                     {
                         var confirmationsNeeded = 2;
                         var confirmationCount = 0;
+
+                        var experience60 =   autoFightAssets.InitializeRecognitionObject(60);
+                        var experience58 =   autoFightAssets.InitializeRecognitionObject(58);
+                        var experience57 =   autoFightAssets.InitializeRecognitionObject(57);
+                        
                         while (!(confirmationCount >= confirmationsNeeded || fightEndFlag) && !cts2.Token.IsCancellationRequested)
                         {
                             try
                             {
                                 cts2.Token.ThrowIfCancellationRequested();
-
+                                
                                 isExperiencePickup = NewRetry.WaitForAction(() =>
                                 {
                                     using (var ra = CaptureToRectArea())
                                     {
                                         var experienceRas = new[]
                                         {
-                                            AutoFightAssets.Instance.Experience60Ra,
-                                            // AutoFightAssets.Instance.Experience59Ra,
-                                            AutoFightAssets.Instance.Experience58Ra,
-                                            AutoFightAssets.Instance.Experience57Ra
+                                            experience60, experience58, experience57,
                                         };
 
                                         return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
@@ -421,6 +427,11 @@ public class AutoFightTask : ISoloTask
                 {
                     Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
                 }
+                finally
+                {
+                    VisionContext.Instance().DrawContent.ClearAll();
+                }
+            
             };
             
             if (_taskParam.ExpKazuhaPickup) findExp();
