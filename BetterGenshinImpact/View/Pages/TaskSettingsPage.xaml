@@ -1145,6 +1145,8 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
@@ -1162,9 +1164,27 @@
                                 Grid.RowSpan="2"
                                 Grid.Column="1"
                                 HorizontalContentAlignment="Center"
-                                Margin="0,0,36,0"
-                                MinWidth="120"
-                                Text="{Binding Config.AutoFightConfig.Timeout}" />
+                                Margin="10,0,20,0"
+                                MinWidth="90"
+                                Text="{Binding Config.AutoFightConfig.Timeout}"/>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="2"
+                                  FontTypography="Body"
+                                  Text="战斗过程游泳检测"
+                                  HorizontalAlignment="Right"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="2"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="触发后前往七天神像"
+                                  HorizontalAlignment="Right"
+                                  TextWrapping="Wrap" />
+                    <ui:ToggleSwitch Grid.Row="0"
+                                     Grid.RowSpan="2"
+                                     Grid.Column="3"
+                                     Margin="10,0,36,0"
+                                     HorizontalAlignment="Right"
+                                     IsChecked="{Binding Config.AutoFightConfig.SwimmingEnabled, Mode=TwoWay}" />
                 </Grid>
             </StackPanel>
         </ui:CardExpander>

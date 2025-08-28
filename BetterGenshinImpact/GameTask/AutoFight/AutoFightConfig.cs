@@ -161,5 +161,6 @@ public partial class AutoFightConfig : ObservableObject
     [ObservableProperty]
     private int _timeout = 120;
 
-
+    [ObservableProperty]
+    private bool _swimmingEnabled = false;
 }

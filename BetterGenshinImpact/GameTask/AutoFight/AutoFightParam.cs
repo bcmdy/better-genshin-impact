@@ -51,6 +51,7 @@ public class AutoFightParam : BaseTaskParam
         ExpKazuhaPickup = autoFightConfig.ExpKazuhaPickup;
         IsFirstCheck = autoFightConfig.FinishDetectConfig.IsFirstCheck;
         RotaryFactor = autoFightConfig.FinishDetectConfig.RotaryFactor;
+        SwimmingEnabled = autoFightConfig.SwimmingEnabled;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -77,4 +78,6 @@ public class AutoFightParam : BaseTaskParam
     public bool IsFirstCheck { get; set; } = true;
     
     public int RotaryFactor { get; set; } = 10;
+    
+    public static bool SwimmingEnabled  { get; set; } = false;
 }

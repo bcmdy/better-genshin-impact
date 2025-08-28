@@ -24,8 +24,9 @@ using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.View.Drawable;
-using BetterGenshinImpact.Core.Recognition;
-using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.Core.Recognition.OCR;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+
 
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
@@ -52,7 +53,7 @@ public class AutoFightTask : ISoloTask
     
     private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
     
-    private volatile bool fightEndFlag;
+    public static volatile  bool FightEndFlag;
     
     private class TaskFightFinishDetectConfig
     {
@@ -339,8 +340,8 @@ public class AutoFightTask : ISoloTask
         // if (await CheckFightFinish()) {
         //     return;
         // }
-        // var fightEndFlag = false;
-        fightEndFlag = false;
+        // var FightEndFlag = false;
+        FightEndFlag = false;
         var timeOutFlag = false;
         string lastFightName = "";
 
@@ -362,7 +363,8 @@ public class AutoFightTask : ISoloTask
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
-        var isExperiencePickup =  Task.FromResult(false);
+        var isExperiencePickup = false;
+        
         AutoFightAssets autoFightAssets = new AutoFightAssets();
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -382,7 +384,7 @@ public class AutoFightTask : ISoloTask
                         var experience58 =   autoFightAssets.InitializeRecognitionObject(58);
                         var experience57 =   autoFightAssets.InitializeRecognitionObject(57);
                         
-                        while (!(confirmationCount >= confirmationsNeeded || fightEndFlag) && !cts2.Token.IsCancellationRequested)
+                        while (!(confirmationCount >= confirmationsNeeded || FightEndFlag) && !cts2.Token.IsCancellationRequested)
                         {
                             try
                             {
@@ -399,9 +401,9 @@ public class AutoFightTask : ISoloTask
 
                                         return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
                                     }
-                                }, cts2.Token, 1, 150);
+                                }, cts2.Token, 1, 150).Result;
 
-                                confirmationCount = isExperiencePickup.Result ? confirmationCount + 1 : 0;
+                                confirmationCount = isExperiencePickup ? confirmationCount + 1 : 0;
                             }
                             catch (OperationCanceledException ex)
                             {
@@ -542,7 +544,7 @@ public class AutoFightTask : ISoloTask
                         if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= 6)
                         {
                             Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
-                            fightEndFlag = true;
+                            FightEndFlag = true;
                             timeOutFlag = true;
                             break;
                         }
@@ -555,7 +557,7 @@ public class AutoFightTask : ISoloTask
                         }
 
                         lastFightName = command.Name;
-                        if (!fightEndFlag && _taskParam is { FightFinishDetectEnabled: true })
+                        if (!FightEndFlag && _taskParam is { FightFinishDetectEnabled: true })
                         {
                             //处于最后一个位置，或者当前执行人和下一个人名字不一样的情况，满足一定条件(开启快速检查，并且检查时间大于0或人名存在配置)检查战斗
                             if (i == combatCommands.Count - 1
@@ -579,18 +581,18 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
                                 
-                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                FightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                             }
                         }
 
-                        if (fightEndFlag)
+                        if (FightEndFlag)
                         {
                             break;
                         }
                     }
 
 
-                    if (fightEndFlag)
+                    if (FightEndFlag)
                     {
                         break;
                     }
@@ -609,15 +611,15 @@ public class AutoFightTask : ISoloTask
         }, cts2.Token);
 
         await fightTask;
-        if ((_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot) && !isExperiencePickup.Result)
+        if ((_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot) && !isExperiencePickup)
         {
             Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             return;
         }
         
-        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", isExperiencePickup.Result? "执行" : "不执行");
+        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", isExperiencePickup? "执行" : "不执行");
         
-        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || isExperiencePickup.Result))
+        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || isExperiencePickup))
         {
             // 队伍中存在万叶的时候使用一次长E
             var kazuha = combatScenes.SelectAvatar("枫原万叶");

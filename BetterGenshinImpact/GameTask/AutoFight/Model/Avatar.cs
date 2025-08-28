@@ -20,6 +20,7 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
+using BetterGenshinImpact.GameTask.AutoFight;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -107,7 +108,7 @@ public class Avatar
     /// <param name="region"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
+    private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
         if (Bv.IsInRevivePrompt(region))
         {
@@ -117,6 +118,35 @@ public class Avatar
             Sleep(600, ct);
             TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
         }
+        else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
+        {
+            Logger.LogWarning("战斗过程检测到游泳，前往七天神像重试");
+            // 先打开地图
+            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+            Sleep(600, ct);
+            TpForRecover(ct, new RetryException("战斗过程检测到游泳，前往七天神像重试"));
+        }
+    }
+    
+    /// <summary>
+    /// 游泳检测（色块连通性检测）
+    /// </summary>
+    private static bool SwimmingConfirm(Region region)
+    {
+        var mask = OpenCvCommonHelper.Threshold(region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11).SrcMat, 
+            new Scalar(242, 223, 39),new Scalar(255, 233, 44));
+        var labels = new Mat();
+        var stats = new Mat();
+        var centroids = new Mat();
+
+        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+        labels.Dispose();
+        stats.Dispose();
+        centroids.Dispose();
+
+        return numLabels > 1;
     }
 
     /// <summary>
