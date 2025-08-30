@@ -24,7 +24,6 @@ using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.View.Drawable;
-using BetterGenshinImpact.Core.Recognition.OCR;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 
 
@@ -55,7 +54,11 @@ public class AutoFightTask : ISoloTask
     
     public static volatile  bool FightEndFlag;
     
-    private volatile bool _isExperiencePickup = false;
+    private static volatile bool _isExperiencePickup = false;
+    
+    public static volatile bool IsTpForRecover = false;
+    
+    // public static Point2f FightPosition = new Point2f(0, 0);
     
     private class TaskFightFinishDetectConfig
     {
@@ -266,6 +269,7 @@ public class AutoFightTask : ISoloTask
         }
 
         _finishDetectConfig = new TaskFightFinishDetectConfig(_taskParam.FinishDetectConfig);
+        
     }
     public CombatScenes GetCombatScenesWithRetry()
     {
@@ -365,16 +369,28 @@ public class AutoFightTask : ISoloTask
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
-        
-        
         // AutoFightAssets autoFightAssets = new AutoFightAssets();
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
+            // #region 记录战斗地点
+            // NavigationInstance navigationInstance = new NavigationInstance();
+            //
+            //    FightPosition = navigationInstance.GetPosition(CaptureToRectArea(), TaskContext.Instance().Config.DevConfig.RecordMapName);
+            //    Logger.LogInformation($"游泳检测打开，记录战斗地点：{FightPosition.X},{FightPosition.Y}");
+            //    return;
+            //
+            // #endregion
             
-            #region 基于战斗检测经验值开关万叶拾取功能
+            #region 基于战斗检测经验值开关万叶拾取功能同步任务
             
-            if (_taskParam.ExpKazuhaPickup) FindExp(cts2.Token).Start();
+            if (_taskParam.ExpKazuhaPickup) FindExp(cts2.Token);
+            
+            #endregion
+            
+            #region 自动吃药功能同步任务
+            
+            if (_taskParam.TakeMedicineEnabled) TakeMedicine(cts2.Token);
             
             #endregion
             
@@ -544,6 +560,7 @@ public class AutoFightTask : ISoloTask
             }
             finally
             {
+                FightEndFlag = true;
                 Simulation.ReleaseAllKey();
             }
         }, cts2.Token);
@@ -552,10 +569,25 @@ public class AutoFightTask : ISoloTask
         if ((_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot) && !_isExperiencePickup)
         {
             Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
+            
+            if (_taskParam.EndBloodCheackEnabled)
+            {
+                //防止检测战斗结束时，派蒙头冠消失
+                var pixelValue = CaptureToRectArea().SrcMat.At<Vec3b>(32, 67);
+                // 检查每个通道的值是否在允许的范围内
+                if (!(Math.Abs(pixelValue[0] - 143) <= 10 &&
+                      Math.Abs(pixelValue[1] - 196) <= 10 &&
+                      Math.Abs(pixelValue[2] - 233) <= 10))
+                {
+                    await Delay(1000, ct);
+                }
+            
+                await EndBloodCheck(ct);
+            }
+            
             return;
         }
-
-        Logger.LogInformation($"_isExperiencePickup:{_isExperiencePickup}");
+      
         if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", _isExperiencePickup? "执行" : "不执行");
         
         if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
@@ -601,7 +633,7 @@ public class AutoFightTask : ISoloTask
                     {
                         await kazuha.WaitSkillCd(ct);
                         kazuha.UseSkill(true);
-                        await Task.Delay(100);
+                        await Delay(100, ct);
                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                         await Delay(1500, ct);
                     }
@@ -641,6 +673,23 @@ public class AutoFightTask : ISoloTask
             // 执行自动拾取掉落物的功能
             await new ScanPickTask().Start(ct);
         }
+
+        if (_taskParam.EndBloodCheackEnabled)
+        {
+            // if(!Bv.IsInBigMapUi(CaptureToRectArea()))
+            //防止检测战斗结束时，派蒙头冠消失
+            var pixelValue = CaptureToRectArea().SrcMat.At<Vec3b>(32, 67);
+            // 检查每个通道的值是否在允许的范围内
+            if (!(Math.Abs(pixelValue[0] - 143) <= 10 &&
+                  Math.Abs(pixelValue[1] - 196) <= 10 &&
+                  Math.Abs(pixelValue[2] - 233) <= 10))
+            {
+                await Delay(1000, ct);
+            }
+            
+            await EndBloodCheck(ct);
+        }
+        
     }
 
     private void LogScreenResolution()
@@ -748,20 +797,19 @@ public class AutoFightTask : ISoloTask
         {
             Task.Run(() =>
             {
-                var confirmationCount = 0;
                 _isExperiencePickup = false;
 
                 var experience60 =   autoFightAssets.InitializeRecognitionObject(60);
                 var experience58 =   autoFightAssets.InitializeRecognitionObject(58);
                 var experience57 =   autoFightAssets.InitializeRecognitionObject(57);
                 
-                while (!(confirmationCount >= 2 || FightEndFlag) && !cts2.IsCancellationRequested)
+                while (!(_isExperiencePickup || FightEndFlag) && !cts2.IsCancellationRequested)
                 {
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
                         
-                        var isExperiencePickup = NewRetry.WaitForAction(() =>
+                        _isExperiencePickup = NewRetry.WaitForAction(() =>
                         {
                             using (var ra = CaptureToRectArea())
                             {
@@ -773,8 +821,7 @@ public class AutoFightTask : ISoloTask
                                 return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
                             }
                         }, cts2, 1, 150).Result;
-
-                        confirmationCount = isExperiencePickup ? confirmationCount + 1 : 0;
+                        
                     }
                     catch (OperationCanceledException ex)
                     {
@@ -782,14 +829,13 @@ public class AutoFightTask : ISoloTask
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
+                        // Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
                     }
 
                 }
 
-                _isExperiencePickup = confirmationCount >= 2;
                 Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
-                        confirmationCount >= 2 ? "启用" : "关闭");
+                    _isExperiencePickup ? "启用" : "关闭");
                 
             }, cts2); 
         }
@@ -807,6 +853,271 @@ public class AutoFightTask : ISoloTask
         }
         
         return Task.CompletedTask;
+    }
+    
+    private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
+    
+    private Task TakeMedicine(CancellationToken cts2,bool endBloodCheck = false)
+    {
+        IsTpForRecover = true; //控制是否检查复活
+        var resurrectionCount = 0; // 吃复活药次数
+        var recoverCount = 0; // 吃复活药次数
+        var tolerance = 10;// 定义容错范围
+
+        try
+        {
+            Task.Run(() =>
+            {
+
+                using (var ra = CaptureToRectArea())
+                {
+                    var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
+                    var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,new Scalar(192, 233, 102));
+                    var labels = new Mat();
+                    var stats = new Mat();
+                    var centroids = new Mat();
+
+                    var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                        connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                    labels.Dispose();
+                    stats.Dispose();
+                    centroids.Dispose();
+
+                    if (!(numLabels > 1))
+                    {
+                        PathingConditionConfig.AutoEatCount = 3;
+                        Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
+                    }
+                    else
+                    {
+                        if (!endBloodCheck)  Logger.LogInformation(
+                            "自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}，结束吃药{endBloodCheck}",
+                            _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount, _taskParam.EndBloodCheackEnabled ? "开" : "关");
+                    }
+                }
+
+                while (!FightEndFlag && !cts2.IsCancellationRequested)
+                {
+                    var gray = false;
+                    var redBlood = false;
+                    try
+                    {
+                        cts2.ThrowIfCancellationRequested();
+
+                        var cheack = NewRetry.WaitForAction(() =>
+                        {
+                            using (var ra = CaptureToRectArea())
+                            {
+                                var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
+                                var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
+                                    new Scalar(250, 91, 89));
+                                var labels = new Mat();
+                                var stats = new Mat();
+                                var centroids = new Mat();
+
+                                var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                                    connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                                for (int h = 0; h < 4; h++)
+                                {
+                                    Mat croppedImage = ra.DeriveCrop(1801, 256 + 96 * h, 2, 2).SrcMat;
+                                    
+                                    var isGrayscale = true;
+                                    for (int i = 0; i < croppedImage.Rows; i++)
+                                    {
+                                        for (int j = 0; j < croppedImage.Cols; j++)
+                                        {
+                                            Vec3b pixel = croppedImage.At<Vec3b>(i, j);
+                                            if (pixel[0] != pixel[1] || pixel[1] != pixel[2])
+                                            {
+                                                isGrayscale = false;
+                                                break;
+                                            }
+                                        }
+
+                                        if (!isGrayscale)
+                                        {
+                                            break;
+                                        }
+                                    }
+
+                                    if (isGrayscale)
+                                    {
+                                        var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠
+
+                                        // 检查每个通道的值是否在允许的范围内
+                                        if (Math.Abs(pixelValue[0] - 143) <= tolerance &&
+                                            Math.Abs(pixelValue[1] - 196) <= tolerance &&
+                                            Math.Abs(pixelValue[2] - 233) <= tolerance)
+                                        {
+                                            // Logger.LogInformation("自动吃药：第{num}个位置发现死亡", h + 1);
+                                            gray = true;
+                                        }
+                                    }
+                                    
+                                    croppedImage.Dispose();
+                                }
+
+                                labels.Dispose();
+                                stats.Dispose();
+                                centroids.Dispose();
+                                
+                                // Logger.LogInformation("自动吃药：发现{text} ", numLabels);
+
+                                if (numLabels > 1)
+                                {
+                                    redBlood = true;
+                                }
+
+                                return redBlood || gray;
+                            }
+                        }, cts2, 1, _taskParam.CheckInterval).Result;
+
+                        if ((redBlood || gray) &&
+                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > _taskParam.MedicineInterval)
+                        {
+                            PathingConditionConfig.LastEatTime = DateTime.Now;
+
+                            var shouldRecover = (redBlood && recoverCount <= _taskParam.RecoverMaxCount) ||
+                                                 (gray && resurrectionCount < 5);
+
+                            if (shouldRecover)
+                            {
+                                if (redBlood) recoverCount++;
+                                if (gray) resurrectionCount++;
+                                Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
+                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                                redBlood = false;
+                                gray = false;
+
+                                if (endBloodCheck && resurrectionCount >= 1) return;//单次检测复用
+                            }
+                            else
+                            {
+                                Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
+                                IsTpForRecover = false; // 吃完药品后，关闭复活检测
+                                return;
+                            }
+                        }
+                        
+                        if (resurrectionCount > 4) IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
+
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        Console.WriteLine($"自动吃药发生异常: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Console.WriteLine($"自动吃药发生异常: {ex.Message}");
+                    }
+                }
+
+            }, cts2);
+        }
+        catch (OperationCanceledException ex)
+        {
+            Console.WriteLine($"自动吃药发生异常: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"自动吃药发生异常: {ex.Message}");
+        }
+        
+        IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
+        return Task.CompletedTask;
+    }
+
+    //定义按键，用于结束吃药的切换人
+    private static readonly GIActions[] MemberActions = new GIActions[]
+    {
+        GIActions.SwitchMember1,
+        GIActions.SwitchMember2,
+        GIActions.SwitchMember3,
+        GIActions.SwitchMember4
+    };
+    
+    private async Task EndBloodCheck(CancellationToken ct)
+    {
+        IsTpForRecover = true; // 复活检测关闭
+        var ms = 2500;  //检测区域是否有红血，没有发现红血，则退出
+        var useMedicine = new List<int> { 1, 2, 3, 4 };
+        
+        try
+        { 
+            await TakeMedicine(ct,true);//尝试吃药和复活角色
+            
+            while (ms > 0)
+            {
+               using (var ra = CaptureToRectArea())
+               {
+                   for (int h = 0; h < 4; h++)
+                   {
+                       var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
+                       var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),new Scalar(161, 220, 60));
+                       var labels = new Mat();
+                       var stats = new Mat();
+                       var centroids = new Mat();
+
+                       var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                       var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
+                       var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
+                       var labels2 = new Mat();
+                       var stats2 = new Mat();
+                       var centroids2 = new Mat();
+
+                       var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
+                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+                       
+                       labels.Dispose();
+                       stats.Dispose();
+                       centroids.Dispose();
+                       labels2.Dispose();
+                       stats2.Dispose();
+                       centroids2.Dispose();
+
+                       if (numLabels > 1 || !(numLabels2 > 1))
+                       {
+                           ms = 1;
+                           useMedicine.Remove(h+1);
+                       }
+                      
+                   }
+               }
+               
+               await Task.Delay(100, ct);
+               ms -= 95;
+            }
+            
+            if (useMedicine.Count > 0) 
+            {
+               Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
+               //通过编号切换角色补血,不进行确认是否吃上
+               foreach (var num in useMedicine)
+               {
+                   Simulation.SendInput.SimulateAction(MemberActions[num-1]);
+                   await Task.Delay(500, ct);
+                   Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                   await Task.Delay(1200, ct);
+               }
+            }
+            else
+            {
+               Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药","不执行");
+            }
+            IsTpForRecover = false; // 复活检测关闭
+        }
+        catch (OperationCanceledException ex)
+        {
+            Console.WriteLine($"战斗结束血量检测发生异常: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"战斗结束血量检测发生异常: {ex.Message}");
+        }
     }
 
     static double FindMax(double[] numbers)

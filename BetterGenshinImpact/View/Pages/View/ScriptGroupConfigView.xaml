@@ -87,12 +87,12 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="是否开启自动吃药"
+                                      Text="地图追踪自动吃药（请佩戴便携营养袋）"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="检测到红血状态时自动使用便携营养袋"
+                                      Text="非实时，触发地图追踪红血和复活检测后尝试吃药恢复"
                                       TextWrapping="Wrap" />
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
@@ -1401,6 +1401,154 @@
                             </StackPanel>
                         </ui:CardExpander>
                     </Grid>
+                    
+                    <Grid Margin="16,10,52,0">
+
+                    <ui:CardExpander Margin="0,0,0,12"
+                                     ContentPadding="0"
+                                     IsExpanded="False">
+
+                        <ui:CardExpander.Header>
+                            <Grid>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBlock Grid.Row="0"
+                                              Grid.Column="0"
+                                              FontTypography="Body"
+                                              Text="战斗过程自动吃药"
+                                              TextWrapping="Wrap" />
+                                <ui:TextBlock Grid.Row="1"
+                                              Grid.Column="0"
+                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                              Text="可配置检测和吃药间隔、吃药上限和结束吃药等(需佩戴“便携营养袋”)"
+                                              TextWrapping="Wrap" />
+                                <ui:ToggleSwitch Grid.Row="0"
+                                                 Grid.RowSpan="2"
+                                                 Grid.Column="1"
+                                                 Margin="0,0,36,0"
+                                                 IsChecked="{Binding PathingConfig.AutoFightConfig.TakeMedicineEnabled}" />
+                            </Grid>
+                        </ui:CardExpander.Header>
+                        <StackPanel>
+                           <Grid Margin="16,26,16,16">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            
+                               <ui:TextBlock Grid.Row="0"
+                                             Grid.Column="0"
+                                             FontTypography="Body"
+                                             Text="自动吃药参数"
+                                             TextWrapping="Wrap" />
+                               <ui:TextBlock Grid.Row="1"
+                                             Grid.Column="0"
+                                             Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                             Text="时间单位(毫秒)"
+                                             TextWrapping="Wrap" />  
+                            
+                            <ui:TextBlock Grid.Row="0"
+                                          Grid.RowSpan="2"
+                                          Grid.Column="1"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          FontSize="9"
+                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                          Margin="15,-45,10,0"
+                                          FontTypography="Body"
+                                          Text="检测间隔"
+                                          TextWrapping="Wrap" />
+                            <ui:TextBox Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="1"
+                                        Height="40"
+                                        HorizontalContentAlignment="Center"
+                                        Margin="20,0,10,0"
+                                        MinWidth="70"
+                                        IsEnabled="{Binding PathingConfig.AutoFightConfig.TakeMedicineEnabled}"
+                                        Text="{Binding PathingConfig.AutoFightConfig.CheckInterval}"/>
+                            
+                            <ui:TextBlock Grid.Row="0"
+                                          Grid.RowSpan="2"
+                                          Grid.Column="2"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          FontSize="9"
+                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                          Margin="0,-45,10,0"
+                                          FontTypography="Body"
+                                          Text="吃药间隔"
+                                          TextWrapping="Wrap" />
+                            <ui:TextBox Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="2"
+                                        HorizontalContentAlignment="Center"
+                                        Height="40"
+                                        Margin="0,0,10,0"
+                                        MinWidth="70"
+                                        IsEnabled="{Binding PathingConfig.AutoFightConfig.TakeMedicineEnabled}"
+                                        Text="{Binding PathingConfig.AutoFightConfig.MedicineInterval}"/>
+                            
+                            <ui:TextBlock Grid.Row="0"
+                                          Grid.RowSpan="2"
+                                          Grid.Column="3"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          FontSize="9"
+                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                          Margin="0,-45,20,0"
+                                          FontTypography="Body"
+                                          Text="单次吃药上限"
+                                          TextWrapping="Wrap" />
+                            <ui:TextBox Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="3"
+                                        HorizontalContentAlignment="Center"
+                                        Height="40"
+                                        Margin="0,0,15,0"
+                                        MinWidth="70"
+                                        IsEnabled="{Binding PathingConfig.AutoFightConfig.TakeMedicineEnabled}"
+                                        Text="{Binding PathingConfig.AutoFightConfig.RecoverMaxCount}"/>
+                               
+                               <ui:TextBlock Grid.Row="0"
+                                             Grid.Column="4"
+                                             FontTypography="Body"
+                                             Text="战后检测吃药"
+                                             HorizontalAlignment="Right"
+                                             TextWrapping="Wrap" />
+                               <ui:TextBlock Grid.Row="1"
+                                             Grid.Column="4"
+                                             Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                             Text="可单独开启或关闭"
+                                             HorizontalAlignment="Right"
+                                             TextWrapping="Wrap" />  
+                               <ui:ToggleSwitch Grid.Row="0"
+                                                Grid.RowSpan="2"
+                                                Grid.Column="5"
+                                                Margin="10,0,36,0"
+                                                HorizontalAlignment="Right"
+                                                IsChecked="{Binding PathingConfig.AutoFightConfig.EndBloodCheackEnabled, Mode=TwoWay}" />
+                               
+                        </Grid>
+                        </StackPanel>
+                    </ui:CardExpander>
+                </Grid>
+                    
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -1537,45 +1685,44 @@
                                     Margin="0,0,36,0"
                                     Text="{Binding PathingConfig.AutoFightConfig.KazuhaPartyName}" />
                     </Grid>
-                    <Grid Margin="16">
+                    <Grid Margin="16,10,16,16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="战斗超时（秒）"
+                                  Text="自动战斗超时(秒)"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="当战斗超过一定时间后，自动停止战斗"
+                                  Text="到达指定时间后，自动停止战斗"
                                   TextWrapping="Wrap" />
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
                                 Grid.Column="1"
                                 HorizontalContentAlignment="Center"
                                 Margin="10,0,20,0"
-                                MinWidth="90"
+                                MinWidth="50"
                                 Text="{Binding PathingConfig.AutoFightConfig.Timeout}"/>
+                    
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="2"
                                   FontTypography="Body"
-                                  Text="战斗过程游泳检测"
-                                  HorizontalAlignment="Right"
+                                  Text="游泳检测(自动战斗过程中)"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="2"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="触发后前往七天神像"
-                                  HorizontalAlignment="Right"
+                                  Text="检测到游泳，前往七天神像恢复"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"

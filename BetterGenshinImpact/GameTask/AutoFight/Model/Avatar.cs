@@ -20,7 +20,7 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
-using BetterGenshinImpact.GameTask.AutoFight;
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -88,7 +88,8 @@ public class Avatar
     public CombatScenes CombatScenes { get; set; }
 
     public static string? LastActiveAvatar { get; internal set; } = null;
-
+    
+    private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
 
     public Avatar(CombatScenes combatScenes, string name, int index, Rect nameRect, double manualSkillCd = -1)
     {
@@ -110,13 +111,33 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        if (Bv.IsInRevivePrompt(region))
+        if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
+            if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)
+            {
+                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                Sleep(1000, ct);
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                Sleep(1000, ct);
+                PathingConditionConfig.AutoEatCount++;
+                return;
+            }
+            
+            PathingConditionConfig.AutoEatCount = 0;
             Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
             // 先打开地图
             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
             Sleep(600, ct);
             TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
+        }
+        else if (AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
+        {
+            Logger.LogWarning("检测到复苏界面，存在角色被击败，尝试吃药");
+            Sleep(600, ct);
+            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+            Sleep(600, ct);
+            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
@@ -212,6 +233,17 @@ public class Avatar
             // Cv2.ImWrite($"log/切换.png", region.SrcMat);
             Sleep(250, Ct);
         }
+        //战斗过程切换失败尝试脱困
+        if (!AutoFightTask.FightEndFlag && Bv.GetMotionStatus(CaptureToRectArea()) != MotionStatus.Fly)
+        {
+            Logger.LogWarning("切换角色失败，尝试脱困");
+            Simulation.SendInput.SimulateAction(GIActions.Jump);
+            Sleep(200, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.Jump);
+            Sleep(200, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+            Simulation.SendInput.SimulateAction(GIActions.Drop);
+        }
     }
 
     /// <summary>
@@ -268,7 +300,18 @@ public class Avatar
 
             Sleep(250, Ct);
         }
-
+        
+        //战斗过程切换失败尝试脱困
+        if (!AutoFightTask.FightEndFlag && Bv.GetMotionStatus(CaptureToRectArea()) != MotionStatus.Fly)
+        {
+            Logger.LogWarning("切换角色失败，尝试脱困");
+            Simulation.SendInput.SimulateAction(GIActions.Jump);
+            Sleep(200, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.Jump);
+            Sleep(200, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+            Simulation.SendInput.SimulateAction(GIActions.Drop);
+        }
         return false;
     }
 
@@ -486,7 +529,7 @@ public class Avatar
     /// <returns>当前技能CD</returns>
     public double AfterUseSkill(ImageRegion? givenRegion = null)
     {
-        LastSkillTime = DateTime.UtcNow;
+        LastSkillTime = DateTime.UtcNow + TimeSpan.FromSeconds(Name == "枫原万叶" ? 0.2 : 0);
         if (ManualSkillCd > 0)
         {
             return GetSkillCdSeconds();

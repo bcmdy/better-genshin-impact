@@ -37,7 +37,8 @@ using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
-using BetterGenshinImpact.ViewModel.Pages.View;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -53,6 +54,8 @@ public class PathExecutor
     private PathingPartyConfig? _partyConfig;
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
+    
+    private PathingConditionConfig  PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
 
     public PathExecutor(CancellationToken ct)
     {
@@ -67,8 +70,6 @@ public class PathExecutor
         get => _partyConfig ?? PathingPartyConfig.BuildDefault();
         set => _partyConfig = value;
     }
-    
-
 
     /// <summary>
     /// 判断是否中止地图追踪的条件
@@ -165,9 +166,12 @@ public class PathExecutor
 
         await Delay(100, ct);
         Navigation.WarmUp(); // 提前加载地图特征点
+        
+        await InitializeAutoEat();//初始化自动吃药
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
+            PathingConditionConfig.AutoEatCount = 0;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
             {
@@ -278,6 +282,40 @@ public class PathExecutor
             }
 
         }
+    }
+
+    private Task InitializeAutoEat()
+    {
+        PathingConditionConfig.AutoEatEnabled = PartyConfig.AutoEatEnabled;
+        
+        using (var ra = CaptureToRectArea())
+        {
+            var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
+            var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(192, 233, 102));
+            var labels = new Mat();
+            var stats = new Mat();
+            var centroids = new Mat();
+
+            var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+            labels.Dispose();
+            stats.Dispose();
+            centroids.Dispose();
+            
+            if (numLabels <= 1)
+            {
+                PathingConditionConfig.AutoEatCount = 3;
+                Logger.LogInformation("自动吃药：未发现营养袋，自动吃药{text}", "关闭");
+            }
+            else
+            {
+                PathingConditionConfig.AutoEatCount = 0;
+                Logger.LogInformation("自动吃药：已发现营养袋，自动吃药{text}", "开启");
+            }
+        }
+        
+        return Task.CompletedTask;
     }
 
     private bool IsTargetPoint(WaypointForTrack waypoint)
@@ -606,6 +644,7 @@ public class PathExecutor
         {
             Logger.LogInformation("当前角色血量过低，去七天神像恢复");
             await TpStatueOfTheSeven();
+            if (PathingConditionConfig.AutoEatCount<4) return;
             throw new RetryException("回血完成后重试路线");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -615,12 +654,24 @@ public class PathExecutor
             await Delay(4000, ct);
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
+            if (PathingConditionConfig.AutoEatCount<4) return;
             throw new RetryException("回血完成后重试路线");
         }
     }
-
+    
     private async Task TpStatueOfTheSeven()
     {
+        // Logger.LogWarning("LastEatTime:{LastEatTime}",PathingConditionConfig.LastEatTime);
+        if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3 && PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+        {
+            Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+            Sleep(600, ct);
+            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+            PathingConditionConfig.AutoEatCount++;
+            return;
+        }
+        
+        PathingConditionConfig.AutoEatCount = 0;
         // tp 到七天神像回血
         var tpTask = new TpTask(ct);
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);

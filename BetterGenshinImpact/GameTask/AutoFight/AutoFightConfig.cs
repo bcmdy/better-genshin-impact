@@ -163,4 +163,19 @@ public partial class AutoFightConfig : ObservableObject
 
     [ObservableProperty]
     private bool _swimmingEnabled = false;
+    
+    [ObservableProperty]
+    private bool _takeMedicineEnabled = false;
+    
+    [ObservableProperty]
+    private int _medicineInterval = 1500;
+    
+    [ObservableProperty]
+    private int _checkInterval = 200;
+    
+    [ObservableProperty]
+    private int _recoverMaxCount = 5;
+    
+    [ObservableProperty]
+    private bool _endBloodCheackEnabled = false;
 }
