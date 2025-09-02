@@ -245,12 +245,12 @@
                             <ui:TextBlock Grid.Row="0"
                                           Grid.Column="0"
                                           FontTypography="Body"
-                                          Text="开启自动吃药"
+                                          Text="地图追踪自动吃药（请佩戴便携营养袋）"
                                           TextWrapping="Wrap" />
                             <ui:TextBlock Grid.Row="1"
                                           Grid.Column="0"
                                           Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="检测到红血状态时自动使用便携营养袋"
+                                          Text="非实时，触发地图追踪红血和复活检测后尝试吃药恢复"
                                           TextWrapping="Wrap" />
                         </Grid>
                     </ui:CardControl.Header>

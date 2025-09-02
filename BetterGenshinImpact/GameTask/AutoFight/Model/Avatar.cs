@@ -90,6 +90,18 @@ public class Avatar
 
     public static string? LastActiveAvatar { get; internal set; } = null;
     
+    /// <summary>
+    /// 自动吃药配置
+    /// </summary>
+    private static bool _autoEatEnabled = false;
+    
+    private static PathingPartyConfig? _partyConfig;
+    public static PathingPartyConfig PartyConfig
+    {
+        get => _partyConfig ?? PathingPartyConfig.BuildDefault();
+        set => _partyConfig = value;
+    }
+    
     private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
 
     public Avatar(CombatScenes combatScenes, string name, int index, Rect nameRect, double manualSkillCd = -1)
@@ -114,9 +126,9 @@ public class Avatar
     {
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)
+            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
             {
-                if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+                if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
                 {
                     PathingConditionConfig.LastEatTime = DateTime.Now;
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复");
@@ -135,8 +147,9 @@ public class Avatar
                 return;
             }
             
-            PathingConditionConfig.AutoEatCount = 0;
             Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
+            Sleep(600, ct);
+            PathingConditionConfig.AutoEatCount = 0;
             // 先打开地图
             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
             Sleep(600, ct);
@@ -144,7 +157,7 @@ public class Avatar
         }
         else if (AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+            if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
             {
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 Logger.LogWarning("检测到复苏界面，存在角色被击败，尝试吃药");

@@ -288,9 +288,12 @@ public class PathExecutor
         }
     }
 
+    private static bool _autoEatEnabled = false;
+    
     private Task InitializeAutoEat()
     {
-        PathingConditionConfig.AutoEatEnabled = PartyConfig.AutoEatEnabled;
+
+        // _autoEatEnabled = PartyConfig.Enabled ? PartyConfig.AutoEatEnabled : PathingConditionConfig.AutoEatEnabled; //地图追踪配置
         
         using (var ra = CaptureToRectArea())
         {
@@ -648,7 +651,7 @@ public class PathExecutor
         {
             Logger.LogInformation("当前角色血量过低，去七天神像恢复");
             await TpStatueOfTheSeven();
-            if (PathingConditionConfig.AutoEatCount<4) return;
+            if (PathingConditionConfig.AutoEatCount < 3) return;
             throw new RetryException("回血完成后重试路线");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -658,17 +661,16 @@ public class PathExecutor
             await Delay(4000, ct);
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
-            if (PathingConditionConfig.AutoEatCount<4) return;
+            if (PathingConditionConfig.AutoEatCount < 3) return;
             throw new RetryException("回血完成后重试路线");
         }
     }
     
     private async Task TpStatueOfTheSeven()
     {
-        // Logger.LogWarning("LastEatTime:{LastEatTime}",PathingConditionConfig.LastEatTime);
-        if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)
+        if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
-            if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+            if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
             {
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复");
@@ -678,20 +680,19 @@ public class PathExecutor
             }
             else
             {
-                await Delay((int)(PathingConditionConfig.LastEatTime.AddMinutes(2) - DateTime.Now).TotalMilliseconds, ct);
+                await Delay((int)(PathingConditionConfig.LastEatTime.AddSeconds(2) - DateTime.Now).TotalMilliseconds, ct);
                 Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
                 Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
                 PathingConditionConfig.AutoEatCount++;
             }
-            
             return;
         }
-        
-        PathingConditionConfig.AutoEatCount = 0;
+
         // tp 到七天神像回血
         var tpTask = new TpTask(ct);
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);
         Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
+        PathingConditionConfig.AutoEatCount = 0;
     }
 
     /// <summary>

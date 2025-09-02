@@ -13,7 +13,7 @@ public partial class PathingPartyConfig : ObservableObject
 {
     // 配置是否启用，不启用会使用地图追踪内的条件配置
     [ObservableProperty]
-    private bool _enabled = false;
+    private static bool _enabled = false;
     
     // 是否启用自动拾取
     [ObservableProperty]
@@ -95,7 +95,7 @@ public partial class PathingPartyConfig : ObservableObject
     
     // 启用自动吃药功能
     [ObservableProperty]
-    private bool _autoEatEnabled = false;
+    private static bool _autoEatEnabled = false;
 
     /// <summary>
     /// 自动吃食物配置
@@ -133,7 +133,7 @@ public partial class PathingPartyConfig : ObservableObject
         {
             OnlyInTeleportRecover = pathingConditionConfig.OnlyInTeleportRecover,
             UseGadgetIntervalMs = pathingConditionConfig.UseGadgetIntervalMs,
-            AutoEatEnabled = pathingConditionConfig.AutoEatEnabled
+            AutoEatEnabled = _enabled ? _autoEatEnabled : pathingConditionConfig.AutoEatEnabled
         };
     }
 }
