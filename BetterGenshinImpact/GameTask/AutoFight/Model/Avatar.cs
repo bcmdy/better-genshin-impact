@@ -128,8 +128,9 @@ public class Avatar
                 }
                 else
                 {
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                    PathingConditionConfig.AutoEatCount++;
                     Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
-
                 }
                 return;
             }
@@ -154,6 +155,8 @@ public class Avatar
             }
             else
             {
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                PathingConditionConfig.AutoEatCount++;
                 Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
             }
         }
@@ -188,6 +191,7 @@ public class Avatar
                 Logger.LogWarning("游泳检测：回到战斗地点失败");
             }
             
+            PathingConditionConfig.AutoEatCount = 0;
             Logger.LogWarning("战斗过程检测到游泳，前往七天神像重试");
             TpForRecover(ct, new RetryException("战斗过程检测到游泳，前往七天神像重试"));
         }

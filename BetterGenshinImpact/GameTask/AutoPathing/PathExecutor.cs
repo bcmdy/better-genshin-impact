@@ -678,7 +678,10 @@ public class PathExecutor
             }
             else
             {
+                await Delay((int)(PathingConditionConfig.LastEatTime.AddMinutes(2) - DateTime.Now).TotalMilliseconds, ct);
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
                 Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+                PathingConditionConfig.AutoEatCount++;
             }
             
             return;
