@@ -903,6 +903,7 @@ public class AutoFightTask : ISoloTask
                 {
                     var gray = false;
                     var redBlood = false;
+                    var paiMon = false;
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
@@ -947,13 +948,12 @@ public class AutoFightTask : ISoloTask
                                     if (isGrayscale)
                                     {
                                         var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠
-
-                                        // 检查每个通道的值是否在允许的范围内
-                                        if (Math.Abs(pixelValue[0] - 143) <= tolerance &&
-                                            Math.Abs(pixelValue[1] - 196) <= tolerance &&
-                                            Math.Abs(pixelValue[2] - 233) <= tolerance)
+                                        paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
+                                                  Math.Abs(pixelValue[1] - 196) <= tolerance &&
+                                                  Math.Abs(pixelValue[2] - 233) <= tolerance);
+                                        
+                                        if (paiMon)
                                         {
-                                            // Logger.LogInformation("自动吃药：第{num}个位置发现死亡", h + 1);
                                             gray = true;
                                         }
                                     }
@@ -964,12 +964,23 @@ public class AutoFightTask : ISoloTask
                                 labels.Dispose();
                                 stats.Dispose();
                                 centroids.Dispose();
-                                
-                                // Logger.LogInformation("自动吃药：发现{text} ", numLabels);
 
                                 if (numLabels > 1)
                                 {
                                     redBlood = true;
+                                }
+                                else
+                                {
+                                    if (paiMon)
+                                    {
+                                        var pixelValue = ra.SrcMat.At<Vec3b>(814, 1010);
+                                        if (!(Math.Abs(pixelValue[0] - 150) <= tolerance &&
+                                             Math.Abs(pixelValue[1] - 215) <= tolerance &&
+                                             Math.Abs(pixelValue[2] - 34) <= tolerance))
+                                        { 
+                                            redBlood = true;
+                                        }
+                                    }
                                 }
 
                                 return redBlood || gray;

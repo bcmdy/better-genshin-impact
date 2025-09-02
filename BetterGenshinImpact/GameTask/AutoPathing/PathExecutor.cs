@@ -137,7 +137,7 @@ public class PathExecutor
         const string sdKey = "PathExecutor";
         var sd = RunnerContext.Instance.SuspendableDictionary;
         sd.Remove(sdKey);
-
+        
         RunnerContext.Instance.SuspendableDictionary.TryAdd(sdKey, pathExecutorSuspend);
 
         if (!task.Positions.Any())
@@ -168,6 +168,11 @@ public class PathExecutor
         Navigation.WarmUp(); // 提前加载地图特征点
         
         await InitializeAutoEat();//初始化自动吃药
+
+        if (PartyConfig.AutoPickEnabled)
+        {
+            TaskTriggerDispatcher.Instance().AddTrigger("AutoPick", null);
+        }
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {

@@ -133,7 +133,7 @@ public partial class PathingPartyConfig : ObservableObject
         {
             OnlyInTeleportRecover = pathingConditionConfig.OnlyInTeleportRecover,
             UseGadgetIntervalMs = pathingConditionConfig.UseGadgetIntervalMs,
-            AutoEatEnabled = _enabled ? _autoEatEnabled : pathingConditionConfig.AutoEatEnabled
+            AutoEatEnabled = _enabled ? _autoEatEnabled : pathingConditionConfig.AutoEatEnabled,
         };
     }
 }
