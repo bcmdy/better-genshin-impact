@@ -666,12 +666,21 @@ public class PathExecutor
     private async Task TpStatueOfTheSeven()
     {
         // Logger.LogWarning("LastEatTime:{LastEatTime}",PathingConditionConfig.LastEatTime);
-        if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3 && PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+        if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)
         {
-            Logger.LogWarning("自动吃药：尝试使用小道具恢复");
-            Sleep(600, ct);
-            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-            PathingConditionConfig.AutoEatCount++;
+            if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+            {
+                PathingConditionConfig.LastEatTime = DateTime.Now;
+                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                Sleep(600, ct);
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                PathingConditionConfig.AutoEatCount++;
+            }
+            else
+            {
+                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+            }
+            
             return;
         }
         

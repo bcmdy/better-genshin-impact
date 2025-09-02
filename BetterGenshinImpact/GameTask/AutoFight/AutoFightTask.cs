@@ -1096,14 +1096,20 @@ public class AutoFightTask : ISoloTask
             
             if (useMedicine.Count > 0) 
             {
+               //计算2上次吃药时间到现在是否超过2秒，未超过就等待
+               if ((DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
+               {
+                   await Task.Delay(1500 - (int)(DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
+               }
+               PathingConditionConfig.LastEatTime = DateTime.Now;
                Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
                //通过编号切换角色补血,不进行确认是否吃上
                foreach (var num in useMedicine)
                {
                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
-                   await Task.Delay(500, ct);
+                   await Task.Delay(800, ct);
                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                   await Task.Delay(1200, ct);
+                   await Task.Delay(1300, ct);
                }
             }
             else

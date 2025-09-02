@@ -116,12 +116,21 @@ public class Avatar
         {
             if (PathingConditionConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)
             {
-                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-                Sleep(1000, ct);
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                Sleep(1000, ct);
-                PathingConditionConfig.AutoEatCount++;
+                if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+                {
+                    PathingConditionConfig.LastEatTime = DateTime.Now;
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                    Sleep(1000, ct);
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                    Sleep(1000, ct);
+                    PathingConditionConfig.AutoEatCount++;
+                }
+                else
+                {
+                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+
+                }
                 return;
             }
             
@@ -134,11 +143,19 @@ public class Avatar
         }
         else if (AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            Logger.LogWarning("检测到复苏界面，存在角色被击败，尝试吃药");
-            Sleep(600, ct);
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-            Sleep(600, ct);
-            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+            if (PathingConditionConfig.LastEatTime.AddMinutes(2) < DateTime.Now)
+            {
+                PathingConditionConfig.LastEatTime = DateTime.Now;
+                Logger.LogWarning("检测到复苏界面，存在角色被击败，尝试吃药");
+                Sleep(600, ct);
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                Sleep(600, ct);
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+            }
+            else
+            {
+                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+            }
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
