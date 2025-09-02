@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.Core.Recognition;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using BetterGenshinImpact.GameTask.Common.Job;
 using OpenCvSharp;
@@ -54,11 +55,9 @@ public class AutoFightTask : ISoloTask
     
     public static volatile  bool FightEndFlag;
     
-    private static volatile bool _isExperiencePickup = false;
+    private static volatile bool _isExperiencePickup = true;
     
     public static volatile bool IsTpForRecover = false;
-    
-    // public static Point2f FightPosition = new Point2f(0, 0);
     
     private class TaskFightFinishDetectConfig
     {
@@ -588,10 +587,11 @@ public class AutoFightTask : ISoloTask
             return;
         }
       
-        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", _isExperiencePickup? "执行" : "不执行");
+        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", !_isExperiencePickup? "执行" : "不执行");
         
-        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
+        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || !_isExperiencePickup))
         {
+            // Logger.LogInformation("开始 _isExperiencePickup：{_isExperiencePickup}",_isExperiencePickup);
             // 队伍中存在万叶的时候使用一次长E
             var kazuha = combatScenes.SelectAvatar("枫原万叶");
             
@@ -787,7 +787,7 @@ public class AutoFightTask : ISoloTask
                (g >= 240 && g <= 255) &&
                (b >= 240 && b <= 255);
     }
-
+    
     //基于万叶经验值判断是否拾取
     private Task FindExp(CancellationToken cts2)
     {
@@ -797,30 +797,30 @@ public class AutoFightTask : ISoloTask
         {
             Task.Run(() =>
             {
-                _isExperiencePickup = false;
-
-                var experience60 =   autoFightAssets.InitializeRecognitionObject(60);
-                var experience58 =   autoFightAssets.InitializeRecognitionObject(58);
-                var experience57 =   autoFightAssets.InitializeRecognitionObject(57);
+                _isExperiencePickup = true;
                 
-                while (!(_isExperiencePickup || FightEndFlag) && !cts2.IsCancellationRequested)
+                var experienceRas = new[]
+                {
+                   autoFightAssets.InitializeRecognitionObject(60), 
+                   autoFightAssets.InitializeRecognitionObject(58), 
+                   autoFightAssets.InitializeRecognitionObject(57),
+                };
+                
+                while (!(!_isExperiencePickup || FightEndFlag) && !cts2.IsCancellationRequested)
                 {
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
-                        
-                        _isExperiencePickup = NewRetry.WaitForAction(() =>
+
+                        var result = NewRetry.WaitForAction(() =>
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                var experienceRas = new[]
-                                {
-                                    experience60, experience58, experience57,
-                                };
-
-                                return experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
+                                _isExperiencePickup = !experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
+                                
+                                return !_isExperiencePickup;
                             }
-                        }, cts2, 1, 150).Result;
+                        }, cts2, 1, 100).Result;
                         
                     }
                     catch (OperationCanceledException ex)
@@ -835,7 +835,9 @@ public class AutoFightTask : ISoloTask
                 }
 
                 Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
-                    _isExperiencePickup ? "启用" : "关闭");
+                        !_isExperiencePickup ? "启用" : "关闭");
+                
+                cts2.ThrowIfCancellationRequested();
                 
             }, cts2); 
         }
@@ -990,11 +992,11 @@ public class AutoFightTask : ISoloTask
                                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                                 redBlood = false;
                                 gray = false;
-
                                 if (endBloodCheck && resurrectionCount >= 1) return;//单次检测复用
                             }
                             else
                             {
+                                PathingConditionConfig.AutoEatCount = 3;
                                 Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，关闭复活检测
                                 return;
