@@ -1106,10 +1106,11 @@ public class AutoFightTask : ISoloTask
                //通过编号切换角色补血,不进行确认是否吃上
                foreach (var num in useMedicine)
                {
+                   await Task.Delay(800, ct);
                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
                    await Task.Delay(800, ct);
                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                   await Task.Delay(1300, ct);
+                   await Task.Delay(700, ct);
                }
             }
             else
