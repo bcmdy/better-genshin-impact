@@ -131,7 +131,7 @@ public class PathExecutor
         RecordWaypoint = CurWaypoint;
     }
 
-    public async Task Pathing(PathingTask task)
+    public async Task Pathing(PathingTask task,bool autoPick = false)
     {
         // SuspendableDictionary;
         const string sdKey = "PathExecutor";
@@ -169,7 +169,7 @@ public class PathExecutor
         
         await InitializeAutoEat();//初始化自动吃药
 
-        if (PartyConfig.AutoPickEnabled)
+        if (autoPick)
         {
             TaskTriggerDispatcher.Instance().AddTrigger("AutoPick", null);
         }

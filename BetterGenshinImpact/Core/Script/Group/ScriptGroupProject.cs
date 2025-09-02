@@ -202,13 +202,15 @@ public partial class ScriptGroupProject : ObservableObject
 
             TaskContext.Instance().Config.PathingConditionConfig.GetCountryName(task.FullPath);
             
+            var autoPick = false;
             var pathingTask = new PathExecutor(CancellationContext.Instance.Cts.Token);
             pathingTask.PartyConfig = GroupInfo?.Config.PathingConfig;
             if (pathingTask.PartyConfig is null || pathingTask.PartyConfig.AutoPickEnabled)
             {
                 TaskTriggerDispatcher.Instance().AddTrigger("AutoPick", null);
+                autoPick = true;
             }
-            await pathingTask.Pathing(task);
+            await pathingTask.Pathing(task,autoPick);
 
             
             executionRecord.IsSuccessful = pathingTask.SuccessEnd;

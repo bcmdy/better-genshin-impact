@@ -903,7 +903,7 @@ public class AutoFightTask : ISoloTask
                 {
                     var gray = false;
                     var redBlood = false;
-                    var paiMon = false;
+                    
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
@@ -912,6 +912,17 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
+                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠
+                                var paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
+                                             Math.Abs(pixelValue[1] - 196) <= tolerance &&
+                                             Math.Abs(pixelValue[2] - 233) <= tolerance);
+                                if (!paiMon)
+                                {
+                                    //延时_taskParam.CheckInterval毫秒再次检查
+                                    Sleep(_taskParam.CheckInterval-10, _ct);
+                                    return true;
+                                }
+
                                 var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
                                 var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
                                     new Scalar(250, 91, 89));
@@ -947,11 +958,6 @@ public class AutoFightTask : ISoloTask
 
                                     if (isGrayscale)
                                     {
-                                        var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠
-                                        paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
-                                                  Math.Abs(pixelValue[1] - 196) <= tolerance &&
-                                                  Math.Abs(pixelValue[2] - 233) <= tolerance);
-                                        
                                         if (paiMon)
                                         {
                                             gray = true;
@@ -970,13 +976,14 @@ public class AutoFightTask : ISoloTask
                                     redBlood = true;
                                 }
                                 else
-                                {
+                                {  
+                                  
                                     if (paiMon)
                                     {
-                                        var pixelValue = ra.SrcMat.At<Vec3b>(814, 1010);
-                                        if (!(Math.Abs(pixelValue[0] - 150) <= tolerance &&
+                                        pixelValue = ra.SrcMat.At<Vec3b>(1010,814);
+                                        if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
                                              Math.Abs(pixelValue[1] - 215) <= tolerance &&
-                                             Math.Abs(pixelValue[2] - 34) <= tolerance))
+                                             Math.Abs(pixelValue[2] - 150) <= tolerance))
                                         { 
                                             redBlood = true;
                                         }
