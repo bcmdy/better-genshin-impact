@@ -221,6 +221,10 @@ public class PathExecutor
                             if ((!string.IsNullOrEmpty(waypoint.Action) && !_skipOtherOperations) ||
                                 waypoint.Action == ActionEnum.CombatScript.Code)
                             {
+                                if (waypoint.Action == ActionEnum.Fight.Code)
+                                {
+                                    PathingConditionConfig.FightWaypoint = waypoint;
+                                }
                                 // 执行 action
                                 await AfterMoveToTarget(waypoint);
                             }
@@ -311,7 +315,7 @@ public class PathExecutor
             else
             {
                 PathingConditionConfig.AutoEatCount = 0;
-                Logger.LogInformation("自动吃药：已发现营养袋，自动吃药{text}", "开启");
+                // Logger.LogInformation("自动吃药：已发现营养袋，自动吃药{text}", "开启");
             }
         }
         

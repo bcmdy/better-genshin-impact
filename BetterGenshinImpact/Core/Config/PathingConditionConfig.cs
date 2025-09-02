@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using BetterGenshinImpact.GameTask;
+using BetterGenshinImpact.GameTask.AutoPathing.Model;
 
 namespace BetterGenshinImpact.Core.Config;
 
@@ -43,10 +44,13 @@ public partial class PathingConditionConfig : ObservableObject
     [ObservableProperty]
     private static DateTime _lastEatTime = DateTime.MinValue;
     
-    // 吃药间隔使能
     // 锄地国家和类型
     [ObservableProperty] private string?[] _countryName = ["自动"];
-
+    
+   // 战斗地点记录
+   [ObservableProperty]
+   private static volatile WaypointForTrack? _fightWaypoint = null;
+        
     public static PathingConditionConfig Default => new()
     {
         AvatarConditions =

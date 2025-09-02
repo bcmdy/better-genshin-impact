@@ -1722,7 +1722,7 @@
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="2"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="检测到游泳，前往七天神像恢复"
+                                  Text="先回战斗节点，失败则去七天神像"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"

@@ -20,7 +20,8 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
-
+using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -141,10 +142,36 @@ public class Avatar
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
+            if (PathingConditionConfig.FightWaypoint is not null)
+            {
+                Logger.LogInformation("游泳检测：尝试回到战斗地点");
+                var pathExecutor = new PathExecutor(ct);
+                try
+                {
+                    pathExecutor.FaceTo(PathingConditionConfig.FightWaypoint).Wait(2000, ct);
+                    PathingConditionConfig.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
+                    Simulation.SendInput.Mouse.RightButtonDown();
+                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint).Wait(20000, ct);
+                    PathingConditionConfig.FightWaypoint = null;
+                    Simulation.SendInput.Mouse.RightButtonUp();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "游泳检测：回到战斗地点异常");
+                }
+                
+                Simulation.ReleaseAllKey();
+                
+                if (!SwimmingConfirm(CaptureToRectArea()))
+                {
+                    Logger.LogInformation("游泳检测：游泳脱困成功");
+                   return;
+                }
+                
+                Logger.LogWarning("游泳检测：回到战斗地点失败");
+            }
+            
             Logger.LogWarning("战斗过程检测到游泳，前往七天神像重试");
-            // 先打开地图
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-            Sleep(600, ct);
             TpForRecover(ct, new RetryException("战斗过程检测到游泳，前往七天神像重试"));
         }
     }
