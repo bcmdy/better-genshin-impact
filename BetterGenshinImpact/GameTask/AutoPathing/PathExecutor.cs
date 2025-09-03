@@ -292,14 +292,9 @@ public class PathExecutor
 
         }
     }
-
-    private static bool _autoEatEnabled = false;
     
     private Task InitializeAutoEat()
     {
-
-        // _autoEatEnabled = PartyConfig.Enabled ? PartyConfig.AutoEatEnabled : PathingConditionConfig.AutoEatEnabled; //地图追踪配置
-        
         using (var ra = CaptureToRectArea())
         {
             var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
@@ -315,7 +310,7 @@ public class PathExecutor
             stats.Dispose();
             centroids.Dispose();
             
-            if (numLabels <= 1)
+            if (numLabels <= 1 && PartyConfig.AutoEatEnabled)
             {
                 PathingConditionConfig.AutoEatCount = 3;
                 Logger.LogInformation("自动吃药：未发现营养袋，自动吃药{text}", "关闭");
