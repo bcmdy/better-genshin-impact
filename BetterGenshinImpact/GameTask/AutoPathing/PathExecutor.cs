@@ -131,7 +131,7 @@ public class PathExecutor
         RecordWaypoint = CurWaypoint;
     }
 
-    public async Task Pathing(PathingTask task,bool autoPick = false)
+    public async Task Pathing(PathingTask task)
     {
         // SuspendableDictionary;
         const string sdKey = "PathExecutor";
@@ -168,11 +168,6 @@ public class PathExecutor
         Navigation.WarmUp(); // 提前加载地图特征点
         
         await InitializeAutoEat();//初始化自动吃药
-
-        if (autoPick)
-        {
-            TaskTriggerDispatcher.Instance().AddTrigger("AutoPick", null);
-        }
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
