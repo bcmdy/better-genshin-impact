@@ -865,6 +865,7 @@ public class AutoFightTask : ISoloTask
         var resurrectionCount = 0; // 吃复活药次数
         var recoverCount = 0; // 吃复活药次数
         var tolerance = 10;// 定义容错范围
+        var greenBlood = 0; // 绿血标记
 
         try
         {
@@ -935,7 +936,7 @@ public class AutoFightTask : ISoloTask
 
                                 for (int h = 0; h < 4; h++)
                                 {
-                                    Mat croppedImage = ra.DeriveCrop(1801, 256 + 96 * h, 2, 2).SrcMat;
+                                    Mat croppedImage = ra.DeriveCrop(1810, 256 + 96 * h, 15, 1).SrcMat;
                                     
                                     var isGrayscale = true;
                                     for (int i = 0; i < croppedImage.Rows; i++)
@@ -958,10 +959,8 @@ public class AutoFightTask : ISoloTask
 
                                     if (isGrayscale)
                                     {
-                                        if (paiMon)
-                                        {
-                                            gray = true;
-                                        }
+                                        // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "死亡");
+                                        gray = true;
                                     }
                                     
                                     croppedImage.Dispose();
@@ -973,21 +972,28 @@ public class AutoFightTask : ISoloTask
 
                                 if (numLabels > 1)
                                 {
+                                    // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "红血1");
                                     redBlood = true;
                                 }
                                 else
                                 {  
-                                  
-                                    if (paiMon)
-                                    {
-                                        pixelValue = ra.SrcMat.At<Vec3b>(1010,814);
-                                        if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
-                                             Math.Abs(pixelValue[1] - 215) <= tolerance &&
-                                             Math.Abs(pixelValue[2] - 150) <= tolerance))
-                                        { 
+                                    pixelValue = ra.SrcMat.At<Vec3b>(1010,814);
+                                    if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
+                                         Math.Abs(pixelValue[1] - 215) <= tolerance &&
+                                         Math.Abs(pixelValue[2] - 150) <= tolerance))
+                                    { 
+                                        // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "红血2");
+                                        greenBlood ++;
+                                        if (greenBlood > 3)
+                                        {
                                             redBlood = true;
                                         }
                                     }
+                                    else
+                                    {
+                                        greenBlood = 0;
+                                    }
+                                    
                                 }
 
                                 return redBlood || gray;
