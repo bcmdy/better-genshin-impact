@@ -290,6 +290,8 @@ public class PathExecutor
     
     private Task InitializeAutoEat()
     {
+        if (!PartyConfig.AutoEatEnabled) return Task.CompletedTask;
+        
         using (var ra = CaptureToRectArea())
         {
             var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
@@ -305,7 +307,7 @@ public class PathExecutor
             stats.Dispose();
             centroids.Dispose();
             
-            if (numLabels <= 1 && PartyConfig.AutoEatEnabled)
+            if (numLabels <= 1)
             {
                 PathingConditionConfig.AutoEatCount = 3;
                 Logger.LogInformation("自动吃药：未发现营养袋，自动吃药{text}", "关闭");
