@@ -1122,7 +1122,7 @@ public class ScriptRepoUpdater : Singleton<ScriptRepoUpdater>
             </script>
         </head>
         <body>
-            <p>正在打开仓库页面，请稍候...</p>
+            <p>正在调用弹窗打开仓库页面，请勿屏蔽弹窗，请稍候...</p>
         </body>
         </html>";
         
