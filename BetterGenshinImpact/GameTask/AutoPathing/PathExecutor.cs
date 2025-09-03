@@ -290,7 +290,11 @@ public class PathExecutor
     
     private Task InitializeAutoEat()
     {
-        if (!PartyConfig.AutoEatEnabled) return Task.CompletedTask;
+        if (!PartyConfig.AutoEatEnabled)
+        {
+            PathingConditionConfig.AutoEatCount = 3;
+            return Task.CompletedTask;
+        }
         
         using (var ra = CaptureToRectArea())
         {
