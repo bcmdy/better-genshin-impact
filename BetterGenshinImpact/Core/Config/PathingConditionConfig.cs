@@ -36,20 +36,29 @@ public partial class PathingConditionConfig : ObservableObject
     [ObservableProperty]
     private bool _autoEatEnabled = false;
     
-    // 自动吃药次数记录
-    [ObservableProperty]
-    private static volatile int _autoEatCount = 0;
-    
-    // 最后吃药时间记录
-    [ObservableProperty]
-    private static DateTime _lastEatTime = DateTime.MinValue;
-    
     // 锄地国家和类型
     [ObservableProperty] private string?[] _countryName = ["自动"];
     
-   // 战斗地点记录
-   [ObservableProperty]
-   private static volatile WaypointForTrack? _fightWaypoint = null;
+    // 自动吃药次数记录
+    private static volatile int _autoEatCount = 0;
+    public static int AutoEatCount
+    {
+        get => _autoEatCount;
+        set => _autoEatCount = value;
+    }
+    // 最后吃药时间记录
+    private static DateTime _lastEatTime = DateTime.MinValue;
+    public static DateTime LastEatTime
+    {
+        get => _lastEatTime;
+        set => _lastEatTime = value;
+    }
+    private static volatile WaypointForTrack? _fightWaypoint = null;
+    public static WaypointForTrack? FightWaypoint
+    {
+        get => _fightWaypoint;
+        set => _fightWaypoint = value;
+    }
         
     public static PathingConditionConfig Default => new()
     {
