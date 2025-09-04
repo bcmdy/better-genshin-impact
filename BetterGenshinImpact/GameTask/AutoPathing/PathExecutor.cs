@@ -172,7 +172,6 @@ public class PathExecutor
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
             PathingConditionConfig.AutoEatCount = 0;
-            PathingConditionConfig.FightWaypoint = null;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
             {
@@ -225,6 +224,10 @@ public class PathExecutor
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
                                     PathingConditionConfig.FightWaypoint = waypoint;
+                                }
+                                else
+                                {
+                                    PathingConditionConfig.FightWaypoint = null;
                                 }
                                 // 执行 action
                                 await AfterMoveToTarget(waypoint);

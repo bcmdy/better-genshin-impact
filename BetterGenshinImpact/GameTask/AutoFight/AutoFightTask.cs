@@ -347,6 +347,7 @@ public class AutoFightTask : ISoloTask
         // }
         // var FightEndFlag = false;
         FightEndFlag = false;
+        var fightEndFlag = false;
         var timeOutFlag = false;
         string lastFightName = "";
 
@@ -497,7 +498,7 @@ public class AutoFightTask : ISoloTask
                         if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= 6)
                         {
                             Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
-                            FightEndFlag = true;
+                            fightEndFlag = true;
                             timeOutFlag = true;
                             break;
                         }
@@ -505,11 +506,11 @@ public class AutoFightTask : ISoloTask
                         #region Q前寻敌处理
                         if ((command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
                         {
-                            FightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                            fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                         }
                         #endregion
                         
-                       if(!FightEndFlag) command.Execute(combatScenes);
+                       if(!fightEndFlag) command.Execute(combatScenes);
                         //统计战斗人次
                         if (i == combatCommands.Count - 1 || command.Name != combatCommands[i + 1].Name)
                         {
@@ -517,7 +518,7 @@ public class AutoFightTask : ISoloTask
                         }
 
                         lastFightName = command.Name;
-                        if (!FightEndFlag && _taskParam is { FightFinishDetectEnabled: true })
+                        if (!fightEndFlag && _taskParam is { FightFinishDetectEnabled: true })
                         {
                             //处于最后一个位置，或者当前执行人和下一个人名字不一样的情况，满足一定条件(开启快速检查，并且检查时间大于0或人名存在配置)检查战斗
                             if (i == combatCommands.Count - 1
@@ -541,18 +542,18 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
                                 
-                                FightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                             }
                         }
 
-                        if (FightEndFlag)
+                        if (fightEndFlag)
                         {
                             break;
                         }
                     }
 
 
-                    if (FightEndFlag)
+                    if (fightEndFlag)
                     {
                         break;
                     }
@@ -566,15 +567,18 @@ public class AutoFightTask : ISoloTask
             }
             finally
             {
-                FightEndFlag = true;
                 Simulation.ReleaseAllKey();
+                FightEndFlag = true;
             }
         }, cts2.Token);
 
         await fightTask;
-        if ((_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot) && !_isExperiencePickup)
+
+        if ((_taskParam.BattleThresholdForLoot >= 2 && countFight < _taskParam.BattleThresholdForLoot) && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
         {
-            Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
+            Logger.LogInformation(_isExperiencePickup 
+                ? "基于怪物经验判断：不执行 万叶拾取" 
+                : $"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             
             if (_taskParam.EndBloodCheackEnabled)
             {
