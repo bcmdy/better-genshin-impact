@@ -90,11 +90,6 @@ public class Avatar
 
     public static string? LastActiveAvatar { get; internal set; } = null;
     
-    /// <summary>
-    /// 自动吃药配置
-    /// </summary>
-    private static bool _autoEatEnabled = false;
-    
     private static PathingPartyConfig? _partyConfig;
     public static PathingPartyConfig PartyConfig
     {

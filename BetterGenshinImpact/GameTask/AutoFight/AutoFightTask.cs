@@ -493,7 +493,7 @@ public class AutoFightTask : ISoloTask
                         }
 
                         #endregion
-
+                        
                         if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= 6)
                         {
                             Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
@@ -501,8 +501,15 @@ public class AutoFightTask : ISoloTask
                             timeOutFlag = true;
                             break;
                         }
+
+                        #region Q前寻敌处理
+                        if ((command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
+                        {
+                            FightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                        }
+                        #endregion
                         
-                        command.Execute(combatScenes);
+                       if(!FightEndFlag) command.Execute(combatScenes);
                         //统计战斗人次
                         if (i == combatCommands.Count - 1 || command.Name != combatCommands[i + 1].Name)
                         {
@@ -628,10 +635,11 @@ public class AutoFightTask : ISoloTask
                 if (!(lastFightName == "枫原万叶" && time.TotalSeconds > 3))
                 {
                     Logger.LogInformation("使用枫原万叶长E拾取掉落物");
-                    await Delay(300, ct);
+                    await Delay(200, ct);
                     if (kazuha.TrySwitch())
                     {
                         await kazuha.WaitSkillCd(ct);
+                        await Delay(100, ct);
                         kazuha.UseSkill(true);
                         await Delay(100, ct);
                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -871,7 +879,6 @@ public class AutoFightTask : ISoloTask
         {
             Task.Run(() =>
             {
-
                 using (var ra = CaptureToRectArea())
                 {
                     var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
