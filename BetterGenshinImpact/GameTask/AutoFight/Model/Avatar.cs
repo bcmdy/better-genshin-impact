@@ -295,10 +295,14 @@ public class Avatar
             Logger.LogWarning("切换角色失败，尝试脱困");
             Simulation.SendInput.SimulateAction(GIActions.Jump);
             Sleep(200, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.Jump);
-            Sleep(200, Ct);
             Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+            Sleep(100, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.MoveLeft);
+            Sleep(100, Ct);
             Simulation.SendInput.SimulateAction(GIActions.Drop);
+            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+            //释放所有按键
+            Simulation.ReleaseAllKey();
         }
     }
 
@@ -363,10 +367,14 @@ public class Avatar
             Logger.LogWarning("切换角色失败，尝试脱困");
             Simulation.SendInput.SimulateAction(GIActions.Jump);
             Sleep(200, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.Jump);
-            Sleep(200, Ct);
             Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+            Sleep(100, Ct);
+            Simulation.SendInput.SimulateAction(GIActions.MoveLeft);
+            Sleep(100, Ct);
             Simulation.SendInput.SimulateAction(GIActions.Drop);
+            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+            //释放所有按键
+            Simulation.ReleaseAllKey();
         }
         return false;
     }
