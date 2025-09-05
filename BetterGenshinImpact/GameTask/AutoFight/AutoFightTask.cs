@@ -55,7 +55,7 @@ public class AutoFightTask : ISoloTask
     
     public static volatile  bool FightEndFlag;
     
-    private static volatile bool _isExperiencePickup = true;
+    private static volatile bool _isExperiencePickup = false;
     
     public static volatile bool IsTpForRecover = false;
     
@@ -437,7 +437,7 @@ public class AutoFightTask : ISoloTask
                         
                         #region 初始寻敌处理
 
-                        if (i == 0 && _taskParam.IsFirstCheck)
+                        if ( _finishDetectConfig.RotateFindEnemyEnabled && i == 0 && _taskParam.IsFirstCheck)
                         {
                             await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, ct,true,_taskParam.RotaryFactor);
                         }
@@ -504,7 +504,7 @@ public class AutoFightTask : ISoloTask
                         }
 
                         #region Q前寻敌处理
-                        if ((command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
+                        if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.CheckBeforeBurst && (command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
                         {
                             fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                         }
@@ -576,7 +576,7 @@ public class AutoFightTask : ISoloTask
 
         if ((_taskParam.BattleThresholdForLoot >= 2 && countFight < _taskParam.BattleThresholdForLoot) && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
         {
-            Logger.LogInformation(_isExperiencePickup 
+            Logger.LogInformation(!_isExperiencePickup 
                 ? "基于怪物经验判断：不执行 万叶拾取" 
                 : $"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             
@@ -598,9 +598,9 @@ public class AutoFightTask : ISoloTask
             return;
         }
       
-        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", !_isExperiencePickup? "执行" : "不执行");
+        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", _isExperiencePickup? "执行" : "不执行");
         
-        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || !_isExperiencePickup))
+        if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
         {
             // Logger.LogInformation("开始 _isExperiencePickup：{_isExperiencePickup}",_isExperiencePickup);
             // 队伍中存在万叶的时候使用一次长E
@@ -809,7 +809,7 @@ public class AutoFightTask : ISoloTask
         {
             Task.Run(() =>
             {
-                _isExperiencePickup = true;
+                _isExperiencePickup = false;
                 
                 var experienceRas = new[]
                 {
@@ -818,7 +818,7 @@ public class AutoFightTask : ISoloTask
                    autoFightAssets.InitializeRecognitionObject(57),
                 };
                 
-                while (!(!_isExperiencePickup || FightEndFlag) && !cts2.IsCancellationRequested)
+                while (!(_isExperiencePickup || FightEndFlag) && !cts2.IsCancellationRequested)
                 {
                     try
                     {
@@ -828,9 +828,9 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                _isExperiencePickup = !experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
+                                _isExperiencePickup = experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
                                 
-                                return !_isExperiencePickup;
+                                return _isExperiencePickup;
                             }
                         }, cts2, 1, 100).Result;
                         
@@ -847,7 +847,7 @@ public class AutoFightTask : ISoloTask
                 }
 
                 Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
-                        !_isExperiencePickup ? "启用" : "关闭");
+                        _isExperiencePickup ? "启用" : "关闭");
                 
                 cts2.ThrowIfCancellationRequested();
                 
@@ -1031,7 +1031,7 @@ public class AutoFightTask : ISoloTask
                             }
                             else
                             {
-                                PathingConditionConfig.AutoEatCount = 3;
+                                PathingConditionConfig.AutoEatCount = 2;
                                 Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，关闭复活检测
                                 return;

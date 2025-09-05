@@ -102,6 +102,12 @@ public partial class AutoFightConfig : ObservableObject
         /// </summary>
         [ObservableProperty]
         private bool _isFirstCheck = false;
+        
+        /// <summary>
+        /// 是有元素爆发前检查战斗结束
+        /// </summary>
+        [ObservableProperty]
+        private bool _checkBeforeBurst = false;
     }
     /// <summary>
     /// 战斗结束相关配置

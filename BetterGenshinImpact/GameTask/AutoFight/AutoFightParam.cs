@@ -86,6 +86,7 @@ public class AutoFightParam : BaseTaskParam
         CheckInterval = autoFightConfig.CheckInterval;
         RecoverMaxCount = autoFightConfig.RecoverMaxCount;
         EndBloodCheackEnabled = autoFightConfig.EndBloodCheackEnabled;
+        CheckBeforeBurst = autoFightConfig.FinishDetectConfig.CheckBeforeBurst;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -124,4 +125,6 @@ public class AutoFightParam : BaseTaskParam
     public int RecoverMaxCount { get; set; } =  5;
     
     public bool EndBloodCheackEnabled { get; set; } = false;
+    
+    public bool CheckBeforeBurst { get; set; } = false;
 }
