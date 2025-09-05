@@ -389,8 +389,14 @@ public class AutoFightTask : ISoloTask
             #endregion
             
             #region 自动吃药功能同步任务
-            
-            if (_taskParam.TakeMedicineEnabled) TakeMedicine(cts2.Token);
+
+            if (_taskParam.TakeMedicineEnabled)
+            {
+                TakeMedicine(cts2.Token);
+            }else
+            {
+                RecoverCount = 3;
+            }
             
             #endregion
             
@@ -574,11 +580,9 @@ public class AutoFightTask : ISoloTask
 
         await fightTask;
 
-        if ((_taskParam.BattleThresholdForLoot >= 2 && countFight < _taskParam.BattleThresholdForLoot) && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
+        if ((_taskParam.BattleThresholdForLoot >= 2 && countFight < _taskParam.BattleThresholdForLoot) && (!_taskParam.ExpKazuhaPickup || !_isExperiencePickup))
         {
-            Logger.LogInformation(!_isExperiencePickup 
-                ? "基于怪物经验判断：不执行 万叶拾取" 
-                : $"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
+            Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             
             if (_taskParam.EndBloodCheackEnabled)
             {
@@ -871,11 +875,13 @@ public class AutoFightTask : ISoloTask
     
     private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
     
+    public static int RecoverCount = 0; // 吃复活药次数
+    
     private Task TakeMedicine(CancellationToken cts2,bool endBloodCheck = false)
     {
+        RecoverCount = 0; // 吃复活药次数
         IsTpForRecover = true; //控制是否检查复活
         var resurrectionCount = 0; // 吃复活药次数
-        var recoverCount = 0; // 吃复活药次数
         var tolerance = 10;// 定义容错范围
         var greenBlood = 0; // 绿血标记
 
@@ -900,7 +906,7 @@ public class AutoFightTask : ISoloTask
 
                     if (!(numLabels > 1))
                     {
-                        PathingConditionConfig.AutoEatCount = 3;
+                        RecoverCount = 3;
                         Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                     }
                     else
@@ -1016,12 +1022,12 @@ public class AutoFightTask : ISoloTask
                         {
                             PathingConditionConfig.LastEatTime = DateTime.Now;
 
-                            var shouldRecover = (redBlood && recoverCount <= _taskParam.RecoverMaxCount) ||
+                            var shouldRecover = (redBlood && RecoverCount <= _taskParam.RecoverMaxCount) ||
                                                  (gray && resurrectionCount < 5);
 
                             if (shouldRecover)
                             {
-                                if (redBlood) recoverCount++;
+                                if (redBlood) RecoverCount++;
                                 if (gray) resurrectionCount++;
                                 Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
                                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
@@ -1031,7 +1037,7 @@ public class AutoFightTask : ISoloTask
                             }
                             else
                             {
-                                PathingConditionConfig.AutoEatCount = 2;
+                                RecoverCount = 3;
                                 Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，关闭复活检测
                                 return;

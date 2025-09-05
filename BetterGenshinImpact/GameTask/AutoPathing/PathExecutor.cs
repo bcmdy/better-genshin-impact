@@ -171,7 +171,7 @@ public class PathExecutor
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
-            PathingConditionConfig.AutoEatCount = 0;
+            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
             {
@@ -697,7 +697,7 @@ public class PathExecutor
         var tpTask = new TpTask(ct);
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);
         Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
-        PathingConditionConfig.AutoEatCount = 0;
+        if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
     }
 
     /// <summary>

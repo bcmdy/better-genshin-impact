@@ -121,7 +121,8 @@ public class Avatar
     {
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
+            Logger.LogInformation("AutoEatCount{AutoEatCount}",PathingConditionConfig.AutoEatCount);
+            if (PathingConditionConfig.AutoEatCount < 2 || AutoFightTask.RecoverCount < 2)
             {
                 if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
                 {
@@ -142,9 +143,9 @@ public class Avatar
                 return;
             }
             
-            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
+            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活2");
             Sleep(600, ct);
-            PathingConditionConfig.AutoEatCount = 0;
+            if(PathingConditionConfig.AutoEatCount < 3  || AutoFightTask.RecoverCount < 3) PathingConditionConfig.AutoEatCount = 0;
             // 先打开地图
             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
             Sleep(600, ct);
@@ -199,7 +200,6 @@ public class Avatar
                 Logger.LogWarning("游泳检测：回到战斗地点失败");
             }
             
-            PathingConditionConfig.AutoEatCount = 0;
             Logger.LogWarning("战斗过程检测到游泳，前往七天神像重试");
             TpForRecover(ct, new RetryException("战斗过程检测到游泳，前往七天神像重试"));
         }
