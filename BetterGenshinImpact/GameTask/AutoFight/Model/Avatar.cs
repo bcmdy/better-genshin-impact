@@ -180,7 +180,7 @@ public class Avatar
                     pathExecutor.FaceTo(PathingConditionConfig.FightWaypoint).Wait(2000, ct);
                     PathingConditionConfig.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint).Wait(20000, ct);
+                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint,false).Wait(20000, ct);
                     PathingConditionConfig.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }
