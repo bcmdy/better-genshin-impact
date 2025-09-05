@@ -832,12 +832,18 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                _isExperiencePickup = experienceRas.Any(experienceRa => ra.Find(experienceRa).IsExist());
-                                
+                                _isExperiencePickup = experienceRas.Any(experienceRa => 
+                                {
+                                    var isExist = ra.Find(experienceRa).IsExist();
+                                    if (isExist)
+                                    {
+                                        Logger.LogInformation("识别到 {experienceRaName} 经验值，{text} 万叶拾取", experienceRa.Name, isExist ? "启用" : "关闭");
+                                    }
+                                    return isExist;
+                                });
                                 return _isExperiencePickup;
                             }
                         }, cts2, 1, 100).Result;
-                        
                     }
                     catch (OperationCanceledException ex)
                     {
@@ -849,9 +855,6 @@ public class AutoFightTask : ISoloTask
                     }
 
                 }
-
-                Logger.LogInformation("自动拾取：基于 {text} 经验值检测，{text2} 万叶拾取", "精英",
-                        _isExperiencePickup ? "启用" : "关闭");
                 
                 cts2.ThrowIfCancellationRequested();
                 

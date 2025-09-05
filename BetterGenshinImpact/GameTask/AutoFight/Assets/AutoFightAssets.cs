@@ -384,7 +384,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public RecognitionObject InitializeRecognitionObject(int experience)
     {
         var size = "1080";
-        var threshold = 0.85;
+        var threshold = 0.9;
         
         if (_gameScreenSize.Width > 2560)
         {
@@ -404,7 +404,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             RegionOfInterest = new Rect((int)(CaptureRect.Width*0.145),(int)(CaptureRect.Height*0.5), (int)(CaptureRect.Width*0.02), (int)(CaptureRect.Height*0.22)),
             UseMask = true,
             Threshold = threshold,
-            DrawOnWindow = true
+            DrawOnWindow = true,
         }.InitTemplate();
         return  ExperienceRa;
     }  
