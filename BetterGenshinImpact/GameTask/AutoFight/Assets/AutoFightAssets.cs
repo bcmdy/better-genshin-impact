@@ -4,6 +4,7 @@ using OpenCvSharp;
 using System.Collections.Generic;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
 
+
 namespace BetterGenshinImpact.GameTask.AutoFight.Assets;
 
 public class AutoFightAssets : BaseAssets<AutoFightAssets>
@@ -391,7 +392,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             threshold =0.7;
             size = "4K";
         }
-        else if (_gameScreenSize.Width > 1080)
+        else if (_gameScreenSize.Width > 1920)
         {
             threshold =0.7;
         }
