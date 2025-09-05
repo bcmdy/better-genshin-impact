@@ -177,6 +177,7 @@ public class PathExecutor
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
             if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
+            _faceToMark = false;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
             {
@@ -915,6 +916,7 @@ public class PathExecutor
                                 await Delay(4000, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                Logger.LogInformation("尝试继续行走...");
                                 continue;
                             }
                             
