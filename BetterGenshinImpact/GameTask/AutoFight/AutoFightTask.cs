@@ -1086,6 +1086,7 @@ public class AutoFightTask : ISoloTask
         IsTpForRecover = true; // 复活检测关闭
         var ms = 2500;  //检测区域是否有红血，没有发现红血，则退出
         var useMedicine = new List<int> { 1, 2, 3, 4 };
+        var endBloodCheck = false;//血量复检标志位
         
         try
         { 
@@ -1095,7 +1096,7 @@ public class AutoFightTask : ISoloTask
             {
                using (var ra = CaptureToRectArea())
                {
-                   for (int h = 0; h < 4; h++)
+                   for (var h = 0; h < 4; h++)
                    {
                        var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
                        var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),new Scalar(161, 220, 60));
@@ -1127,15 +1128,23 @@ public class AutoFightTask : ISoloTask
                            ms = 1;
                            useMedicine.Remove(h+1);
                        }
-                      
                    }
+               }
+
+               if (useMedicine.Count > 0 && !endBloodCheck)
+               {
+                   endBloodCheck = true;
+                   Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
+                   ms = 100;
+                   useMedicine = new List<int> { 1, 2, 3, 4 };
+                   await Task.Delay(500, ct);
                }
                
                await Task.Delay(100, ct);
                ms -= 95;
             }
             
-            if (useMedicine.Count > 0) 
+            if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(CaptureToRectArea()))
             {
                //计算2上次吃药时间到现在是否超过2秒，未超过就等待
                if ((DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
@@ -1147,7 +1156,7 @@ public class AutoFightTask : ISoloTask
                //通过编号切换角色补血,不进行确认是否吃上
                foreach (var num in useMedicine)
                {
-                   await Task.Delay(800, ct);
+                   await Task.Delay(700, ct);
                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
                    await Task.Delay(800, ct);
                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);

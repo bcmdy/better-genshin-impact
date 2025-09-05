@@ -208,7 +208,7 @@ public class Avatar
     /// <summary>
     /// 游泳检测（色块连通性检测）
     /// </summary>
-    private static bool SwimmingConfirm(Region region)
+    public static bool SwimmingConfirm(Region region)
     {
         var mask = OpenCvCommonHelper.Threshold(region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11).SrcMat, 
             new Scalar(242, 223, 39),new Scalar(255, 233, 44));
