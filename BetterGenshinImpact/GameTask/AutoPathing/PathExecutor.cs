@@ -104,7 +104,12 @@ public class PathExecutor
     // 最近一次获取派遣奖励的时间
     private DateTime _lastGetExpeditionRewardsTime = DateTime.MinValue;
 
-
+    //记录上一个节点
+    private WaypointForTrack? _lastWaypoint = null;
+    
+    // 朝向标记位
+    private bool _faceToMark = false;
+    
     //当到达恢复点位
     public void TryCloseSkipOtherOperations()
     {
@@ -233,6 +238,7 @@ public class PathExecutor
                                 await AfterMoveToTarget(waypoint);
                             }
                         }
+                        _lastWaypoint = waypoint;
                     }
 
                     if (waypoints == waypointsList.Last())
@@ -780,7 +786,7 @@ public class PathExecutor
 
     public DateTime moveToStartTime;
 
-    public async Task MoveTo(WaypointForTrack waypoint)
+    public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true)
     {
         // 切人
         await SwitchAvatar(PartyConfig.MainAvatarIndex);
@@ -871,7 +877,7 @@ public class PathExecutor
             }
 
             // 非攀爬状态下，检测是否卡死（脱困触发器）
-            if (waypoint.MoveMode != MoveModeEnum.Climb.Code)
+            if (waypoint.MoveMode != MoveModeEnum.Climb.Code && isGetOut)
             {
                 if ((DateTime.UtcNow - lastPositionRecord).TotalMilliseconds > 1000 + additionalTimeInMs)
                 {
@@ -882,14 +888,38 @@ public class PathExecutor
                         var delta = prevPositions[^1] - prevPositions[^8];
                         if (Math.Abs(delta.X) + Math.Abs(delta.Y) < 3)
                         {
-                            _inTrap++;
                             if (_inTrap > 2)
                             {
                                 throw new RetryException("此路线出现3次卡死，重试一次路线或放弃此路线！");
                             }
-
-                            Logger.LogWarning("疑似卡死，尝试脱离...");
-
+                            
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            await Delay(1000, ct);
+                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            Simulation.SendInput.SimulateAction(GIActions.Jump);
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                            
+                            if (_lastWaypoint is not null && _inTrap == 0 && !_faceToMark)
+                            {
+                                _faceToMark = true;
+                                Logger.LogWarning("尝试朝向上一个节点...");
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                                Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                await Delay(500, ct);
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                Simulation.SendInput.SimulateAction(GIActions.Jump);
+                                
+                                await FaceTo(_lastWaypoint);
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                                await Delay(4000, ct);
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                                Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                continue;
+                            }
+                            
+                            _inTrap++;
+                            Logger.LogWarning("疑似卡死，尝试随机脱离...");
                             //调用脱困代码，由TrapEscaper接管移动
                             await _trapEscaper.RotateAndMove();
                             await _trapEscaper.MoveTo(waypoint);
