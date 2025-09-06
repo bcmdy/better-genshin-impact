@@ -38,7 +38,7 @@ using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
-
+using BetterGenshinImpact.GameTask.AutoFight;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -880,6 +880,12 @@ public class PathExecutor
             // 非攀爬状态下，检测是否卡死（脱困触发器）
             if (waypoint.MoveMode != MoveModeEnum.Climb.Code && isGetOut)
             {
+                //停止吃药
+                var autoEatCount = PathingConditionConfig.AutoEatCount;
+                var recoverCount =  AutoFightTask.RecoverCount;
+                PathingConditionConfig.AutoEatCount = 3;
+                AutoFightTask.RecoverCount = 3;
+                
                 if ((DateTime.UtcNow - lastPositionRecord).TotalMilliseconds > 1000 + additionalTimeInMs)
                 {
                     lastPositionRecord = DateTime.UtcNow;
@@ -917,6 +923,9 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                                 Logger.LogInformation("尝试继续行走...");
+                                
+                                PathingConditionConfig.AutoEatCount = autoEatCount;
+                                AutoFightTask.RecoverCount = recoverCount;
                                 continue;
                             }
                             
@@ -927,6 +936,9 @@ public class PathExecutor
                             await _trapEscaper.MoveTo(waypoint);
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                             Logger.LogInformation("卡死脱离结束");
+
+                            PathingConditionConfig.AutoEatCount = autoEatCount;
+                            AutoFightTask.RecoverCount = recoverCount;
                             continue;
                         }
                     }
