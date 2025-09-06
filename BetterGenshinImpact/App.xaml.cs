@@ -17,9 +17,11 @@ using BetterGenshinImpact.Service.Notification;
 using BetterGenshinImpact.Service.Notifier;
 using BetterGenshinImpact.View;
 using BetterGenshinImpact.View.Pages;
+using BetterGenshinImpact.View.Windows;
 using BetterGenshinImpact.ViewModel;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.ViewModel.Pages.View;
+using BetterGenshinImpact.ViewModel.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -111,6 +113,12 @@ public partial class App : Application
                 services.AddSingleton<PathingConfigViewModel>();
                 // services.AddView<PathingConfigView, PathingConfigViewModel>();
                 services.AddView<KeyBindingsSettingsPage, KeyBindingsSettingsPageViewModel>();
+                services.AddView<SchedulerPage, SchedulerViewModel>();
+                services.AddView<GearTaskListPage, GearTaskListPageViewModel>();
+                services.AddView<GearTriggerPage, GearTriggerPageViewModel>();
+                services.AddTransient<TaskDefinitionEditWindow>();
+                services.AddTransient<TaskDefinitionEditWindowViewModel>();
+
 
                 // 一条龙 ViewModels
                 // services.AddSingleton<CraftViewModel>();
@@ -132,6 +140,7 @@ public partial class App : Application
                 services.AddSingleton<HutaoNamedPipe>();
                 services.AddSingleton<BgiOnnxFactory>();
                 services.AddSingleton<OcrFactory>();
+                services.AddSingleton<GearTaskStorageService>();
 
                 // Configuration
                 //services.Configure<AppConfig>(context.Configuration.GetSection(nameof(AppConfig)));
