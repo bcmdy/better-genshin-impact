@@ -145,6 +145,12 @@ public class TaskControl
 
     private static void CheckAndActivateGameWindow()
     {
+        if (IsSuspendedByNetwork)
+        {
+            Logger.LogInformation("网络恢复中，暂停尝试恢复窗口");
+            return;
+        }
+        
         if (!TaskContext.Instance().Config.OtherConfig.RestoreFocusOnLostEnabled)
         {
             if (!SystemControl.IsGenshinImpactActiveByProcess())
