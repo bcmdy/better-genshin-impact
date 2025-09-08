@@ -9,6 +9,7 @@
              xmlns:component="clr-namespace:BetterGenshinImpact.ViewModel.Pages.Component"
              xmlns:dd="urn:gong-wpf-dragdrop"
              xmlns:behavior="clr-namespace:BetterGenshinImpact.View.Behavior"
+             xmlns:local="clr-namespace:BetterGenshinImpact.View.Pages.Component"
              d:DataContext="{d:DesignInstance Type=pages:GearTaskListPageViewModel}"
              d:DesignHeight="850"
              d:DesignWidth="1200"
@@ -55,7 +56,9 @@
                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                   Text="{Binding Description}"
                                   TextTrimming="CharacterEllipsis"
-                                  TextWrapping="Wrap"
+                                  TextWrapping="NoWrap"
+                                  HorizontalAlignment="Left"
+                                  MaxWidth="280"
                                   MaxHeight="40" />
                     
                     <StackPanel Grid.Row="2"
@@ -71,34 +74,39 @@
 
         <!-- 右键菜单 -->
         <ContextMenu x:Key="TaskNodeContextMenu">
-            <MenuItem Header="添加采集任务" Command="{Binding DataContext.AddTaskNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="采集任务">
+            <MenuItem Header="添加JS脚本" Command="{Binding AddTaskNodeCommand}" CommandParameter="Javascript">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Add24" />
                 </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="添加战斗任务" Command="{Binding DataContext.AddTaskNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="战斗任务">
+            <MenuItem Header="添加地图追踪任务" Command="{Binding AddTaskNodeCommand}" CommandParameter="Pathing">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Add24" />
                 </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="添加传送任务" Command="{Binding DataContext.AddTaskNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="传送任务">
+            <MenuItem Header="添加键鼠脚本" Command="{Binding AddTaskNodeCommand}" CommandParameter="KeyMouse">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Add24" />
                 </MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="添加交互任务" Command="{Binding DataContext.AddTaskNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="交互任务">
+            <MenuItem Header="添加Shell" Command="{Binding AddTaskNodeCommand}" CommandParameter="Shell">
+                <MenuItem.Icon>
+                    <ui:SymbolIcon Symbol="Add24" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="添加C#方法" Command="{Binding AddTaskNodeCommand}" CommandParameter="CSharp">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Add24" />
                 </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="添加任务组" Command="{Binding DataContext.AddTaskGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+            <MenuItem Header="添加任务组" Command="{Binding AddTaskGroupCommand}">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Folder24" />
                 </MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="删除" Command="{Binding DataContext.DeleteTaskNodeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+            <MenuItem Header="删除" Command="{Binding DeleteTaskNodeCommand}">
                 <MenuItem.Icon>
                     <ui:SymbolIcon Symbol="Delete24" />
                 </MenuItem.Icon>
@@ -217,11 +225,11 @@
                 <ui:DropDownButton Content="添加任务" Icon="{ui:SymbolIcon Add24}">
                     <ui:DropDownButton.Flyout>
                         <ContextMenu> 
-                            <MenuItem Header="JS脚本" Command="{Binding AddTaskNodeCommand}" />
-                            <MenuItem Header="地图追踪任务" Command="{Binding AddTaskNodeCommand}" />
-                            <MenuItem Header="键鼠脚本" Command="{Binding AddTaskNodeCommand}" />
-                            <MenuItem Header="Shell" Command="{Binding AddTaskNodeCommand}" />
-                            <MenuItem Header="C#方法" Command="{Binding AddTaskNodeCommand}" />
+                            <MenuItem Header="JS脚本" Command="{Binding AddTaskNodeCommand}" CommandParameter="Javascript" />
+                            <MenuItem Header="地图追踪任务" Command="{Binding AddTaskNodeCommand}" CommandParameter="Pathing" />
+                            <MenuItem Header="键鼠脚本" Command="{Binding AddTaskNodeCommand}" CommandParameter="KeyMouse" />
+                            <MenuItem Header="Shell" Command="{Binding AddTaskNodeCommand}" CommandParameter="Shell" />
+                            <MenuItem Header="C#方法" Command="{Binding AddTaskNodeCommand}" CommandParameter="CSharp" />
                         </ContextMenu>
                     </ui:DropDownButton.Flyout>
                 </ui:DropDownButton>
@@ -251,10 +259,16 @@
                                      SelectedItem="{Binding SelectedTaskNode, Mode=TwoWay}"
                                      dd:DragDrop.IsDragSource="True"
                                      dd:DragDrop.IsDropTarget="True"
+                                     dd:DragDrop.DropHandler="{x:Static local:GearTaskDragDropHandler.Instance}"
                                      dd:DragDrop.UseDefaultDragAdorner="True"
                                      dd:DragDrop.UseDefaultEffectDataTemplate="True"
                                      ContextMenu="{StaticResource TaskNodeContextMenu}"
                                      Visibility="{Binding SelectedTaskDefinition, Converter={StaticResource NullToVisibilityConverter}}">
+                        <ui:TreeListView.ItemContainerStyle>
+                            <Style TargetType="ui:TreeListViewItem"  BasedOn="{StaticResource DefaultTreeListViewItemStyle}">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                            </Style>
+                        </ui:TreeListView.ItemContainerStyle>
                         <ui:TreeListView.Columns>
                             <GridViewColumnCollection>
                                 <ui:GridViewColumn Width="{Binding ActualWidth, ElementName=TreeColumnName}" Header="任务名称">
