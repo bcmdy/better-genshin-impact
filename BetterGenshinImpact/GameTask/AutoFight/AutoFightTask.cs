@@ -26,8 +26,11 @@ using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.View.Drawable;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
-
-
+using OpenCvSharp.Extensions;
+using System.IO;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
+using Vanara.PInvoke;
+using System.Drawing; // 添加对System.Drawing的引用
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -53,7 +56,7 @@ public class AutoFightTask : ISoloTask
     
     private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
     
-    public static volatile  bool FightEndFlag;
+    public static volatile  bool FightEndFlag = false;
     
     private static volatile bool _isExperiencePickup = false;
     
@@ -246,7 +249,7 @@ public class AutoFightTask : ISoloTask
             // 如果没有找到对应国家的脚本，则使用所有脚本
             if (filteredCombatScripts.Count == 0 && isAutoSelectTeam && isSelectAuto)
             {
-                Logger.LogWarning("没有找到符合 {CountryName} 的战斗脚本，将使用所有策略进行匹配", string.Join(", ", _taskParam.CountryName));
+                TaskControl.Logger.LogWarning("没有找到符合 {CountryName} 的战斗脚本，将使用所有策略进行匹配", string.Join(", ", _taskParam.CountryName));
                 filteredCombatScripts = combatScriptBagAll.CombatScripts;
             }
             
@@ -395,7 +398,7 @@ public class AutoFightTask : ISoloTask
                 TakeMedicine(cts2.Token);
             }else
             {
-                RecoverCount = 3;
+                RecoverCount = 4;
             }
             
             #endregion
@@ -416,7 +419,7 @@ public class AutoFightTask : ISoloTask
                             .Select(a => a.GetSkillCdSeconds()).Min();
                         if (minCoolDown > 0)
                         {
-                            Logger.LogInformation("队伍中所有角色的技能都在冷却中,等待{MinCoolDown}秒后继续。", Math.Round(minCoolDown, 2));
+                            TaskControl.Logger.LogInformation("队伍中所有角色的技能都在冷却中,等待{MinCoolDown}秒后继续。", Math.Round(minCoolDown, 2));
                             await Delay((int)Math.Ceiling(minCoolDown * 1000), ct);
                         }
                     }
@@ -445,7 +448,7 @@ public class AutoFightTask : ISoloTask
 
                         if ( _finishDetectConfig.RotateFindEnemyEnabled && i == 0 && _taskParam.IsFirstCheck)
                         {
-                            await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, ct,true,_taskParam.RotaryFactor);
+                            await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,true,_taskParam.RotaryFactor);
                         }
                         
                         #endregion
@@ -479,13 +482,13 @@ public class AutoFightTask : ISoloTask
                                     var manualSkillCd = avatar.ManualSkillCd;
                                     if (manualSkillCd > 0)
                                     {
-                                        Logger.LogInformation("{commandName}cd冷却为{skillCd}秒,剩余{Cd}秒,跳过此次行动",
+                                        TaskControl.Logger.LogInformation("{commandName}cd冷却为{skillCd}秒,剩余{Cd}秒,跳过此次行动",
                                             command.Name,
                                             manualSkillCd, Math.Round(cd, 2));
                                     }
                                     else
                                     {
-                                        Logger.LogInformation("{CommandName}cd冷却剩余{Cd}秒,跳过此次行动", command.Name,
+                                        TaskControl.Logger.LogInformation("{CommandName}cd冷却剩余{Cd}秒,跳过此次行动", command.Name,
                                             Math.Round(cd, 2));
                                     }
                                 }
@@ -503,7 +506,7 @@ public class AutoFightTask : ISoloTask
                         
                         if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= 6)
                         {
-                            Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
+                            TaskControl.Logger.LogInformation(AutoFightSeek.RotationCount >= 6 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
                             fightEndFlag = true;
                             timeOutFlag = true;
                             break;
@@ -541,7 +544,7 @@ public class AutoFightTask : ISoloTask
                                 if (_finishDetectConfig.DelayTimes.TryGetValue(command.Name, out var time))
                                 {
                                     delayTime = time;
-                                    Logger.LogInformation($"{command.Name}结束后，延时检查为{delayTime}毫秒");
+                                    TaskControl.Logger.LogInformation($"{command.Name}结束后，延时检查为{delayTime}毫秒");
                                 }
                                 else
                                 {
@@ -574,15 +577,22 @@ public class AutoFightTask : ISoloTask
             finally
             {
                 Simulation.ReleaseAllKey();
-                FightEndFlag = true;
+                
             }
         }, cts2.Token);
 
         await fightTask;
 
+        if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpKazuhaPickup && !_isExperiencePickup)
+        {
+            TaskControl.Logger.LogInformation("自动万叶拾取：{text} 经验值显示","等待");
+            await Delay(1000, ct);
+        }
+        FightEndFlag = true; 
+
         if ((_taskParam.BattleThresholdForLoot >= 2 && countFight < _taskParam.BattleThresholdForLoot) && (!_taskParam.ExpKazuhaPickup || !_isExperiencePickup))
         {
-            Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
+            TaskControl.Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
             
             if (_taskParam.EndBloodCheackEnabled)
             {
@@ -602,7 +612,7 @@ public class AutoFightTask : ISoloTask
             return;
         }
       
-        if(_taskParam.ExpKazuhaPickup) Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", _isExperiencePickup? "执行" : "不执行");
+        if(_taskParam.KazuhaPickupEnabled && _taskParam.ExpKazuhaPickup) TaskControl.Logger.LogInformation("基于怪物经验判断：{text} 万叶拾取", _isExperiencePickup? "执行" : "不执行");
         
         if (_taskParam.KazuhaPickupEnabled && (!_taskParam.ExpKazuhaPickup || _isExperiencePickup))
         {
@@ -616,11 +626,11 @@ public class AutoFightTask : ISoloTask
             {
                 try
                 {
-                    Logger.LogInformation($"切换为拾取队伍：{_taskParam.KazuhaPartyName}");
+                    TaskControl.Logger.LogInformation($"切换为拾取队伍：{_taskParam.KazuhaPartyName}");
                     var success = await new SwitchPartyTask().Start(_taskParam.KazuhaPartyName, ct);
                     if (success)
                     {
-                        Logger.LogInformation($"成功切换队伍为{_taskParam.KazuhaPartyName}");
+                        TaskControl.Logger.LogInformation($"成功切换队伍为{_taskParam.KazuhaPartyName}");
                         switchPartyFlag = true;
                         RunnerContext.Instance.PartyName = _taskParam.KazuhaPartyName;
                         RunnerContext.Instance.ClearCombatScenes();
@@ -630,7 +640,7 @@ public class AutoFightTask : ISoloTask
                 }
                 catch (Exception e)
                 {
-                    Logger.LogInformation("切换队伍异常，跳过此步骤！");
+                    TaskControl.Logger.LogInformation("切换队伍异常，跳过此步骤！");
                 }
 
             }
@@ -642,7 +652,7 @@ public class AutoFightTask : ISoloTask
                 //当万叶cd大于3时，此时不再触发万叶拾取，
                 if (!(lastFightName == "枫原万叶" && time.TotalSeconds > 3))
                 {
-                    Logger.LogInformation("使用枫原万叶长E拾取掉落物");
+                    TaskControl.Logger.LogInformation("使用枫原万叶长E拾取掉落物");
                     await Delay(200, ct);
                     if (kazuha.TrySwitch())
                     {
@@ -656,7 +666,7 @@ public class AutoFightTask : ISoloTask
                 }
                 else
                 {
-                    Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
+                    TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
                 }
             }
             //切换过队伍的，需要再切回来
@@ -664,11 +674,11 @@ public class AutoFightTask : ISoloTask
             {
                 try
                 {
-                    Logger.LogInformation($"切换为原队伍：{oldPartyName}");
+                    TaskControl.Logger.LogInformation($"切换为原队伍：{oldPartyName}");
                     var success = await new SwitchPartyTask().Start(oldPartyName, ct);
                     if (success)
                     {
-                        Logger.LogInformation($"切换为原队伍{oldPartyName}");
+                        TaskControl.Logger.LogInformation($"切换为原队伍{oldPartyName}");
                         switchPartyFlag = true;
                         RunnerContext.Instance.PartyName = oldPartyName;
                         RunnerContext.Instance.ClearCombatScenes();
@@ -678,7 +688,7 @@ public class AutoFightTask : ISoloTask
                 }
                 catch (Exception e)
                 {
-                    Logger.LogInformation("恢复原队伍失败，跳过此步骤！");
+                    TaskControl.Logger.LogInformation("恢复原队伍失败，跳过此步骤！");
                 }
                     
             }
@@ -728,11 +738,11 @@ public class AutoFightTask : ISoloTask
             bool? result = null;
             try
             {
-                result = await AutoFightSeek.SeekAndFightAsync(Logger, detectDelayTime, delayTime, _ct,false,_taskParam.RotaryFactor);
+                result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, _ct,false,_taskParam.RotaryFactor);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "SeekAndFightAsync 方法发生异常");
+                TaskControl.Logger.LogError(ex, "SeekAndFightAsync 方法发生异常");
                 result = false;
             }
             
@@ -747,7 +757,7 @@ public class AutoFightTask : ISoloTask
 
         if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
         
-        Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
+        TaskControl.Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
         // 最终方案确认战斗结束
         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
         await Delay(detectDelayTime, _ct);
@@ -764,21 +774,21 @@ public class AutoFightTask : ISoloTask
                 b3.Item0) /* AreDifferencesWithinBounds(_finishDetectConfig.BattleEndProgressBarColor, (b3.Item0, b3.Item1, b3.Item2), _finishDetectConfig.BattleEndProgressBarColorTolerance)*/
            )
         {
-            Logger.LogInformation("识别到战斗结束");
+            TaskControl.Logger.LogInformation("识别到战斗结束");
             //取消正在进行的换队
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
             return true;
         }
 
-        Logger.LogInformation($"未识别到战斗结束yellow{b3.Item0},{b3.Item1},{b3.Item2}");
-        Logger.LogInformation($"未识别到战斗结束white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
+        TaskControl.Logger.LogInformation($"未识别到战斗结束yellow{b3.Item0},{b3.Item1},{b3.Item2}");
+        TaskControl.Logger.LogInformation($"未识别到战斗结束white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
 
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
             Task.Run(() =>
             {
                 Scalar bloodLower = new Scalar(255, 90, 90);
-                MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, Logger, _ct);
+                MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct);
             } ,_ct);
         }
         
@@ -808,7 +818,12 @@ public class AutoFightTask : ISoloTask
     private Task FindExp(CancellationToken cts2)
     {
         var autoFightAssets = new AutoFightAssets();
-
+        var ra = CaptureToRectArea();
+        //保存ra用于调试
+        using (FileStream fs = new FileStream(@"D:\Images\ra.png", FileMode.Create))
+        {
+            ra.SrcMat.ToBitmap().Save(fs, System.Drawing.Imaging.ImageFormat.Png);
+        }
         try  
         {
             Task.Run(() =>
@@ -837,12 +852,12 @@ public class AutoFightTask : ISoloTask
                                     var isExist = ra.Find(experienceRa).IsExist();
                                     if (isExist)
                                     {
-                                        Logger.LogInformation("识别到 {experienceRaName} 经验值，{text} 万叶拾取", experienceRa.Name, isExist ? "启用" : "关闭");
+                                        TaskControl.Logger.LogInformation("识别到 {experienceRaName} 经验值，{text} 万叶拾取", experienceRa.Name, isExist ? "启用" : "关闭");
                                     }
                                     return isExist;
                                 });
-                                return _isExperiencePickup;
                             }
+                            return _isExperiencePickup;
                         }, cts2, 1, 100).Result;
                     }
                     catch (OperationCanceledException ex)
@@ -883,11 +898,11 @@ public class AutoFightTask : ISoloTask
     private Task TakeMedicine(CancellationToken cts2,bool endBloodCheck = false)
     {
         RecoverCount = 0; // 吃复活药次数
-        IsTpForRecover = true; //控制是否检查复活
+        IsTpForRecover = true; //检查复活关闭
         var resurrectionCount = 0; // 吃复活药次数
         var tolerance = 10;// 定义容错范围
         var greenBlood = 0; // 绿血标记
-
+        
         try
         {
             Task.Run(() =>
@@ -909,12 +924,12 @@ public class AutoFightTask : ISoloTask
 
                     if (!(numLabels > 1))
                     {
-                        RecoverCount = 3;
-                        Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
+                        RecoverCount = 4;
+                        TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                     }
                     else
                     {
-                        if (!endBloodCheck)  Logger.LogInformation(
+                        if (!endBloodCheck)  TaskControl.Logger.LogInformation(
                             "自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}，结束吃药{endBloodCheck}",
                             _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount, _taskParam.EndBloodCheackEnabled ? "开" : "关");
                     }
@@ -1021,18 +1036,19 @@ public class AutoFightTask : ISoloTask
                         }, cts2, 1, _taskParam.CheckInterval).Result;
 
                         if ((redBlood || gray) &&
-                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > _taskParam.MedicineInterval)
+                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > _taskParam.MedicineInterval 
+                            && DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                         {
                             PathingConditionConfig.LastEatTime = DateTime.Now;
 
-                            var shouldRecover = (redBlood && RecoverCount <= _taskParam.RecoverMaxCount) ||
-                                                 (gray && resurrectionCount < 5);
+                            var shouldRecover = (redBlood && resurrectionCount <= _taskParam.RecoverMaxCount) ||
+                                                 (gray && RecoverCount < 3);
 
                             if (shouldRecover)
                             {
-                                if (redBlood) RecoverCount++;
-                                if (gray) resurrectionCount++;
-                                Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
+                                if (redBlood) resurrectionCount++;
+                                if (gray) RecoverCount++;
+                                TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
                                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                                 redBlood = false;
                                 gray = false;
@@ -1041,13 +1057,22 @@ public class AutoFightTask : ISoloTask
                             else
                             {
                                 RecoverCount = 3;
-                                Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
-                                IsTpForRecover = false; // 吃完药品后，关闭复活检测
+                                PathingConditionConfig.AutoEatCount = 3;
+                                TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
+                                IsTpForRecover = false; // 吃完药品后，打开复活检测
                                 return;
                             }
                         }
+
+                        if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                        {
+                            Sleep(500, _ct);
+                            TaskControl.Logger.LogInformation("自动吃药：54545");
+                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                            Sleep(500, _ct);
+                        }
                         
-                        if (resurrectionCount > 4) IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
+                        if (RecoverCount > 2 || FightEndFlag) IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
 
                     }
                     catch (OperationCanceledException ex)
@@ -1071,7 +1096,6 @@ public class AutoFightTask : ISoloTask
             Console.WriteLine($"自动吃药发生异常: {ex.Message}");
         }
         
-        IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
         return Task.CompletedTask;
     }
 
@@ -1137,7 +1161,7 @@ public class AutoFightTask : ISoloTask
                if (useMedicine.Count > 0 && !endBloodCheck)
                {
                    endBloodCheck = true;
-                   Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
+                   TaskControl.Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
                    ms = 100;
                    useMedicine = new List<int> { 1, 2, 3, 4 };
                    await Task.Delay(500, ct);
@@ -1155,22 +1179,28 @@ public class AutoFightTask : ISoloTask
                    await Task.Delay(1500 - (int)(DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
                }
                PathingConditionConfig.LastEatTime = DateTime.Now;
-               Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
+               TaskControl.Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
                //通过编号切换角色补血,不进行确认是否吃上
                foreach (var num in useMedicine)
                {
                    await Task.Delay(700, ct);
                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
                    await Task.Delay(800, ct);
+                   if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                   {
+                       TaskControl.Logger.LogInformation("自动结束吃药：{text} 222", num);
+                       Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                       await Task.Delay(500, ct);
+                   }
                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                    await Task.Delay(700, ct);
                }
             }
             else
             {
-               Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药","不执行");
+               TaskControl.Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药","不执行");
             }
-            IsTpForRecover = false; // 复活检测关闭
+            IsTpForRecover = false; // 复活检测打开
         }
         catch (OperationCanceledException ex)
         {

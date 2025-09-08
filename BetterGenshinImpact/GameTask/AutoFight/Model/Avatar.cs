@@ -122,52 +122,62 @@ public class Avatar
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
             Logger.LogInformation("AutoEatCount{AutoEatCount}",PathingConditionConfig.AutoEatCount);
-            if (PathingConditionConfig.AutoEatCount < 2 || AutoFightTask.RecoverCount < 2)
+            Logger.LogInformation("RecoverCount{RecoverCount}",AutoFightTask.RecoverCount);
+            
+            if (PathingConditionConfig.AutoEatCount < 2)
             {
-                if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
+                if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                 {
                     PathingConditionConfig.LastEatTime = DateTime.Now;
-                    Logger.LogWarning("自动吃药：尝试使用小道具恢复");
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-                    Sleep(1000, ct);
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复A");
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); 
+                    Sleep(500, ct);
+                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                    {
+                        Logger.LogInformation("yuery");
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    }
+                    Sleep(500, ct);
                     Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                     Sleep(1000, ct);
+                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                    {
+                        Logger.LogInformation("9999");
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    }
                     PathingConditionConfig.AutoEatCount++;
                 }
                 else
                 {
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); 
+                    Sleep(500, ct);
+                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                    {
+                        Logger.LogInformation("9999");
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    }
+                    Sleep(500, ct);
                     PathingConditionConfig.AutoEatCount++;
-                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试231");
                 }
                 return;
             }
             
             Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活2");
             Sleep(600, ct);
-            if(PathingConditionConfig.AutoEatCount < 3  || AutoFightTask.RecoverCount < 3) PathingConditionConfig.AutoEatCount = 0;
+            if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
+            Logger.LogInformation("RecoverCount3 {RecoverCount}",AutoFightTask.RecoverCount);
+            
             // 先打开地图
             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
             Sleep(600, ct);
+            if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+            {
+                Logger.LogInformation("878785");
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+            }
+            Sleep(500, ct);
             TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
-        }
-        else if (AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
-        {
-            if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
-            {
-                PathingConditionConfig.LastEatTime = DateTime.Now;
-                Logger.LogWarning("检测到复苏界面，存在角色被击败，尝试吃药");
-                Sleep(600, ct);
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-                Sleep(600, ct);
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-            }
-            else
-            {
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-                PathingConditionConfig.AutoEatCount++;
-                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
-            }
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
@@ -289,21 +299,6 @@ public class Avatar
             // Cv2.ImWrite($"log/切换.png", region.SrcMat);
             Sleep(250, Ct);
         }
-        //战斗过程切换失败尝试脱困
-        if (!AutoFightTask.FightEndFlag && Bv.GetMotionStatus(CaptureToRectArea()) != MotionStatus.Fly)
-        {
-            Logger.LogWarning("切换角色失败，尝试脱困");
-            Simulation.SendInput.SimulateAction(GIActions.Jump);
-            Sleep(200, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.MoveRight);
-            Sleep(100, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.MoveLeft);
-            Sleep(100, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.Drop);
-            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-            //释放所有按键
-            Simulation.ReleaseAllKey();
-        }
     }
 
     /// <summary>
@@ -360,22 +355,7 @@ public class Avatar
 
             Sleep(250, Ct);
         }
-        
-        //战斗过程切换失败尝试脱困
-        if (!AutoFightTask.FightEndFlag && Bv.GetMotionStatus(CaptureToRectArea()) != MotionStatus.Fly)
-        {
-            Logger.LogWarning("切换角色失败，尝试脱困");
-            Simulation.SendInput.SimulateAction(GIActions.Jump);
-            Sleep(200, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.MoveRight);
-            Sleep(100, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.MoveLeft);
-            Sleep(100, Ct);
-            Simulation.SendInput.SimulateAction(GIActions.Drop);
-            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-            //释放所有按键
-            Simulation.ReleaseAllKey();
-        }
+       
         return false;
     }
 

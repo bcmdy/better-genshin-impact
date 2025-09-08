@@ -124,6 +124,7 @@ public class NetworkRecovery
         );
         
         await new ReturnMainUiTask().Start(ct);
+        GameCaptureRegion.GameRegion1080PPosClick(960, 540);
         IsSuspendedByNetwork = false;
         RecoveryNetworkDone = true;
     }

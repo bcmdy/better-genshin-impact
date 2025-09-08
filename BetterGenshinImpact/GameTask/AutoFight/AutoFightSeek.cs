@@ -576,11 +576,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             {
                 while (attempt < retryCount)
                 {
-                    if (guardianAvatar.TrySwitch(15, false))
+                    if (guardianAvatar.TrySwitch(10, false))
                     {
                         Simulation.ReleaseAllKey();
             
-                        await Task.Delay(100, ct);
+                        // await Task.Delay(100, ct);
             
                         guardianAvatar.ManualSkillCd = -1;
                         var cd1 = guardianAvatar.AfterUseSkill();

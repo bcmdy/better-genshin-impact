@@ -53,11 +53,19 @@ public partial class PathingConditionConfig : ObservableObject
         get => _lastEatTime;
         set => _lastEatTime = value;
     }
-    private static volatile WaypointForTrack? _fightWaypoint = null;
+    // 战斗点位
+    private static WaypointForTrack? _fightWaypoint = null;
     public static WaypointForTrack? FightWaypoint
     {
         get => _fightWaypoint;
         set => _fightWaypoint = value;
+    }
+    //吃药控制标志
+    private static bool _canNotAutoEat = false;
+    public static bool CanNotAutoEat
+    {
+        get => _canNotAutoEat;
+        set => _canNotAutoEat = value;
     }
         
     public static PathingConditionConfig Default => new()

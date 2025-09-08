@@ -389,12 +389,12 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
         
         if (_gameScreenSize.Width > 2560)
         {
-            threshold =0.9;
+            threshold =0.75;
             size = "4K";
         }
         else if (_gameScreenSize.Width > 1920)
         {
-            threshold =0.73;
+            threshold =0.7;
         }
         
         ExperienceRa = new RecognitionObject

@@ -657,13 +657,14 @@ public class PathExecutor
         {
             return;
         }
-
+        Logger.LogInformation("AutoEatCount9908{AutoEatCount}",PathingConditionConfig.AutoEatCount);
         using var region = CaptureToRectArea();
         if (Bv.CurrentAvatarIsLowHp(region) && !(await TryPartyHealing() && Bv.CurrentAvatarIsLowHp(region)))
         {
-            Logger.LogInformation("当前角色血量过低，去七天神像恢复");
+            Logger.LogInformation("当前角色血量过低，去七天神像恢复11");
             await TpStatueOfTheSeven();
-            if (PathingConditionConfig.AutoEatCount < 3) return;
+            if (PathingConditionConfig.AutoEatCount < 2) return;
+            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -673,30 +674,40 @@ public class PathExecutor
             await Delay(4000, ct);
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
-            if (PathingConditionConfig.AutoEatCount < 3) return;
+            if (PathingConditionConfig.AutoEatCount < 2) return;
+            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线");
         }
     }
     
     private async Task TpStatueOfTheSeven()
     {
+        Logger.LogInformation("AutoEatCount231{AutoEatCount}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
-            if (PathingConditionConfig.LastEatTime.AddSeconds(2) < DateTime.Now)
+            Logger.LogInformation("AutoEatCount234{AutoEatCount}",PathingConditionConfig.AutoEatCount);
+            if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
             {
-                PathingConditionConfig.LastEatTime = DateTime.Now;
-                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
-                Sleep(600, ct);
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                 PathingConditionConfig.AutoEatCount++;
+                PathingConditionConfig.LastEatTime = DateTime.Now;
+                
+                Logger.LogWarning("自动吃药：尝试使用小道具恢复3");
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                Sleep(500, ct);
+                if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                {
+                    Logger.LogInformation("9804554");
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                }
+                Sleep(500, ct);
             }
             else
             {
-                await Delay((int)(PathingConditionConfig.LastEatTime.AddSeconds(2) - DateTime.Now).TotalMilliseconds, ct);
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
                 PathingConditionConfig.AutoEatCount++;
+                await Delay((int)(PathingConditionConfig.LastEatTime.AddSeconds(2) - DateTime.Now).TotalMilliseconds, ct);
+                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试4");
             }
+            
             return;
         }
 
@@ -704,7 +715,6 @@ public class PathExecutor
         var tpTask = new TpTask(ct);
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);
         Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
-        if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
     }
 
     /// <summary>
@@ -880,12 +890,6 @@ public class PathExecutor
             // 非攀爬状态下，检测是否卡死（脱困触发器）
             if (waypoint.MoveMode != MoveModeEnum.Climb.Code && isGetOut)
             {
-                //停止吃药
-                var autoEatCount = PathingConditionConfig.AutoEatCount;
-                var recoverCount =  AutoFightTask.RecoverCount;
-                PathingConditionConfig.AutoEatCount = 3;
-                AutoFightTask.RecoverCount = 3;
-                
                 if ((DateTime.UtcNow - lastPositionRecord).TotalMilliseconds > 1000 + additionalTimeInMs)
                 {
                     lastPositionRecord = DateTime.UtcNow;
@@ -895,6 +899,12 @@ public class PathExecutor
                         var delta = prevPositions[^1] - prevPositions[^8];
                         if (Math.Abs(delta.X) + Math.Abs(delta.Y) < 3)
                         {
+                            //停止吃药
+                            var autoEatCount = PathingConditionConfig.AutoEatCount;
+                            var recoverCount =  AutoFightTask.RecoverCount;
+                            PathingConditionConfig.AutoEatCount = 3;
+                            AutoFightTask.RecoverCount = 4;
+                            
                             if (_inTrap > 2)
                             {
                                 throw new RetryException("此路线出现3次卡死，重试一次路线或放弃此路线！");
@@ -919,7 +929,7 @@ public class PathExecutor
                                 
                                 await FaceTo(_lastWaypoint);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                await Delay(4000, ct);
+                                await Delay(3000, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                                 Logger.LogInformation("尝试继续行走...");
