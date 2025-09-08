@@ -139,19 +139,20 @@ public class Avatar
                         {
                             Logger.LogInformation("yuery343412");
                             confirmRectArea.Click();
+                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                         }
+                        return;
                 }
                 else
                 {
                     //等待
                     PathingConditionConfig.AutoEatCount++;
                         Logger.LogInformation("9999");
-                        Sleep(300, ct);
                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                         Sleep(300, ct);
                     Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试231");
                 }
-                return;
+                
             }
             
             Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活2");

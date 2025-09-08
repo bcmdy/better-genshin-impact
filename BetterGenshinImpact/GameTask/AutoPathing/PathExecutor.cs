@@ -692,18 +692,33 @@ public class PathExecutor
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复3");
-
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                     Logger.LogInformation("9804554");
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    using (var bitmap = CaptureToRectArea())
+                    {
+                        var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                        if (!confirmRectArea.IsEmpty())
+                        {
+                            Logger.LogInformation("9804554III");
+                            confirmRectArea.Click();
+                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                            await Task.Delay(300, ct);
+                        }
+                    }
+                    
             }
             else
             {
+                
+                //等待
                 PathingConditionConfig.AutoEatCount++;
-                await Delay((int)(PathingConditionConfig.LastEatTime.AddSeconds(2) - DateTime.Now).TotalMilliseconds, ct);
+                Logger.LogInformation("uuyyrt");
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                await Task.Delay(300, ct);
                 Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试4");
             }
-            
             return;
+            
         }
 
         using (var bitmap = CaptureToRectArea())

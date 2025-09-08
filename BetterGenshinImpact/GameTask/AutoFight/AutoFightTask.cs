@@ -1076,6 +1076,8 @@ public class AutoFightTask : ISoloTask
                                     {
                                         TaskControl.Logger.LogInformation("66554");
                                         confirmRectArea.Click();
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                                        continue;
                                     }
                                 }
                                 else if (RecoverCount < 2)
@@ -1083,6 +1085,7 @@ public class AutoFightTask : ISoloTask
                                     RecoverCount++;
                                     TaskControl.Logger.LogInformation("uu44");
                                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
+                                    continue;
                                 }
                             }
                         }
@@ -1092,7 +1095,7 @@ public class AutoFightTask : ISoloTask
                             RecoverCount = 2;
                             if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                             IsTpForRecover = false;
-                        } //2次吃复活药还检测到死亡，则开启复活检测
+                        }
 
                     }
                     catch (OperationCanceledException ex)
