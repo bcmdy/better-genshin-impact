@@ -692,14 +692,9 @@ public class PathExecutor
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复3");
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                Sleep(500, ct);
-                if (Bv.IsInRevivePrompt(CaptureToRectArea()))
-                {
+
                     Logger.LogInformation("9804554");
                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                }
-                Sleep(500, ct);
             }
             else
             {
@@ -709,6 +704,16 @@ public class PathExecutor
             }
             
             return;
+        }
+
+        using (var bitmap = CaptureToRectArea())
+        {
+            if (Bv.IsInRevivePrompt(bitmap))
+            {
+                Logger.LogInformation("77860");
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                await Task.Delay(500, ct);
+            }
         }
 
         // tp 到七天神像回血
@@ -903,7 +908,7 @@ public class PathExecutor
                             var autoEatCount = PathingConditionConfig.AutoEatCount;
                             var recoverCount =  AutoFightTask.RecoverCount;
                             PathingConditionConfig.AutoEatCount = 3;
-                            AutoFightTask.RecoverCount = 4;
+                            AutoFightTask.RecoverCount = 3;
                             
                             if (_inTrap > 2)
                             {

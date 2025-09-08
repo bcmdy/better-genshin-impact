@@ -126,57 +126,48 @@ public class Avatar
             
             if (PathingConditionConfig.AutoEatCount < 2)
             {
+                PathingConditionConfig.AutoEatCount++;
                 if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                 {
+                    
                     PathingConditionConfig.LastEatTime = DateTime.Now;
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复A");
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); 
-                    Sleep(500, ct);
-                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
-                    {
+
                         Logger.LogInformation("yuery");
-                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                    }
-                    Sleep(500, ct);
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                    Sleep(1000, ct);
-                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
-                    {
-                        Logger.LogInformation("9999");
-                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                    }
-                    PathingConditionConfig.AutoEatCount++;
+                        var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
+                        if (!confirmRectArea.IsEmpty())
+                        {
+                            Logger.LogInformation("yuery343412");
+                            confirmRectArea.Click();
+                        }
                 }
                 else
                 {
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); 
-                    Sleep(500, ct);
-                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
-                    {
-                        Logger.LogInformation("9999");
-                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                    }
-                    Sleep(500, ct);
+                    //等待
                     PathingConditionConfig.AutoEatCount++;
+                        Logger.LogInformation("9999");
+                        Sleep(300, ct);
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                        Sleep(300, ct);
                     Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试231");
                 }
                 return;
             }
             
             Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活2");
-            Sleep(600, ct);
             if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             Logger.LogInformation("RecoverCount3 {RecoverCount}",AutoFightTask.RecoverCount);
-            
-            // 先打开地图
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-            Sleep(600, ct);
-            if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+
+           using (var bitmap = CaptureToRectArea())
             {
-                Logger.LogInformation("878785");
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                if (Bv.IsInRevivePrompt(bitmap))
+                {
+                    Logger.LogInformation("6677");
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    Sleep(300, ct);
+                }
             }
-            Sleep(500, ct);
+            
             TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))

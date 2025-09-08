@@ -398,7 +398,7 @@ public class AutoFightTask : ISoloTask
                 TakeMedicine(cts2.Token);
             }else
             {
-                RecoverCount = 4;
+                RecoverCount = 3;
             }
             
             #endregion
@@ -924,7 +924,7 @@ public class AutoFightTask : ISoloTask
 
                     if (!(numLabels > 1))
                     {
-                        RecoverCount = 4;
+                        RecoverCount = 3;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                     }
                     else
@@ -1039,40 +1039,60 @@ public class AutoFightTask : ISoloTask
                             (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > _taskParam.MedicineInterval 
                             && DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                         {
-                            PathingConditionConfig.LastEatTime = DateTime.Now;
-
-                            var shouldRecover = (redBlood && resurrectionCount <= _taskParam.RecoverMaxCount) ||
-                                                 (gray && RecoverCount < 3);
-
+                            var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
+                                                 (gray && RecoverCount < 2);
                             if (shouldRecover)
                             {
                                 if (redBlood) resurrectionCount++;
                                 if (gray) RecoverCount++;
                                 TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
-                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                                PathingConditionConfig.LastEatTime = DateTime.Now;
+                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                                 redBlood = false;
                                 gray = false;
-                                if (endBloodCheck && resurrectionCount >= 1) return;//单次检测复用
+                                if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
                             }
                             else
                             {
-                                RecoverCount = 3;
-                                PathingConditionConfig.AutoEatCount = 3;
+                                resurrectionCount = _taskParam.RecoverMaxCount;
+                                RecoverCount = 2;
+                                if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                                 TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，打开复活检测
                                 return;
                             }
                         }
 
-                        if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                        using (var bitmap = CaptureToRectArea())
                         {
-                            Sleep(500, _ct);
-                            TaskControl.Logger.LogInformation("自动吃药：54545");
-                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                            Sleep(500, _ct);
+                            if (Bv.IsInRevivePrompt(bitmap))
+                            {
+                                if (RecoverCount < 1)
+                                {
+                                    PathingConditionConfig.LastEatTime = DateTime.Now;
+                                    RecoverCount++;
+                                    var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                                    if (!confirmRectArea.IsEmpty())
+                                    {
+                                        TaskControl.Logger.LogInformation("66554");
+                                        confirmRectArea.Click();
+                                    }
+                                }
+                                else if (RecoverCount < 2)
+                                {
+                                    RecoverCount++;
+                                    TaskControl.Logger.LogInformation("uu44");
+                                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
+                                }
+                            }
                         }
-                        
-                        if (RecoverCount > 2 || FightEndFlag) IsTpForRecover = false; //五次吃复活药还检测到死亡，则开启复活检测
+
+                        if (RecoverCount > 1 || FightEndFlag)
+                        {
+                            RecoverCount = 2;
+                            if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
+                            IsTpForRecover = false;
+                        } //2次吃复活药还检测到死亡，则开启复活检测
 
                     }
                     catch (OperationCanceledException ex)
@@ -1186,12 +1206,17 @@ public class AutoFightTask : ISoloTask
                    await Task.Delay(700, ct);
                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
                    await Task.Delay(800, ct);
-                   if (Bv.IsInRevivePrompt(CaptureToRectArea()))
-                   {
-                       TaskControl.Logger.LogInformation("自动结束吃药：{text} 222", num);
-                       Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                       await Task.Delay(500, ct);
-                   }
+                   
+                    using (var bitmap = CaptureToRectArea())
+                    {
+                        if (Bv.IsInRevivePrompt(bitmap))
+                        {
+                            TaskControl.Logger.LogInformation("自动结束吃药：{text} 222", num);
+                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                            await Task.Delay(500, ct);
+                        }
+                    }
+
                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                    await Task.Delay(700, ct);
                }
