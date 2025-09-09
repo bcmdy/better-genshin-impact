@@ -818,12 +818,12 @@ public class AutoFightTask : ISoloTask
     private Task FindExp(CancellationToken cts2)
     {
         var autoFightAssets = new AutoFightAssets();
-        var ra = CaptureToRectArea();
-        //保存ra用于调试
-        using (FileStream fs = new FileStream(@"D:\Images\ra.png", FileMode.Create))
-        {
-            ra.SrcMat.ToBitmap().Save(fs, System.Drawing.Imaging.ImageFormat.Png);
-        }
+        // var ra = CaptureToRectArea();
+        // //保存ra用于调试
+        // using (FileStream fs = new FileStream(@"D:\Images\ra.png", FileMode.Create))
+        // {
+        //     ra.SrcMat.ToBitmap().Save(fs, System.Drawing.Imaging.ImageFormat.Png);
+        // }
         try  
         {
             Task.Run(() =>

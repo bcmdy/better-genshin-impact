@@ -22,6 +22,12 @@ public partial class CommonConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _screenshotUidCoverEnabled;
+    
+    /// <summary>
+    ///  是否保存为1080P
+    /// </summary>
+    [ObservableProperty]
+    private bool _saveAs1080P;
 
     /// <summary>
     ///     退出时最小化至托盘
