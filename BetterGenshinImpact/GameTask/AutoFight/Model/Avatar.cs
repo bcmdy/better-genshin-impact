@@ -74,9 +74,6 @@ public class Avatar
     /// 名字右边的编号位置
     /// </summary>
     public Rect IndexRect { get; set; }
-    
-    //角色所属元素
-    public ElementalType ElementType { get; set; }
 
     /// <summary>
     /// 任务取消令牌

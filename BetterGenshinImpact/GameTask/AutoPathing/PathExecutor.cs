@@ -685,11 +685,13 @@ public class PathExecutor
         Logger.LogInformation("AutoEatCount231{AutoEatCount}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
-            Logger.LogInformation("AutoEatCount234{AutoEatCount}",PathingConditionConfig.AutoEatCount);
+            
             if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
             {
-                PathingConditionConfig.AutoEatCount++;
+                
                 PathingConditionConfig.LastEatTime = DateTime.Now;
+                
+                Logger.LogInformation("AutoEatCount234{AutoEatCount}",PathingConditionConfig.AutoEatCount);
                 
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复3");
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
@@ -699,22 +701,27 @@ public class PathExecutor
                         var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                         if (!confirmRectArea.IsEmpty())
                         {
+                            PathingConditionConfig.AutoEatCount++;
                             Logger.LogInformation("9804554III");
                             confirmRectArea.Click();
                             Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                             await Task.Delay(300, ct);
                         }
                     }
-                    
             }
             else
-            {
-                
-                //等待
+            { //等待
                 PathingConditionConfig.AutoEatCount++;
                 Logger.LogInformation("uuyyrt");
-                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                await Task.Delay(300, ct);
+                using (var bitmap = CaptureToRectArea())
+                {
+                    if (Bv.IsInRevivePrompt(bitmap))
+                    {
+                        Logger.LogInformation("iikk");
+                        PathingConditionConfig.AutoEatCount++;
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    }
+                }
                 Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试4");
             }
             return;
