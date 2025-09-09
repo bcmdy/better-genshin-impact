@@ -1,5 +1,6 @@
 ﻿using BetterGenshinImpact.Core.Recognition.OCR;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Core.Script.Dependence;
 using BetterGenshinImpact.Core.Simulator;
 using BetterGenshinImpact.Core.Simulator.Extensions;
 using BetterGenshinImpact.GameTask.AutoFight.Config;
@@ -952,7 +953,7 @@ public class Avatar
 
     public void MoveBy(int x, int y)
     {
-        Simulation.SendInput.Mouse.MoveMouseBy(x, y);
+        GlobalMethod.MoveMouseBy(x, y);
     }
 
     public void KeyDown(string key)
