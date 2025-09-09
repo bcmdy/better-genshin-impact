@@ -124,7 +124,7 @@ public class Avatar
             Logger.LogInformation("AutoEatCount{AutoEatCount}",PathingConditionConfig.AutoEatCount);
             Logger.LogInformation("RecoverCount{RecoverCount}",AutoFightTask.RecoverCount);
             
-            if (PathingConditionConfig.AutoEatCount < 2)
+            if (PathingConditionConfig.AutoEatCount < 2 && AutoFightTask.RecoverCount < 2)
             {
                 PathingConditionConfig.AutoEatCount++;
                 if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))

@@ -1056,7 +1056,7 @@ public class AutoFightTask : ISoloTask
                             {
                                 resurrectionCount = _taskParam.RecoverMaxCount;
                                 RecoverCount = 2;
-                                if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
+                                // if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                                 TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，打开复活检测
                                 return;
@@ -1093,7 +1093,7 @@ public class AutoFightTask : ISoloTask
                         if (RecoverCount > 1 || FightEndFlag)
                         {
                             RecoverCount = 2;
-                            if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
+                            // if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                             IsTpForRecover = false;
                         }
 
