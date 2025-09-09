@@ -640,9 +640,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
 
-                    // Logger.LogInformation("元素爆发图标数量：{numLabels2}", numLabels2);
+                    Logger.LogInformation("元素爆发图标匹配连通性：{numLabels2}", numLabels2);
                     
-                    if (numLabels2 > 5)
+                    if (numLabels2 > 4)
                     {
                         Mat firstRow = stats2.Row(1);
                         int[] statsArray;
@@ -685,6 +685,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     labels2.Dispose();
                     stats2.Dispose();
                     centroids2.Dispose();
+                    image.Dispose();
                 }
             }
         }
