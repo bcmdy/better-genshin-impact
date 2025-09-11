@@ -585,7 +585,7 @@ public class AutoFightTask : ISoloTask
 
         if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpKazuhaPickup && !_isExperiencePickup)
         {
-            TaskControl.Logger.LogInformation("自动万叶拾取：{text} 经验值显示","等待");
+            TaskControl.Logger.LogInformation("基于怪物经验判断：：{text} 经验值显示","等待");
             await Delay(1000, ct);
         }
         FightEndFlag = true; 
@@ -815,7 +815,7 @@ public class AutoFightTask : ISoloTask
     }
     
     //基于万叶经验值判断是否拾取
-    private Task FindExp(CancellationToken cts2)
+    private static Task FindExp(CancellationToken cts2)
     {
         var autoFightAssets = new AutoFightAssets();
 
@@ -824,6 +824,7 @@ public class AutoFightTask : ISoloTask
             Task.Run(() =>
             {
                 _isExperiencePickup = false;
+                var expLogo = false;
                 
                 var experienceRas = new[]
                 {
@@ -844,12 +845,16 @@ public class AutoFightTask : ISoloTask
                             {
                                 _isExperiencePickup = experienceRas.Any(experienceRa => 
                                 {
-                                    var isExist = ra.Find(experienceRa).IsExist();
-                                    if (isExist)
+                                    var isExist = ra.Find(experienceRa);
+                                    if (!isExist.IsExist())
                                     {
-                                        TaskControl.Logger.LogInformation("识别到 {experienceRaName} 经验值，{text} 万叶拾取", experienceRa.Name, isExist ? "启用" : "关闭");
+                                        return false;
                                     }
-                                    return isExist;
+                
+                                    var pixelValue1 = ra.SrcMat.At<Vec3b>(isExist.Y, isExist.X - 147); //经验值图标
+                                    expLogo = pixelValue1[0] == 253 && pixelValue1[1] == 247 && pixelValue1[2] == 172;
+
+                                    return expLogo;
                                 });
                             }
                             return _isExperiencePickup;
@@ -863,6 +868,8 @@ public class AutoFightTask : ISoloTask
                     {
                         // Console.WriteLine($"检测怪物经验发生异常: {ex.Message}");
                     }
+                    
+                    if (_isExperiencePickup) Logger.LogInformation("基于怪物经验判断：识别到 {text1} 经验值，{text2} 万叶拾取","精英","启用" );
 
                 }
                 

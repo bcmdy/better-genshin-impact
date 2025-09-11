@@ -372,25 +372,22 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     
     public RecognitionObject InitializeRecognitionObject(int experience)
     {
-        var size = "1080";
         var threshold = 0.9;
         
         if (_gameScreenSize.Width > 2560)
         {
-            threshold =0.9;
-            size = "4K";
+            threshold =0.6;
         }
         else if (_gameScreenSize.Width > 1920)
         {
-            threshold =0.9;
-            size = "2K";
+            threshold =0.6;
         }
         
         ExperienceRa = new RecognitionObject
         {
             Name = experience.ToString(),
             RecognitionType = RecognitionTypes.TemplateMatch,
-            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "experience_"+experience+size+".png"),
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "experience_" + experience + ".png"),
             RegionOfInterest = new Rect((int)(CaptureRect.Width*0.145),(int)(CaptureRect.Height*0.5), (int)(CaptureRect.Width*0.02), (int)(CaptureRect.Height*0.22)),
             UseMask = true,
             Threshold = threshold,
