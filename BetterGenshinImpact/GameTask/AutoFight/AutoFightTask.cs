@@ -922,7 +922,7 @@ public class AutoFightTask : ISoloTask
                     stats.Dispose();
                     centroids.Dispose();
 
-                    if (!(numLabels > 1))
+                    if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的+号
                     {
                         RecoverCount = 3;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
@@ -948,7 +948,7 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠颜色，比模板匹配快
+                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠颜色，比模板匹配快，在开大或其他页面不进行检查
                                 var paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
                                              Math.Abs(pixelValue[1] - 196) <= tolerance &&
                                              Math.Abs(pixelValue[2] - 233) <= tolerance);
@@ -969,6 +969,7 @@ public class AutoFightTask : ISoloTask
                                 var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
+                                //死亡检查
                                 for (int h = 0; h < 4; h++)
                                 {
                                     Mat croppedImage = ra.DeriveCrop(1810, 256 + 96 * h, 15, 1).SrcMat;
@@ -1004,13 +1005,13 @@ public class AutoFightTask : ISoloTask
                                 stats.Dispose();
                                 centroids.Dispose();
 
-                                if (numLabels > 1)
+                                if (numLabels > 1)//红血检查
                                 {
                                     redBlood = true;
                                 }
                                 else
                                 {  
-                                    pixelValue = ra.SrcMat.At<Vec3b>(1010,814);
+                                    pixelValue = ra.SrcMat.At<Vec3b>(1010,814);//在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
                                     if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
                                          Math.Abs(pixelValue[1] - 215) <= tolerance &&
                                          Math.Abs(pixelValue[2] - 150) <= tolerance))
@@ -1033,11 +1034,10 @@ public class AutoFightTask : ISoloTask
                         }, cts2, 1, _taskParam.CheckInterval).Result;
 
                         if ((redBlood || gray) &&
-                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > _taskParam.MedicineInterval 
-                            && DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
+                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > Math.Max(_taskParam.MedicineInterval, 1500))
                         {
                             var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
-                                                 (gray && RecoverCount < 2);
+                                                 (gray && RecoverCount < 2);//判断吃药上限
                             if (shouldRecover)
                             {
                                 if (redBlood) resurrectionCount++;
@@ -1059,11 +1059,11 @@ public class AutoFightTask : ISoloTask
                             }
                         }
 
-                        using (var bitmap = CaptureToRectArea())
+                        using (var bitmap = CaptureToRectArea())//复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
                         {
                             if (Bv.IsInRevivePrompt(bitmap))
                             {
-                                if (RecoverCount < 1)
+                                if (RecoverCount < 1)//只吃一次复活药
                                 {
                                     PathingConditionConfig.LastEatTime = DateTime.Now;
                                     RecoverCount++;
@@ -1089,7 +1089,6 @@ public class AutoFightTask : ISoloTask
                         if (RecoverCount > 1 || FightEndFlag)
                         {
                             RecoverCount = 2;
-                            // if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                             IsTpForRecover = false;
                         }
 
@@ -1151,7 +1150,7 @@ public class AutoFightTask : ISoloTask
                        var centroids = new Mat();
 
                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//右侧头像血量检查
 
                        var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
                        var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
@@ -1160,7 +1159,7 @@ public class AutoFightTask : ISoloTask
                        var centroids2 = new Mat();
 
                        var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
-                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//出战代表没有死亡，所以不用死亡检查
                        
                        labels.Dispose();
                        stats.Dispose();
@@ -1171,17 +1170,17 @@ public class AutoFightTask : ISoloTask
 
                        if (numLabels > 1 || !(numLabels2 > 1))
                        {
-                           ms = 1;
+                           ms = 1;// 发现红血，退出
                            useMedicine.Remove(h+1);
                        }
                    }
                }
 
-               if (useMedicine.Count > 0 && !endBloodCheck)
+               if (useMedicine.Count > 0 && !endBloodCheck)//发现红血角色，进行复检
                {
                    endBloodCheck = true;
                    TaskControl.Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
-                   ms = 100;
+                   ms = 100;// 设置100会再次检测
                    useMedicine = new List<int> { 1, 2, 3, 4 };
                    await Task.Delay(500, ct);
                }
@@ -1208,7 +1207,7 @@ public class AutoFightTask : ISoloTask
                    
                     using (var bitmap = CaptureToRectArea())
                     {
-                        if (Bv.IsInRevivePrompt(bitmap))
+                        if (Bv.IsInRevivePrompt(bitmap))//如果在复活界面，说明没复活药了
                         {
                             TaskControl.Logger.LogInformation("自动结束吃药：{text} 222", num);
                             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
