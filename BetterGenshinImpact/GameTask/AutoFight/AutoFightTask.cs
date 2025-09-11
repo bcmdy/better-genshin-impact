@@ -851,7 +851,7 @@ public class AutoFightTask : ISoloTask
                                         return false;
                                     }
                 
-                                    var pixelValue1 = ra.SrcMat.At<Vec3b>(isExist.Y, isExist.X - 147); //经验值图标
+                                    var pixelValue1 = ra.SrcMat.At<Vec3b>(isExist.Y, isExist.X - 147); //经验值图标，在2K以上时匹配度0.6，这个经验值颜色尤为重要
                                     expLogo = pixelValue1[0] == 253 && pixelValue1[1] == 247 && pixelValue1[2] == 172;
 
                                     return expLogo;
@@ -892,8 +892,6 @@ public class AutoFightTask : ISoloTask
         
         return Task.CompletedTask;
     }
-    
-    private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
     
     public static int RecoverCount = 0; // 吃复活药次数
     
@@ -950,7 +948,7 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠
+                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠颜色，比模板匹配快
                                 var paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
                                              Math.Abs(pixelValue[1] - 196) <= tolerance &&
                                              Math.Abs(pixelValue[2] - 233) <= tolerance);
@@ -981,7 +979,7 @@ public class AutoFightTask : ISoloTask
                                         for (int j = 0; j < croppedImage.Cols; j++)
                                         {
                                             Vec3b pixel = croppedImage.At<Vec3b>(i, j);
-                                            if (pixel[0] != pixel[1] || pixel[1] != pixel[2])
+                                            if (pixel[0] != pixel[1] || pixel[1] != pixel[2]) //转为灰度后，是否和现在的灰度一样，即可判断死亡
                                             {
                                                 isGrayscale = false;
                                                 break;
@@ -996,7 +994,6 @@ public class AutoFightTask : ISoloTask
 
                                     if (isGrayscale)
                                     {
-                                        // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "死亡");
                                         gray = true;
                                     }
                                     
@@ -1009,7 +1006,6 @@ public class AutoFightTask : ISoloTask
 
                                 if (numLabels > 1)
                                 {
-                                    // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "红血1");
                                     redBlood = true;
                                 }
                                 else
@@ -1019,7 +1015,6 @@ public class AutoFightTask : ISoloTask
                                          Math.Abs(pixelValue[1] - 215) <= tolerance &&
                                          Math.Abs(pixelValue[2] - 150) <= tolerance))
                                     { 
-                                        // Logger.LogInformation("自动吃药：{text} " + "使用小道具", "红血2");
                                         greenBlood ++;
                                         if (greenBlood > 3)
                                         {
@@ -1058,7 +1053,6 @@ public class AutoFightTask : ISoloTask
                             {
                                 resurrectionCount = _taskParam.RecoverMaxCount;
                                 RecoverCount = 2;
-                                // if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 2;
                                 TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，打开复活检测
                                 return;
