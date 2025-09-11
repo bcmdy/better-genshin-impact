@@ -201,7 +201,6 @@ public class AutoDomainTask : ISoloTask
 
         // while (true)
         // {
-        //     GetRemainResinStatus();
         //     await Delay(1000, _ct);
         // }
         // 传送到秘境
@@ -250,7 +249,7 @@ public class AutoDomainTask : ISoloTask
             
             // 5. 快速领取奖励并判断是否有下一轮
             Logger.LogInformation("自动秘境：{Text}", "5. 领取奖励");
-            if (!GettingTreasure(_taskParam.DomainRoundNum == 9999, i == _taskParam.DomainRoundNum - 1))
+            if (!GettingTreasure(_taskParam.DomainRoundNum == 9999, i == _taskParam.DomainRoundNum - 1,i))
             {
                 if (i == _taskParam.DomainRoundNum - 1)
                 {
@@ -1150,7 +1149,7 @@ public class AutoDomainTask : ISoloTask
     /// </summary>
     /// <param name="recognizeResin">是否识别树脂</param>
     /// <param name="isLastTurn">是否最后一轮</param>
-    private bool GettingTreasure(bool recognizeResin, bool isLastTurn)
+    private bool GettingTreasure(bool recognizeResin, bool isLastTurn,int fihgtCount)
     {
         //移开鼠标
         GlobalMethod.MoveMouseTo(100,100);
@@ -1221,14 +1220,30 @@ public class AutoDomainTask : ISoloTask
                 if (done != null) // 
                 {
                     Logger.LogInformation("自动秘境：检测到石化古树，领取奖励...");
-                    done.Click();//移开鼠标
-                    Sleep(200, _ct);
                     
                     var useCondensedResinRa = ra.Find(AutoFightAssets.Instance.UseCondensedResinRa); 
                     var useOriginalResinRa = ra.Find(AutoFightAssets.Instance.UseOriginalResinRa); 
                     var useMomentResinRa = ra.Find(AutoFightAssets.Instance.UseMomentResinRa); 
                     var useFragileResinRa = ra.Find(AutoFightAssets.Instance.UseFragileResinRa);
+
+                    Sleep(100, _ct);
                     
+                    //第一次使用树脂转换40按键
+                    if (fihgtCount == 0)
+                    {
+                        var use40ResinRa = ra.FindMulti(RecognitionObject.Ocr(ra.Width *0.34, ra.Height * 0.43, ra.Width*0.13, ra.Height*0.084));
+                        var use40Resin = use40ResinRa.LastOrDefault(t =>
+                            Regex.IsMatch(t.Text, "使用20个原粹树脂"));
+                        if (use40Resin != null)
+                        {
+                            Logger.LogInformation("使用20个原粹树脂");
+                            use40Resin.ClickTo(ra.Width / 4, 10);
+                            Sleep(200, _ct);
+                        }  
+                    }
+                    
+                    done.Click();//移开鼠标
+                    Sleep(100, _ct);
 
                     //如果设定包含了脆弱树脂和须臾树脂，如果存在须臾树脂，脆弱树脂将无法使用，用LOG提示
                     if (!useMomentResinRa.IsEmpty() && resinType.Contains("脆弱树脂"))
