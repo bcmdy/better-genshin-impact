@@ -303,7 +303,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             Name = "OriginalResinCount",
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "original_resin_count.png"),            
-            RegionOfInterest = new Rect(CaptureRect.Width *3/ 4, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
+            RegionOfInterest = new Rect(CaptureRect.Width *3/ 5, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
             DrawOnWindow = false
         }.InitTemplate();
         FragileResinCountRa = new RecognitionObject //可以识别 √

@@ -198,7 +198,12 @@ public class AutoDomainTask : ISoloTask
         {
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);
         }
-        
+
+        // while (true)
+        // {
+        //     GetRemainResinStatus();
+        //     await Delay(1000, _ct);
+        // }
         // 传送到秘境
         await TpDomain();
         
