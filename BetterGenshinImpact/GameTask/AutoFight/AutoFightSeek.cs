@@ -12,7 +12,10 @@ using System;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using System.Linq;
 using System.Collections.Generic;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using  OpenCvSharp;
+using BetterGenshinImpact.GameTask.Model.Area;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -39,7 +42,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2, connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
-            logger.LogInformation("检测数量：{numLabels2}", numLabels2 - 1);
+            // logger.LogInformation("检测数量：{numLabels2}", numLabels2 - 1);
 
             if (numLabels2 > 1)
             {
@@ -350,7 +353,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                 if (numLabels > 1)
                 {
-                    logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
+                    // logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
                     Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
                     int[] statsArray2;
                     bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
@@ -531,7 +534,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                 if (numLabels > 1)
                 {
-                    logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
+                    // logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
                     Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
                     int[] statsArray2;
                     bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
@@ -624,25 +627,57 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     
                     // 首先对图像进行预处理，转为灰度图
                     var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
-                    Cv2.Canny(grayImage, grayImage, threshold1: 50, threshold2: 150);
+                    Cv2.Canny(grayImage, grayImage, threshold1: 50, threshold2: 150);// 边缘检测
+                    
+                    //调试用
+                    // grayImage.SaveImage("D:\\Images\\grayImage.png");
+                    // Cv2.ImShow("灰度图像", grayImage);
                     
                     // 使用霍夫变换检测圆形
                     var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                        param1: 50, param2: 30, minRadius: 0, maxRadius: 0);
-                    
-                    Logger.LogInformation("Q技能检测圆圈数量：{circles}",circles.Length);
+                        param1: 50, param2: 30, minRadius: 25, maxRadius: 34);
+
+                    // if (circles != null && circles.Length > 0)
+                    // {
+                    //     // 假设我们只取第一个检测到的圆
+                    //     var firstCircle = circles[0];
+                    //     var centerX = firstCircle.Center.X;
+                    //     var centerY = firstCircle.Center.Y;
+                    //     var radius = firstCircle.Radius;
+                    //
+                    //     Logger.LogInformation("圆圈数量 {circles} 圆圈半径 {radius} ", circles.Length, radius);
+                    // }
+
                     if (circles.Length > 0)
                     {
                         Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发状态：{attempt}，尝试释放",
                             guardianAvatarName, guardianAvatar.Name, "就绪");
                         
-                        if (guardianAvatar.TrySwitch(15, false))
+                        if (guardianAvatar.TrySwitch(8, false))
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                            Sleep(200, ct);
+                            Sleep(500, ct);
                             Simulation.ReleaseAllKey();
+                        
                             //普攻一下，防止在纳塔飞天
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            var imageAfterBurst = CaptureToRectArea();
+                            if (AvatarSkillAsync(Logger, guardianAvatar, true, 1, ct).Result 
+                                 || !Bv.IsInMainUi(imageAfterBurst)) //Q技能CD（冷却检测）或者不在主界面（大招动画播放中）
+                            {
+                                guardianAvatar.IsBurstReady = false;
+                            }
+                            else
+                            {
+                                Sleep(500, ct);
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);//普攻一下，防止在纳塔飞天
+                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);//尝试再放一次,不检查
+                                guardianAvatar.IsBurstReady = true;
+                            }
+                            Logger.LogInformation("优先第 {guardianAvatarName} 盾奶位 {GuardianAvatar} 释放元素爆发：{text}",
+                                guardianAvatarName, guardianAvatar.Name, !guardianAvatar.IsBurstReady ? "成功" : "失败");
+                            
+                            imageAfterBurst.Dispose();
                         }
                     }
                     
@@ -653,8 +688,20 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         }
         
         //新方法，备用，非OCR识别，判断色块进行，速度更快
-        //检测技能图标中释放含有白色色块，检测前进行角色切换的确认，skills：false为E技能，true为Q技能（未开发）
-        public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, CancellationToken ct)
+        //检测技能图标中释放含有白色色块，检测前进行角色切换的确认，skills：false为E技能，true为Q技能
+        /// <summary>
+        /// 检测角色技能冷却状态
+        /// </summary>
+        /// <param name="logger">日志记录器</param>
+        /// <param name="guardianAvatar">角色对象</param>
+        /// <param name="skills">技能类型，false为E技能，true为Q技能</param>
+        /// <param name="retryCount">重试次数</param>
+        /// <param name="ct">取消令牌</param>
+        /// <param name="needLog">是否需要日志输出</param>
+        /// <param name="isResetCd">是否重置技能冷却状态</param>
+        /// <returns>技能是否就绪</returns>
+        public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, 
+            CancellationToken ct,bool needLog = false, bool isResetCd = false)
         {
             if (guardianAvatar.TrySwitch())
             {
@@ -665,7 +712,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 {
                     var image2 = CaptureToRectArea();
 
-                    var skillAra = skills
+                    var skillAra = !skills
                         ? new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
                             image2.Width * 12 / 1920, image2.Height * 7 / 1080) //E技能区域
                         
@@ -685,18 +732,42 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
-                    logger.LogInformation("盾奶位 {guardianAvatar.Name} 战技状态：{text}", guardianAvatar.Name , numLabels2 > 1 ? "已释放" : "未释放");
-
+                    image2.Dispose();
+                    mask2.Dispose();
+                    labels2.Dispose();
+                    stats2.Dispose();
+                    centroids2.Dispose();
+                    
+                    if (needLog) Logger.LogInformation("技能状态：{guardianAvatar.Name} - {skills} 状态 {text}", 
+                        guardianAvatar.Name, skills?"Q技能":"E技能", numLabels2 > 1?"冷却中":"就绪");
+                    
                     if (numLabels2 > 1)
                     {
+                        if (skills && isResetCd)
+                        {
+                            guardianAvatar.IsBurstReady = true;
+                        }else
+                        {
+                            guardianAvatar.ManualSkillCd = 0;
+                        }
+                        
                         return true;
                     }
-
+                    
                     attempt++;
-                    await Task.Delay(100, ct);
+                   if (retryCount > 1) await Task.Delay(100, ct);
                 }
             }
-            guardianAvatar.AfterUseSkill();
+
+            if (skills && isResetCd)
+            {
+                guardianAvatar.IsBurstReady = false;
+            }
+            else
+            {
+                guardianAvatar.AfterUseSkill();
+            }
+            
             return false;
         }
     }

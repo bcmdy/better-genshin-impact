@@ -336,7 +336,7 @@ public class Avatar
 
             Sleep(250, Ct);
         }
-       
+
         return false;
     }
 
