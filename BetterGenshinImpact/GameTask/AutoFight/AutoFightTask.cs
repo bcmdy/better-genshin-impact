@@ -30,7 +30,8 @@ using OpenCvSharp.Extensions;
 using System.IO;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
 using Vanara.PInvoke;
-using System.Drawing; // 添加对System.Drawing的引用
+using System.Drawing;
+using BetterGenshinImpact.GameTask.AutoPick; // 添加对System.Drawing的引用
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -372,19 +373,9 @@ public class AutoFightTask : ISoloTask
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
-        // AutoFightAssets autoFightAssets = new AutoFightAssets();
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
-            // #region 记录战斗地点
-            // NavigationInstance navigationInstance = new NavigationInstance();
-            //
-            //    FightPosition = navigationInstance.GetPosition(CaptureToRectArea(), TaskContext.Instance().Config.DevConfig.RecordMapName);
-            //    Logger.LogInformation($"游泳检测打开，记录战斗地点：{FightPosition.X},{FightPosition.Y}");
-            //    return;
-            //
-            // #endregion
-            
             #region 基于战斗检测经验值开关万叶拾取功能同步任务
             
             if (_taskParam.ExpKazuhaPickup) FindExp(cts2.Token);
@@ -644,7 +635,6 @@ public class AutoFightTask : ISoloTask
                 }
 
             }
-          
             
             if (kazuha != null)
             {
@@ -692,12 +682,6 @@ public class AutoFightTask : ISoloTask
                 }
                     
             }
-        }
-
-        if (_taskParam is { PickDropsAfterFightEnabled: true } )
-        {
-            // 执行自动拾取掉落物的功能
-            await new ScanPickTask().Start(ct);
         }
 
         if (_taskParam.EndBloodCheackEnabled)
@@ -1070,7 +1054,6 @@ public class AutoFightTask : ISoloTask
                                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                                     if (!confirmRectArea.IsEmpty())
                                     {
-                                        TaskControl.Logger.LogInformation("66554");
                                         confirmRectArea.Click();
                                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                                         continue;
@@ -1079,7 +1062,6 @@ public class AutoFightTask : ISoloTask
                                 else if (RecoverCount < 2)
                                 {
                                     RecoverCount++;
-                                    TaskControl.Logger.LogInformation("uu44");
                                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
                                     continue;
                                 }
@@ -1209,7 +1191,6 @@ public class AutoFightTask : ISoloTask
                     {
                         if (Bv.IsInRevivePrompt(bitmap))//如果在复活界面，说明没复活药了
                         {
-                            TaskControl.Logger.LogInformation("自动结束吃药：{text} 222", num);
                             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                             await Task.Delay(500, ct);
                         }

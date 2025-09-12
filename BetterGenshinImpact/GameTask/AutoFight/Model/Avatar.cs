@@ -119,9 +119,6 @@ public class Avatar
     {
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            Logger.LogInformation("AutoEatCount{AutoEatCount}",PathingConditionConfig.AutoEatCount);
-            Logger.LogInformation("RecoverCount{RecoverCount}",AutoFightTask.RecoverCount);
-            
             if (PathingConditionConfig.AutoEatCount < 2 && AutoFightTask.RecoverCount < 2)
             {
                 PathingConditionConfig.AutoEatCount++;
@@ -129,39 +126,33 @@ public class Avatar
                 {
                     
                     PathingConditionConfig.LastEatTime = DateTime.Now;
-                    Logger.LogWarning("自动吃药：尝试使用小道具恢复A");
-
-                        Logger.LogInformation("yuery");
-                        var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
-                        if (!confirmRectArea.IsEmpty())
-                        {
-                            Logger.LogInformation("yuery343412");
-                            confirmRectArea.Click();
-                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                        }
-                        return;
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                    var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (!confirmRectArea.IsEmpty())
+                    {
+                        confirmRectArea.Click();
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                    }
+                    return;
                 }
                 else
                 {
                     //等待
                     PathingConditionConfig.AutoEatCount++;
-                        Logger.LogInformation("9999");
-                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                        Sleep(300, ct);
-                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试231");
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    Sleep(300, ct);
+                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
                 }
                 
             }
             
-            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活2");
+            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
             if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
-            Logger.LogInformation("RecoverCount3 {RecoverCount}",AutoFightTask.RecoverCount);
 
-           using (var bitmap = CaptureToRectArea())
+            using (var bitmap = CaptureToRectArea())
             {
                 if (Bv.IsInRevivePrompt(bitmap))
                 {
-                    Logger.LogInformation("6677");
                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     Sleep(300, ct);
                 }

@@ -657,11 +657,10 @@ public class PathExecutor
         {
             return;
         }
-        Logger.LogInformation("AutoEatCount9908{AutoEatCount}",PathingConditionConfig.AutoEatCount);
         using var region = CaptureToRectArea();
         if (Bv.CurrentAvatarIsLowHp(region) && !(await TryPartyHealing() && Bv.CurrentAvatarIsLowHp(region)))
         {
-            Logger.LogInformation("当前角色血量过低，去七天神像恢复11");
+            Logger.LogInformation("当前角色血量过低，去七天神像恢复");
             await TpStatueOfTheSeven();
             if (PathingConditionConfig.AutoEatCount < 2) return;
             if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
@@ -682,7 +681,6 @@ public class PathExecutor
     
     private async Task TpStatueOfTheSeven()
     {
-        Logger.LogInformation("AutoEatCount231{AutoEatCount}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
             
@@ -690,39 +688,33 @@ public class PathExecutor
             {
                 
                 PathingConditionConfig.LastEatTime = DateTime.Now;
-                
-                Logger.LogInformation("AutoEatCount234{AutoEatCount}",PathingConditionConfig.AutoEatCount);
-                
-                Logger.LogWarning("自动吃药：尝试使用小道具恢复3");
+                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                    Logger.LogInformation("9804554");
-                    using (var bitmap = CaptureToRectArea())
+
+                using (var bitmap = CaptureToRectArea())
+                {
+                    var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (!confirmRectArea.IsEmpty())
                     {
-                        var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                        if (!confirmRectArea.IsEmpty())
-                        {
-                            PathingConditionConfig.AutoEatCount++;
-                            Logger.LogInformation("9804554III");
-                            confirmRectArea.Click();
-                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                            await Task.Delay(300, ct);
-                        }
+                        PathingConditionConfig.AutoEatCount++;
+                        confirmRectArea.Click();
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                        await Task.Delay(300, ct);
                     }
+                }
             }
             else
-            { //等待
+            { 
                 PathingConditionConfig.AutoEatCount++;
-                Logger.LogInformation("uuyyrt");
                 using (var bitmap = CaptureToRectArea())
                 {
                     if (Bv.IsInRevivePrompt(bitmap))
                     {
-                        Logger.LogInformation("iikk");
                         PathingConditionConfig.AutoEatCount++;
                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     }
                 }
-                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试4");
+                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
             }
             return;
             
@@ -732,7 +724,6 @@ public class PathExecutor
         {
             if (Bv.IsInRevivePrompt(bitmap))
             {
-                Logger.LogInformation("77860");
                 Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                 await Task.Delay(500, ct);
             }
@@ -956,7 +947,7 @@ public class PathExecutor
                                 
                                 await FaceTo(_lastWaypoint);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                await Delay(3000, ct);
+                                await Delay(2000, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                                 Logger.LogInformation("尝试继续行走...");
