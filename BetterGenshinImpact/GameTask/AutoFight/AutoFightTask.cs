@@ -893,8 +893,8 @@ public class AutoFightTask : ISoloTask
             {
                 using (var ra = CaptureToRectArea())
                 {
-                    var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
-                    var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,new Scalar(192, 233, 102));
+                    var mRect = ra.DeriveCrop(1817, 781, 4, 14);
+                    var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
                     var labels = new Mat();
                     var stats = new Mat();
                     var centroids = new Mat();
@@ -906,10 +906,13 @@ public class AutoFightTask : ISoloTask
                     stats.Dispose();
                     centroids.Dispose();
 
-                    if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的+号
+                    Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
+                    
+                    if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
                     {
                         RecoverCount = 3;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
+                        return;
                     }
                     else
                     {
