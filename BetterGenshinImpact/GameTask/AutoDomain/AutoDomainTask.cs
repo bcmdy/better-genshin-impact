@@ -44,6 +44,7 @@ using BetterGenshinImpact.GameTask.Common;
 using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.Core.Config;
+using OpenCvSharp.Extensions;
 
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
@@ -201,10 +202,11 @@ public class AutoDomainTask : ISoloTask
             Logger.LogInformation("树脂类型和次数：{ResinCount}", _taskParam.ResinCount);
         }
 
-        // while (true)
-        // {
-        //     await Delay(1000, _ct);
-        // }
+        while (true)
+        {
+            GetRemainResinStatus();
+            await Delay(500, _ct);
+        }
         // 传送到秘境
         await TpDomain();
         
@@ -1565,6 +1567,8 @@ public class AutoDomainTask : ISoloTask
         var originalResinCount = 0; //原粹树脂
         var fragileResinCount = 0; //脆弱树脂
         var momentResinCount = 0; //须臾树脂
+        var autoFightAssets = new AutoFightAssets();
+        var condensedResinCountG = 0;//测试OCR识别
 
         using (var ra = CaptureToRectArea())
         {
@@ -1572,14 +1576,29 @@ public class AutoDomainTask : ISoloTask
             var condensedResinCountRa = ra.Find(AutoFightAssets.Instance.CondensedResinCountRa);
             if (!condensedResinCountRa.IsEmpty())
             {
-                // Logger.LogInformation("测试LOG：检测到浓缩树脂图标");
                 // 图像右侧就是浓缩树脂数量
                 using (var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
-                    condensedResinCountRa.Y,
-                    condensedResinCountRa.Width, condensedResinCountRa.Height))
+                           condensedResinCountRa.Y,
+                           condensedResinCountRa.Width*2, condensedResinCountRa.Height))
                 {
-                    var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
-                    condensedResinCount = StringUtils.TryParseInt(count);
+                    for (var i = 0; i < 6; i++)
+                    {
+                        var countResult = countArea.Find(autoFightAssets.InitializeCondensedResin(i));
+                        if (countResult.IsEmpty())
+                        {
+                            if (i == 5)
+                            {
+                                Logger.LogInformation("浓缩树脂数量识别失败，尝试使用OCR识别");
+                                var countG = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                                condensedResinCount = StringUtils.TryParseInt(countG);
+                            }
+                            continue;
+                        }
+                        condensedResinCount = i;
+                        break;
+                    }
+                    
+                    // Logger.LogInformation("测试LOG：提取到的浓缩树脂数量：MUB{CondensedResinCount} OCR{CondensedResinCountG}", condensedResinCount, condensedResinCountG);
                 }
             }
             else
@@ -1655,7 +1674,7 @@ public class AutoDomainTask : ISoloTask
             var fragileResinCountRa = ra.Find(AutoFightAssets.Instance.FragileResinCountRa); 
             if (!fragileResinCountRa.IsEmpty())
             {
-                Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
+                // Logger.LogInformation("测试LOG：检测到脆弱树脂图标");
                 using (var countArea = ra.DeriveCrop(fragileResinCountRa.X + fragileResinCountRa.Width, fragileResinCountRa.Y,
                     (int)(fragileResinCountRa.Width * 3), fragileResinCountRa.Height))
                 {
@@ -1665,7 +1684,7 @@ public class AutoDomainTask : ISoloTask
             }
             else
             {
-                Logger.LogInformation("测试LOG：未检测到脆弱树脂图标");
+                // Logger.LogInformation("测试LOG：未检测到脆弱树脂图标");
                 // 须臾树脂
                 var momentResinCountRa = ra.Find(AutoFightAssets.Instance.MomentResinCountRa); 
                 if (!momentResinCountRa.IsEmpty()) {

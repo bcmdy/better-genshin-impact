@@ -36,6 +36,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     
     // 树脂状态
     public RecognitionObject CondensedResinCountRa;
+    public RecognitionObject CondensedResinCountNumRa;
     public RecognitionObject OriginalResinCountRa;
     public RecognitionObject FragileResinCountRa;
     public RecognitionObject MomentResinCountRa;
@@ -395,5 +396,16 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
         }.InitTemplate();
         return  ExperienceRa;
     }  
+    
+    public RecognitionObject InitializeCondensedResin(int condensedResinCount)
+    {
+        return new RecognitionObject
+        {
+            Name = condensedResinCount.ToString(),
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "condensed_resin_count_" + condensedResinCount + ".png"),
+            Threshold = 0.9,
+        }.InitTemplate();
+    }
     
 }
