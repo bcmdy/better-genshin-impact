@@ -906,7 +906,7 @@ public class AutoFightTask : ISoloTask
                     stats.Dispose();
                     centroids.Dispose();
 
-                    Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
+                    // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
                     
                     if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
                     {
