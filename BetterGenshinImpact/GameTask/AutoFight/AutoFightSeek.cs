@@ -713,11 +713,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     var image2 = CaptureToRectArea();
 
                     var skillAra = !skills
-                        ? new Rect(image2.Width * 1700 / 1920, image2.Height * 996 / 1080,
-                            image2.Width * 12 / 1920, image2.Height * 7 / 1080) //E技能区域
+                        ? new Rect(image2.Width * 1688 / 1920, image2.Height * 988 / 1080,
+                            image2.Width * 22 / 1920, image2.Height * 12 / 1080) //E技能区域
                         
-                        : new Rect(image2.Width * 1819 / 1920, image2.Height * 977 / 1080,
-                            image2.Width * 13 / 1920, image2.Height * 6 / 1080); //Q技能区域
+                        : new Rect(image2.Width * 1809 / 1920, image2.Height * 968 / 1080,
+                            image2.Width * 30 / 1920, image2.Height * 15 / 1080); //Q技能区域
                     
                     var mask2 = OpenCvCommonHelper.Threshold(
                         image2.DeriveCrop(skillAra).SrcMat,
@@ -741,12 +741,18 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     if (needLog) Logger.LogInformation("技能状态：{guardianAvatar.Name} - {skills} 状态 {text}", 
                         guardianAvatar.Name, skills?"Q技能":"E技能", numLabels2 > 1?"冷却中":"就绪");
                     
-                    if (numLabels2 > 1)
+                    // Logger.LogInformation("技能状态：{numLabels2} 数量", numLabels2);
+                    if (numLabels2 > 2)
                     {
-                        if (skills && isResetCd)
+                        if (!isResetCd)
+                        {
+                            return true;
+                        }
+                        if (skills)
                         {
                             guardianAvatar.IsBurstReady = true;
-                        }else
+                        }
+                        else
                         {
                             guardianAvatar.ManualSkillCd = 0;
                         }
@@ -759,7 +765,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 }
             }
 
-            if (skills && isResetCd)
+            if (!isResetCd)
+            {
+                return false;
+            }
+
+            if (skills)
             {
                 guardianAvatar.IsBurstReady = false;
             }
@@ -767,8 +778,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             {
                 guardianAvatar.AfterUseSkill();
             }
-            
+
             return false;
+
         }
     }
 
