@@ -1126,7 +1126,7 @@ public class AutoFightTask : ISoloTask
             {
                using (var ra = CaptureToRectArea())
                {
-                    var pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
+                    var pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);//TakeMedicine后，不会有死亡角色，如出现死亡角色导致变复活药，说明死超过2位角色，也不用执行了
                     if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
                     {
                         Logger.LogInformation("自动结束吃药：检测到复活药，{text} 结束吃恢复药", "不执行");
