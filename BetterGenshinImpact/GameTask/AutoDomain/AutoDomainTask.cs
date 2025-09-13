@@ -1568,7 +1568,6 @@ public class AutoDomainTask : ISoloTask
         var fragileResinCount = 0; //脆弱树脂
         var momentResinCount = 0; //须臾树脂
         var autoFightAssets = new AutoFightAssets();
-        var condensedResinCountG = 0;//测试OCR识别
 
         using (var ra = CaptureToRectArea())
         {

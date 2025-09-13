@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using Newtonsoft.Json;
-
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
 
 namespace BetterGenshinImpact.GameTask.Common.Job;
 
@@ -115,18 +115,38 @@ public class GoToCraftingBenchTask
                 }
                 
                 //浓缩纠缠重试
-                var condensed =await NewRetry.WaitForAction(() =>
+                var condensed = await NewRetry.WaitForAction(() =>
                 {
                     var condensedResinCountRa = ra.Find(ElementAssets.Instance.CondensedResinCount);
                     if (!condensedResinCountRa.IsEmpty())
                     {
                         // 图像右侧就是浓缩树脂数量
-                        var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
-                            condensedResinCountRa.Y, condensedResinCountRa.Width*5/3, condensedResinCountRa.Height);
-                        var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.CacheGreyMat);
-                        condensedResinCount = StringUtils.TryParseInt(count);
+                        using (var countArea = ra.DeriveCrop(condensedResinCountRa.X + condensedResinCountRa.Width,
+                                   condensedResinCountRa.Y, condensedResinCountRa.Width * 5 / 3,
+                                   condensedResinCountRa.Height))
+                        {
+                            var autoFightAssets = new AutoFightAssets();
+                            for (var i = 0; i < 6; i++)
+                            {
+                                var countResult = countArea.Find(autoFightAssets.InitializeCondensedResin(i));
+                                if (countResult.IsEmpty())
+                                {
+                                    if (i == 5)
+                                    {
+                                        Logger.LogInformation("浓缩树脂数量识别失败，尝试使用OCR识别");
+                                        var count = OcrFactory.Paddle.OcrWithoutDetector(countArea.SrcMat);
+                                        condensedResinCount = StringUtils.TryParseInt(count);
+                                    }
+                                    continue;
+                                }
+                                condensedResinCount = i;
+                                break;
+                            }
+                        }
                     }
-                    return condensedResinCount >= 0 && condensedResinCount <=5;
+                    
+                    return condensedResinCount >= 0 && condensedResinCount <= 5;
+                    
                 },ct,3,200); 
                 if (!condensed)
                 {
