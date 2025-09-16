@@ -683,10 +683,9 @@ public class PathExecutor
     {
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
-            
             if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
             {
-                
+                Simulation.ReleaseAllKey();
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复");
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
@@ -696,6 +695,7 @@ public class PathExecutor
                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                     if (!confirmRectArea.IsEmpty())
                     {
+                        Simulation.ReleaseAllKey();
                         PathingConditionConfig.AutoEatCount++;
                         confirmRectArea.Click();
                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
@@ -1089,6 +1089,7 @@ public class PathExecutor
             {
                 if ((DateTime.UtcNow - _useGadgetLastUseTime).TotalMilliseconds > PartyConfig.UseGadgetIntervalMs)
                 {
+                    Simulation.ReleaseAllKey();
                     Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                     _useGadgetLastUseTime = DateTime.UtcNow;
                 }

@@ -389,6 +389,7 @@ public class AutoFightTask : ISoloTask
                 TakeMedicine(cts2.Token);
             }else
             {
+                IsTpForRecover = false;
                 RecoverCount = 3;
             }
             
@@ -994,7 +995,16 @@ public class AutoFightTask : ISoloTask
 
                                 if (numLabels > 1)//红血检查
                                 {
-                                    redBlood = true;
+                                    pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
+                                    if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
+                                    {
+                                        Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                        redBlood = false;
+                                    }
+                                    else
+                                    {
+                                        redBlood = true;
+                                    }
                                 }
                                 else
                                 {  
@@ -1006,7 +1016,16 @@ public class AutoFightTask : ISoloTask
                                         greenBlood ++;
                                         if (greenBlood > 3)
                                         {
-                                            redBlood = true;
+                                            pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
+                                            if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
+                                            {
+                                                Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                                redBlood = false;
+                                            }
+                                            else
+                                            {
+                                                redBlood = true;
+                                            }
                                         }
                                     }
                                     else
@@ -1027,6 +1046,7 @@ public class AutoFightTask : ISoloTask
                                                  (gray && RecoverCount < 2);//判断吃药上限
                             if (shouldRecover)
                             {
+                                Simulation.ReleaseAllKey();
                                 if (redBlood) resurrectionCount++;
                                 if (gray) RecoverCount++;
                                 TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
@@ -1057,6 +1077,7 @@ public class AutoFightTask : ISoloTask
                                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                                     if (!confirmRectArea.IsEmpty())
                                     {
+                                        Simulation.ReleaseAllKey();
                                         confirmRectArea.Click();
                                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                                         continue;
@@ -1142,7 +1163,7 @@ public class AutoFightTask : ISoloTask
                        var centroids = new Mat();
 
                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//右侧头像血量检查
+                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//非出战角色，右侧头像血量检查
 
                        var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
                        var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
@@ -1194,6 +1215,7 @@ public class AutoFightTask : ISoloTask
                 //通过编号切换角色补血,不进行确认是否吃上
                 foreach (var num in useMedicine)
                 {
+                    Simulation.ReleaseAllKey();
                     await Task.Delay(700, ct);
                     Simulation.SendInput.SimulateAction(MemberActions[num-1]);
                     await Task.Delay(800, ct);

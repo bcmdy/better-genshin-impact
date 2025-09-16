@@ -130,6 +130,7 @@ public class Avatar
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
                     if (!confirmRectArea.IsEmpty())
                     {
+                        Simulation.ReleaseAllKey();
                         confirmRectArea.Click();
                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                     }
