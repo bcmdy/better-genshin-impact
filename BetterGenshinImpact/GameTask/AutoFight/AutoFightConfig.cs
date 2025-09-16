@@ -26,6 +26,9 @@ public partial class AutoFightConfig : ObservableObject
     /// 英文逗号分割 强制指定队伍角色
     /// </summary>
     [ObservableProperty] private string _teamNames = "";
+    
+    /// <summary> 战斗策略自动EQ </summary>
+    [ObservableProperty] private bool _autoCombatEq = false;
 
     /// <summary>
     /// 检测战斗结束

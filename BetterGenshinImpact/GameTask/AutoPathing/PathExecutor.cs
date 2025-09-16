@@ -1258,6 +1258,8 @@ public class PathExecutor
             return avatar;
         }
 
+        await TpStatueOfTheSeven();
+        
         Logger.LogInformation("尝试切换角色{Name}失败！", avatar.Name);
         return null;
     }

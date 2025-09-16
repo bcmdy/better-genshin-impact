@@ -373,6 +373,8 @@ public class AutoFightTask : ISoloTask
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
+        // var useEqFirst = new List<int>(){1,2,3,4};
+        
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
@@ -429,8 +431,67 @@ public class AutoFightTask : ISoloTask
                         
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
                         
-                        if (skipModel) await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
+                        if (skipModel) {
+                            await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
                             _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
+
+                            if (_taskParam.AutoCombatEq && guardianAvatar.ManualSkillCd == 0)
+                            {
+                                if(i>0)i--;
+                                continue;
+                            }
+
+                            if (_taskParam.AutoCombatEq)
+                            {
+                               var useEq = await AutoFightSkill.AvatarQSkillAsync();
+                                // useQ.Remove(guardianAvatar.Index);
+                                if (useEq.Count > 0)
+                                {
+                                    foreach (var num in useEq)
+                                    {
+                                        TaskControl.Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
+                                        var avatarQ = combatScenes.SelectAvatar(num);
+                                        if (avatarQ.TrySwitch(15))
+                                        {
+                                            countFight++;
+                                            if (avatarQ.IsSkillReady())
+                                            {
+                                                avatarQ.UseSkill();
+                                                
+                                                if (avatarQ.Name == "枫原万叶")
+                                                {
+                                                    await Delay(100, ct);
+                                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                    await Delay(200, ct);
+                                                    
+                                                }
+                                                await Delay(350, ct);
+                                            }
+                                            else
+                                            {
+                                                avatarQ.AfterUseSkill();
+                                            }
+                                            
+                                            fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                            if (!fightEndFlag)
+                                            {
+                                                await Delay(100, ct);
+                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);//尝试再放一次,不检查
+                                                await Delay(600, ct);
+                                            }
+                                            else
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                useEq.Clear(); 
+                            }
+                            
+                        }
+                        
+                        if (fightEndFlag)break;
                         
                         var avatar = combatScenes.SelectAvatar(command.Name);
                         
@@ -449,7 +510,7 @@ public class AutoFightTask : ISoloTask
                         {
                             continue;
                         }
-
+                        if (_taskParam.AutoCombatEq)avatar?.TrySwitch(15);
                         #region 每个命令的跳过战斗判定
 
                         // 判断是否满足跳过条件:
@@ -998,7 +1059,11 @@ public class AutoFightTask : ISoloTask
                                     pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
                                     if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
                                     {
-                                        Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                        if (resurrectionCount >= 0)
+                                        {
+                                            Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                            resurrectionCount = -1;
+                                        }
                                         redBlood = false;
                                     }
                                     else
@@ -1014,12 +1079,16 @@ public class AutoFightTask : ISoloTask
                                          Math.Abs(pixelValue[2] - 150) <= tolerance))
                                     { 
                                         greenBlood ++;
-                                        if (greenBlood > 3)
+                                        if (greenBlood > 3 || endBloodCheck && greenBlood > 0)
                                         {
                                             pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
                                             if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
                                             {
-                                                Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                                if (resurrectionCount >= 0)
+                                                {
+                                                    Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
+                                                    resurrectionCount = -1;
+                                                }
                                                 redBlood = false;
                                             }
                                             else

@@ -799,13 +799,18 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="选择战斗策略"
+                                      Text="选择自动战斗策略"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="用于战斗"
+                                      Text="自动EQ(实验功能)"
+                                      Margin="45,0,0,0"
                                       TextWrapping="Wrap" />
+                        <ui:ToggleSwitch Grid.Row="1"
+                                         Grid.Column="0"
+                                         Margin="0,0,0,0"
+                                         IsChecked="{Binding PathingConfig.AutoFightConfig.AutoCombatEq, Mode=TwoWay}" />
                         <ui:Button Grid.Row="0"
                                    Grid.RowSpan="2"
                                    Grid.Column="1"
@@ -818,7 +823,7 @@
                                    Grid.Column="2"
                                    Margin="0,0,12,0"
                                    Command="{Binding OpenFightFolderCommand}"
-                                   Content="打开目录" />
+                                   Content="目录" />
                         <ComboBox Grid.Row="0"
                                   Grid.RowSpan="2"
                                   Grid.Column="3"
