@@ -806,7 +806,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
             if (useMedicine.Count > 0)
             {
-                Logger.LogInformation("元素爆发 {text} 技能角色序号：{useMedicine}", "就绪",useMedicine);
+                Logger.LogInformation("元素爆发 {text} 的角色序号：{useMedicine}", "就绪",useMedicine);
                 return Task.FromResult(useMedicine);
             }
         

@@ -1258,7 +1258,18 @@ public class PathExecutor
             return avatar;
         }
 
-        await TpStatueOfTheSeven();
+        using (var bitmap = CaptureToRectArea())
+        {
+            var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (!confirmRectArea.IsEmpty())
+            {
+                Simulation.ReleaseAllKey();
+                PathingConditionConfig.AutoEatCount++;
+                confirmRectArea.Click();
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                await Task.Delay(300, ct);
+            }
+        }
         
         Logger.LogInformation("尝试切换角色{Name}失败！", avatar.Name);
         return null;
