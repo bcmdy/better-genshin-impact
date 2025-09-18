@@ -1,16 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Dynamic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.Core.Script.Group;
@@ -1150,7 +1137,6 @@ public partial class ScriptControlViewModel : ViewModel
         {
             Content = stackPanel,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            //Height = 435 // 固定高度
         };
 
         return scrollViewer;
@@ -1906,7 +1892,46 @@ public partial class ScriptControlViewModel : ViewModel
         );
     }
 
-    public void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    [RelayCommand]
+    public void OnOpenScriptFolder(ScriptGroupProject? item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        try
+        {
+            string? path = null;
+            switch (item.Type)
+            {
+                case "Javascript":
+                    path = Path.Combine(Global.ScriptPath(), item.FolderName);
+                    break;
+                case "KeyMouse":
+                    path = Global.Absolute(@"User\KeyMouseScript");
+                    break;
+                case "Pathing":
+                    path = Path.Combine(MapPathingViewModel.PathJsonPath, item.FolderName);
+                    break;
+            }
+
+            if (path != null && Directory.Exists(path))
+            {
+                Process.Start("explorer.exe", path);
+            }
+            else
+            {
+                _snackbarService.Show("打开失败", "目录不存在", ControlAppearance.Caution, null, TimeSpan.FromSeconds(2));
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogDebug(e, "打开脚本目录失败");
+            _snackbarService.Show("打开失败", e.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(3));
+        }
+    }
+    private void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.NewItems != null)
         {

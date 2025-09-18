@@ -146,7 +146,7 @@ public class AutoArtifactSalvageTask : ISoloTask
             if (Bv.IsInPromptDialog(ra))
             {
                 // 如果存在物品过期提示，则点击确认按钮
-                Bv.ClickWhiteConfirmButton(ra.DeriveCrop(0, 0, ra.Width, ra.Height - ra.Height / 0.2));
+                Bv.ClickWhiteConfirmButton(ra.DeriveCrop(0, 0, ra.Width, ra.Height - ra.Height * 0.2));
                 Sleep(300, ct);
                 return false;
             }
@@ -549,7 +549,7 @@ public class AutoArtifactSalvageTask : ISoloTask
         #region 副词条
         ArtifactAffix[] minorAffixes = levelAndMinorAffixLines.Select(l =>
         {
-            string pattern = @"^[•·]?([^+:：]+)\+([\d., ]*)(%?)$";
+            string pattern = @"^([^+:：]+)\+([\d., ]*)(%?).*$";
             pattern = pattern.Replace("%", percentStr);
             Match match = Regex.Match(l, pattern);
             if (match.Success)
