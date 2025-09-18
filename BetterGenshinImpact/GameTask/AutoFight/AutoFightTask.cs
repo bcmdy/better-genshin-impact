@@ -467,10 +467,10 @@ public class AutoFightTask : ISoloTask
                                                 }
                                                 await Delay(350, ct);
                                             }
-                                            else
-                                            {
-                                                avatarQ.AfterUseSkill();
-                                            }
+                                            // else
+                                            // {
+                                            //     avatarQ.AfterUseSkill();
+                                            // }
                                             
                                             fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                                             if (!fightEndFlag)
@@ -1221,6 +1221,30 @@ public class AutoFightTask : ISoloTask
                     {
                         Logger.LogInformation("自动结束吃药：检测到复活药，{text} 结束吃恢复药", "不执行");
                         return;
+                    }
+                    else
+                    {
+                        // 非复活药前提下再识别营养袋，优化效率
+                        var mRect = ra.DeriveCrop(1817, 781, 4, 14);
+                        var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+                        var labels = new Mat();
+                        var stats = new Mat();
+                        var centroids = new Mat();
+
+                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                        labels.Dispose();
+                        stats.Dispose();
+                        centroids.Dispose();
+
+                        // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
+                    
+                        if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
+                        {
+                            Logger.LogInformation("自动结束吃药：{t} 营养袋，结束吃药关闭","未发现");
+                            return;
+                        }
                     }
                    
                     for (var h = 0; h < 4; h++)

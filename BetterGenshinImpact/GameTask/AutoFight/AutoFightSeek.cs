@@ -786,6 +786,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         public static Task<List<int>> AvatarQSkillAsync()
         {
             var image = CaptureToRectArea();
+            image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 1.1, beta: -50); // 增加亮度和对比度
             var useMedicine = new List<int> { };
             for (int i = 1; i <= 4; i++)
             {
@@ -802,7 +803,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 { 
                     useMedicine.Add(i);
                 }
+                grayImage.Dispose();
             }
+            
+            image.Dispose();
             
             if (useMedicine.Count > 0)
             {

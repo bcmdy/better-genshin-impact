@@ -97,10 +97,10 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
         
         AvatarQRectListMap =
         [
-            new Rect(CaptureRect.Width - (int)(332 * AssetScale), (int)(214 * AssetScale), (int)(60 * AssetScale), (int)(84 * AssetScale)),
-            new Rect(CaptureRect.Width - (int)(332 * AssetScale), (int)(314 * AssetScale), (int)(60 * AssetScale), (int)(84 * AssetScale)),
-            new Rect(CaptureRect.Width - (int)(332 * AssetScale), (int)(414 * AssetScale), (int)(60 * AssetScale), (int)(84 * AssetScale)),
-            new Rect(CaptureRect.Width - (int)(332 * AssetScale), (int)(514 * AssetScale), (int)(60 * AssetScale), (int)(84 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(336 * AssetScale), (int)(216 * AssetScale), (int)(64 * AssetScale), (int)(84 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(336 * AssetScale), (int)(316 * AssetScale), (int)(64 * AssetScale), (int)(84 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(336 * AssetScale), (int)(416 * AssetScale), (int)(64 * AssetScale), (int)(84 * AssetScale)),
+            new Rect(CaptureRect.Width - (int)(336 * AssetScale), (int)(516 * AssetScale), (int)(64 * AssetScale), (int)(84 * AssetScale)),
         ];
 
         AvatarSideIconRectList =

@@ -427,17 +427,12 @@
                                   FontTypography="Body"
                                   Text="选择战斗策略"
                                   TextWrapping="Wrap" />
-                    
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="自动EQ"
-                                  Margin="45,0,0,0"
+                                  Text="用于战斗"
+                                  Margin="0,0,0,0"
                                   TextWrapping="Wrap" />
-                    <ui:ToggleSwitch Grid.Row="1"
-                                     Grid.Column="0"
-                                     Margin="0,0,0,0"
-                                     IsChecked="{Binding Config.AutoFightConfig.AutoCombatEq, Mode=TwoWay}" />
                     <ui:Button Grid.Row="0"
                                Grid.RowSpan="2"
                                Grid.Column="1"
@@ -861,6 +856,8 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -1037,6 +1034,37 @@
                                 </Style>
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
+                        
+                        <ui:TextBlock Grid.Row="4"
+                                      Grid.Column="0" 
+                                      Grid.ColumnSpan="4"
+                                      Margin="0,10,10,0"
+                                      FontTypography="Body"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Text="自动检测其他角色的Q技能，按队伍中序号进行释放(适合只放EQ的队伍)"
+                                      TextWrapping="Wrap" 
+                                      Style="{StaticResource GuardianVisibilityStyle}"/>
+                        
+                        <ui:ToggleSwitch Grid.Row="4"
+                                         Grid.Column="4"
+                                         Margin="0,10,36,0" 
+                                         VerticalAlignment="Center"
+                                         IsChecked="{Binding Config.AutoFightConfig.AutoCombatEq,Mode=TwoWay}">
+                            
+                            <ui:ToggleSwitch.Style>
+                                <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:ToggleSwitch.Style>
+                        </ui:ToggleSwitch>
+                        
+                        
                  </Grid>
                 </ui:CardExpander>
                 
