@@ -1931,7 +1931,7 @@ public partial class ScriptControlViewModel : ViewModel
             _snackbarService.Show("打开失败", e.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(3));
         }
     }
-    private void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    public void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.NewItems != null)
         {
