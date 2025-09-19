@@ -786,18 +786,30 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         public static Task<List<int>> AvatarQSkillAsync()
         {
             var image = CaptureToRectArea();
-            image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 1.1, beta: -50); // 增加亮度和对比度
+            image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度
             var useMedicine = new List<int> { };
             for (int i = 1; i <= 4; i++)
             {
                 var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[i - 1];//Q技能区域
                 // 首先对图像进行预处理，转为灰度图
                 var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
-                Cv2.Canny(grayImage, grayImage, threshold1: 70, threshold2: 150);// 边缘检测
+                
+                // 计算图像的平均亮度
+                Scalar meanBrightness = Cv2.Mean(grayImage);
+                
+                double avgBrightness = meanBrightness.Val0;
+                
+                // 根据平均亮度动态调整Canny边缘检测的阈值
+                double threshold1 = avgBrightness * 0.9;
+                double threshold2 = avgBrightness * 2;
+                
+                Logger.LogInformation("角色{i} 平均亮度 {avgBrightness}", i, avgBrightness);
+                
+                Cv2.Canny(grayImage, grayImage, threshold1: (float)threshold1, threshold2: (float)threshold2); // 边缘检测
                     
                 // 使用霍夫变换检测圆形
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                    param1: 40, param2: 20, minRadius: 25, maxRadius: 34);
+                    param1: 70, param2: 20, minRadius: 25, maxRadius: 34);
                 
                 if (circles.Length > 0)
                 { 

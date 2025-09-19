@@ -444,12 +444,12 @@ public class AutoFightTask : ISoloTask
                             if (_taskParam.AutoCombatEq)
                             {
                                var useEq = await AutoFightSkill.AvatarQSkillAsync();
-                                // useQ.Remove(guardianAvatar.Index);
+                               // useEq.Remove();
                                 if (useEq.Count > 0)
                                 {
                                     foreach (var num in useEq)
                                     {
-                                        TaskControl.Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
+                                        Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         if (avatarQ.TrySwitch(15))
                                         {
@@ -462,21 +462,20 @@ public class AutoFightTask : ISoloTask
                                                 {
                                                     await Delay(100, ct);
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                    await Delay(200, ct);
-                                                    
+                                                    await Delay(300, ct);
                                                 }
+                                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                                                 await Delay(350, ct);
+                                                if (avatarQ.Name == "芙宁娜")
+                                                {
+                                                    await Delay(100, ct);
+                                                }
                                             }
-                                            // else
-                                            // {
-                                            //     avatarQ.AfterUseSkill();
-                                            // }
                                             
-                                            fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                            if (!fightEndFlag)  fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                                             if (!fightEndFlag)
                                             {
-                                                await Delay(100, ct);
-                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);//尝试再放一次,不检查
+                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                 await Delay(600, ct);
                                             }
                                             else
