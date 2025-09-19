@@ -294,6 +294,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
         CondensedResinCountRa = new RecognitionObject //可以识别 √
         {
             Name = "CondensedResinCount",
+            UseMask = true,
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "condensed_resin_count.png"),
             RegionOfInterest = new Rect(CaptureRect.Width / 2, 0, CaptureRect.Width / 2, CaptureRect.Height / 10),
@@ -302,10 +303,11 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
         OriginalResinCountRa = new RecognitionObject //可以识别 √
         {
             Name = "OriginalResinCount",
+            UseMask = true,
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "original_resin_count.png"),            
-            RegionOfInterest = new Rect(CaptureRect.Width *3/ 5, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
-            DrawOnWindow = false
+            RegionOfInterest = new Rect(CaptureRect.Width *3/ 5, 0, CaptureRect.Width *2/ 5, CaptureRect.Height / 10),
+            DrawOnWindow = true
         }.InitTemplate();
         FragileResinCountRa = new RecognitionObject //可以识别 √
         {
@@ -314,7 +316,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             MaskColor = System.Drawing.Color.FromArgb(0, 255, 0), // 绿色
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "fragile_resin_count.png"),
-            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width *4/10, CaptureRect.Height / 10),
+            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width /2, CaptureRect.Height / 10),
             DrawOnWindow = true
         }.InitTemplate();
         MomentResinCountRa = new RecognitionObject //可以识别 √
@@ -324,7 +326,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             MaskColor = System.Drawing.Color.FromArgb(0, 255, 0), // 绿色
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "moment_resin_count.png"),
-            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 4, CaptureRect.Height / 10),
+            RegionOfInterest = new Rect(CaptureRect.Width /2, 0, CaptureRect.Width / 2, CaptureRect.Height / 10),
             DrawOnWindow = true
         }.InitTemplate();
         SkipanimationRa = new RecognitionObject //可以识别 √

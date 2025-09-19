@@ -293,6 +293,7 @@ public class Avatar
     /// <returns></returns>
     public bool TrySwitch(int tryTimes = 4, bool needLog = true)
     {
+        Logger.LogInformation("队伍偏移状态3 {t}",CombatScenes.IndexRectOffset60Fix);
         for (var i = 0; i < tryTimes; i++)
         {
             if (Ct is { IsCancellationRequested: true })

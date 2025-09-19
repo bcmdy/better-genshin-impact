@@ -1613,7 +1613,7 @@ public class AutoDomainTask : ISoloTask
                 // 图像右侧就是原粹树脂数量
                 using (var countArea = ra.DeriveCrop(originalResinCountRa.X + originalResinCountRa.Width,
                     originalResinCountRa.Y,
-                    (int)(originalResinCountRa.Width * 3), originalResinCountRa.Height))
+                    (int)(originalResinCountRa.Width * 4), originalResinCountRa.Height))
                 {
                     bool extracted = false;
 
