@@ -660,7 +660,7 @@ public class PathExecutor
         using var region = CaptureToRectArea();
         if (Bv.CurrentAvatarIsLowHp(region) && !(await TryPartyHealing() && Bv.CurrentAvatarIsLowHp(region)))
         {
-            Logger.LogInformation("当前角色血量过低，去七天神像恢复");
+            Logger.LogInformation("当前角色血量过低，去七天神像恢复-1");
             await TpStatueOfTheSeven();
             if (PathingConditionConfig.AutoEatCount < 2) return;
             if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
@@ -669,7 +669,7 @@ public class PathExecutor
         else if (Bv.ClickIfInReviveModal(region))
         {
             await Bv.WaitForMainUi(ct); // 等待主界面加载完成
-            Logger.LogInformation("复苏完成");
+            Logger.LogInformation("复苏完成-1");
             await Delay(4000, ct);
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
@@ -687,7 +687,7 @@ public class PathExecutor
             {
                 Simulation.ReleaseAllKey();
                 PathingConditionConfig.LastEatTime = DateTime.Now;
-                Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
 
                 using (var bitmap = CaptureToRectArea())
@@ -714,7 +714,7 @@ public class PathExecutor
                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     }
                 }
-                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+                Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试-3");
             }
             return;
             
@@ -724,6 +724,7 @@ public class PathExecutor
         {
             if (Bv.IsInRevivePrompt(bitmap))
             {
+                Logger.LogInformation("复苏弹窗出现，尝试复苏-4");
                 Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                 await Task.Delay(500, ct);
             }
@@ -1251,7 +1252,7 @@ public class PathExecutor
             return null;
         }
 
-        var success = avatar.TrySwitch();
+        var success = avatar.TrySwitch(6);
         if (success)
         {
             await Delay(100, ct);

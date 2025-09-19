@@ -117,6 +117,7 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
+        // Logger.LogInformation("检测到 {t}",PathingConditionConfig.AutoEatCount);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
             if (PathingConditionConfig.AutoEatCount < 2 && AutoFightTask.RecoverCount < 2)
@@ -126,7 +127,7 @@ public class Avatar
                 {
                     
                     PathingConditionConfig.LastEatTime = DateTime.Now;
-                    Logger.LogWarning("自动吃药：尝试使用小道具恢复");
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n");
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
                     if (!confirmRectArea.IsEmpty())
                     {
@@ -142,7 +143,7 @@ public class Avatar
                     PathingConditionConfig.AutoEatCount++;
                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     Sleep(300, ct);
-                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试");
+                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试-l");
                 }
                 
             }
@@ -226,6 +227,15 @@ public class Avatar
     /// <exception cref="RetryException"></exception>
     public static void TpForRecover(CancellationToken ct, Exception ex)
     {
+        using (var bitmap = CaptureToRectArea())
+        {
+            if (Bv.IsInRevivePrompt(bitmap))
+            {
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                Sleep(300, ct);
+            }
+        }
+        
         // tp 到七天神像复活
         var tpTask = new TpTask(ct);
         tpTask.TpToStatueOfTheSeven().Wait(ct);
