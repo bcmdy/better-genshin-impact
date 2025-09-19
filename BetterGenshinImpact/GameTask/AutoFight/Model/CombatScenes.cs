@@ -79,7 +79,6 @@ public class CombatScenes : IDisposable
         // 判断当前是否处于联机状态
         List<Rect> avatarSideIconRectList;
         List<Rect> avatarIndexRectList;
-        Logger.LogInformation("0000000000000000");
         var pRaList = imageRegion.FindMulti(AutoFightAssets.Instance.PRa);
         if (pRaList.Count > 0)
         {
@@ -199,7 +198,7 @@ public class CombatScenes : IDisposable
         
         if (whitePointCount <= 1)//发现有时候识别到一个白点
         {
-            Logger.LogInformation("检测到右侧队伍下偏移，进行位置位置");
+            Logger.LogInformation("检测到右侧队伍下偏移，进行位置确认");
             for (int i = 0; i < avatarSideIconRectList.Count; i++)
             {
                 var rect = avatarSideIconRectList[i];
