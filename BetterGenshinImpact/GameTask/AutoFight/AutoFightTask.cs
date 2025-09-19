@@ -427,7 +427,7 @@ public class AutoFightTask : ISoloTask
                         var command = combatCommands[i];
                         var lastCommand = i == 0 ? command : combatCommands[i - 1];
                         
-                        #region 盾奶位技能优先功能
+                        #region 盾奶位技能优先和自动EQ功能
                         
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
                         
