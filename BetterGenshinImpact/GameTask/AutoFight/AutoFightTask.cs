@@ -57,6 +57,8 @@ public class AutoFightTask : ISoloTask
     
     private static AutoFightConfig FightConfig { get; set; } = TaskContext.Instance().Config.AutoFightConfig;
     
+    public static bool FightStatusFlag = false;
+    
     public static volatile  bool FightEndFlag = false;
     
     private static volatile bool _isExperiencePickup = false;
@@ -372,7 +374,7 @@ public class AutoFightTask : ISoloTask
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
-        
+        FightStatusFlag = true;
         // var useEqFirst = new List<int>(){1,2,3,4};
         
         // 战斗操作
@@ -761,6 +763,7 @@ public class AutoFightTask : ISoloTask
             await EndBloodCheck(ct);
         }
         
+        FightStatusFlag = false;
     }
 
     private void LogScreenResolution()

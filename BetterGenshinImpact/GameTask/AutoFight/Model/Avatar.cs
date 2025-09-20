@@ -105,6 +105,7 @@ public class Avatar
         NameRect = nameRect;
         CombatAvatar = DefaultAutoFightConfig.CombatAvatarMap[name];
         ManualSkillCd = manualSkillCd;
+        AutoFightTask.FightStatusFlag = false;
     }
 
 
@@ -403,7 +404,7 @@ public class Avatar
     private void Offset60Fix(int i)
     {
         // 3次失败考虑是否偏移出现问题，修改偏移位置
-        if (i <= 2)
+        if (i <= 2 || AutoFightTask.FightStatusFlag)
         {
             return;
         }
@@ -412,25 +413,24 @@ public class Avatar
         {
             foreach (var avatar in CombatScenes.GetAvatars())
             {
-                var rect1 = avatar.IndexRect;
-                rect1.Y += 14;
+                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
                 avatar.IndexRect = rect1;
             }
-
             CombatScenes.IndexRectOffset60Fix = false;
         }
         else
         {
             foreach (var avatar in CombatScenes.GetAvatars())
             {
-                var rect1 = avatar.IndexRect;
+                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
                 rect1.Y -= 14;
                 avatar.IndexRect = rect1;
             }
 
             CombatScenes.IndexRectOffset60Fix = true;
         }
-        
     }
 
     /// <summary>
