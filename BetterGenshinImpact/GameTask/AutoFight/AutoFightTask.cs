@@ -374,7 +374,7 @@ public class AutoFightTask : ISoloTask
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
-        FightStatusFlag = true;
+        
         // var useEqFirst = new List<int>(){1,2,3,4};
         
         // 战斗操作
@@ -401,6 +401,8 @@ public class AutoFightTask : ISoloTask
             
             try
             {
+                FightStatusFlag = true;
+                
                 while (!cts2.Token.IsCancellationRequested)
                 {
                    // 所有战斗角色都可以被取消
@@ -631,7 +633,7 @@ public class AutoFightTask : ISoloTask
             finally
             {
                 Simulation.ReleaseAllKey();
-                
+                FightStatusFlag = false;
             }
         }, cts2.Token);
 
@@ -763,7 +765,6 @@ public class AutoFightTask : ISoloTask
             await EndBloodCheck(ct);
         }
         
-        FightStatusFlag = false;
     }
 
     private void LogScreenResolution()
