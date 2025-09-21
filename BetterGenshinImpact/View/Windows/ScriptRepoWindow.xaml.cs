@@ -243,6 +243,58 @@ public partial class ScriptRepoWindow
         }
         return true;
     }
+    
+    [RelayCommand]
+    private async Task UpdateRepoO()
+    {
+        if (SelectedRepoChannel is null)
+        {
+            Toast.Warning("请选择一个脚本仓库更新渠道。");
+            return;
+        }
+        try
+        {
+            // 使用选定渠道的URL进行更新
+            string repoUrl = SelectedRepoChannel.Url;
+
+            // 显示更新中提示
+            Toast.Information("正在更新脚本仓库，请耐心等待...");
+
+            // 设置进度显示
+            IsUpdating = true;
+            UpdateProgressValue = 0;
+            UpdateProgressText = "准备更新，请耐心等待...";
+            // 执行更新  (repoPath, updated) 
+            var (_, updated) = await ScriptRepoUpdater.Instance.UpdateCenterRepoByGit(repoUrl,
+                (path, steps, totalSteps) =>
+                {
+                    // 更新进度显示
+                    double progressPercentage = totalSteps > 0 ? Math.Min(100, (double)steps / totalSteps * 100) : 0;
+                    UpdateProgressValue = (int)progressPercentage;
+                    UpdateProgressText = $"{path}";
+                });
+
+
+            // 更新结果提示
+            if (updated)
+            {
+                Toast.Success("脚本仓库更新成功，有新内容");
+            }
+            else
+            {
+                Toast.Success("脚本仓库已是最新");
+            }
+        }
+        catch (Exception ex)
+        {
+            await MessageBox.ErrorAsync($"更新失败，可尝试重置仓库后重新更新。失败原因：: {ex.Message}");
+        }
+        finally
+        {
+            // 隐藏进度条
+            IsUpdating = false;
+        }
+    }
 
     [RelayCommand]
     private void OpenLocalScriptRepo()
