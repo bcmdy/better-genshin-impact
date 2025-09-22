@@ -792,9 +792,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
         }
         
-        public static Task<List<int>> AvatarQSkillAsync()
+        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null)
         {
-            var image = CaptureToRectArea();
+            image ??= CaptureToRectArea();
             image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度
             var useMedicine = new List<int> { };
             for (var i = 1; i <= 4; i++)
@@ -816,7 +816,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     
                 // 使用霍夫变换检测圆形
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                    param1: 70, param2: 20, minRadius: 25, maxRadius: 34);
+                    param1: 90, param2: 20, minRadius: 25, maxRadius: 34);
                 
                 if (circles.Length > 0)
                 { 

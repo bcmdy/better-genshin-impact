@@ -45,6 +45,7 @@ using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.Core.Config;
 using OpenCvSharp.Extensions;
+using BetterGenshinImpact.GameTask.AutoFight;
 
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
@@ -736,6 +737,7 @@ public class AutoDomainTask : ISoloTask
         {
             try
             {
+                AutoFightTask.FightStatusFlag = true;
                 while (!cts.Token.IsCancellationRequested)
                 {
                     // 通用化战斗策略
@@ -758,6 +760,7 @@ public class AutoDomainTask : ISoloTask
             {
                 Logger.LogInformation("自动战斗线程结束");
                 Simulation.ReleaseAllKey();
+                AutoFightTask.FightStatusFlag = false;
             }
         }, cts.Token);
 

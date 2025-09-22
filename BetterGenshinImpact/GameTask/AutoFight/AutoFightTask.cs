@@ -374,7 +374,10 @@ public class AutoFightTask : ISoloTask
         var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
-        
+
+        ImageRegion image = null;
+
+        // var hold = false;
         // var useEqFirst = new List<int>(){1,2,3,4};
         
         // 战斗操作
@@ -436,6 +439,8 @@ public class AutoFightTask : ISoloTask
                         var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
                         
                         if (skipModel) {
+                            if (_taskParam.AutoCombatEq) image = CaptureToRectArea();
+                            
                             await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
                             _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
 
@@ -447,7 +452,7 @@ public class AutoFightTask : ISoloTask
 
                             if (_taskParam.AutoCombatEq)
                             {
-                               var useEq = await AutoFightSkill.AvatarQSkillAsync();
+                               var useEq = await AutoFightSkill.AvatarQSkillAsync(image);
                                // useEq.Remove();
                                 if (useEq.Count > 0)
                                 {
@@ -460,6 +465,15 @@ public class AutoFightTask : ISoloTask
                                             countFight++;
                                             if (avatarQ.IsSkillReady())
                                             {
+                                                // if (avatarQ.Name == "菈乌玛")
+                                                // {
+                                                //     hold = true;
+                                                // }
+                                                // else
+                                                // {
+                                                //     hold = false;
+                                                // }
+                                                
                                                 avatarQ.UseSkill();
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
