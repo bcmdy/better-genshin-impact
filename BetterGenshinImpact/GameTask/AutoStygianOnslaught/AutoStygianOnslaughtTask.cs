@@ -227,7 +227,7 @@ public class AutoStygianOnslaughtTask : ISoloTask
         await Delay(800, _ct);
 
         // 等待传送完成
-        await page.Locator(ElementAssets.Instance.PaimonMenuRo).WaitFor();
+        await page.Locator(ElementAssets.Instance.PaimonMenuRo).WaitFor(60000);
         _logger.LogInformation($"{Name}：传送完成");
 
         await Delay(2000, _ct);
@@ -541,11 +541,7 @@ public class AutoStygianOnslaughtTask : ISoloTask
 
     private async Task ExitDomain()
     {
-        Simulation.SendInput.Keyboard.KeyPress(VK.VK_ESCAPE);
-        await Delay(500, _ct);
-        Simulation.SendInput.Keyboard.KeyPress(VK.VK_ESCAPE);
-        await Delay(800, _ct);
-        Bv.ClickBlackConfirmButton(CaptureToRectArea());
+        await ExitDomain(new BvPage(_ct));
     }
 
     private bool PressUseResin(ImageRegion ra, string resinName)
@@ -630,7 +626,7 @@ public class AutoStygianOnslaughtTask : ISoloTask
         await page.Locator(ElementAssets.Instance.BtnExitDoor.Value).Click();
 
         // 等待传送完成
-        await page.Locator(ElementAssets.Instance.PaimonMenuRo).WaitFor();
+        await page.Locator(ElementAssets.Instance.PaimonMenuRo).WaitFor(60000);
 
         await Delay(3000, _ct);
     }

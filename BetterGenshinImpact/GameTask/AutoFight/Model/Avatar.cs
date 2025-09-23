@@ -431,6 +431,7 @@ public class Avatar
 
             CombatScenes.IndexRectOffset60Fix = true;
         }
+        
     }
 
     /// <summary>
