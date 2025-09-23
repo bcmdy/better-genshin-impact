@@ -435,6 +435,7 @@ public class Avatar
         if (i == 3 && AutoFightTask.FightStatusFlag)
         {
             //跳一下,战斗中防卡死
+            Logger.LogWarning("尝试切换角色失败，尝试跳跃");
             Simulation.SendInput.SimulateAction(GIActions.Jump);
         }
         

@@ -169,8 +169,10 @@ public partial class AutoWoodTask : ISoloTask
             {"桦木", "Birch"}, {"杉木", "Fir"}, {"松木", "Pine"}, {"却砂木", "Sandbearer"}, {"证悟木", "Adhigama"},
             {"梦见木", "Yumemiru"}, {"御伽木", "Otogi"}, {"业果木", "Karmaphala"}, {"辉木", "Bright"}, {"白梣木", "Ash"},
             {"炬木", "Torch"}, {"香柏木", "Cypress"}, {"悬铃木", "Mallow"}, {"燃爆木", "Flammabomb"}, {"白栗栎木", "WhiteChestnutOak"},
-            {"灰灰楼林木", "AshenAratiku"}, {"桃椰子木", "PeachPalm"}, {"柽木", "Athel"}, {"刺葵木", "Mountain"}, {"孔雀木", "Aralia"}
+            {"灰灰楼林木", "AshenAratiku"}, {"桃椰子木", "PeachPalm"}, {"榛木", "Chestnut"}, {"柽木", "Athel"}, {"刺葵木", "Mountain"}, {"孔雀木", "Aralia"},
+             {"桤木", "Alnus"}, {"银冷杉木", "SilverFir"},{"夏栎木", "Summer"}
         };
+        //{"夏栎木", "Summer"},
         
         private static readonly int[] WoodNumbers = { 12, 15, 18, 21, 24, 27, 30, 3, 6, 9,1, 2, 4,5,10};//7,8
         
