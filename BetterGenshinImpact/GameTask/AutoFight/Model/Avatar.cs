@@ -431,6 +431,12 @@ public class Avatar
 
             CombatScenes.IndexRectOffset60Fix = true;
         }
+
+        if (i == 3 && AutoFightTask.FightStatusFlag)
+        {
+            //跳一下,战斗中防卡死
+            Simulation.SendInput.SimulateAction(GIActions.Jump);
+        }
         
     }
 
