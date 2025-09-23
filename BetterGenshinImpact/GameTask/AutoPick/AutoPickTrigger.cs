@@ -151,7 +151,7 @@ public partial class AutoPickTrigger : ITaskTrigger
                 Simulation.SendInput.Mouse.VerticalScroll(2);
                 Thread.Sleep(50);
             }
-
+            _logger.LogInformation("测试拾取功能959595kg");
             return;
         }
 
