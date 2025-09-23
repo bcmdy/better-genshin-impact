@@ -200,7 +200,7 @@ public partial class ScriptGroupProject : ObservableObject
                 return;
             }
 
-            TaskContext.Instance().Config.PathingConditionConfig.GetCountryName(task.FullPath);
+            PathingConditionConfig.GetCountryName(task.FullPath);
 
             var pathingTask = new PathExecutor(CancellationContext.Instance.Cts.Token);
             pathingTask.PartyConfig = GroupInfo?.Config.PathingConfig;

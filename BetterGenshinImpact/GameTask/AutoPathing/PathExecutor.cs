@@ -176,7 +176,7 @@ public class PathExecutor
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
-            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
+            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             _faceToMark = false;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
@@ -663,7 +663,8 @@ public class PathExecutor
             Logger.LogInformation("当前角色血量过低，去七天神像恢复-1");
             await TpStatueOfTheSeven();
             if (PathingConditionConfig.AutoEatCount < 2) return;
-            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
+
+            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -674,7 +675,7 @@ public class PathExecutor
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
             if (PathingConditionConfig.AutoEatCount < 2) return;
-            if (PartyConfig.AutoEatEnabled) PathingConditionConfig.AutoEatCount = 0;
+            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线");
         }
     }

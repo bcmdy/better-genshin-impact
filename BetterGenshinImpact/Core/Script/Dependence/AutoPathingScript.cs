@@ -47,7 +47,7 @@ public class AutoPathingScript
         {
             var json = await new LimitedFile(_rootPath).ReadText(path);
             
-            TaskContext.Instance().Config.PathingConditionConfig.GetCountryName(path);
+            PathingConditionConfig.GetCountryName(path);
             
             await Run(json);
         }

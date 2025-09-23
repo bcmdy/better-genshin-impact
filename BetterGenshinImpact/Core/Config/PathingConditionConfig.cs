@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Linq;
 using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
+using BetterGenshinImpact.GameTask.Common;
+using Microsoft.Extensions.Logging;
 
 namespace BetterGenshinImpact.Core.Config;
 
@@ -37,7 +39,7 @@ public partial class PathingConditionConfig : ObservableObject
     private bool _autoEatEnabled = false;
     
     // 锄地国家和类型
-    [ObservableProperty] private string?[] _countryName = ["自动"];
+    [ObservableProperty] private static string?[] _countryName = ["自动"];
     
     // 自动吃药次数记录
     private static volatile int _autoEatCount = 0;
@@ -231,7 +233,15 @@ public partial class PathingConditionConfig : ObservableObject
         return partyConfig;
     }
     
-    public  void GetCountryName(string path)
+
+    private static PathingConditionConfig _partyConfig = new PathingConditionConfig();
+
+    public static PathingConditionConfig GetPartyConfig()
+    {
+        return _partyConfig;
+    }
+    
+    public static void GetCountryName(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -243,7 +253,11 @@ public partial class PathingConditionConfig : ObservableObject
     
         var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
 
-        CountryName = foundCountries;
+        if (foundCountries.Length > 0)
+        {
+            var partyConfigInstance = GetPartyConfig();
+            partyConfigInstance.CountryName = foundCountries;            
+        }
     }
     
 }
