@@ -141,7 +141,7 @@ public partial class AutoPickTrigger : ITaskTrigger
         var speedTimer = new SpeedTimer();
 
         using var foundRectArea = content.CaptureRectArea.Find(_pickRo);
-
+        
         if (foundRectArea.IsEmpty())
         {
             // 没有识别到F键，先判断是否有滚轮图标信息
@@ -151,8 +151,6 @@ public partial class AutoPickTrigger : ITaskTrigger
                 Simulation.SendInput.Mouse.VerticalScroll(2);
                 Thread.Sleep(50);
             }
-            
-            _logger.LogInformation("测试拾取功能959595kg");
 
             return;
         }
