@@ -816,7 +816,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     
                 // 使用霍夫变换检测圆形
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                    param1: 90, param2: 20, minRadius: 25, maxRadius: 34);
+                    param1: 90, param2: 30, minRadius: 25, maxRadius: 34);
                 
                 if (circles.Length > 0)
                 { 
