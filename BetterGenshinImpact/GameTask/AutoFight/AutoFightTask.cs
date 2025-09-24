@@ -482,15 +482,15 @@ public class AutoFightTask : ISoloTask
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                     await Delay(300, ct);
                                                 }
-                                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                                fightEndFlag = await CheckFightFinish(100, detectDelayTime);
                                                 await Delay(350, ct);
-                                                if (avatarQ.Name == "芙宁娜")
-                                                {
-                                                    await Delay(100, ct);
-                                                }
+                                                // if (avatarQ.Name == "芙宁娜")
+                                                // {
+                                                //     await Delay(100, ct);
+                                                // }
                                             }
                                             
-                                            if (!fightEndFlag)  fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                            if (!fightEndFlag)  fightEndFlag = await CheckFightFinish(100, detectDelayTime);
                                             if (!fightEndFlag)
                                             {
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
