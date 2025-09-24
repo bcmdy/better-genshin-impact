@@ -24,6 +24,7 @@ using BetterGenshinImpact.Service.Notification;
 using BetterGenshinImpact.Service.Notification.Model.Enum;
 using BetterGenshinImpact.ViewModel.Pages;
 using Microsoft.Extensions.Logging;
+using BetterGenshinImpact.Core.Config;
 
 namespace BetterGenshinImpact.Service;
 
@@ -148,7 +149,7 @@ public partial class ScriptService : IScriptService
             // {
             //     _logger.LogInformation("配置组 {Name} 包含实时任务操作调用", groupName);
             // }
-
+            PathingConditionConfig.RetryAssemblyNum = 3;
             _logger.LogInformation("配置组 {Name} 加载完成，共{Cnt}个脚本，开始执行", groupName, list.Count);
         }
 
