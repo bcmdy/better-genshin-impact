@@ -118,7 +118,7 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        // Logger.LogInformation("检测到 {t}",PathingConditionConfig.AutoEatCount);
+        Logger.LogInformation("检测到 {t}",PathingConditionConfig.AutoEatCount);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
             if (PathingConditionConfig.AutoEatCount < 2 && AutoFightTask.RecoverCount < 2)
@@ -126,7 +126,6 @@ public class Avatar
                 PathingConditionConfig.AutoEatCount++;
                 if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                 {
-                    
                     PathingConditionConfig.LastEatTime = DateTime.Now;
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复-n");
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);

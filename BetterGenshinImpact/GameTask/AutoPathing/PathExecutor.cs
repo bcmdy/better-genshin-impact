@@ -682,6 +682,7 @@ public class PathExecutor
     
     private async Task TpStatueOfTheSeven()
     {
+        // Logger.LogInformation("AutoEatCount {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
             if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -1253,7 +1254,7 @@ public class PathExecutor
             return null;
         }
 
-        var success = avatar.TrySwitch(6);
+        var success = avatar.TrySwitch(5);
         if (success)
         {
             await Delay(100, ct);
@@ -1265,11 +1266,12 @@ public class PathExecutor
             var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
             if (!confirmRectArea.IsEmpty())
             {
+                Logger.LogInformation("死亡，点击确认-s");
                 Simulation.ReleaseAllKey();
-                PathingConditionConfig.AutoEatCount++;
+                PathingConditionConfig.AutoEatCount = 2;
                 confirmRectArea.Click();
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                await Task.Delay(300, ct);
+                confirmRectArea.ClickTo(-100, 0);
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
             }
         }
         
