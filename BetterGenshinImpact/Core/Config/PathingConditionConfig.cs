@@ -62,12 +62,13 @@ public partial class PathingConditionConfig : ObservableObject
         get => _fightWaypoint;
         set => _fightWaypoint = value;
     }
-    //吃药控制标志
-    private static bool _canNotAutoEat = false;
-    public static bool CanNotAutoEat
+    
+    //装配营养袋重试次数
+    private static int _retryAssemblyNum = 3;
+    public static int RetryAssemblyNum
     {
-        get => _canNotAutoEat;
-        set => _canNotAutoEat = value;
+        get => _retryAssemblyNum;
+        set => _retryAssemblyNum = value;
     }
         
     public static PathingConditionConfig Default => new()

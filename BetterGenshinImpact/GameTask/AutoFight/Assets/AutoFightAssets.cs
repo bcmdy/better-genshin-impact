@@ -56,6 +56,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
 
     // 小道具位置
     public Rect GadgetRect;
+    public RecognitionObject NutritionBagRa;
 
     public RecognitionObject AbnormalIconRa;
     
@@ -369,6 +370,14 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "abnormal_icon.png"),
             RegionOfInterest = new Rect(0,(int)(CaptureRect.Height*0.08), (int)(CaptureRect.Width*0.04), (int)(CaptureRect.Height*0.07)),
+            DrawOnWindow = false
+        }.InitTemplate();
+        NutritionBagRa = new RecognitionObject
+        {
+            Name = "NutritionBag",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "nutrition_bag.png"),
+            RegionOfInterest = new Rect((int)(570 * AssetScale), (int)(490 * AssetScale), (int)(780 * AssetScale), (int)(110 * AssetScale)),
             DrawOnWindow = false
         }.InitTemplate();
     }

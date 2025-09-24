@@ -39,6 +39,30 @@ using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
+using BetterGenshinImpact.GameTask.AutoWood.Assets;
+using BetterGenshinImpact.GameTask.AutoWood.Utils;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.View.Drawable;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Simulator.Extensions;
+using Vanara.PInvoke;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using static Vanara.PInvoke.User32;
+using GC = System.GC;
+using OpenCvSharp;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Common.Job;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -54,8 +78,6 @@ public class PathExecutor
     private PathingPartyConfig? _partyConfig;
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
-    
-    private PathingConditionConfig  PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
 
     public PathExecutor(CancellationToken ct)
     {
@@ -299,12 +321,12 @@ public class PathExecutor
         }
     }
     
-    private Task InitializeAutoEat()
+    private async Task InitializeAutoEat()
     {
         if (!PartyConfig.AutoEatEnabled)
         {
             PathingConditionConfig.AutoEatCount = 3;
-            return Task.CompletedTask;
+            return;
         }
         
         using (var ra = CaptureToRectArea())
@@ -324,6 +346,14 @@ public class PathExecutor
             
             if (numLabels <= 1)
             {
+                if (PathingConditionConfig.RetryAssemblyNum > 0)
+                {
+                    if (await RetryAssembly())
+                    {
+                        PathingConditionConfig.AutoEatCount = 0;
+                        return;
+                    }
+                }
                 PathingConditionConfig.AutoEatCount = 3;
                 Logger.LogInformation("自动吃药：未发现营养袋，自动吃药{text}", "关闭");
             }
@@ -333,8 +363,40 @@ public class PathExecutor
                 // Logger.LogInformation("自动吃药：已发现营养袋，自动吃药{text}", "开启");
             }
         }
+    }
+    
+    private async Task<bool> RetryAssembly()
+    { 
+        var result = await NewRetry.WaitForAction( () =>
+            {
+                using ( var ra = CaptureToRectArea())
+                {
+                    Logger.LogInformation("自动吃药：尝试装配便携式营养袋剩余次数 {t}",PathingConditionConfig.RetryAssemblyNum);
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyDown);
+                    Delay(1000, ct).Wait();
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyUp);
+                    Delay(1000, ct).Wait();
+                    using (var ra2 = CaptureToRectArea())
+                    {
+                        var boon = ra2.Find(AutoFightAssets.Instance.NutritionBagRa);
+                        if (boon.IsExist())
+                        {
+                            boon.Click();
+                            return true;
+                        }
+                    }
+                }
+                //点击一下鼠标
+                Simulation.SendInput.Mouse.LeftButtonClick();
+                return false;
+            },
+            ct,
+            1,
+            1000
+        );
         
-        return Task.CompletedTask;
+        PathingConditionConfig.RetryAssemblyNum--;
+        return result;
     }
 
     private bool IsTargetPoint(WaypointForTrack waypoint)
@@ -1254,7 +1316,7 @@ public class PathExecutor
             return null;
         }
 
-        var success = avatar.TrySwitch(5);
+        var success = avatar.TrySwitch(6);
         if (success)
         {
             await Delay(100, ct);

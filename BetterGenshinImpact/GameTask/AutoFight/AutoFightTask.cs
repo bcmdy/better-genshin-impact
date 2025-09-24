@@ -394,7 +394,8 @@ public class AutoFightTask : ISoloTask
             if (_taskParam.TakeMedicineEnabled)
             {
                 TakeMedicine(cts2.Token);
-            }else
+            }
+            else
             {
                 IsTpForRecover = false;
                 RecoverCount = 3;
@@ -655,7 +656,7 @@ public class AutoFightTask : ISoloTask
 
         if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpKazuhaPickup && !_isExperiencePickup)
         {
-            TaskControl.Logger.LogInformation("基于怪物经验判断：：{text} 经验值显示","等待");
+            TaskControl.Logger.LogInformation("基于怪物经验判断：{text} 经验值显示","等待");
             await Delay(1000, ct);
         }
         FightEndFlag = true; 
@@ -990,6 +991,7 @@ public class AutoFightTask : ISoloTask
                     if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
                     {
                         RecoverCount = 3;
+                        IsTpForRecover = false;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                         return;
                     }
