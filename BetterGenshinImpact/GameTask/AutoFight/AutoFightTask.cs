@@ -459,7 +459,6 @@ public class AutoFightTask : ISoloTask
                                 {
                                     foreach (var num in useEq)
                                     {
-                                        var delayTimeIn = 1;
                                         Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         if (avatarQ.TrySwitch(15))
@@ -471,17 +470,14 @@ public class AutoFightTask : ISoloTask
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
                                                 {
-                                                    delayTimeIn = 300;
                                                     await Delay(100, ct);
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                     await Delay(200, ct);
                                                 }
-                                                // fightEndFlag = await CheckFightFinish(1, detectDelayTime,true);
                                                 await Delay(300, ct);
                                             }
                                             
-                                            fightEndFlag = await CheckFightFinish(delayTimeIn, detectDelayTime,true);
-                                            // Logger.LogInformation("自动策略：fightEndFlag {name}", fightEndFlag);
+                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                                             if (!fightEndFlag)
                                             { 
                                                 var ms = 1000;
@@ -801,7 +797,7 @@ public class AutoFightTask : ISoloTask
                Math.Abs(a.Item3 - b.Item3) < c.Item3;
     }
 
-    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,bool isNotNull = false)
+    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450)
     {
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
@@ -818,11 +814,6 @@ public class AutoFightTask : ISoloTask
             
             AutoFightSeek.RotationCount = (result == null) ? 
                 AutoFightSeek.RotationCount + 1 :  0;
-
-            if (isNotNull && result == null)
-            {
-                return false;
-            }
             
             if (result != null)
             {
