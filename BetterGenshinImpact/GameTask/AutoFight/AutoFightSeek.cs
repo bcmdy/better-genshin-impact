@@ -582,10 +582,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 {
                     if (guardianAvatar.TrySwitch(10, false))
                     {
-                        Simulation.ReleaseAllKey();
-            
-                        // await Task.Delay(100, ct);
-            
                         guardianAvatar.ManualSkillCd = -1;
                         var cd1 = guardianAvatar.AfterUseSkill();
                         if (cd1 > 0)
@@ -614,6 +610,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：失败重试 {attempt} 次",
                             guardianAvatarName, guardianAvatar.Name, attempt + 1);
                         guardianAvatar.ManualSkillCd = 0;
+                        guardianAvatar.UseSkill(guardianAvatarHold);
                     }
                     attempt++;
                 }
@@ -706,20 +703,24 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         /// <param name="skills">技能类型，false为E技能，true为Q技能</param>
         /// <param name="retryCount">重试次数</param>
         /// <param name="ct">取消令牌</param>
+        /// <param name="image">图像对象</param>
         /// <param name="needLog">是否需要日志输出</param>
         /// <param name="isResetCd">是否重置技能冷却状态</param>
         /// <returns>技能是否就绪</returns>
         public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, 
-            CancellationToken ct,bool needLog = false, bool isResetCd = false)
+            CancellationToken ct,ImageRegion? image = null,bool needLog = false, bool isResetCd = false)
         {
             if (guardianAvatar.TrySwitch())
             {
                 Scalar bloodLower = new Scalar(255, 255, 255);
                 int attempt = 0;
+                var model = image is null;
 
                 while (attempt < retryCount)
                 {
-                    var image2 = CaptureToRectArea();
+                    var image2 = model ? CaptureToRectArea() : image ?? CaptureToRectArea();
+
+                    // var image2 = CaptureToRectArea();
 
                     var skillAra = !skills
                         ? new Rect(image2.Width * 1688 / 1920, image2.Height * 988 / 1080,
@@ -741,7 +742,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
-                    image2.Dispose();
+                    if (model) image2.Dispose();
                     mask2.Dispose();
                     labels2.Dispose();
                     stats2.Dispose();

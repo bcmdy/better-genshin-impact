@@ -406,6 +406,13 @@ public class Avatar
         // 3次失败考虑是否偏移出现问题，修改偏移位置
         if (i <= 2 || AutoFightTask.FightStatusFlag)
         {
+            if (i == 13 && AutoFightTask.FightStatusFlag)
+            {
+                //跳一下,战斗中防卡死
+                Logger.LogWarning("尝试切换角色失败，尝试跳跃");
+                Simulation.SendInput.SimulateAction(GIActions.Jump);
+            }
+            
             return;
         }
         
@@ -431,14 +438,6 @@ public class Avatar
 
             CombatScenes.IndexRectOffset60Fix = true;
         }
-
-        if (i == 3 && AutoFightTask.FightStatusFlag)
-        {
-            //跳一下,战斗中防卡死
-            Logger.LogWarning("尝试切换角色失败，尝试跳跃");
-            Simulation.SendInput.SimulateAction(GIActions.Jump);
-        }
-        
     }
 
     /// <summary>

@@ -459,6 +459,7 @@ public class AutoFightTask : ISoloTask
                                 {
                                     foreach (var num in useEq)
                                     {
+                                        var delayTimeIn = 1;
                                         Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         if (avatarQ.TrySwitch(15))
@@ -466,39 +467,44 @@ public class AutoFightTask : ISoloTask
                                             countFight++;
                                             if (avatarQ.IsSkillReady())
                                             {
-                                                // if (avatarQ.Name == "菈乌玛")
-                                                // {
-                                                //     hold = true;
-                                                // }
-                                                // else
-                                                // {
-                                                //     hold = false;
-                                                // }
-                                                
                                                 avatarQ.UseSkill();
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
                                                 {
+                                                    delayTimeIn = 300;
                                                     await Delay(100, ct);
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                    await Delay(300, ct);
+                                                    await Delay(200, ct);
                                                 }
-                                                fightEndFlag = await CheckFightFinish(100, detectDelayTime);
-                                                await Delay(350, ct);
-                                                // if (avatarQ.Name == "芙宁娜")
-                                                // {
-                                                //     await Delay(100, ct);
-                                                // }
+                                                // fightEndFlag = await CheckFightFinish(1, detectDelayTime,true);
+                                                await Delay(300, ct);
                                             }
                                             
-                                            if (!fightEndFlag)  fightEndFlag = await CheckFightFinish(100, detectDelayTime);
+                                            fightEndFlag = await CheckFightFinish(delayTimeIn, detectDelayTime,true);
+                                            // Logger.LogInformation("自动策略：fightEndFlag {name}", fightEndFlag);
                                             if (!fightEndFlag)
-                                            {
+                                            { 
+                                                var ms = 1000;
+                                                var imageAfterBurst = CaptureToRectArea();
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                await Delay(600, ct);
+                                                while ((!AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst).Result && Bv.IsInMainUi(imageAfterBurst)) && ms > 0)
+                                                {
+                                                    Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                                    await Delay(90, ct);
+                                                    imageAfterBurst = CaptureToRectArea();
+                                                    ms -= 90;
+                                                }
+                                                // Logger.LogInformation("自动策略：Q技能释放成功");
+                                                imageAfterBurst.Dispose();
+                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                             }
                                             else
                                             {
+                                                break;
+                                            }
+                                            if (guardianAvatar.ManualSkillCd == 0)
+                                            {
+                                                if(i>0)i--;
                                                 break;
                                             }
                                         }
@@ -795,7 +801,7 @@ public class AutoFightTask : ISoloTask
                Math.Abs(a.Item3 - b.Item3) < c.Item3;
     }
 
-    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450)
+    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,bool isNotNull = false)
     {
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
@@ -812,6 +818,11 @@ public class AutoFightTask : ISoloTask
             
             AutoFightSeek.RotationCount = (result == null) ? 
                 AutoFightSeek.RotationCount + 1 :  0;
+
+            if (isNotNull && result == null)
+            {
+                return false;
+            }
             
             if (result != null)
             {
@@ -1134,12 +1145,12 @@ public class AutoFightTask : ISoloTask
                                                  (gray && RecoverCount < 2);//判断吃药上限
                             if (shouldRecover)
                             {
+                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                                 Simulation.ReleaseAllKey();
                                 if (redBlood) resurrectionCount++;
                                 if (gray) RecoverCount++;
                                 TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
                                 PathingConditionConfig.LastEatTime = DateTime.Now;
-                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                                 redBlood = false;
                                 gray = false;
                                 if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
@@ -1167,7 +1178,8 @@ public class AutoFightTask : ISoloTask
                                     {
                                         Simulation.ReleaseAllKey();
                                         confirmRectArea.Click();
-                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                                        confirmRectArea.ClickTo(-100, 0);
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                                         continue;
                                     }
                                 }
