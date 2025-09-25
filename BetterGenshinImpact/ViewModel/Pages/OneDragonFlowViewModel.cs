@@ -2418,7 +2418,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             _logger.LogInformation("配置单 {SelectedConfig.Name} 绑定UID {GenshinUid} 一条龙和配置组任务结束",
                 SelectedConfig.Name,string.IsNullOrEmpty(SelectedConfig.GenshinUid) ? "未绑定" : SelectedConfig.GenshinUid);
             
-            Logger.LogInformation("Debug-Log：{t1}.{t2}.{t3}",_continuousExecutionMark,SelectedConfig.Name,SelectedConfig.CompletionAction);
+            // Logger.LogInformation("Debug-Log：{t1}.{t2}.{t3}",_continuousExecutionMark,SelectedConfig.Name,SelectedConfig.CompletionAction);
             // 单次执行完成后，不执行后续的完成任务
             if (!_continuousExecutionMark)
             {
