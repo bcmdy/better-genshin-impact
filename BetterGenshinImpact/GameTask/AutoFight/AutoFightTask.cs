@@ -454,6 +454,7 @@ public class AutoFightTask : ISoloTask
                             if (_taskParam.AutoCombatEq)
                             {
                                var useEq = await AutoFightSkill.AvatarQSkillAsync(image);
+
                                // useEq.Remove();
                                 if (useEq.Count > 0)
                                 {
@@ -464,16 +465,19 @@ public class AutoFightTask : ISoloTask
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             countFight++;
+                                    
                                             if (avatarQ.IsSkillReady())
                                             {
-                                                avatarQ.UseSkill();
+                                                var avatarQHold = avatarQ.Name == "菈乌玛";
+                                                Logger.LogInformation("自动策略：avatarQHold {avatarQHold} ", avatarQHold);
+                                                avatarQ.UseSkill(avatarQHold);
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
                                                 {
                                                     await Delay(100, ct);
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                     await Delay(200, ct);
-                                                }
+                                                } 
                                                 await Delay(300, ct);
                                             }
                                             

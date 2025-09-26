@@ -605,12 +605,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             return;
                         }
                         
-                        //普攻一下，防止在纳塔飞天
-                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                         Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：失败重试 {attempt} 次",
                             guardianAvatarName, guardianAvatar.Name, attempt + 1);
                         guardianAvatar.ManualSkillCd = 0;
                         guardianAvatar.UseSkill(guardianAvatarHold);
+                        //普攻一下，防止在纳塔飞天
+                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                        Simulation.SendInput.SimulateAction(GIActions.Drop);
                     }
                     attempt++;
                 }
