@@ -377,6 +377,13 @@ public class AutoFightTask : ISoloTask
 
         ImageRegion image = null;
 
+        var useEqList = (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseEqList))
+                  ? _taskParam.UseEqList.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+                      .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+                      .Where(n => n >= 1 && n <= 4)
+                      .ToList()
+                  : new List<int> { 1, 2, 3, 4 };
+
         // var hold = false;
         // var useEqFirst = new List<int>(){1,2,3,4};
         
@@ -453,9 +460,8 @@ public class AutoFightTask : ISoloTask
 
                             if (_taskParam.AutoCombatEq)
                             {
-                               var useEq = await AutoFightSkill.AvatarQSkillAsync(image);
-
-                               // useEq.Remove();
+                               var useEq = await AutoFightSkill.AvatarQSkillAsync(image,useEqList);
+                               
                                 if (useEq.Count > 0)
                                 {
                                     foreach (var num in useEq)
@@ -530,7 +536,7 @@ public class AutoFightTask : ISoloTask
                         
                         #endregion
                         
-                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
+                        if (avatar is null || ((!useEqList.Contains(avatar.Index) ||avatar.Name == guardianAvatar?.Name) && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
                         {
                             continue;
                         }

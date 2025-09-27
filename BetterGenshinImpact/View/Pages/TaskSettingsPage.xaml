@@ -840,18 +840,19 @@
                             <ui:TextBlock Grid.Row="0"
                                           Grid.Column="0"
                                           FontTypography="Body"
-                                          Text="盾奶位角色优先释放技能"
+                                          Text="盾奶位与自动战斗功能 (盾位技能优先->Q检测释放->战斗策略执行)"
                                           TextWrapping="Wrap" />
                             <ui:TextBlock Grid.Row="1"
                                           Grid.Column="0"
                                           Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="战斗过程实时检测和释放盾奶位技能（空选为关闭此功能）"
+                                          Text="战斗过程实时检测和释放相关技能（空选为关闭此功能）"
                                           TextWrapping="Wrap" />
                         </Grid>
                     </ui:CardExpander.Header>
                         
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -1063,6 +1064,27 @@
                                 </Style>
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
+                        
+                        
+                        <ui:TextBlock Grid.Row="5"
+                                      Grid.Column="0" 
+                                      Grid.ColumnSpan="3"
+                                      Margin="0,10,10,0"
+                                      FontTypography="Body"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Text="Q释放的角色序号顺序(英文逗号分隔，不填的角色不参与战斗)"
+                                      TextWrapping="Wrap" 
+                                      Visibility="{Binding Config.AutoFightConfig.AutoCombatEq ,Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <ui:TextBox Grid.Row="5"
+                                    Grid.Column="3"
+                                    Grid.ColumnSpan="2"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    MaxWidth="80"
+                                    Margin="0,10,38,0" 
+                                    Text="{Binding Config.AutoFightConfig.UseEqList}"
+                                    Visibility="{Binding Config.AutoFightConfig.AutoCombatEq ,Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         
                         
                  </Grid>

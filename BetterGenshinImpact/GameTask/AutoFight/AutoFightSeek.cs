@@ -794,48 +794,44 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
         }
         
-        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null)
+        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null, List<int>? useEqList = null)
         {
             image ??= CaptureToRectArea();
             image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度
-            var useMedicine = new List<int> { };
-            for (var i = 1; i <= 4; i++)
+            var useMedicine = new List<int>();
+            var eqList = useEqList ?? new List<int> { 1, 2, 3, 4 };
+        
+            foreach (var i in eqList)
             {
-                var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[i - 1];//Q技能区域
-                // 首先对图像进行预处理，转为灰度图
+                var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[i - 1];
                 var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
-                
-                // 计算图像的平均亮度
+        
                 var meanBrightness = Cv2.Mean(grayImage);
                 var avgBrightness = meanBrightness.Val0;
-                // 根据平均亮度动态调整Canny边缘检测的阈值
                 var threshold1 = avgBrightness * 0.9;
                 var threshold2 = avgBrightness * 2;
-                
-                // Logger.LogInformation("角色{i} 平均亮度 {avgBrightness}", i, avgBrightness);
-                
-                Cv2.Canny(grayImage, grayImage, threshold1: (float)threshold1, threshold2: (float)threshold2); // 边缘检测
-                    
-                // 使用霍夫变换检测圆形
+        
+                Cv2.Canny(grayImage, grayImage, threshold1: (float)threshold1, threshold2: (float)threshold2);
+        
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
                     param1: 90, param2: 30, minRadius: 25, maxRadius: 34);
-                
+        
                 if (circles.Length > 0)
-                { 
+                {
                     useMedicine.Add(i);
                 }
                 grayImage.Dispose();
             }
-            
+        
             image.Dispose();
-            
+        
             if (useMedicine.Count > 0)
             {
-                Logger.LogInformation("元素爆发 {text} 的角色序号：{useMedicine}", "就绪",useMedicine);
+                Logger.LogInformation("元素爆发 {text} 的角色序号：{useMedicine}", "就绪", useMedicine);
                 return Task.FromResult(useMedicine);
             }
         
-            return  Task.FromResult(new List<int>());
+            return Task.FromResult(new List<int>());
         }
     }
 

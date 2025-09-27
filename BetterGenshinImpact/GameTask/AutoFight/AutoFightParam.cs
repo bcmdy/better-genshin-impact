@@ -1,32 +1,6 @@
 using BetterGenshinImpact.GameTask.Model;
-using BetterGenshinImpact.Core.Recognition.ONNX;
-using BetterGenshinImpact.Core.Simulator;
-using BetterGenshinImpact.Core.Simulator.Extensions;
-using BetterGenshinImpact.GameTask.AutoFight.Model;
-using BetterGenshinImpact.GameTask.AutoFight.Script;
-using BetterGenshinImpact.GameTask.Model.Area;
-using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Config;
-using static BetterGenshinImpact.GameTask.Common.TaskControl;
-using BetterGenshinImpact.GameTask.Common.Job;
-using OpenCvSharp;
-using BetterGenshinImpact.Helpers;
-using Vanara;
-using Microsoft.Extensions.DependencyInjection;
-using BetterGenshinImpact.GameTask.Common.Element.Assets;
-using BetterGenshinImpact.GameTask.Common;
-using BetterGenshinImpact.GameTask.AutoFight.Assets;
-using BetterGenshinImpact.View.Drawable;
-using BetterGenshinImpact.Core.Recognition.OCR;
-using BetterGenshinImpact.Core.Recognition.OpenCv;
+
 
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
@@ -88,6 +62,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         EndBloodCheackEnabled = autoFightConfig.EndBloodCheackEnabled;
         CheckBeforeBurst = autoFightConfig.FinishDetectConfig.CheckBeforeBurst;
         AutoCombatEq = autoFightConfig.AutoCombatEq;
+        UseEqList = autoFightConfig.UseEqList;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -130,4 +105,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public bool CheckBeforeBurst { get; set; } = false;
     
     public bool AutoCombatEq { get; set; } = false;
+    
+    public string UseEqList { get; set; } = "1,2,3,4";
+    
 }

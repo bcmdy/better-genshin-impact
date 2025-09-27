@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -187,4 +188,7 @@ public partial class AutoFightConfig : ObservableObject
     
     [ObservableProperty]
     private bool _endBloodCheackEnabled = false;
+    
+    [ObservableProperty]
+    private string _useEqList = "1,2,3,4";
 }
