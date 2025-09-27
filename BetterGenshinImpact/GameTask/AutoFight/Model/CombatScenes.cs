@@ -163,21 +163,30 @@ public class CombatScenes : IDisposable
     {
         // 角色序号 左上角 坐标偏移（+2, -5）后存在3个白色点，则认为存在 草露 进度条
         // 存在 草露 进度条时候整体上移 14 个像素
-        var whitePointCount = 0;
-        foreach (var rectIndex in avatarIndexRectList)
-        {
-            int x = rectIndex.X + 2;
-            int y = rectIndex.Y - 5;
-            var color = imageRegion.SrcMat.At<Vec3b>(y, x);
-            if (color is { Item0: 255, Item1: 255, Item2: 255 })
+        
+        for (var i = 0; i < 10; i++){
+            var whitePointCount = 0;
+            foreach (var rectIndex in avatarIndexRectList)
             {
-                whitePointCount++;
+                int x = rectIndex.X + 2;
+                int y = rectIndex.Y - 5;
+                var color = imageRegion.SrcMat.At<Vec3b>(y, x);
+                if (color is { Item0: 255, Item1: 255, Item2: 255 })
+                {
+                    whitePointCount++;
+                }
             }
-        }
 
-        if (whitePointCount < 3)
-        {
-            return false;
+            if (whitePointCount < 3)
+            {
+                if (IndexRectOffset60Fix)
+                {
+                    Delay(70,CancellationToken.None).Wait();
+                    continue;
+                }
+                
+                return false;
+            }
         }
 
         Logger.LogInformation("检测到右侧队伍上偏移，进行位置偏移");

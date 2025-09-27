@@ -469,7 +469,7 @@ public class AutoFightTask : ISoloTask
                                             if (avatarQ.IsSkillReady())
                                             {
                                                 var avatarQHold = avatarQ.Name == "菈乌玛";
-                                                Logger.LogInformation("自动策略：avatarQHold {avatarQHold} ", avatarQHold);
+                                                // Logger.LogInformation("自动策略：avatarQHold {avatarQHold} ", avatarQHold);
                                                 avatarQ.UseSkill(avatarQHold);
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
@@ -844,7 +844,7 @@ public class AutoFightTask : ISoloTask
                 b3.Item0) /* AreDifferencesWithinBounds(_finishDetectConfig.BattleEndProgressBarColor, (b3.Item0, b3.Item1, b3.Item2), _finishDetectConfig.BattleEndProgressBarColorTolerance)*/
            )
         {
-            TaskControl.Logger.LogInformation("识别到战斗结束");
+            TaskControl.Logger.LogInformation("识别到战斗结束-j");
             //取消正在进行的换队
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
             return true;
@@ -1180,8 +1180,8 @@ public class AutoFightTask : ISoloTask
                                 }
                                 else if (RecoverCount < 2)
                                 {
-                                    RecoverCount++;
                                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
+                                    RecoverCount++;
                                     continue;
                                 }
                             }

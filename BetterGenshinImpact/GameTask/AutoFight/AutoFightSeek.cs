@@ -312,7 +312,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     if (IsWhite(whiteTile3.Item2, whiteTile3.Item1, whiteTile3.Item0) &&
                         IsYellow(b33.Item2, b33.Item1, b33.Item0))
                     {
-                        logger.LogInformation("识别到战斗结束");
+                        logger.LogInformation("识别到战斗结束-s");
                         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
                         return true;
                     }
