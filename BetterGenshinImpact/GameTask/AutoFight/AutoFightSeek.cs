@@ -271,12 +271,24 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     
                     if (success)
                     {
-                        if (isEndCheck) await Task.Run(() =>
+                        if (isEndCheck) 
                         {
-                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                            Task.Delay(100, ct).Wait();;
-                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                        }, ct);
+                            await Task.Run(() =>
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                                Task.Delay(100, ct).Wait();;
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                            }, ct);
+                        }
+                        else
+                        {
+                             Task.Run(() =>
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                                Task.Delay(100, ct).Wait();;
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                            }, ct);
+                        }
                         
                         if (height > 2 && height < 7)
                         {

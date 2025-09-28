@@ -29,6 +29,16 @@ public partial class PathingPartyConfig : ObservableObject
     // 主要行走追踪的角色编号
     [ObservableProperty]
     private string _mainAvatarIndex = string.Empty;
+    
+    [ObservableProperty]
+    private string _initialMainAvatarIndex = string.Empty;
+    
+    // 在初始化方法中设置_initialMainAvatarIndex
+    public void Initialize()
+    {
+        InitialMainAvatarIndex = MainAvatarIndex;
+        // 其他初始化代码...
+    }
 
     // [盾角]使用元素战技的角色编号
     [ObservableProperty]

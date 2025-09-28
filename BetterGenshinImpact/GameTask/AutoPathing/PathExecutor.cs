@@ -90,7 +90,14 @@ public class PathExecutor
     public PathingPartyConfig PartyConfig
     {
         get => _partyConfig ?? PathingPartyConfig.BuildDefault();
-        set => _partyConfig = value;
+        set
+        {
+            _partyConfig = value;
+            if (string.IsNullOrEmpty(_partyConfig.InitialMainAvatarIndex))
+            {
+                _partyConfig.Initialize();
+            }
+        }
     }
 
     /// <summary>
@@ -252,6 +259,7 @@ public class PathExecutor
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
                                     PathingConditionConfig.FightWaypoint = waypoint;
+                                    PartyConfig.MainAvatarIndex = PartyConfig.InitialMainAvatarIndex;
                                 }
                                 else
                                 {
@@ -724,6 +732,23 @@ public class PathExecutor
         {
             Logger.LogInformation("当前角色血量过低，去七天神像恢复-1");
             await TpStatueOfTheSeven();
+            
+            using (var bitmap = CaptureToRectArea())
+            {
+                Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
+
+                var avatar = _combatScenes?.SelectAvatar(int.Parse(PartyConfig.MainAvatarIndex));
+                if (avatar!= null && avatar.IsActive(bitmap))
+                {
+                    PartyConfig.MainAvatarIndex = ((int.Parse(PartyConfig.MainAvatarIndex) % 4) + 1).ToString();
+                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                }
+                else
+                {
+                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                }
+            }
+            
             if (PathingConditionConfig.AutoEatCount < 2) return;
 
             if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
