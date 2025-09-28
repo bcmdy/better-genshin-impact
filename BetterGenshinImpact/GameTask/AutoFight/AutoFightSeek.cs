@@ -583,24 +583,38 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     if (guardianAvatar.TrySwitch(10, false))
                     {
                         guardianAvatar.ManualSkillCd = -1;
-                        var cd1 = guardianAvatar.AfterUseSkill();
-                        if (cd1 > 0)
+                        if (await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct))
                         {
-                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 战技Cd检测：{cd} 秒", guardianAvatarName,
-                                guardianAvatar.Name, cd1);
-                            guardianAvatar.ManualSkillCd = -1;
-                            return;
+                            var cd1 = guardianAvatar.AfterUseSkill();
+                            if (cd1 > 0)
+                            {
+                                Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 战技Cd检测：{cd} 秒", guardianAvatarName,
+                                    guardianAvatar.Name, cd1);
+                                guardianAvatar.ManualSkillCd = -1;
+                                return;
+                            }
                         }
             
                         guardianAvatar.UseSkill(guardianAvatarHold);
+                        var imageAfterUseSkill = CaptureToRectArea();
                         Simulation.ReleaseAllKey();
-                        await Task.Delay(200, ct);
-            
-                        var cd2 = guardianAvatar.AfterUseSkill();
-                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false))
+                        
+                        var retry = 10;
+                        while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                         {
-                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技成功，cd:{cd2} 秒",
-                                guardianAvatarName, guardianAvatar.Name, cd2);
+                            guardianAvatar.UseSkill(guardianAvatarHold);
+                            //防止在纳塔飞天或爬墙
+                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            retry -= 1;
+                            imageAfterUseSkill = CaptureToRectArea();
+                        }
+                        
+                        var cd2 = guardianAvatar.GetSkillCdSeconds();
+                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false) && retry > 0)
+                        {
+                            Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：{t}",
+                                guardianAvatarName, guardianAvatar.Name,"成功");
                             guardianAvatar.ManualSkillCd = -1;
                             return;
                         }
@@ -609,7 +623,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             guardianAvatarName, guardianAvatar.Name, attempt + 1);
                         guardianAvatar.ManualSkillCd = 0;
                         guardianAvatar.UseSkill(guardianAvatarHold);
-                        //普攻一下，防止在纳塔飞天
+                        //防止在纳塔飞天或
                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                         Simulation.SendInput.SimulateAction(GIActions.Drop);
                     }

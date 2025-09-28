@@ -471,12 +471,23 @@ public class AutoFightTask : ISoloTask
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             countFight++;
-                                    
-                                            if (avatarQ.IsSkillReady())
+                                            if (avatarQ.IsSkillReady() || !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 var avatarQHold = avatarQ.Name == "菈乌玛";
-                                                // Logger.LogInformation("自动策略：avatarQHold {avatarQHold} ", avatarQHold);
                                                 avatarQ.UseSkill(avatarQHold);
+                                                var imageAfterUseSkill = CaptureToRectArea();
+                                                Simulation.ReleaseAllKey();
+                                                
+                                                var retry = 5;
+                                                while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill)) && retry > 0)
+                                                {
+                                                    avatarQ.UseSkill(avatarQHold);
+                                                    //防止在纳塔飞天或爬墙
+                                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                    retry -= 1;
+                                                    imageAfterUseSkill = CaptureToRectArea();
+                                                }
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
                                                 {
@@ -486,21 +497,24 @@ public class AutoFightTask : ISoloTask
                                                 } 
                                                 await Delay(300, ct);
                                             }
+                                            else
+                                            {
+                                                avatarQ.AfterUseSkill();
+                                            }
                                             
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                                             if (!fightEndFlag)
                                             { 
-                                                var ms = 1000;
+                                                var ms = 20;
                                                 var imageAfterBurst = CaptureToRectArea();
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                while ((!AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst).Result && Bv.IsInMainUi(imageAfterBurst)) && ms > 0)
+                                                while ((!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst) && Bv.IsInMainUi(imageAfterBurst)) && ms > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                    await Delay(90, ct);
                                                     imageAfterBurst = CaptureToRectArea();
-                                                    ms -= 90;
+                                                    await Delay(50, ct);
+                                                    ms -= 1;
                                                 }
-                                                // Logger.LogInformation("自动策略：Q技能释放成功");
                                                 imageAfterBurst.Dispose();
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                             }
