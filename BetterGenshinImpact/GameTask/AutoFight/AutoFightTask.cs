@@ -478,16 +478,17 @@ public class AutoFightTask : ISoloTask
                                                 var imageAfterUseSkill = CaptureToRectArea();
                                                 Simulation.ReleaseAllKey();
                                                 
-                                                var retry = 5;
+                                                var retry = 6;
                                                 while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                                                 {
                                                     avatarQ.UseSkill(avatarQHold);
                                                     //防止在纳塔飞天或爬墙
-                                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                    if (retry < 6 && retry % 2 == 0) Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                     Simulation.SendInput.SimulateAction(GIActions.Drop);
                                                     retry -= 1;
                                                     imageAfterUseSkill = CaptureToRectArea();
                                                 }
+                                                if (retry>0) avatarQ.ManualSkillCd = -1;
                                                 
                                                 if (avatarQ.Name == "枫原万叶")
                                                 {
@@ -1210,6 +1211,20 @@ public class AutoFightTask : ISoloTask
                         if (RecoverCount > 1 || FightEndFlag)
                         {
                             RecoverCount = 2;
+                            
+                            using (var bitmap = CaptureToRectArea())
+                            {
+                                var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                                if (!confirmRectArea.IsEmpty())
+                                {
+                                    Simulation.ReleaseAllKey();
+                                    confirmRectArea.Click();
+                                    confirmRectArea.ClickTo(-100, 0);
+                                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                                    Delay(500, _ct).Wait();
+                                }
+                            }
+                            
                             IsTpForRecover = false;
                         }
 

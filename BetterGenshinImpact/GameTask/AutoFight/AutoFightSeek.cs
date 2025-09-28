@@ -614,16 +614,20 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         var retry = 10;
                         while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                         {
+                            retry -= 1;
                             guardianAvatar.UseSkill(guardianAvatarHold);
                             //防止在纳塔飞天或爬墙
-                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            if (retry < 9 && retry % 2 == 0)
+                            {
+                                Logger.LogInformation("盾奶位：{t}", "重试");
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            }
                             Simulation.SendInput.SimulateAction(GIActions.Drop);
-                            retry -= 1;
                             imageAfterUseSkill = CaptureToRectArea();
                         }
                         
                         var cd2 = guardianAvatar.GetSkillCdSeconds();
-                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false) && retry > 0)
+                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false) && retry > 1)
                         {
                             Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：{t}",
                                 guardianAvatarName, guardianAvatar.Name,"成功");

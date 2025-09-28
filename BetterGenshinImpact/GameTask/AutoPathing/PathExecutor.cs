@@ -63,6 +63,7 @@ using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Job;
+using Vanara.Extensions.Reflection;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -76,8 +77,12 @@ public class PathExecutor
     //路径追踪完全走完所有路径结束的标识
     public bool SuccessEnd = false;
     private PathingPartyConfig? _partyConfig;
+    private PathingPartyConfig? _partyConfig2;
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
+
+    private string _initialMainAvatarIndex; // 新增字段用于存储初始值
+    private bool _isInitialMainAvatarIndexSet; // 新增标志位用于判断初始值是否已设置
 
     public PathExecutor(CancellationToken ct)
     {
@@ -85,6 +90,7 @@ public class PathExecutor
         _rotateTask = new(ct);
         this.ct = ct;
         pathExecutorSuspend = new PathExecutorSuspend(this);
+        _isInitialMainAvatarIndexSet = false; // 初始化标志位
     }
 
     public PathingPartyConfig PartyConfig
@@ -92,14 +98,21 @@ public class PathExecutor
         get => _partyConfig ?? PathingPartyConfig.BuildDefault();
         set
         {
-            _partyConfig = value;
-            if (string.IsNullOrEmpty(_partyConfig.InitialMainAvatarIndex))
+            if (_partyConfig == null && !_isInitialMainAvatarIndexSet)
             {
-                _partyConfig.Initialize();
+                _partyConfig = value;
+                _initialMainAvatarIndex = _partyConfig.MainAvatarIndex; // 在第一次设置时保存初始值
+                _isInitialMainAvatarIndexSet = true; // 设置标志位为已设置
+            }
+            else
+            {
+                _partyConfig = value;
             }
         }
     }
 
+    public string InitialMainAvatarIndex => _initialMainAvatarIndex; // 提供一个只读属性来访问初始值
+    
     /// <summary>
     /// 判断是否中止地图追踪的条件
     /// </summary>
@@ -202,6 +215,8 @@ public class PathExecutor
         Navigation.WarmUp(); // 提前加载地图特征点
         
         await InitializeAutoEat();//初始化自动吃药
+        
+        // Logger.LogWarning("ddddd {t} GGGGG {t2}",InitialMainAvatarIndex,PartyConfig.MainAvatarIndex);
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
@@ -259,7 +274,6 @@ public class PathExecutor
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
                                     PathingConditionConfig.FightWaypoint = waypoint;
-                                    PartyConfig.MainAvatarIndex = PartyConfig.InitialMainAvatarIndex;
                                 }
                                 else
                                 {
@@ -267,6 +281,12 @@ public class PathExecutor
                                 }
                                 // 执行 action
                                 await AfterMoveToTarget(waypoint);
+                                
+                                if (waypoint.Action == ActionEnum.Fight.Code)
+                                {
+                                    PartyConfig.MainAvatarIndex = InitialMainAvatarIndex;
+                                    // Logger.LogWarning("ddddd {t} GGGGG {t2}",InitialMainAvatarIndex,PartyConfig.MainAvatarIndex);
+                                }
                             }
                         }
                         _lastWaypoint = waypoint;
@@ -955,6 +975,37 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
+            
+            if (waypoint.Action == ActionEnum.Fight.Code && distance < 30)//接近战斗点，确保行走位不是丝血
+            {
+                using (var bitmap = CaptureToRectArea())
+                {
+                    var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);//在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
+                    if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
+                          Math.Abs(pixelValue[1] - 215) <= 10 &&
+                          Math.Abs(pixelValue[2] - 150) <= 10))
+                    { 
+                        Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-3");
+                        
+                        var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
+                        var nextAvatarIndex = (avatarIndex % 4) + 1;
+                        
+                        var avatar = _combatScenes?.SelectAvatar(avatarIndex);
+                        
+                        await Delay(300, ct);
+                        
+                        if (avatar!= null && avatar.IsActive(bitmap))
+                        {
+                            await SwitchAvatar(nextAvatarIndex.ToString());
+                        }
+                        else
+                        {
+                            await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                        }
+                    }
+                }
+            }
+            
             if (distance < 4)
             {
                 Logger.LogDebug("到达路径点附近");
