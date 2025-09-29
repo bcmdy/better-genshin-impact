@@ -555,7 +555,7 @@ public class AutoFightTask : ISoloTask
                         
                         #endregion
                         
-                        if (avatar is null || ((!useEqList.Contains(avatar.Index) ||avatar.Name == guardianAvatar?.Name) && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
+                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)) || (!useEqList.Contains(avatar.Index) && _taskParam.AutoCombatEq))
                         {
                             continue;
                         }
