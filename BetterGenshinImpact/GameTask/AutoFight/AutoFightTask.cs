@@ -471,36 +471,39 @@ public class AutoFightTask : ISoloTask
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             countFight++;
-                                            if (avatarQ.IsSkillReady() || !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
+                                            if (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 var avatarQHold = avatarQ.Name == "菈乌玛";
                                                 avatarQ.UseSkill(avatarQHold);
                                                 var imageAfterUseSkill = CaptureToRectArea();
-                                                Simulation.ReleaseAllKey();
                                                 
-                                                var retry = 6;
+                                                var retry = 30;
                                                 while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                                                 {
-                                                    avatarQ.UseSkill(avatarQHold);
+                                                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                                     //防止在纳塔飞天或爬墙
-                                                    if (retry < 6 && retry % 2 == 0) Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
-                                                    retry -= 1;
-                                                    imageAfterUseSkill = CaptureToRectArea();
-                                                }
-                                                if (retry>0) avatarQ.ManualSkillCd = -1;
-                                                
-                                                if (avatarQ.Name == "枫原万叶")
-                                                {
-                                                    await Delay(100, ct);
                                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                    imageAfterUseSkill = CaptureToRectArea();
+                                                    await Task.Delay(30, ct);
+                                                    // Logger.LogInformation("优先第111 {retry} ",retry);
+                                                    retry -= 1;
+                                                }
+                                                
+                                                if (retry > 0)
+                                                {
+                                                    avatarQ.LastSkillTime = DateTime.UtcNow;
+                                                    
+                                                    if (avatarQ.Name == "枫原万叶")
+                                                    {
+                                                        await Delay(100, ct);
+                                                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                        await Delay(200, ct);
+                                                    } 
+                                                
                                                     await Delay(200, ct);
-                                                } 
-                                                await Delay(300, ct);
-                                            }
-                                            else
-                                            {
-                                                avatarQ.AfterUseSkill();
+                                                }
+                                                
                                             }
                                             
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime);
@@ -531,6 +534,7 @@ public class AutoFightTask : ISoloTask
                                         }
                                     }
                                 }
+                                Simulation.ReleaseAllKey();
                                 useEq.Clear(); 
                             }
                             

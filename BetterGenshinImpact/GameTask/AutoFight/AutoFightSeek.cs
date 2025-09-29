@@ -229,7 +229,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         private static readonly Dictionary<int, int> RotaryFactorMapping = new Dictionary<int, int> //旋转因子映射表
         {
             { 1, 100 }, { 2, 90 }, { 3, 80}, { 4, 70 }, { 5, 60}, { 6,45 },
-            { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-20 }, { 13, -30 }
+            { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-50 }, { 13, -50 }
         };
         
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6)
@@ -237,6 +237,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             Scalar bloodLower = new Scalar(255, 90, 90);
             
             var adjustedX = RotaryFactorMapping[rotaryFactor];
+            var adjustedDivisor = rotaryFactor<=12 ? 2 : 1;
             
             // Logger.LogInformation("开始寻找敌人 {Text} ...",adjustedX);
             
@@ -341,10 +342,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                    var offsets = new (int x, int y)[] {
                         (image.Width / 6, image.Height / 6), 
                         (image.Width / 6, 0),                 
-                        (image.Width / 6, -image.Height / 5) 
+                        (image.Width / 6, -image.Height / 5),
+                        (image.Width / 6, -image.Height),  
                     };
 
-                    var offsetIndex = RotationCount < 3 ? 0 : (RotationCount == 3) ? 1 : 2;
+                    var offsetIndex = RotationCount < 2 ? 0 : (RotationCount == 2) ? 1 : (RotationCount >= 3) ? 2 : 3;
                     Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
                 }
                 else
@@ -352,7 +354,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
                 }
 
-                await Task.Delay(50+(int)(adjustedX/2),ct);
+                await Task.Delay(50+(int)(adjustedX/adjustedDivisor),ct);
 
                 image = CaptureToRectArea();
                 mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
@@ -611,26 +613,24 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         var imageAfterUseSkill = CaptureToRectArea();
                         Simulation.ReleaseAllKey();
                         
-                        var retry = 10;
+                        var retry = 30;
                         while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                         {
-                            retry -= 1;
-                            guardianAvatar.UseSkill(guardianAvatarHold);
+                            Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                             //防止在纳塔飞天或爬墙
-                            if (retry < 9 && retry % 2 == 0)
-                            {
-                                Logger.LogInformation("盾奶位：{t}", "重试");
-                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            }
+                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                             Simulation.SendInput.SimulateAction(GIActions.Drop);
                             imageAfterUseSkill = CaptureToRectArea();
+                            await Task.Delay(20, ct);
+                            // Logger.LogInformation("优先第111 {retry} ",retry);
+                            retry -= 1;
                         }
                         
-                        var cd2 = guardianAvatar.GetSkillCdSeconds();
-                        if (cd2 > 0 && guardianAvatar.TrySwitch(4, false) && retry > 1)
+                        if (retry > 0)
                         {
                             Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 释放战技：{t}",
                                 guardianAvatarName, guardianAvatar.Name,"成功");
+                            guardianAvatar.LastSkillTime = DateTime.UtcNow;
                             guardianAvatar.ManualSkillCd = -1;
                             return;
                         }
