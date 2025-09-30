@@ -755,17 +755,44 @@ public class PathExecutor
             
             using (var bitmap = CaptureToRectArea())
             {
-                Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
+                var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);
+                if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
+                      Math.Abs(pixelValue[1] - 215) <= 10 &&
+                      Math.Abs(pixelValue[2] - 150) <= 10))
+                { 
+                    Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-1");
+                        
+                    if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
+                    {
+                        var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
+                        var nextAvatarIndex = (avatarIndex % 4) + 1;
 
-                var avatar = _combatScenes?.SelectAvatar(int.Parse(PartyConfig.MainAvatarIndex));
-                if (avatar!= null && avatar.IsActive(bitmap))
-                {
-                    PartyConfig.MainAvatarIndex = ((int.Parse(PartyConfig.MainAvatarIndex) % 4) + 1).ToString();
-                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                }
-                else
-                {
-                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                        var avatar = _combatScenes?.SelectAvatar(avatarIndex);
+
+                        await Delay(300, ct);
+
+                        if (avatar != null && avatar.IsActive(bitmap))
+                        {
+                            await SwitchAvatar(nextAvatarIndex.ToString());
+                        }
+                        else
+                        {
+                            await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 1; i <= 4; i++)
+                        {
+                            var avatar = _combatScenes?.SelectAvatar(i);
+                            if (avatar != null && avatar.IsActive(bitmap))
+                            {
+                                var nextAvatarIndex = (i % 4) + 1;
+                                await SwitchAvatar(nextAvatarIndex.ToString());
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             
@@ -980,27 +1007,43 @@ public class PathExecutor
             {
                 using (var bitmap = CaptureToRectArea())
                 {
-                    var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);//在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
+                    var pixelValue = bitmap.SrcMat.At<Vec3b>(1010, 814);
                     if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
                           Math.Abs(pixelValue[1] - 215) <= 10 &&
                           Math.Abs(pixelValue[2] - 150) <= 10))
-                    { 
-                        Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-3");
-                        
-                        var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
-                        var nextAvatarIndex = (avatarIndex % 4) + 1;
-                        
-                        var avatar = _combatScenes?.SelectAvatar(avatarIndex);
-                        
-                        await Delay(300, ct);
-                        
-                        if (avatar!= null && avatar.IsActive(bitmap))
+                    {
+                        Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
+
+                        if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
                         {
-                            await SwitchAvatar(nextAvatarIndex.ToString());
+                            var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
+                            var nextAvatarIndex = (avatarIndex % 4) + 1;
+
+                            var avatar = _combatScenes?.SelectAvatar(avatarIndex);
+
+                            await Delay(300, ct);
+
+                            if (avatar != null && avatar.IsActive(bitmap))
+                            {
+                                await SwitchAvatar(nextAvatarIndex.ToString());
+                            }
+                            else
+                            {
+                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                            }
                         }
                         else
                         {
-                            await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                            for (int i = 1; i <= 4; i++)
+                            {
+                                var avatar = _combatScenes?.SelectAvatar(i);
+                                if (avatar != null && avatar.IsActive(bitmap))
+                                {
+                                    var nextAvatarIndex = (i % 4) + 1;
+                                    await SwitchAvatar(nextAvatarIndex.ToString());
+                                    break;
+                                }
+                            }
                         }
                     }
                 }

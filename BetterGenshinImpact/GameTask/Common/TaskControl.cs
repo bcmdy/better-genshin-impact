@@ -23,6 +23,7 @@ public class TaskControl
     private static DateTime _lastCheckTime = DateTime.MinValue;
     private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly Ping PingSender = new Ping();
+    private static readonly bool NetworkDetectionConfig = TaskContext.Instance().Config.OtherConfig.NetworkDetectionConfig;
     
     public static bool IsSuspendedByNetwork { get; set; } = false;
 
@@ -32,7 +33,6 @@ public class TaskControl
         {
             return Task.CompletedTask;
         }
-
         _lastCheckTime = DateTime.Now;
 
         var isSuspend = false; 
@@ -92,7 +92,7 @@ public class TaskControl
 
     public static void TrySuspend()
     {
-        Task.Run(CheckNetworkStatusAsync);
+        if (NetworkDetectionConfig)Task.Run(CheckNetworkStatusAsync);
         var first = true;
         //此处为了记录最开始的暂停状态
         var isSuspend = RunnerContext.Instance.IsSuspend || IsSuspendedByNetwork;

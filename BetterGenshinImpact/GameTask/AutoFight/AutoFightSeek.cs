@@ -622,7 +622,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Simulation.SendInput.SimulateAction(GIActions.Drop);
                             imageAfterUseSkill = CaptureToRectArea();
                             await Task.Delay(20, ct);
-                            // Logger.LogInformation("优先第111 {retry} ",retry);
                             retry -= 1;
                         }
                         
