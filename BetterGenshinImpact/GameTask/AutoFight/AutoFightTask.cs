@@ -283,7 +283,8 @@ public class AutoFightTask : ISoloTask
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+            var ra = CaptureToRectArea();
+            var combatScenes = new CombatScenes().InitializeTeam(ra);
             if (combatScenes.CheckTeamInitialized())
             {
                 return combatScenes;
@@ -293,6 +294,7 @@ public class AutoFightTask : ISoloTask
             {
                 Thread.Sleep(retryDelayMs); // 可选：延迟再试
             }
+            ra.Dispose();
         }
 
         if (!Config.CustomAvatarConfigOut.CustomAvatarEnabled) throw new Exception("识别队伍角色失败（已重试 5 次）");
