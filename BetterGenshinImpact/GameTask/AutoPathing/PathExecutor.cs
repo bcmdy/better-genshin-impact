@@ -766,13 +766,14 @@ public class PathExecutor
                     {
                         var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
                         var nextAvatarIndex = (avatarIndex % 4) + 1;
-
+            
                         var avatar = _combatScenes?.SelectAvatar(avatarIndex);
-
+            
                         await Delay(300, ct);
-
+            
                         if (avatar != null && avatar.IsActive(bitmap))
                         {
+                            PartyConfig.MainAvatarIndex = nextAvatarIndex.ToString();
                             await SwitchAvatar(nextAvatarIndex.ToString());
                         }
                         else
@@ -1025,6 +1026,7 @@ public class PathExecutor
 
                             if (avatar != null && avatar.IsActive(bitmap))
                             {
+                                PartyConfig.MainAvatarIndex = nextAvatarIndex.ToString();
                                 await SwitchAvatar(nextAvatarIndex.ToString());
                             }
                             else
