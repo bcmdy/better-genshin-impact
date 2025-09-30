@@ -213,6 +213,7 @@ public partial class AutoWoodTask : ISoloTask
                 labels.Dispose();
                 stats.Dispose();
                 centroids.Dispose();
+                woodCountRect.Dispose();
 
                 // Logger.LogWarning("识别伐木: 共{Cnt}个连通区域", numLabels);//测试LOG
 
