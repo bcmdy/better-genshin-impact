@@ -1239,7 +1239,7 @@
                             <Style x:Key="GuardianVisibilityStyle" TargetType="FrameworkElement">
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                    <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -1265,7 +1265,6 @@
                                   VerticalContentAlignment="Center"
                                   Margin="10,0,10,0"
                                   ItemsSource="{Binding PathingConfig.AvatarIndexList}"
-                                  SelectedIndex="{Binding PathingConfig.AutoFightConfig.GuardianAvatar, Mode=TwoWay}"
                                   SelectedItem="{Binding PathingConfig.AutoFightConfig.GuardianAvatar, Mode=TwoWay}" />
 
                            <ui:TextBlock Grid.Row="0"
@@ -1307,7 +1306,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1336,7 +1335,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1365,7 +1364,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1394,7 +1393,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1423,7 +1422,7 @@
                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value=" ">
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -1431,25 +1430,26 @@
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
                         
-                        <ui:TextBlock Grid.Row="5"
-                                      Grid.Column="0" 
-                                      Grid.ColumnSpan="3"
-                                      Margin="0,10,10,0"
-                                      FontTypography="Body"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Center"
-                                      Text="Q释放的角色序号顺序(英文逗号分隔，不填的角色不参与战斗)"
-                                      TextWrapping="Wrap" 
-                                      Visibility="{Binding PathingConfig.AutoFightConfig.AutoCombatEq ,Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <ui:TextBox Grid.Row="5"
                                     Grid.Column="3"
                                     Grid.ColumnSpan="2"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Center"
-                                    MaxWidth="80"
-                                    Margin="0,10,38,0" 
+                                    MaxWidth="80"  
+                                    Margin="0,10,38,0"
                                     Text="{Binding PathingConfig.AutoFightConfig.UseEqList}"
-                                    Visibility="{Binding PathingConfig.AutoFightConfig.AutoCombatEq ,Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    IsEnabled="{Binding PathingConfig.AutoFightConfig.AutoCombatEq,Mode=TwoWay}" >
+                            <ui:TextBox.Style>
+                                <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:TextBox.Style>
+                        </ui:TextBox>
                         
                     </Grid>
                 </ui:CardExpander>

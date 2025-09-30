@@ -79,7 +79,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string ActionSchedulerByCd = "";
     public string KazuhaPartyName;
     public string OnlyPickEliteDropsMode = "";
-    public string GuardianAvatar { get; set; } = " ";
+    public string GuardianAvatar { get; set; } = string.Empty;
     public bool GuardianCombatSkip { get; set; } = false;
     public bool SkipModel = false;
     public bool GuardianAvatarHold = false;

@@ -123,8 +123,7 @@ public partial class TaskSettingsPageViewModel : ViewModel
 
     public static List<int> BossNumList = [1, 2, 3];
 
-    public static List<string> AvatarIndexList = ["", "1", "2", "3", "4"];
-
+    public List<string> AvatarIndexList { get; } = new List<string> { "", "1", "2", "3", "4" };
 
     [ObservableProperty]
     private List<string> _autoMusicLevelList = ["传说", "大师", "困难", "普通", "所有"];
