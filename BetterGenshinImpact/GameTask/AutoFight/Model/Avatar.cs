@@ -615,7 +615,7 @@ public class Avatar
     /// <returns>当前技能CD</returns>
     public double AfterUseSkill(ImageRegion? givenRegion = null)
     {
-        LastSkillTime = DateTime.UtcNow + TimeSpan.FromSeconds(Name == "枫原万叶" ? 0.2 : 0);
+        LastSkillTime = DateTime.UtcNow;
         if (ManualSkillCd > 0)
         {
             return GetSkillCdSeconds();

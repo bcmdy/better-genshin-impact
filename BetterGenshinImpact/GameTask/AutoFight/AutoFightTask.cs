@@ -470,6 +470,7 @@ public class AutoFightTask : ISoloTask
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         if (avatarQ.TrySwitch(15))
                                         {
+                                            lastFightName = avatarQ.Name;
                                             countFight++;
                                             if (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
