@@ -45,7 +45,6 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
 
         GuardianAvatar = autoFightConfig.GuardianAvatar;
         GuardianCombatSkip = autoFightConfig.GuardianCombatSkip;
-        SkipModel = autoFightConfig.SkipModel;
         GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
         
         CountryName = autoFightConfig.CountryName;
@@ -81,7 +80,6 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string OnlyPickEliteDropsMode = "";
     public string GuardianAvatar { get; set; } = string.Empty;
     public bool GuardianCombatSkip { get; set; } = false;
-    public bool SkipModel = false;
     public bool GuardianAvatarHold = false;
     public string?[] CountryName = ["自动"];
     public bool BurstEnabled { get; set; } = false;

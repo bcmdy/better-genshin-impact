@@ -149,7 +149,6 @@ public partial class ScriptService : IScriptService
             // {
             //     _logger.LogInformation("配置组 {Name} 包含实时任务操作调用", groupName);
             // }
-            PathingConditionConfig.RetryAssemblyNum = 3;
             _logger.LogInformation("配置组 {Name} 加载完成，共{Cnt}个脚本，开始执行", groupName, list.Count);
         }
 
@@ -177,6 +176,14 @@ public partial class ScriptService : IScriptService
                     //正常情况下，只有一个真正执行的project，存在其他优先执行配置组情况下，会有多个任务。
                     List<ScriptGroupProject> exeProjects = [project];
                     RunnerContext.Instance.IsPreExecution = false;
+                    
+                    //配置初始化
+                    PathingConditionConfig.RetryAssemblyNum = 3;
+                    if (!string.IsNullOrEmpty(project.GroupInfo?.Config.PathingConfig.MainAvatarIndex)) 
+                    {
+                      PathingConditionConfig.InitialMainAvatarIndex =  project.GroupInfo.Config.PathingConfig.MainAvatarIndex;
+                    }
+                    
                     //优先执行配置组逻辑
                     if (!RunnerContext.Instance.IsPreExecution &&
                         (project.GroupInfo?.Config.PathingConfig.Enabled ?? false) &&

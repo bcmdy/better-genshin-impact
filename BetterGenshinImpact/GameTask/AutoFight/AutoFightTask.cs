@@ -446,7 +446,7 @@ public class AutoFightTask : ISoloTask
                         
                         #region 盾奶位技能优先和自动EQ功能
                         
-                        var skipModel = _taskParam.SkipModel? (guardianAvatar != null) : (guardianAvatar != null && lastFightName != command.Name);
+                        var skipModel = guardianAvatar != null && lastFightName != command.Name;
                         
                         if (skipModel) {
                             if (_taskParam.AutoCombatEq) image = CaptureToRectArea();

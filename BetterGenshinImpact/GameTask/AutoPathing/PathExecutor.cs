@@ -81,37 +81,19 @@ public class PathExecutor
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
 
-    private string _initialMainAvatarIndex; // 新增字段用于存储初始值
-    private bool _isInitialMainAvatarIndexSet; // 新增标志位用于判断初始值是否已设置
-
     public PathExecutor(CancellationToken ct)
     {
         _trapEscaper = new(ct);
         _rotateTask = new(ct);
         this.ct = ct;
         pathExecutorSuspend = new PathExecutorSuspend(this);
-        _isInitialMainAvatarIndexSet = false; // 初始化标志位
     }
 
     public PathingPartyConfig PartyConfig
     {
         get => _partyConfig ?? PathingPartyConfig.BuildDefault();
-        set
-        {
-            if (_partyConfig == null && !_isInitialMainAvatarIndexSet)
-            {
-                _partyConfig = value;
-                _initialMainAvatarIndex = _partyConfig.MainAvatarIndex; // 在第一次设置时保存初始值
-                _isInitialMainAvatarIndexSet = true; // 设置标志位为已设置
-            }
-            else
-            {
-                _partyConfig = value;
-            }
-        }
+        set => _partyConfig = value;
     }
-
-    public string InitialMainAvatarIndex => _initialMainAvatarIndex; // 提供一个只读属性来访问初始值
     
     /// <summary>
     /// 判断是否中止地图追踪的条件
@@ -284,7 +266,7 @@ public class PathExecutor
                                 
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
-                                    PartyConfig.MainAvatarIndex = InitialMainAvatarIndex;
+                                    PartyConfig.MainAvatarIndex = PathingConditionConfig.InitialMainAvatarIndex;
                                     // Logger.LogWarning("ddddd {t} GGGGG {t2}",InitialMainAvatarIndex,PartyConfig.MainAvatarIndex);
                                 }
                             }
@@ -766,6 +748,11 @@ public class PathExecutor
                     {
                         var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
                         var nextAvatarIndex = (avatarIndex % 4) + 1;
+                        if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                            _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                        {
+                            nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                        }
             
                         var avatar = _combatScenes?.SelectAvatar(avatarIndex);
             
@@ -789,6 +776,11 @@ public class PathExecutor
                             if (avatar != null && avatar.IsActive(bitmap))
                             {
                                 var nextAvatarIndex = (i % 4) + 1;
+                                if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                                    _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                                {
+                                    nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                                }
                                 await SwitchAvatar(nextAvatarIndex.ToString());
                                 break;
                             }
@@ -1018,8 +1010,14 @@ public class PathExecutor
                         if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
                         {
                             var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
+                            
                             var nextAvatarIndex = (avatarIndex % 4) + 1;
-
+                            if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                                _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                            {
+                                nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                            }
+                            
                             var avatar = _combatScenes?.SelectAvatar(avatarIndex);
 
                             await Delay(300, ct);
@@ -1042,6 +1040,11 @@ public class PathExecutor
                                 if (avatar != null && avatar.IsActive(bitmap))
                                 {
                                     var nextAvatarIndex = (i % 4) + 1;
+                                    if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                                        _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                                    {
+                                        nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                                    }
                                     await SwitchAvatar(nextAvatarIndex.ToString());
                                     break;
                                 }

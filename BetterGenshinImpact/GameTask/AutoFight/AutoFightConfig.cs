@@ -148,9 +148,6 @@ public partial class AutoFightConfig : ObservableObject
     private bool _guardianCombatSkip = false;
     
     [ObservableProperty]
-    private bool _skipModel = false;
-    
-    [ObservableProperty]
     private bool _guardianAvatarHold = false;
     
      [ObservableProperty]

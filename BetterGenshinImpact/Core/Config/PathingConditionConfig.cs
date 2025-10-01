@@ -70,6 +70,14 @@ public partial class PathingConditionConfig : ObservableObject
         get => _retryAssemblyNum;
         set => _retryAssemblyNum = value;
     }
+    
+    // 行走位备份
+    private static string _initialMainAvatarIndex = string.Empty;
+    public static string InitialMainAvatarIndex
+    {
+        get => _initialMainAvatarIndex;
+        set => _initialMainAvatarIndex = value;
+    }
         
     public static PathingConditionConfig Default => new()
     {
