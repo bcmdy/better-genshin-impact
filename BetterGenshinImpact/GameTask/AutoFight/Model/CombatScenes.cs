@@ -23,6 +23,7 @@ using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoFight.Config;
 using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
 using OpenCvSharp; 
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -75,7 +76,7 @@ public class CombatScenes : IDisposable
             InitializeTeamFromConfig(TaskContext.Instance().Config.AutoFightConfig.TeamNames);
             return this;
         }
-
+        
         // 判断当前是否处于联机状态
         List<Rect> avatarSideIconRectList;
         List<Rect> avatarIndexRectList;
@@ -112,8 +113,49 @@ public class CombatScenes : IDisposable
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectList);
         }
         
+        var ms = 1000;
+        var firstComponentY = 0;
+        var numLabels = 0;
+        while (ms > 0)
+        {
+            var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,307);
+            var woodNum = new Scalar(255, 255, 255);
+            var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
+            var labels = new Mat();
+            var stats = new Mat();
+            var centroids = new Mat();
+
+            numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+            // Logger.LogWarning("识别: 共{Cnt}个连通区域", numLabels);
+
+            if (numLabels > ExpectedTeamAvatarNum-1)
+            {
+                imageRegion = CaptureToRectArea();
+                
+                firstComponentY = stats.At<int>(1, 1);
+                Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
+                labels.Dispose();
+                centroids.Dispose();
+                stats.Dispose();
+                break;
+            }
+            
+            labels.Dispose();
+            centroids.Dispose();
+            stats.Dispose();
+            
+            Thread.Sleep(1); 
+            ms -= 1;
+            if (ms == 0)
+            {
+                throw new Exception($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}");
+            }
+        }
+        
         // 6.0 版本 队伍下的 草露 进度条 导致位置偏移
-        IndexRectOffset60Fix = AvatarSideFixOffset(imageRegion, avatarSideIconRectList, avatarIndexRectList);
+        IndexRectOffset60Fix = AvatarSideFixOffset(firstComponentY,numLabels,avatarSideIconRectList, avatarIndexRectList);
 
         // 识别队伍
         var names = new string[avatarSideIconRectList.Count];
@@ -156,35 +198,44 @@ public class CombatScenes : IDisposable
     /// 6.0 版本 队伍下的 草露 进度条 导致位置偏移
     /// 
     /// </summary>
-    /// <param name="imageRegion"></param>
+    /// <param name="firstComponentY"></param>
+    /// <param name="numLabels"></param>
     /// <param name="avatarSideIconRectList"></param>
     /// <param name="avatarIndexRectList"></param>
-    public bool AvatarSideFixOffset(ImageRegion imageRegion, List<Rect> avatarSideIconRectList, List<Rect> avatarIndexRectList)
+    /// <param name="imageRegion"></param>
+    public bool AvatarSideFixOffset(int firstComponentY,int numLabels,List<Rect> avatarSideIconRectList, List<Rect> avatarIndexRectList)
     {
-        // 角色序号 左上角 坐标偏移（+2, -5）后存在3个白色点，则认为存在 草露 进度条
-        // 存在 草露 进度条时候整体上移 14 个像素
-        var whitePointCount = 0;
-
-        for (var i = 0; i < 10; i++){
-            whitePointCount = 0;
-            foreach (var rectIndex in avatarIndexRectList)
+        var up = false;
+        bool IsInRange(int value, int start, int end)
+        {
+            return value >= start && value <= end;
+        }
+        
+        if (numLabels <= 3 && numLabels != 0)
+        {
+            if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) ||
+                IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256))
             {
-                int x = rectIndex.X + 2;
-                int y = rectIndex.Y - 5;
-                var color = imageRegion.SrcMat.At<Vec3b>(y, x);
-                if (color is { Item0: 255, Item1: 255, Item2: 255 })
-                {
-                    whitePointCount++;
-                }
-            }
-
-            if (whitePointCount < 3)
-            {
-                return false;
+                up = true;
             }
         }
+        
+        // Logger.LogInformation("队伍UP211: {numLabels}", numLabels);
+        // Logger.LogInformation("队伍UP22: {Num}", up);
+        
+        var model = numLabels >= 3 ? 
+            //单人世界
+            IsInRange(firstComponentY, 0, 4) || IsInRange(firstComponentY, 94, 100)
+            : 
+            //联机世界
+            up;
+        
+        if (!model)
+        {
+            return false;
+        }
 
-        Logger.LogInformation("检测到右侧队伍上偏移，进行位置偏移,{t}", whitePointCount);
+        Logger.LogInformation("检测到右侧队伍上偏移，进行位置偏移,{t}", firstComponentY);
 
         for (var i = 0; i < avatarSideIconRectList.Count; i++)
         {
