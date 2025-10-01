@@ -484,9 +484,13 @@ public class AutoFightTask : ISoloTask
                                                 while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                                                    Simulation.ReleaseAllKey();
                                                     //防止在纳塔飞天或爬墙
-                                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                    if (retry % 3 == 0)
+                                                    {
+                                                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                        Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                    }
                                                     imageAfterUseSkill = CaptureToRectArea();
                                                     await Task.Delay(30, ct);
                                                     // Logger.LogInformation("优先第111 {retry} ",retry);

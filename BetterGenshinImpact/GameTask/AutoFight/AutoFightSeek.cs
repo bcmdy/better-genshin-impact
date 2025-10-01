@@ -618,8 +618,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                             //防止在纳塔飞天或爬墙
-                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            Simulation.ReleaseAllKey();
+                            if (retry % 3 == 0)
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            }
                             imageAfterUseSkill = CaptureToRectArea();
                             await Task.Delay(20, ct);
                             retry -= 1;
