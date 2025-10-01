@@ -97,6 +97,10 @@ public partial class PathingPartyConfig : ObservableObject
     // 启用自动吃药功能
     [ObservableProperty]
     private bool _autoEatEnabled = false;
+    
+    // 地图追踪红血切人
+    [ObservableProperty]
+    private bool _redBloodSwitchOnly = false;
 
     /// <summary>
     /// 自动吃食物配置

@@ -83,6 +83,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
@@ -98,6 +99,22 @@
                                          Grid.RowSpan="2"
                                          Grid.Column="1"
                                          IsChecked="{Binding PathingConfig.AutoEatEnabled}" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="2"
+                                         Margin="5,0,0,0"
+                                         IsEnabled="{Binding PathingConfig.AutoEatEnabled}"
+                                         IsChecked="{Binding PathingConfig.RedBloodSwitchOnly}" />
+                        <ui:TextBlock  Grid.Row="0"
+                                       Grid.RowSpan="2"
+                                       Grid.Column="2"
+                                       Margin="5,0,0,30"
+                                       FontSize="8"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                       Text="尝试切角色"
+                                       TextWrapping="Wrap"/>
+                        
                     </Grid>
                     <Grid Margin="16">
                         <Grid.RowDefinitions>

@@ -221,7 +221,7 @@ public class PathExecutor
                     {
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
                         TryCloseSkipOtherOperations();
-                        await RecoverWhenLowHp(waypoint); // 低血量恢复
+                        await RecoverWhenLowHp(waypoint,PartyConfig.RedBloodSwitchOnly); // 低血量恢复
 
                         if (waypoint.Type == WaypointType.Teleport.Code)
                         {
@@ -723,7 +723,7 @@ public class PathExecutor
         return false;
     }
 
-    private async Task RecoverWhenLowHp(WaypointForTrack waypoint)
+    private async Task RecoverWhenLowHp(WaypointForTrack waypoint,bool switchOnly = false)
     {
         if (PartyConfig.OnlyInTeleportRecover && waypoint.Type != WaypointType.Teleport.Code)
         {
@@ -733,7 +733,7 @@ public class PathExecutor
         if (Bv.CurrentAvatarIsLowHp(region) && !(await TryPartyHealing() && Bv.CurrentAvatarIsLowHp(region)))
         {
             Logger.LogInformation("当前角色血量过低，去七天神像恢复-1");
-            await TpStatueOfTheSeven();
+            await TpStatueOfTheSeven(switchOnly);
             
             using (var bitmap = CaptureToRectArea())
             {
@@ -807,7 +807,7 @@ public class PathExecutor
         }
     }
     
-    private async Task TpStatueOfTheSeven()
+    private async Task TpStatueOfTheSeven(bool switchOnly = false)
     {
         // Logger.LogInformation("AutoEatCount {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
@@ -817,7 +817,7 @@ public class PathExecutor
                 Simulation.ReleaseAllKey();
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                if(switchOnly)Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
 
                 using (var bitmap = CaptureToRectArea())
                 {
@@ -827,6 +827,7 @@ public class PathExecutor
                         Simulation.ReleaseAllKey();
                         PathingConditionConfig.AutoEatCount++;
                         confirmRectArea.Click();
+                        confirmRectArea.ClickTo(-100, 0);
                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                         await Task.Delay(300, ct);
                     }
