@@ -135,7 +135,7 @@ public class CombatScenes : IDisposable
                 imageRegion = CaptureToRectArea();
                 
                 firstComponentY = stats.At<int>(1, 1);
-                Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
+                // Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
                 labels.Dispose();
                 centroids.Dispose();
                 stats.Dispose();
