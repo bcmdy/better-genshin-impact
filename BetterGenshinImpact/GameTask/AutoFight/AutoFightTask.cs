@@ -486,7 +486,7 @@ public class AutoFightTask : ISoloTask
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                                     Simulation.ReleaseAllKey();
                                                     //防止在纳塔飞天或爬墙
-                                                    if (retry % 3 == 0)
+                                                    if (retry % 4 == 0)
                                                     {
                                                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                         Simulation.SendInput.SimulateAction(GIActions.Drop);
@@ -496,6 +496,7 @@ public class AutoFightTask : ISoloTask
                                                     // Logger.LogInformation("优先第111 {retry} ",retry);
                                                     retry -= 1;
                                                 }
+                                                imageAfterUseSkill.Dispose();
                                                 
                                                 if (retry > 0)
                                                 {

@@ -611,7 +611,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
                         guardianAvatar.UseSkill(guardianAvatarHold);
                         var imageAfterUseSkill = CaptureToRectArea();
-                        Simulation.ReleaseAllKey();
                         
                         var retry = 30;
                         while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
@@ -619,15 +618,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                             //防止在纳塔飞天或爬墙
                             Simulation.ReleaseAllKey();
-                            if (retry % 3 == 0)
+                            if (retry % 4 == 0)
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                             }
                             imageAfterUseSkill = CaptureToRectArea();
                             await Task.Delay(20, ct);
                             retry -= 1;
                         }
+                        imageAfterUseSkill.Dispose();
                         
                         if (retry > 0)
                         {

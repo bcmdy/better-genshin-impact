@@ -817,7 +817,7 @@ public class PathExecutor
                 Simulation.ReleaseAllKey();
                 PathingConditionConfig.LastEatTime = DateTime.Now;
                 Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
-                if(switchOnly)Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                if(!switchOnly)Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
 
                 using (var bitmap = CaptureToRectArea())
                 {
@@ -1006,6 +1006,14 @@ public class PathExecutor
                           Math.Abs(pixelValue[1] - 215) <= 10 &&
                           Math.Abs(pixelValue[2] - 150) <= 10))
                     {
+                        if (distance < 6)
+                        {
+                            // 抬起w键
+                            Logger.LogInformation("到达战斗点附近");
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                            return;
+                        }
+                        
                         Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
 
                         if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
@@ -1412,7 +1420,8 @@ public class PathExecutor
             || waypoint.Action == ActionEnum.Fishing.Code
             || waypoint.Action == ActionEnum.ExitAndRelogin.Code
             || waypoint.Action == ActionEnum.SetTime.Code
-            || waypoint.Action == ActionEnum.UseGadget.Code)
+            || waypoint.Action == ActionEnum.UseGadget.Code
+            || waypoint.Action == ActionEnum.PickUpCollect.Code)
         {
             var handler = ActionFactory.GetAfterHandler(waypoint.Action);
             //,PartyConfig

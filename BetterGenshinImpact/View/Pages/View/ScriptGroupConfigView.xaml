@@ -93,7 +93,7 @@
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="非实时，触发地图追踪红血和复活检测后尝试吃药恢复"
+                                      Text="非实时，触发地图追踪红血和复活检测后尝试吃药。(红血仅切角色:切到非红血角色不吃药)"
                                       TextWrapping="Wrap" />
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
@@ -102,7 +102,8 @@
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="2"
-                                         Margin="5,0,0,0"
+                                         Margin="5,0,-0,0"
+                                         HorizontalAlignment="Center"
                                          IsEnabled="{Binding PathingConfig.AutoEatEnabled}"
                                          IsChecked="{Binding PathingConfig.RedBloodSwitchOnly}" />
                         <ui:TextBlock  Grid.Row="0"
@@ -112,7 +113,7 @@
                                        FontSize="8"
                                        HorizontalAlignment="Center"
                                        Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                       Text="尝试切角色"
+                                       Text="红血仅切角色"
                                        TextWrapping="Wrap"/>
                         
                     </Grid>
