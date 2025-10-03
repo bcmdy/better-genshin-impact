@@ -65,6 +65,19 @@ public class AutoFightTask : ISoloTask
     
     public static volatile bool IsTpForRecover = false;
     
+    private readonly string[] _pickUoActions =
+    [
+        "琴 attack(0.08),click(middle),keydown(E),click(middle),wait(0.4),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
+        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),moveby(1000,3500),wait(1.8),keyup(E),wait(0.3),click(middle),wait(0.3)",
+    ];
+    
     private class TaskFightFinishDetectConfig
     {
         public int DelayTime = 1500;
@@ -728,7 +741,7 @@ public class AutoFightTask : ISoloTask
         {
             // Logger.LogInformation("开始 _isExperiencePickup：{_isExperiencePickup}",_isExperiencePickup);
             // 队伍中存在万叶的时候使用一次长E
-            var kazuha = combatScenes.SelectAvatar("枫原万叶");
+            var kazuha = combatScenes.SelectAvatar("枫原万叶") ?? combatScenes.SelectAvatar("琴");
             
             var oldPartyName = RunnerContext.Instance.PartyName;
             var switchPartyFlag = false;
@@ -745,7 +758,7 @@ public class AutoFightTask : ISoloTask
                         RunnerContext.Instance.PartyName = _taskParam.KazuhaPartyName;
                         RunnerContext.Instance.ClearCombatScenes();
                         var cs = await RunnerContext.Instance.GetCombatScenes(ct);
-                        kazuha = cs.SelectAvatar("枫原万叶");
+                        kazuha = cs.SelectAvatar("枫原万叶") ?? cs.SelectAvatar("琴");
                     }
                 }
                 catch (Exception e)
@@ -757,25 +770,49 @@ public class AutoFightTask : ISoloTask
             
             if (kazuha != null)
             {
-                var time = TimeSpan.FromSeconds(kazuha.GetSkillCdSeconds());
-                //当万叶cd大于3时，此时不再触发万叶拾取，
-                if (!(lastFightName == "枫原万叶" && time.TotalSeconds > 3))
+                if (kazuha.Name == "枫原万叶")
                 {
-                    TaskControl.Logger.LogInformation("使用枫原万叶长E拾取掉落物");
+                    var time = TimeSpan.FromSeconds(kazuha.GetSkillCdSeconds());
+                    if (!(lastFightName == kazuha.Name && time.TotalSeconds > 3))
+                    {
+                        TaskControl.Logger.LogInformation("使用枫原万叶长E拾取掉落物");
+                        await Delay(200, ct);
+                        if (kazuha.TrySwitch())
+                        {
+                            await kazuha.WaitSkillCd(ct);
+                            await Delay(100, ct);
+                            kazuha.UseSkill(true);
+                            await Delay(100, ct);
+                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                            await Delay(1500, ct);
+                        }
+                    }
+                    else
+                    {
+                        TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
+                    }
+                }
+                else if (kazuha.Name == "琴")
+                {
+                    TaskControl.Logger.LogInformation("使用琴长E拾取掉落物");
+                    
+                    var actionsToUse = _pickUoActions.Where(action => 
+                        action.StartsWith("琴" + " ", StringComparison.OrdinalIgnoreCase)).ToArray();
+                    
                     await Delay(200, ct);
                     if (kazuha.TrySwitch())
                     {
                         await kazuha.WaitSkillCd(ct);
-                        await Delay(100, ct);
-                        kazuha.UseSkill(true);
-                        await Delay(100, ct);
-                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                        await Delay(1500, ct);
+                        foreach (var miningActionStr in actionsToUse)
+                        {
+                            var pickUpAction = CombatScriptParser.ParseContext(miningActionStr);
+                            
+                            foreach (var command in pickUpAction.CombatCommands)
+                            {
+                                command.Execute(combatScenes);
+                            }
+                        }
                     }
-                }
-                else
-                {
-                    TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
                 }
             }
             //切换过队伍的，需要再切回来
