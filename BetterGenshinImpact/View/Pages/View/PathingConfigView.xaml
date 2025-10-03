@@ -255,9 +255,22 @@
                         </Grid>
                     </ui:CardControl.Header>
 
-                    <ui:ToggleSwitch
-                        Margin="0,0,36,0"
-                        IsChecked="{Binding Config.PathingConditionConfig.AutoEatEnabled, Mode=TwoWay}" />
+                    <StackPanel>
+                        <ui:ToggleSwitch
+                            Margin="0,0,36,5"
+                            HorizontalAlignment="Center"
+                            IsChecked="{Binding Config.PathingConditionConfig.AutoEatEnabled, Mode=TwoWay}" />
+                        <ui:ToggleSwitch
+                            Margin="0,0,36,0"
+                            HorizontalAlignment="Center"
+                            IsEnabled="{Binding Config.PathingConditionConfig.AutoEatEnabled, Mode=OneWay}"
+                            IsChecked="{Binding Config.PathingConditionConfig.RedBloodSwitchOnly, Mode=TwoWay}" />
+                        <ui:TextBlock Margin="0,2,36,0"
+                                      HorizontalAlignment="Center"
+                                      FontSize="9"
+                                      Text="红血仅切角色" />
+                    </StackPanel>
+                    
                 </ui:CardControl>
                 
                 

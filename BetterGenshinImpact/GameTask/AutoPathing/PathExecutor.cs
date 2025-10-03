@@ -737,10 +737,28 @@ public class PathExecutor
             
             using (var bitmap = CaptureToRectArea())
             {
-                var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);
-                if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
-                      Math.Abs(pixelValue[1] - 215) <= 10 &&
-                      Math.Abs(pixelValue[2] - 150) <= 10))
+                var pixel = 0;
+
+                for (int i = 0; i < 2; i++)
+                {
+                    using (var bitmap2 = CaptureToRectArea())
+                    {
+                        var pixelValue = bitmap2.SrcMat.At<Vec3b>(1010,814);
+                        if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
+                              Math.Abs(pixelValue[1] - 215) <= 10 &&
+                              Math.Abs(pixelValue[2] - 150) <= 10))
+                        {
+                            pixel += 1;
+                        }
+                        else
+                        {
+                            pixel = 0;
+                        }
+                    }
+                    await Task.Delay(100, ct);
+                }
+                
+                if (pixel >= 2)
                 { 
                     Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-1");
                         
@@ -829,7 +847,7 @@ public class PathExecutor
                         confirmRectArea.Click();
                         confirmRectArea.ClickTo(-100, 0);
                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                        await Task.Delay(300, ct);
+                        await Task.Delay(500, ct);
                     }
                 }
             }
@@ -1001,10 +1019,28 @@ public class PathExecutor
             {
                 using (var bitmap = CaptureToRectArea())
                 {
-                    var pixelValue = bitmap.SrcMat.At<Vec3b>(1010, 814);
-                    if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
-                          Math.Abs(pixelValue[1] - 215) <= 10 &&
-                          Math.Abs(pixelValue[2] - 150) <= 10))
+                    var pixel = 0;
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        using (var bitmap2 = CaptureToRectArea())
+                        {
+                            var pixelValue = bitmap2.SrcMat.At<Vec3b>(1010,814);
+                            if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
+                                  Math.Abs(pixelValue[1] - 215) <= 10 &&
+                                  Math.Abs(pixelValue[2] - 150) <= 10))
+                            {
+                                pixel += 1;
+                            }
+                            else
+                            {
+                                pixel = 0;
+                            }
+                        }
+                        await Task.Delay(50, ct);
+                    }
+                
+                    if (pixel >= 2)
                     {
                         if (distance < 6)
                         {

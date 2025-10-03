@@ -139,6 +139,7 @@ public partial class PathingPartyConfig : ObservableObject
             OnlyInTeleportRecover = pathingConditionConfig.OnlyInTeleportRecover,
             UseGadgetIntervalMs = pathingConditionConfig.UseGadgetIntervalMs,
             AutoEatEnabled = pathingConditionConfig.AutoEatEnabled,
+            RedBloodSwitchOnly = pathingConditionConfig.RedBloodSwitchOnly,
         };
     }
 }

@@ -38,6 +38,10 @@ public partial class PathingConditionConfig : ObservableObject
     [ObservableProperty]
     private bool _autoEatEnabled = false;
     
+    // 启用红血不吃药仅切人
+    [ObservableProperty]
+    private bool _redBloodSwitchOnly = false;
+    
     // 锄地国家和类型
     [ObservableProperty] private static string?[] _countryName = ["自动"];
     
