@@ -47,6 +47,7 @@ public class CombatScenes : IDisposable
 
     public int ExpectedTeamAvatarNum { get; private set; } = 4;
     
+    public List<Rect>? AvatarIndexRectListBuckUp { get;set; } = null;
         
     /// <summary>
     /// 6.0 UI偏移标识
@@ -106,11 +107,13 @@ public class CombatScenes : IDisposable
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectListMap[$"{p}_{num}"]);
 
             ExpectedTeamAvatarNum = avatarSideIconRectList.Count;
+            AvatarIndexRectListBuckUp = avatarIndexRectList;
         }
         else
         {
             avatarSideIconRectList = new List<Rect>(AutoFightAssets.Instance.AvatarSideIconRectList);
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectList);
+            AvatarIndexRectListBuckUp = null;
         }
         
         var ms = 1000;
@@ -211,7 +214,7 @@ public class CombatScenes : IDisposable
             return value >= start && value <= end;
         }
         
-        if (numLabels <= 3 && numLabels != 0)
+        if (numLabels <= 3)
         {
             if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) ||
                 IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256))

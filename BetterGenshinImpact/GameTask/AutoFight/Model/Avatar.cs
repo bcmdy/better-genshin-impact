@@ -415,28 +415,37 @@ public class Avatar
             
             return;
         }
-        
-        if (CombatScenes.IndexRectOffset60Fix)
+
+        if (CombatScenes.AvatarIndexRectListBuckUp is null)
         {
-            foreach (var avatar in CombatScenes.GetAvatars())
+            if (CombatScenes.IndexRectOffset60Fix)
             {
-                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                avatar.IndexRect = rect1;
+                foreach (var avatar in CombatScenes.GetAvatars())
+                {
+                    var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                    var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
+                    avatar.IndexRect = rect1;
+                }
+                CombatScenes.IndexRectOffset60Fix = false;
             }
-            CombatScenes.IndexRectOffset60Fix = false;
+            else
+            {
+                foreach (var avatar in CombatScenes.GetAvatars())
+                {
+                    var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                    var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
+                    rect1.Y -= 14;
+                    avatar.IndexRect = rect1;
+                }
+            
+                CombatScenes.IndexRectOffset60Fix = true;
+            } 
         }
         else
         {
-            foreach (var avatar in CombatScenes.GetAvatars())
-            {
-                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                rect1.Y -= 14;
-                avatar.IndexRect = rect1;
-            }
-
-            CombatScenes.IndexRectOffset60Fix = true;
+            var ra = CaptureToRectArea();
+            CombatScenes = new CombatScenes().InitializeTeam(ra);
+            ra.Dispose();
         }
     }
 
