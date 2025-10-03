@@ -218,6 +218,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             mask2.Dispose();
             labels2.Dispose();
+            stats2.Dispose();
+            centroids2.Dispose();
+            image2.Dispose();
             return Task.FromResult<bool?>(null);
         }
     }
@@ -253,22 +256,23 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                 int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-                if (retryCount == 0) logger.LogInformation("敌人初检数量： {numLabels}", numLabels - 1);
+                // if (retryCount == 0) logger.LogInformation("敌人初检数量： {numLabels}", numLabels - 1);
 
                 if (numLabels > 1)
                 {
-                    logger.LogInformation("检测画面内疑似有敌人，继续战斗...");
+                    // logger.LogInformation("检测画面内疑似有敌人，继续战斗...");
 
                     Mat firstRow = stats.Row(1);
                     int[] statsArray;
                     bool success = firstRow.GetArray(out statsArray); 
                     int height = statsArray[3];
-                    logger.LogInformation("敌人血量高度：{height}", height);
+                    // logger.LogInformation("敌人血量高度：{height}", height);
                     
                     mask.Dispose();
                     labels.Dispose();
                     stats.Dispose();
                     centroids.Dispose();
+                    image.Dispose();
                     
                     if (success)
                     {
@@ -293,14 +297,14 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         
                         if (height > 2 && height < 7)
                         {
-                            logger.LogInformation("画面内有找到敌人，尝试移动...");
+                            // logger.LogInformation("画面内有找到敌人，尝试移动...");
                             Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
                             return false;
                         }
 
                         if (height > 6 && height < 25)
                         {
-                            logger.LogInformation("画面内有找到敌人，继续战斗...");
+                            // logger.LogInformation("画面内有找到敌人，继续战斗...");
                             return false;
                         }
 
@@ -321,6 +325,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     var b33 = ra3.SrcMat.At<Vec3b>(50, 790); // 进度条颜色
                     var whiteTile3 = ra3.SrcMat.At<Vec3b>(50, 768); // 白块
                     Simulation.SendInput.SimulateAction(GIActions.Drop);
+                    ra3.Dispose();
                 
                     if (IsWhite(whiteTile3.Item2, whiteTile3.Item1, whiteTile3.Item0) &&
                         IsYellow(b33.Item2, b33.Item1, b33.Item0))
@@ -372,12 +377,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int[] statsArray2;
                     bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
                     int height2 = statsArray2[3];
-                    logger.LogInformation("敌人血量高度：{height2}", height2);
+                    // logger.LogInformation("敌人血量 ：{height2}", height2);
                     
                     mask.Dispose();
                     labels.Dispose();
                     stats.Dispose();
                     centroids.Dispose();
+                    image.Dispose();
 
                     if (success2)
                     {
@@ -390,14 +396,14 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         
                         if (height2 > 2 && height2 < 7)
                         {
-                            logger.LogInformation("画面内有找到敌人，尝试移动...");
+                            // logger.LogInformation("画面内有找到敌人，尝试移动...");
                             Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
                             return false;
                         }
 
                         if (height2 > 6 && height2 < 25)
                         {
-                            logger.LogInformation("画面内有找到敌人，继续战斗...");
+                            // logger.LogInformation("画面内有找到敌人，继续战斗...");
                             return false;
                         }
 
@@ -431,155 +437,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                    (g >= 240 && g <= 255) &&
                    (b >= 240 && b <= 255);
         }
-    
-        //备用方法，用于后续指定角色适配旋转
-        public static  bool AvatarSeekAsync(ILogger logger,Avatar avatarName,CancellationToken ct,bool isAuto = false)
-        {
-            if (isAuto)
-            {
-                return false;
-            }
-            
-            isAuto = true;
-            
-            Scalar bloodLower = new Scalar(255, 90, 90);
-            int retryCount = 0;
-            var imageSize = CaptureToRectArea();
-            var offsets = Array.Empty<(int x, int y)>();
-
-            
-            if (avatarName.Name == "恰斯卡")
-            {
-                offsets = new (int x, int y)[] {
-                    (imageSize.Width / 6, imageSize.Height / 5), 
-                    (imageSize.Width / 6, 0),                 
-                    (imageSize.Width / 6, imageSize.Height / 6) 
-                };
-            }else if (avatarName.Name == "阿蕾奇诺")
-            {
-                offsets = new (int x, int y)[] {
-                    (imageSize.Width / 6, -imageSize.Height / 7), 
-                    (imageSize.Width / 6, 0),                 
-                    (imageSize.Width / 6, imageSize.Height / 7) 
-                };
-            }
-            else
-            {
-                offsets = new (int x, int y)[] {
-                    (imageSize.Width / 6, -imageSize.Height / 5), 
-                    (imageSize.Width / 6, 0),                 
-                    (imageSize.Width / 6, imageSize.Height / 6) 
-                };
-            }
-
-            while (retryCount < 27)
-            {
-                var image = CaptureToRectArea();
-                Mat mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
-                Mat labels = new Mat();
-                Mat stats = new Mat();
-                Mat centroids = new Mat();
-
-                int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                    connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-                if (retryCount == 0) logger.LogInformation("敌人初检数量： {numLabels}", numLabels - 1);
-
-                if (numLabels > 1)
-                {
-                    logger.LogInformation("检测画面内疑似有敌人，继续战斗...");
-
-                    Mat firstRow = stats.Row(1);
-                    int[] statsArray;
-                    bool success = firstRow.GetArray(out statsArray); 
-                    int height = statsArray[3];
-                    logger.LogInformation("敌人血量高度：{height}", height);
-                    
-                    mask.Dispose();
-                    labels.Dispose();
-                    stats.Dispose();
-                    centroids.Dispose();
-                    
-                    if (success && height > 2)
-                    {
-                        if (height < 7)
-                        {
-                            logger.LogInformation("敌人血量高度小于7且大于2，向前移动");
-                            Task.Run(() =>
-                            {
-                                MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct);
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(1000, ct).Wait();
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                            }, ct);
-                        }
-                        return false;
-                    }
-                    if (height < 3 || height > 25) return false;
-                }
-
-                if (RotationCount == 3 && retryCount == 0)
-                {
-                    Simulation.SendInput.Mouse.MiddleButtonClick();
-                    Task.Delay(500, ct).Wait();
-                }
-                
-                if (retryCount <= 2)
-                {
-                  
-
-                    var offsetIndex = RotationCount < 3 ? 0 : (RotationCount == 3) ? 1 : 2;
-                    Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
-                }
-                else
-                {
-                    Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
-                }
-
-                Task.Delay(50, ct).Wait();
-
-                image = CaptureToRectArea();
-                mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
-                labels = new Mat();
-                stats = new Mat();
-                centroids = new Mat();
-
-                 numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                    connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                if (numLabels > 1)
-                {
-                    // logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
-                    Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
-                    int[] statsArray2;
-                    bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
-                    int height2 = statsArray2[3];
-                    logger.LogInformation("敌人血量高度：{height2}", height2);
-                    
-                    mask.Dispose();
-                    labels.Dispose();
-                    stats.Dispose();
-                    centroids.Dispose();
-                    
-                    if (success2 && height2 > 2)
-                    {
-                        if (height2 < 7)
-                        {
-                            logger.LogInformation("画面内有找到敌人，继续战斗...");
-                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);  
-                        }
-                        return false; 
-                    }
-
-                    if (height2 < 3 || height2 > 25) return false;
-
-                }
-                
-                retryCount++;
-            }
-            logger.LogInformation("寻找敌人：{Text}", "无");
-            return false;
-        }
-        
     }
 
     public class AutoFightSkill
