@@ -202,7 +202,7 @@ public class PathExecutor
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
-            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
+            // if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             _faceToMark = false;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
@@ -219,6 +219,7 @@ public class PathExecutor
 
                     foreach (var waypoint in waypoints) // 一条路径
                     {
+                        if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
                         TryCloseSkipOtherOperations();
                         await RecoverWhenLowHp(waypoint,PartyConfig.RedBloodSwitchOnly); // 低血量恢复
@@ -239,7 +240,7 @@ public class PathExecutor
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
-                                await MoveTo(waypoint);
+                                await MoveTo(waypoint,true,task);
                             }
 
                             await BeforeMoveCloseToTarget(waypoint);
@@ -561,10 +562,11 @@ public class PathExecutor
     /// 校验
     /// </summary>
     /// <param name="task"></param>
+    ///  <param name="force">是否强制校验，默认false</param>
     /// <returns></returns>
-    private async Task<bool> ValidateGameWithTask(PathingTask task)
+    private async Task<bool> ValidateGameWithTask(PathingTask task , bool? force = false)
     {
-        _combatScenes = await RunnerContext.Instance.GetCombatScenes(ct);
+        _combatScenes = await RunnerContext.Instance.GetCombatScenes(ct, force);
         if (_combatScenes == null)
         {
             return false;
@@ -834,9 +836,11 @@ public class PathExecutor
             {
                 Simulation.ReleaseAllKey();
                 PathingConditionConfig.LastEatTime = DateTime.Now;
-                Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
-                if(!switchOnly)Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-
+                if (!switchOnly)
+                {
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                } 
                 using (var bitmap = CaptureToRectArea())
                 {
                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
@@ -964,10 +968,10 @@ public class PathExecutor
 
     public DateTime moveToStartTime;
 
-    public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true)
+    public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null)
     {
         // 切人
-        await SwitchAvatar(PartyConfig.MainAvatarIndex);
+        await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
 
         var screen = CaptureToRectArea();
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
@@ -1471,7 +1475,7 @@ public class PathExecutor
         }
     }
 
-    private async Task<Avatar?> SwitchAvatar(string index, bool needSkill = false)
+    private async Task<Avatar?> SwitchAvatar(string index, bool needSkill = false , PathingTask? pathingTask = null, bool? forceRefresh = false)
     {
         if (string.IsNullOrEmpty(index))
         {
@@ -1508,6 +1512,10 @@ public class PathExecutor
         }
         
         Logger.LogInformation("尝试切换角色{Name}失败！", avatar.Name);
+        if (pathingTask is not null && forceRefresh == true)
+        {
+            await ValidateGameWithTask(pathingTask,forceRefresh);
+        }
         return null;
     }
     

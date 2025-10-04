@@ -22,6 +22,7 @@ using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
 using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -416,37 +417,28 @@ public class Avatar
             return;
         }
 
-        if (CombatScenes.AvatarIndexRectListBuckUp is null)
+        if (CombatScenes.IndexRectOffset60Fix)
         {
-            if (CombatScenes.IndexRectOffset60Fix)
+            foreach (var avatar in CombatScenes.GetAvatars())
             {
-                foreach (var avatar in CombatScenes.GetAvatars())
-                {
-                    var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                    var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                    avatar.IndexRect = rect1;
-                }
-                CombatScenes.IndexRectOffset60Fix = false;
+                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
+                avatar.IndexRect = rect1;
             }
-            else
-            {
-                foreach (var avatar in CombatScenes.GetAvatars())
-                {
-                    var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                    var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                    rect1.Y -= 14;
-                    avatar.IndexRect = rect1;
-                }
-            
-                CombatScenes.IndexRectOffset60Fix = true;
-            } 
+            CombatScenes.IndexRectOffset60Fix = false;
         }
         else
         {
-            var ra = CaptureToRectArea();
-            CombatScenes = new CombatScenes().InitializeTeam(ra);
-            ra.Dispose();
-        }
+            foreach (var avatar in CombatScenes.GetAvatars())
+            {
+                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
+                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
+                rect1.Y -= 14;
+                avatar.IndexRect = rect1;
+            }
+        
+            CombatScenes.IndexRectOffset60Fix = true;
+        } 
     }
 
     /// <summary>

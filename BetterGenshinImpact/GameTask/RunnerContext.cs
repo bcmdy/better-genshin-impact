@@ -61,17 +61,33 @@ public class RunnerContext : Singleton<RunnerContext>
     /// </summary>
     private CombatScenes? _combatScenes;
 
-    public async Task<CombatScenes?> GetCombatScenes(CancellationToken ct)
+    public async Task<CombatScenes?> GetCombatScenes(CancellationToken ct,bool? forceRefresh = false)
     {
-        if (_combatScenes == null)
+        if (_combatScenes == null || forceRefresh == true)
         {
             // 返回主界面再识别
             var returnMainUiTask = new ReturnMainUiTask();
             await returnMainUiTask.Start(ct);
 
             await Delay(200, ct);
+            
+            if (forceRefresh == true)
+            {
+                var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+                if (!combatScenes.CheckTeamInitialized() && _combatScenes != null)
+                {
+                    Logger.LogWarning("队伍角色识别失败，使用原有队伍信息");
+                }
+                else
+                {
+                    _combatScenes = combatScenes;
+                }
+            }
+            else
+            {
+                _combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+            }
 
-            _combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
             if (!_combatScenes.CheckTeamInitialized())
             {
                 Logger.LogError("队伍角色识别失败");

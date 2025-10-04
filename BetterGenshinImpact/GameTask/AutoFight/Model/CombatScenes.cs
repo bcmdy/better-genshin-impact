@@ -46,9 +46,7 @@ public class CombatScenes : IDisposable
         App.ServiceProvider.GetRequiredService<BgiOnnxFactory>().CreateYoloPredictor(BgiOnnxModel.BgiAvatarSide);
 
     public int ExpectedTeamAvatarNum { get; private set; } = 4;
-    
-    public List<Rect>? AvatarIndexRectListBuckUp { get;set; } = null;
-        
+
     /// <summary>
     /// 6.0 UI偏移标识
     /// </summary>
@@ -107,13 +105,11 @@ public class CombatScenes : IDisposable
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectListMap[$"{p}_{num}"]);
 
             ExpectedTeamAvatarNum = avatarSideIconRectList.Count;
-            AvatarIndexRectListBuckUp = avatarIndexRectList;
         }
         else
         {
             avatarSideIconRectList = new List<Rect>(AutoFightAssets.Instance.AvatarSideIconRectList);
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectList);
-            AvatarIndexRectListBuckUp = null;
         }
         
         var ms = 1000;
