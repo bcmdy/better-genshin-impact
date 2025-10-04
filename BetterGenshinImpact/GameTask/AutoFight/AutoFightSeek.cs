@@ -266,7 +266,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int[] statsArray;
                     bool success = firstRow.GetArray(out statsArray); 
                     int height = statsArray[3];
-                    // logger.LogInformation("敌人血量高度：{height}", height);
+                    int x = statsArray[0];
+                    // Logger.LogInformation("敌人位置: ({x}，血量高度: {height}", x, height);
                     
                     mask.Dispose();
                     labels.Dispose();
@@ -290,7 +291,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                              Task.Run(() =>
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(100, ct).Wait();;
+                                Task.Delay(100, ct).Wait();
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                             }, ct);
                         }
@@ -304,6 +305,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                         if (height > 6 && height < 25)
                         {
+                            if ((x == 758 || x == 722) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
+                            {
+                                Task.Run(() =>
+                                {
+                                    Simulation.SendInput.Mouse.MoveMouseBy(600, 0);
+                                    Task.Delay(100, ct).Wait();
+                                    Simulation.SendInput.Mouse.MiddleButtonClick();
+                                }, ct);
+                            }
                             // logger.LogInformation("画面内有找到敌人，继续战斗...");
                             return false;
                         }
@@ -469,18 +479,20 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         guardianAvatar.UseSkill(guardianAvatarHold);
                         var imageAfterUseSkill = CaptureToRectArea();
                         
-                        var retry = 30;
+                        var retry = 50;
                         while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                             //防止在纳塔飞天或爬墙
                             Simulation.ReleaseAllKey();
-                            if (retry % 4 == 0)
+                            if (retry % 3 == 0)
                             {
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                             }
                             imageAfterUseSkill = CaptureToRectArea();
-                            await Task.Delay(20, ct);
+                            await Task.Delay(30, ct);
+                            // Logger.LogInformation("优先第333 {t}", retry);
                             retry -= 1;
                         }
                         imageAfterUseSkill.Dispose();
