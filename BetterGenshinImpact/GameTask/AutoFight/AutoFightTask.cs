@@ -32,6 +32,7 @@ using BetterGenshinImpact.GameTask.Common.BgiVision;
 using Vanara.PInvoke;
 using System.Drawing;
 using BetterGenshinImpact.GameTask.AutoPick; // 添加对System.Drawing的引用
+using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -64,19 +65,6 @@ public class AutoFightTask : ISoloTask
     private static volatile bool _isExperiencePickup = false;
     
     public static volatile bool IsTpForRecover = false;
-    
-    private readonly string[] _pickUoActions =
-    [
-        "琴 attack(0.08),click(middle),keydown(E),click(middle),wait(0.4),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),wait(0.1)," +
-        "moveby(500,0),wait(0.1),moveby(500,0),wait(0.1),moveby(500,0),moveby(1000,3500),wait(1.8),keyup(E),wait(0.3),click(middle),wait(0.3)",
-    ];
     
     private class TaskFightFinishDetectConfig
     {
@@ -481,7 +469,7 @@ public class AutoFightTask : ISoloTask
                                 {
                                     foreach (var num in useEq)
                                     {
-                                        Logger.LogInformation("自动策略：使用序号 {name} 角色技能", num);
+                                        Logger.LogInformation("自动EQ战斗：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         if (avatarQ.TrySwitch(15))
                                         {
@@ -506,7 +494,7 @@ public class AutoFightTask : ISoloTask
                                                     }
                                                     imageAfterUseSkill = CaptureToRectArea();
                                                     await Task.Delay(30, ct);
-                                                    // Logger.LogInformation("优先第111 {retry} ",retry);
+                                                    // Logger.LogInformation("优先第222 {retry} ",retry);
                                                     retry -= 1;
                                                 }
                                                 imageAfterUseSkill.Dispose();
@@ -530,17 +518,19 @@ public class AutoFightTask : ISoloTask
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                                             if (!fightEndFlag)
                                             { 
-                                                var ms = 20;
+                                                var ms = 30;
                                                 var imageAfterBurst = CaptureToRectArea();
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                while ((!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst) && Bv.IsInMainUi(imageAfterBurst)) && ms > 0)
+                                                while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false)) && Bv.IsInMainUi(imageAfterBurst) && ms > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                     imageAfterBurst = CaptureToRectArea();
                                                     await Delay(50, ct);
+                                                    // Logger.LogInformation("优先第111 {retry} ",ms);
                                                     ms -= 1;
                                                 }
                                                 imageAfterBurst.Dispose();
+                                                // Logger.LogInformation("优先第444 {retry} ",ms);
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                             }
                                             else
@@ -549,13 +539,11 @@ public class AutoFightTask : ISoloTask
                                             }
                                             if (guardianAvatar.ManualSkillCd == 0)
                                             {
-                                                if(i>0)i--;
                                                 break;
                                             }
                                         }
                                     }
                                 }
-                                Simulation.ReleaseAllKey();
                                 useEq.Clear(); 
                             }
                             
@@ -741,11 +729,11 @@ public class AutoFightTask : ISoloTask
         {
             // Logger.LogInformation("开始 _isExperiencePickup：{_isExperiencePickup}",_isExperiencePickup);
             // 队伍中存在万叶的时候使用一次长E
-            var kazuha = combatScenes.SelectAvatar("枫原万叶") ?? combatScenes.SelectAvatar("琴");
+            var picker = combatScenes.SelectAvatar("枫原万叶") ?? combatScenes.SelectAvatar("琴");
             
             var oldPartyName = RunnerContext.Instance.PartyName;
             var switchPartyFlag = false;
-            if (kazuha == null && !timeOutFlag &&!string.IsNullOrEmpty(_taskParam.KazuhaPartyName) && oldPartyName != _taskParam.KazuhaPartyName)
+            if (picker == null && !timeOutFlag &&!string.IsNullOrEmpty(_taskParam.KazuhaPartyName) && oldPartyName != _taskParam.KazuhaPartyName)
             {
                 try
                 {
@@ -758,7 +746,7 @@ public class AutoFightTask : ISoloTask
                         RunnerContext.Instance.PartyName = _taskParam.KazuhaPartyName;
                         RunnerContext.Instance.ClearCombatScenes();
                         var cs = await RunnerContext.Instance.GetCombatScenes(ct);
-                        kazuha = cs.SelectAvatar("枫原万叶") ?? cs.SelectAvatar("琴");
+                        picker = cs.SelectAvatar("枫原万叶") ?? cs.SelectAvatar("琴");
                     }
                 }
                 catch (Exception e)
@@ -768,20 +756,20 @@ public class AutoFightTask : ISoloTask
 
             }
             
-            if (kazuha != null)
+            if (picker != null)
             {
-                if (kazuha.Name == "枫原万叶")
+                if (picker.Name == "枫原万叶")
                 {
-                    var time = TimeSpan.FromSeconds(kazuha.GetSkillCdSeconds());
-                    if (!(lastFightName == kazuha.Name && time.TotalSeconds > 3))
+                    var time = TimeSpan.FromSeconds(picker.GetSkillCdSeconds());
+                    if (!(lastFightName == picker.Name && time.TotalSeconds > 3))
                     {
-                        TaskControl.Logger.LogInformation("使用枫原万叶长E拾取掉落物");
+                        TaskControl.Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
                         await Delay(200, ct);
-                        if (kazuha.TrySwitch())
+                        if (picker.TrySwitch())
                         {
-                            await kazuha.WaitSkillCd(ct);
+                            await picker.WaitSkillCd(ct);
                             await Delay(100, ct);
-                            kazuha.UseSkill(true);
+                            picker.UseSkill(true);
                             await Delay(100, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                             await Delay(1500, ct);
@@ -792,17 +780,19 @@ public class AutoFightTask : ISoloTask
                         TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
                     }
                 }
-                else if (kazuha.Name == "琴")
+                else if (picker.Name == "琴")
                 {
-                    TaskControl.Logger.LogInformation("使用琴长E拾取掉落物");
+                    TaskControl.Logger.LogInformation("使用 琴-长E 拾取掉落物");
                     
-                    var actionsToUse = _pickUoActions.Where(action => 
-                        action.StartsWith("琴" + " ", StringComparison.OrdinalIgnoreCase)).ToArray();
+                 var actionsToUse = PickUpCollectHandler.PickUpActions
+                    .Where(action => action.StartsWith("琴-长E" + " ", StringComparison.OrdinalIgnoreCase))
+                    .Select(action => action.Replace("琴-长E","琴", StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
                     
-                    await Delay(200, ct);
-                    if (kazuha.TrySwitch())
+                    await Delay(150, ct);
+                    if (picker.TrySwitch())
                     {
-                        await kazuha.WaitSkillCd(ct);
+                        await picker.WaitSkillCd(ct);
                         foreach (var miningActionStr in actionsToUse)
                         {
                             var pickUpAction = CombatScriptParser.ParseContext(miningActionStr);
