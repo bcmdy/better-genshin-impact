@@ -1297,20 +1297,21 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="战斗结束后执行聚集材料动作"
+                                      Text="聚集材料动作"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
-                                      Margin="190,0,5,0"
+                                      Margin="90,0,5,0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       FontSize="10"
                                       FontTypography="Body"
                                       VerticalAlignment="Bottom"
-                                      Text="(可选：基于怪物死亡经验值检测开关聚集材料动作)"
+                                      Text="(基于经验：检测精英死亡经验值 / 琴二次拾取：首次拾取空,再次拾取)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
@@ -1320,26 +1321,41 @@
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="1"
-                                         Margin="0,0,5,0"
+                                         Margin="0,0,10,0"
                                          IsChecked="{Binding Config.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}" />
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="2"
-                                         x:Name="KazuhaPickupEnabledButton"
-                                         Margin="0,0,38,0"
+                                         Margin="0,0,10,0"
                                          IsEnabled="{Binding Config.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
                                          IsChecked="{Binding Config.AutoFightConfig.ExpKazuhaPickup, Mode=TwoWay}" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.RowSpan="2"
                                       Grid.Column="2"
-                                      x:Name="KazuhaPickupEnabledButtonByFullpath"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontSize="8"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Margin="0,0,10,26"
+                                      FontTypography="Body"
+                                      Text="基于经验值"
+                                      TextWrapping="Wrap" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="3"
+                                         Margin="0,0,38,0"
+                                         IsEnabled="{Binding Config.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
+                                         IsChecked="{Binding Config.AutoFightConfig.QinDoublePickUp, Mode=TwoWay}" />
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="3"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       FontSize="8"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Margin="0,0,38,26"
                                       FontTypography="Body"
-                                      Text="基于经验值"
+                                      Text="琴二次拾取"
                                       TextWrapping="Wrap" />
                     </Grid>
                 

@@ -33,6 +33,7 @@ using Vanara.PInvoke;
 using System.Drawing;
 using BetterGenshinImpact.GameTask.AutoPick; // 添加对System.Drawing的引用
 using BetterGenshinImpact.GameTask.AutoPathing.Handler;
+using BetterGenshinImpact.GameTask.AutoPick.Assets;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -475,6 +476,7 @@ public class AutoFightTask : ISoloTask
                                         {
                                             lastFightName = avatarQ.Name;
                                             countFight++;
+                                            //&& useEq.Contains(num) 禁止E功能待做
                                             if (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 var avatarQHold = avatarQ.Name == "菈乌玛";
@@ -789,7 +791,8 @@ public class AutoFightTask : ISoloTask
                         .Where(action => action.StartsWith("琴-长E" + " ", StringComparison.OrdinalIgnoreCase))
                         .Select(action => action.Replace("琴-长E","琴", StringComparison.OrdinalIgnoreCase))
                         .ToArray();
-                    
+
+                    var find = _taskParam.QinDoublePickUp ? true : false;
                     await Delay(150, ct);
                     if (picker.TrySwitch())
                     {
@@ -797,11 +800,34 @@ public class AutoFightTask : ISoloTask
                         foreach (var miningActionStr in actionsToUse)
                         {
                             var pickUpAction = CombatScriptParser.ParseContext(miningActionStr);
-                            
-                            foreach (var command in pickUpAction.CombatCommands)
+
+                            for (int i = 0; i < 2 && find; i++)
                             {
-                                command.Execute(combatScenes);
+                                foreach (var command in pickUpAction.CombatCommands)
+                                {
+                                    command.Execute(combatScenes);
+                                    Task.Run(() =>
+                                    {
+                                        if (find)
+                                        {
+                                            var imagePick = CaptureToRectArea();
+                                            if (imagePick.Find(AutoPickAssets.Instance.PickRo).IsExist())
+                                            {
+                                                find = false;
+                                            }
+                                            imagePick.Dispose();
+                                        }
+                                    });
+                                }
+
+                                if (find && i == 0)
+                                {
+                                    Logger.LogInformation("未找到拾取物品，尝试再次执行 琴-长E 拾取");
+                                    await picker.WaitSkillCd(ct);
+                                }
                             }
+                            
+                            Simulation.ReleaseAllKey();
                         }
                     }
                 }

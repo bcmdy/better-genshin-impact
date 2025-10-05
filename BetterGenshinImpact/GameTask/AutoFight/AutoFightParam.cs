@@ -62,6 +62,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         CheckBeforeBurst = autoFightConfig.FinishDetectConfig.CheckBeforeBurst;
         AutoCombatEq = autoFightConfig.AutoCombatEq;
         UseEqList = autoFightConfig.UseEqList;
+        QinDoublePickUp = autoFightConfig.QinDoublePickUp;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -84,6 +85,9 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string?[] CountryName = ["自动"];
     public bool BurstEnabled { get; set; } = false;
     public bool ExpKazuhaPickup  { get; set; } = false;
+    
+    public bool QinDoublePickUp { get; set; } = false;
+    
     public bool IsFirstCheck { get; set; } = true;
     
     public int RotaryFactor { get; set; } = 10;
