@@ -2116,13 +2116,23 @@ public partial class OneDragonFlowViewModel : ViewModel
                     else
                     {
                         var delay = nextCycleTime - now;
-                        await new TaskRunner().RunThreadAsync(async () =>
+                        //如果delay大于24小时，说明任务执行时间超过一天，直接进入下一个循环
+                        if (!(delay.TotalHours > 24))
                         {
-                            Notify.Event(NotificationEvent.DragonEnd).Success(
-                                $"计划表下次循环时间：{nextCycleTime.ToString("yyyy-MM-dd HH:mm:ss")}");
-                            _logger.LogInformation("连续一条龙：等待到下一个循环时间 {nextCycleTime}，等待时间 {delay}", nextCycleTime, delay.ToString(@"hh\:mm\:ss"));
-                            await Task.Delay(delay, CancellationContext.Instance.Cts.Token);
-                        });
+                            await new TaskRunner().RunThreadAsync(async () =>
+                            {
+                                Notify.Event(NotificationEvent.DragonEnd).Success(
+                                    $"计划表下次循环时间：{nextCycleTime.ToString("yyyy-MM-dd HH:mm:ss")}");
+                                _logger.LogInformation("连续一条龙：等待到下一个循环时间 {nextCycleTime}，等待时间 {delay}", nextCycleTime, delay.ToString(@"hh\:mm\:ss"));
+                                await Task.Delay(delay, CancellationContext.Instance.Cts.Token);
+                            }); 
+                        }
+                        else
+                        {
+                            _logger.LogInformation("任务执行时间超过一天，直接进入下一个循环-2");
+                            Notify.Event(NotificationEvent.DragonEnd).Success("任务执行时间超过一天，直接进入下一个循环");
+                        }
+                        
                         // 如果任务已经被取消，中断所有任务
                         if (CancellationContext.Instance.Cts.IsCancellationRequested)
                         {
