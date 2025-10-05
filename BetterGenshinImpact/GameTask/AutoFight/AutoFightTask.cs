@@ -520,8 +520,9 @@ public class AutoFightTask : ISoloTask
                                                 var ms = 30;
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                 var imageAfterBurst = CaptureToRectArea();
-                                                while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false) 
-                                                       && imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo).IsExist() && ms > 0)
+                                                while (imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo).IsExist() 
+                                                       && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false) 
+                                                       && ms > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                     await Delay(50, ct);
@@ -542,6 +543,11 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
                                 useEq.Clear(); 
+                                if (guardianAvatar.ManualSkillCd == 0)
+                                {
+                                    if(i>0)i--;
+                                    continue;
+                                }
                             }
                         }
                         
@@ -765,7 +771,7 @@ public class AutoFightTask : ISoloTask
                         {
                             await picker.WaitSkillCd(ct);
                             picker.UseSkill(true);
-                            await Delay(100, ct);
+                            await Delay(50, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                             await Delay(1500, ct);
                         }

@@ -1161,7 +1161,7 @@ public class PathExecutor
                             PathingConditionConfig.AutoEatCount = 3;
                             AutoFightTask.RecoverCount = 3;
                             
-                            if (_inTrap > 2)
+                            if (_inTrap > 1)
                             {
                                 throw new RetryException("此路线出现3次卡死，重试一次路线或放弃此路线！");
                             }

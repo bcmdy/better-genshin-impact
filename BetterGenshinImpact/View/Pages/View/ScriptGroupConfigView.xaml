@@ -1088,7 +1088,7 @@
                                                   FontTypography="Body"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                                   FontSize="9"
-                                                  Text="旋转速度(建议单次360°左右)："
+                                                  Text="旋转速度(建议单次180°左右)："
                                                   Margin="5,8,0,0"
                                                   HorizontalAlignment="Left"
                                                   VerticalAlignment="Center"

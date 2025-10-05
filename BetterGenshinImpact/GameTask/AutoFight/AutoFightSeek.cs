@@ -232,28 +232,61 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         private static readonly Dictionary<int, int> RotaryFactorMapping = new Dictionary<int, int> //旋转因子映射表
         {
             { 1, 100 }, { 2, 90 }, { 3, 80}, { 4, 70 }, { 5, 60}, { 6,45 },
-            { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-50 }, { 13, -50 }
+            { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
         };
         
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6)
         {
             var bloodLower = new Scalar(255, 90, 90);
+            // var bloodLower1 = new Scalar(160, 160, 160);
+            // var bloodLower2 = new Scalar(180, 180, 180);
 
             var adjustedX = RotaryFactorMapping[rotaryFactor];
-            var adjustedDivisor = rotaryFactor<=12 ? 2 : 1;
+            var adjustedDivisor = rotaryFactor<=12 ? 2 : 1.3;
             
             // Logger.LogInformation("开始寻找敌人 {Text} ...",adjustedX);
             
             int retryCount = isEndCheck? 1 : 0;
 
-            while (retryCount < 27+(int)(adjustedX / 5))
+            while (retryCount < 25+(int)(adjustedX / 5))
             {
                 var image = CaptureToRectArea();
                 Mat mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
+                
                 Mat labels = new Mat();
                 Mat stats = new Mat();
                 Mat centroids = new Mat();
-
+                
+                // Mat maskG = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower1,bloodLower2);
+                // Mat hierarchy = new Mat();
+                // Cv2.FindContours(maskG, out Mat[] contours, hierarchy, RetrievalModes.External, ContourApproximationModes.ApproxNone);
+                // if (contours.Length > 0)
+                // {
+                //     Logger.LogInformation("检测到{contours.Length}个轮廓", contours.Length);
+                //     for (int i = 0; i < contours.Length; i++)
+                //     {
+                //         Rect boundingRect = Cv2.BoundingRect(contours[i]);
+                //         int height = boundingRect.Height;
+                //         int width = boundingRect.Width;
+                //         if (height >= 3 && height < 7 && width >= 3 && width < 7)
+                //         {
+                //             // 近似轮廓为多边形
+                //             Mat contour = contours[i];
+                //             Mat approxContour = new Mat();
+                //             Cv2.ApproxPolyDP(contour, approxContour, 0.04 * Cv2.ArcLength(contour, true), true);
+                //
+                //             // 检查多边形的顶点数是否为4
+                //             if (approxContour.Rows == 4)
+                //             {
+                //                 Logger.LogInformation("轮廓{i}高度：{height} / 宽度：{width}", i, height, width);
+                //                 Cv2.Rectangle(image.SrcMat, boundingRect, Scalar.Red, 2);
+                //             }
+                //         }
+                //     }
+                // }
+                // hierarchy.Dispose();
+                // maskG.Dispose();
+                
                 int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
                 // if (retryCount == 0) logger.LogInformation("敌人初检数量： {numLabels}", numLabels - 1);
@@ -309,8 +342,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             {
                                 Task.Run(() =>
                                 {
-                                    Simulation.SendInput.Mouse.MoveMouseBy(600, 0);
-                                    Task.Delay(100, ct).Wait();
+                                    Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
+                                    Task.Delay(200, ct).Wait();
                                     Simulation.SendInput.Mouse.MiddleButtonClick();
                                 }, ct);
                             }
@@ -355,7 +388,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 if (retryCount <= 2)
                 {
                    var offsets = new (int x, int y)[] {
-                        (image.Width / 6, image.Height / 6), 
+                        (image.Width / 6, image.Height / 7), 
                         (image.Width / 6, 0),                 
                         (image.Width / 6, -image.Height / 5),
                         (image.Width / 6, -image.Height),  
@@ -370,6 +403,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 }
 
                 await Task.Delay(50+(int)(adjustedX/adjustedDivisor),ct);
+                // await Task.Delay(50,ct);
 
                 image = CaptureToRectArea();
                 mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);

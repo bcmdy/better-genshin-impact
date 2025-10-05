@@ -43,7 +43,7 @@ public class TaskControl
             if (IsSuspendedByNetwork)
             {
                 Logger.LogWarning("网络恢复中...");
-                if (NetworkRecovery.Start(CancellationToken.None).Wait(5000))
+                if (NetworkRecovery.Start(CancellationToken.None).Wait(10000))
                 {
                     isSuspend = false;
                 }
