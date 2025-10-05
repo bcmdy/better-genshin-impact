@@ -237,8 +237,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6)
         {
-            Scalar bloodLower = new Scalar(255, 90, 90);
-            
+            var bloodLower = new Scalar(255, 90, 90);
+
             var adjustedX = RotaryFactorMapping[rotaryFactor];
             var adjustedDivisor = rotaryFactor<=12 ? 2 : 1;
             

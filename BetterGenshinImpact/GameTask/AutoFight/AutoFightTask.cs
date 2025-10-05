@@ -467,7 +467,7 @@ public class AutoFightTask : ISoloTask
                                
                                 if (useEq.Count > 0)
                                 {
-                                    foreach (var num in useEq)
+                                    foreach (var num in useEq) 
                                     {
                                         Logger.LogInformation("自动EQ战斗：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
@@ -482,7 +482,7 @@ public class AutoFightTask : ISoloTask
                                                 var imageAfterUseSkill = CaptureToRectArea();
                                                 
                                                 var retry = 30;
-                                                while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill)) && retry > 0)
+                                                while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill) && retry > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                                     Simulation.ReleaseAllKey();
@@ -510,28 +510,25 @@ public class AutoFightTask : ISoloTask
                                                         await Delay(200, ct);
                                                     } 
                                                 
-                                                    await Delay(200, ct);
+                                                    await Delay(100, ct);
                                                 }
-                                                
                                             }
                                             
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                                             if (!fightEndFlag)
                                             { 
                                                 var ms = 30;
-                                                var imageAfterBurst = CaptureToRectArea();
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                while (!(await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false)) && Bv.IsInMainUi(imageAfterBurst) && ms > 0)
+                                                var imageAfterBurst = CaptureToRectArea();
+                                                while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false) 
+                                                       && imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo).IsExist() && ms > 0)
                                                 {
                                                     Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                    imageAfterBurst = CaptureToRectArea();
                                                     await Delay(50, ct);
-                                                    // Logger.LogInformation("优先第111 {retry} ",ms);
+                                                    imageAfterBurst = CaptureToRectArea();
                                                     ms -= 1;
                                                 }
                                                 imageAfterBurst.Dispose();
-                                                // Logger.LogInformation("优先第444 {retry} ",ms);
-                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                             }
                                             else
                                             {
@@ -546,7 +543,6 @@ public class AutoFightTask : ISoloTask
                                 }
                                 useEq.Clear(); 
                             }
-                            
                         }
                         
                         if (fightEndFlag)break;
@@ -768,7 +764,6 @@ public class AutoFightTask : ISoloTask
                         if (picker.TrySwitch())
                         {
                             await picker.WaitSkillCd(ct);
-                            await Delay(100, ct);
                             picker.UseSkill(true);
                             await Delay(100, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -784,10 +779,10 @@ public class AutoFightTask : ISoloTask
                 {
                     TaskControl.Logger.LogInformation("使用 琴-长E 拾取掉落物");
                     
-                 var actionsToUse = PickUpCollectHandler.PickUpActions
-                    .Where(action => action.StartsWith("琴-长E" + " ", StringComparison.OrdinalIgnoreCase))
-                    .Select(action => action.Replace("琴-长E","琴", StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
+                     var actionsToUse = PickUpCollectHandler.PickUpActions
+                        .Where(action => action.StartsWith("琴-长E" + " ", StringComparison.OrdinalIgnoreCase))
+                        .Select(action => action.Replace("琴-长E","琴", StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
                     
                     await Delay(150, ct);
                     if (picker.TrySwitch())
