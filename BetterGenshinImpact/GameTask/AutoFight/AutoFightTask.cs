@@ -490,7 +490,16 @@ public class AutoFightTask : ISoloTask
 
                             if (_taskParam.AutoCombatEq)
                             {
-                                var useEq = await AutoFightSkill.AvatarQSkillAsync(image,useEqList);
+                                var useEq = new List<int>();
+                                for (var h = 1; h <= combatScenes.GetAvatars().Count; h++)
+                                {
+                                    if (!combatScenes.SelectAvatar(h).IsActive(image ?? CaptureToRectArea()))
+                                    {
+                                        continue;
+                                    }
+                                    useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
+                                    break;
+                                }
 
                                 var avatarFirst = combatScenes.SelectAvatar(useEqList.First());
                                 

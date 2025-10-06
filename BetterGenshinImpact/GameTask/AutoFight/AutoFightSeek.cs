@@ -732,7 +732,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
         }
         
-        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null, List<int>? useEqList = null)
+        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null, List<int>? useEqList = null,int? avatarCurrent = null)
         {
             image ??= CaptureToRectArea();
             image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度
@@ -741,7 +741,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         
             foreach (var i in eqList)
             {
-                var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[i - 1];
+                var skillArea = i != avatarCurrent ? AutoFightAssets.Instance.AvatarQRectListMap[i - 1]: new Rect(1762, 915, 114, 111);
+                
                 var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
         
                 var meanBrightness = Cv2.Mean(grayImage);
@@ -752,7 +753,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 Cv2.Canny(grayImage, grayImage, threshold1: (float)threshold1, threshold2: (float)threshold2);
         
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                    param1: 90, param2: 25, minRadius: 25, maxRadius: 34);
+                    param1: 90, param2:i != avatarCurrent ? 25 : 35, minRadius: i != avatarCurrent ? 25 : 50, maxRadius:i != avatarCurrent ? 34 : 60);
         
                 if (circles.Length > 0)
                 {
