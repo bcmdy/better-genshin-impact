@@ -168,6 +168,11 @@ public class Avatar
         {
             if (PathingConditionConfig.FightWaypoint is not null)
             {
+                if (!SwimmingConfirm(CaptureToRectArea())) //二次确认
+                {
+                    return;
+                }
+                
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
                 var pathExecutor = new PathExecutor(ct);
                 try
@@ -175,7 +180,7 @@ public class Avatar
                     pathExecutor.FaceTo(PathingConditionConfig.FightWaypoint).Wait(2000, ct);
                     PathingConditionConfig.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint,false).Wait(20000, ct);
+                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint,false).Wait(15000, ct);
                     PathingConditionConfig.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }

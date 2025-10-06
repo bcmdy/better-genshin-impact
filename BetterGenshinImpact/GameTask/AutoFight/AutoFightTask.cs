@@ -842,7 +842,7 @@ public class AutoFightTask : ISoloTask
                         {
                             var pickUpAction = CombatScriptParser.ParseContext(miningActionStr);
 
-                            for (int i = 0; i < 2 && find; i++)
+                            for (int i = 0; i < 2; i++)
                             {
                                 foreach (var command in pickUpAction.CombatCommands)
                                 {
@@ -861,10 +861,19 @@ public class AutoFightTask : ISoloTask
                                     });
                                 }
 
-                                if (find && i == 0)
+                                if (!find)
+                                {
+                                    break;
+                                }
+
+                                if (i == 0)
                                 {
                                     Logger.LogInformation("自动拾取；尝试再次执行 琴-长E 拾取");
                                     await picker.WaitSkillCd(ct);
+                                }
+                                else
+                                {
+                                    break;
                                 }
                             }
                             

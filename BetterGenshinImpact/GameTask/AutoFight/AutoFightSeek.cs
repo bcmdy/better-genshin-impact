@@ -458,8 +458,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
                 
+                mask.Dispose();
+                labels.Dispose();
+                stats.Dispose();
+                centroids.Dispose();
+                image.Dispose();
+                
                 retryCount++;
             }
+            
             logger.LogInformation("寻找敌人：{Text}", "无");
             return null;
         }
