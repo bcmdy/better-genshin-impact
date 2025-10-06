@@ -490,7 +490,14 @@ public class AutoFightTask : ISoloTask
 
                             if (_taskParam.AutoCombatEq)
                             {
-                               var useEq = await AutoFightSkill.AvatarQSkillAsync(image,useEqList);
+                                var useEq = await AutoFightSkill.AvatarQSkillAsync(image,useEqList);
+
+                                var avatarFirst = combatScenes.SelectAvatar(useEqList.First());
+                                
+                                if (avatarFirst.IsSkillReady() && avatarFirst.TrySwitch())
+                                { 
+                                    avatarFirst.UseSkill();
+                                }
 
                                 if (useEq.Count > 0)
                                 {

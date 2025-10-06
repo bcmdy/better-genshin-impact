@@ -321,12 +321,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         else
                         {
-                             Task.Run(() =>
-                            {
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(100, ct).Wait();
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                            }, ct);
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                            Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                         }
                         
                         if (height > 2 && height < 7)
@@ -764,7 +760,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 }
                 grayImage.Dispose();
             }
-        
+            
             image.Dispose();
         
             if (useMedicine.Count > 0)
