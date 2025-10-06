@@ -191,4 +191,7 @@ public partial class AutoFightConfig : ObservableObject
     
     [ObservableProperty]
     private string _useEqList = "1,2,3,4";
+    
+    [ObservableProperty]
+    private string _useSkillList = "1,2,3,4";
 }

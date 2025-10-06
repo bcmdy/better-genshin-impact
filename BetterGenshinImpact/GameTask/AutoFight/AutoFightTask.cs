@@ -387,9 +387,35 @@ public class AutoFightTask : ISoloTask
                       .Where(n => n >= 1 && n <= 4)
                       .ToList()
                   : new List<int> { 1, 2, 3, 4 };
+        
+        var useSkillList = new List<int>();
+        var useSkillListWithH = new List<int>();
 
-        // var hold = false;
-        // var useEqFirst = new List<int>(){1,2,3,4};
+        if (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseSkillList))
+        {
+            var skillParts = _taskParam.UseSkillList.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var part in skillParts)
+            {
+                var trimmedPart = part.Trim();
+                var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
+
+                if (skillNumber >= 1 && skillNumber <= 4)
+                {
+                    useSkillList.Add(skillNumber); // 添加到全部技能列表
+
+                    if (trimmedPart.EndsWith("H"))
+                    {
+                        useSkillListWithH.Add(skillNumber); // 添加到带H的技能列表
+                    }
+                }
+            }
+        }
+        else
+        {
+            useSkillList = new List<int> { 1, 2, 3, 4 };
+            useSkillListWithH = new List<int>();
+        }
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -465,22 +491,31 @@ public class AutoFightTask : ISoloTask
                             if (_taskParam.AutoCombatEq)
                             {
                                var useEq = await AutoFightSkill.AvatarQSkillAsync(image,useEqList);
-                               
+
                                 if (useEq.Count > 0)
                                 {
                                     foreach (var num in useEq) 
                                     {
                                         Logger.LogInformation("自动EQ战斗：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
+                                        var useE = useSkillList.Contains(num);
+                                        var avatarQHold = useSkillListWithH.Contains(num);
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             lastFightName = avatarQ.Name;
                                             countFight++;
                                             //&& useEq.Contains(num) 禁止E功能待做
-                                            if (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
+                                            if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
-                                                var avatarQHold = avatarQ.Name == "菈乌玛";
                                                 avatarQ.UseSkill(avatarQHold);
+                                                // if (avatarQ.Name == "希诺宁")
+                                                // {
+                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                //     Thread.Sleep(150); 
+                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                //     Thread.Sleep(100); 
+                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                // }
                                                 var imageAfterUseSkill = CaptureToRectArea();
                                                 
                                                 var retry = 30;
@@ -510,8 +545,8 @@ public class AutoFightTask : ISoloTask
                                                         await Delay(100, ct);
                                                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                                         await Delay(200, ct);
-                                                    } 
-                                                
+                                                    }
+                                                    
                                                     await Delay(100, ct);
                                                 }
                                             }
@@ -771,7 +806,10 @@ public class AutoFightTask : ISoloTask
                         await Delay(200, ct);
                         if (picker.TrySwitch())
                         {
-                            await picker.WaitSkillCd(ct);
+                            if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))
+                            {
+                                await picker.WaitSkillCd(ct);
+                            }
                             picker.UseSkill(true);
                             await Delay(50, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -787,16 +825,19 @@ public class AutoFightTask : ISoloTask
                 {
                     TaskControl.Logger.LogInformation("使用 琴-长E 拾取掉落物");
                     
-                     var actionsToUse = PickUpCollectHandler.PickUpActions
+                    var actionsToUse = PickUpCollectHandler.PickUpActions
                         .Where(action => action.StartsWith("琴-长E" + " ", StringComparison.OrdinalIgnoreCase))
                         .Select(action => action.Replace("琴-长E","琴", StringComparison.OrdinalIgnoreCase))
                         .ToArray();
 
-                    var find = _taskParam.QinDoublePickUp ? true : false;
+                    var find = _taskParam.QinDoublePickUp;
                     await Delay(150, ct);
                     if (picker.TrySwitch())
                     {
-                        await picker.WaitSkillCd(ct);
+                        if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))//有祭礼情况下可能CD已经好了
+                        {
+                            await picker.WaitSkillCd(ct);
+                        }
                         foreach (var miningActionStr in actionsToUse)
                         {
                             var pickUpAction = CombatScriptParser.ParseContext(miningActionStr);
@@ -822,7 +863,7 @@ public class AutoFightTask : ISoloTask
 
                                 if (find && i == 0)
                                 {
-                                    Logger.LogInformation("未找到拾取物品，尝试再次执行 琴-长E 拾取");
+                                    Logger.LogInformation("自动拾取；尝试再次执行 琴-长E 拾取");
                                     await picker.WaitSkillCd(ct);
                                 }
                             }

@@ -1226,7 +1226,7 @@
                             <ui:TextBlock Grid.Row="0"
                                           Grid.Column="0"
                                           FontTypography="Body"
-                                          Text="盾奶位与自动战斗功能 (盾位技能优先->Q检测释放->战斗策略执行)"
+                                          Text="盾奶位与自动战斗功能 (执行顺序：盾奶位技能->Q检测释放->战斗策略执行)"
                                           TextWrapping="Wrap" />
                             <ui:TextBlock Grid.Row="1"
                                           Grid.Column="0"
@@ -1238,6 +1238,9 @@
                         
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -1290,7 +1293,7 @@
                                       Margin="0,0,8,0"
                                       HorizontalAlignment="Right"
                                       FontTypography="Body"
-                                      Text="禁用该角色战斗策略"
+                                      Text="禁用盾奶位战斗策略"
                                       TextWrapping="Wrap"
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
 
@@ -1390,18 +1393,20 @@
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
                         
-                        <ui:TextBlock Grid.Row="3"
+                        <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,10,36,0" BorderBrush="Gray" BorderThickness="1" Style="{StaticResource GuardianVisibilityStyle}"/>
+                        
+                        <ui:TextBlock Grid.Row="4"
                                       Grid.Column="0" 
                                       Grid.ColumnSpan="4"
                                       Margin="0,10,10,0"
                                       FontTypography="Body"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Center"
-                                      Text="自动检测其他角色的EQ技能，按队伍中序号进行释放(适合只放EQ的队伍)"
+                                      Text="自动检测其他角色的Q技能，按队伍中序号进行释放(比较适合EQ输出的队伍)"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
                         
-                        <ui:ToggleSwitch Grid.Row="3"
+                        <ui:ToggleSwitch Grid.Row="4"
                                          Grid.Column="4"
                                          Margin="0,10,36,0" 
                                          VerticalAlignment="Center"
@@ -1419,27 +1424,59 @@
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
                         
-                        
-                        
-                        <ui:TextBlock Grid.Row="4"
+                        <ui:TextBlock Grid.Row="5"
                                       Grid.Column="0" 
                                       Grid.ColumnSpan="3"
                                       Margin="0,10,10,0"
                                       FontTypography="Body"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Center"
-                                      Text="Q释放的角色序号顺序(英文逗号分隔，不填的角色不参与战斗)"
+                                      Text="Q释放的序号顺序(英文逗号分隔，不填的角色完全不参与战斗)"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
                         
-                        <ui:TextBox Grid.Row="4"
+                        <ui:TextBox Grid.Row="5"
                                     Grid.Column="3"
                                     Grid.ColumnSpan="2"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Center"
-                                    MaxWidth="80"  
+                                    MinWidth="100"  
+                                    MaxWidth="100"  
                                     Margin="0,10,38,0"
                                     Text="{Binding PathingConfig.AutoFightConfig.UseEqList}"
+                                    IsEnabled="{Binding PathingConfig.AutoFightConfig.AutoCombatEq,Mode=TwoWay}" >
+                            <ui:TextBox.Style>
+                                <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding PathingConfig.AutoFightConfig.GuardianAvatar}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:TextBox.Style>
+                        </ui:TextBox>
+                        
+                        <ui:TextBlock Grid.Row="6"
+                                      Grid.Column="0" 
+                                      Grid.ColumnSpan="3"
+                                      Margin="0,10,10,0"
+                                      FontTypography="Body"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Text="自动Q过程中，放E的角色(后加H，如1H表示序号1角色放长E)"
+                                      TextWrapping="Wrap" 
+                                      Style="{StaticResource GuardianVisibilityStyle}"/>
+                                       
+                        <ui:TextBox Grid.Row="6"
+                                    Grid.Column="3"
+                                    Grid.ColumnSpan="2"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    MinWidth="100"  
+                                    MaxWidth="100"  
+                                    Margin="0,10,38,0"
+                                    Text="{Binding PathingConfig.AutoFightConfig.UseSkillList}"
                                     IsEnabled="{Binding PathingConfig.AutoFightConfig.AutoCombatEq,Mode=TwoWay}" >
                             <ui:TextBox.Style>
                                 <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">

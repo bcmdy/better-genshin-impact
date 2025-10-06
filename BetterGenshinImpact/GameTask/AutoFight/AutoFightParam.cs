@@ -63,6 +63,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         AutoCombatEq = autoFightConfig.AutoCombatEq;
         UseEqList = autoFightConfig.UseEqList;
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
+        UseSkillList = autoFightConfig.UseSkillList;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -110,4 +111,5 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     
     public string UseEqList { get; set; } = "1,2,3,4";
     
+    public string UseSkillList { get; set; } = "1,2,3,4";
 }
