@@ -143,11 +143,12 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             },
             {
                 "1p_3", [
-                    new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(375 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale)),
-                    new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(470 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale)),
+                    new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(419 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale)),
+                    new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(514 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale)),
                 ]
             },
             { "1p_4", [new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(515 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale))] },
+            
             {
                 "p_2", [
                     new Rect(CaptureRect.Width - (int)(155 * AssetScale), (int)(375 * AssetScale), (int)(76 * AssetScale), (int)(76 * AssetScale)),

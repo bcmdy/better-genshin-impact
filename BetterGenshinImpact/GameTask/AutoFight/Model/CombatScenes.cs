@@ -25,6 +25,8 @@ using BetterGenshinImpact.GameTask.AutoFight.Config;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
 using OpenCvSharp; 
+using System.Windows.Media;
+using BetterGenshinImpact.GameTask.Model.Area;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
 
@@ -105,11 +107,23 @@ public class CombatScenes : IDisposable
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectListMap[$"{p}_{num}"]);
 
             ExpectedTeamAvatarNum = avatarSideIconRectList.Count;
+            
+            // //画出avatarSideIconRectList的区域
+            // for (var i = 0; i < avatarSideIconRectList.Count; i++)
+            // {
+            //     var rect = avatarSideIconRectList[i];
+            //     imageRegion.DeriveCrop(rect).DrawSelf("avatarSideIconRectList{i}");
+            // }
         }
         else
         {
             avatarSideIconRectList = new List<Rect>(AutoFightAssets.Instance.AvatarSideIconRectList);
             avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectList);
+            // for (var i = 0; i < avatarSideIconRectList.Count; i++)
+            // {
+            //     var rect = avatarSideIconRectList[i];
+            //     imageRegion.DeriveCrop(rect).DrawSelf("avatarSideIconRectList{i}");
+            // }
         }
         
         var ms = 1000;
@@ -117,7 +131,7 @@ public class CombatScenes : IDisposable
         var numLabels = 0;
         while (ms > 0)
         {
-            var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,307);
+            var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,318);
             var woodNum = new Scalar(255, 255, 255);
             var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
             var labels = new Mat();
@@ -128,8 +142,9 @@ public class CombatScenes : IDisposable
                 connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
             // Logger.LogWarning("识别: 共{Cnt}个连通区域", numLabels);
+            // Logger.LogWarning("识别: 角色avatarIndexRectList数量: {t}", avatarIndexRectList.Count);
 
-            if (numLabels > ExpectedTeamAvatarNum-1)
+            if (numLabels > avatarIndexRectList.Count-1)
             {
                 imageRegion = CaptureToRectArea();
                 
@@ -212,8 +227,8 @@ public class CombatScenes : IDisposable
         
         if (numLabels <= 3)
         {
-            if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) ||
-                IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256))
+            if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) //3人世界
+                || IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256)) //二人世界
             {
                 up = true;
             }

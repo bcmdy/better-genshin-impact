@@ -375,8 +375,9 @@ public class AutoFightTask : ISoloTask
         var detectDelayTime = _finishDetectConfig.DetectDelayTime;
         
         //盾奶优先功能角色预处理
-        var guardianAvatar = string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar) ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
-        
+        var guardianAvatar = string.IsNullOrWhiteSpace(int.Parse(_taskParam.GuardianAvatar) >= combatScenes.GetAvatars().Count ? _taskParam.GuardianAvatar : "" ) //保证盾位在队伍内
+            ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
 
         ImageRegion image = null;
@@ -400,7 +401,7 @@ public class AutoFightTask : ISoloTask
                 var trimmedPart = part.Trim();
                 var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
 
-                if (skillNumber >= 1 && skillNumber <= 4)
+                if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍内
                 {
                     useSkillList.Add(skillNumber); // 添加到全部技能列表
 
