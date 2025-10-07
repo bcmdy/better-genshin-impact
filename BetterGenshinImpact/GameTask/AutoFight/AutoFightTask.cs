@@ -400,7 +400,7 @@ public class AutoFightTask : ISoloTask
         
         var useSkillList = new List<int>();
         var useSkillListWithH = new List<int>();
-        var useSkillListWithF = 0;
+        // var useSkillListWithF = 0;
 
         if (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseSkillList))
         {
@@ -409,7 +409,8 @@ public class AutoFightTask : ISoloTask
             foreach (var part in skillParts)
             {
                 var trimmedPart = part.Trim();
-                var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
+                // var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
+                var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
                 //寻找结尾时F的数字
 
                 if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍
@@ -420,10 +421,10 @@ public class AutoFightTask : ISoloTask
                     {
                         useSkillListWithH.Add(skillNumber); // 添加到带H的技能列表
                     }
-                    if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
-                    {
-                        useSkillListWithF = skillNumber; // 寻找结尾时F的数字
-                    }
+                    // if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
+                    // {
+                    //     useSkillListWithF = skillNumber; // 寻找结尾时F的数字
+                    // }
                 }
             }
         }
@@ -431,7 +432,7 @@ public class AutoFightTask : ISoloTask
         {
             useSkillList = new List<int> { 1, 2, 3, 4 };
             useSkillListWithH = new List<int>();
-            useSkillListWithF = 0;
+            // useSkillListWithF = 0;
         }
         
         // 战斗操作
@@ -518,16 +519,16 @@ public class AutoFightTask : ISoloTask
                                     break;
                                 }
 
-                                if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
-                                {
-                                    var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
-                                
-                                    if (avatarFirst.IsSkillReady() && avatarFirst.TrySwitch(10))
-                                    {
-                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
-                                    }
-                                    useSkillListWithF = 0;
-                                }
+                                // if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
+                                // {
+                                //     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
+                                //
+                                //     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
+                                //     {
+                                //         avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
+                                //     }
+                                //     useSkillListWithF = 0;
+                                // }
 
                                 if (useEq.Count > 0)
                                 {

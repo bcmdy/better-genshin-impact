@@ -1464,7 +1464,7 @@
                                       FontTypography="Body"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Center"
-                                      Text="H长E，F:战斗开始时，执行一次强制释放E (如：1HF,2,3H,4)"
+                                      Text="自动Q过程中，先释放E，加H长E，默认短E(如：1H,2,3H,4)"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
                                        
