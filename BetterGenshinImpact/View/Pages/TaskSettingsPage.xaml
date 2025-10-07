@@ -1079,7 +1079,7 @@
                                       FontTypography="Body"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Center"
-                                      Text="自动Q过程中，放E的角色(后加H，如1H表示序号1角色放长E)"
+                                      Text="H长E，F:战斗开始时，执行一次强制释放E (如：1HF,2,3H,4)"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
                                        

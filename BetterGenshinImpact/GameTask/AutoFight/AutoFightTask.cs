@@ -373,10 +373,19 @@ public class AutoFightTask : ISoloTask
         
         var delayTime = _finishDetectConfig.DelayTime;
         var detectDelayTime = _finishDetectConfig.DetectDelayTime;
-        
-        //盾奶优先功能角色预处理
-        var guardianAvatar = string.IsNullOrWhiteSpace(int.Parse(_taskParam.GuardianAvatar) >= combatScenes.GetAvatars().Count ? _taskParam.GuardianAvatar : "" ) //保证盾位在队伍内
-            ? null : combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+
+        Avatar? guardianAvatar = null;
+        if (!string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar))
+        {
+            if (int.Parse(_taskParam.GuardianAvatar) >= combatScenes.GetAvatars().Count) //确保序号在队伍内
+            {
+                guardianAvatar = combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+            }
+            else
+            {
+                Logger.LogWarning("盾奶优先功能角色预处理失败，请检查盾奶优先功能角色配置是否正确。");
+            }
+        }
 
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
 
@@ -391,6 +400,7 @@ public class AutoFightTask : ISoloTask
         
         var useSkillList = new List<int>();
         var useSkillListWithH = new List<int>();
+        var useSkillListWithF = 0;
 
         if (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseSkillList))
         {
@@ -399,15 +409,20 @@ public class AutoFightTask : ISoloTask
             foreach (var part in skillParts)
             {
                 var trimmedPart = part.Trim();
-                var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
+                var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
+                //寻找结尾时F的数字
 
-                if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍内
+                if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍
                 {
                     useSkillList.Add(skillNumber); // 添加到全部技能列表
 
-                    if (trimmedPart.EndsWith("H"))
+                    if (trimmedPart.Contains('H'))
                     {
                         useSkillListWithH.Add(skillNumber); // 添加到带H的技能列表
+                    }
+                    if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
+                    {
+                        useSkillListWithF = skillNumber; // 寻找结尾时F的数字
                     }
                 }
             }
@@ -416,6 +431,7 @@ public class AutoFightTask : ISoloTask
         {
             useSkillList = new List<int> { 1, 2, 3, 4 };
             useSkillListWithH = new List<int>();
+            useSkillListWithF = 0;
         }
         
         // 战斗操作
@@ -502,11 +518,15 @@ public class AutoFightTask : ISoloTask
                                     break;
                                 }
 
-                                var avatarFirst = combatScenes.SelectAvatar(useEqList.First());
+                                if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
+                                {
+                                    var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
                                 
-                                if (avatarFirst.IsSkillReady() && avatarFirst.TrySwitch())
-                                { 
-                                    avatarFirst.UseSkill();
+                                    if (avatarFirst.IsSkillReady() && avatarFirst.TrySwitch(10))
+                                    {
+                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
+                                    }
+                                    useSkillListWithF = 0;
                                 }
 
                                 if (useEq.Count > 0)
@@ -589,7 +609,7 @@ public class AutoFightTask : ISoloTask
                                             {
                                                 break;
                                             }
-                                            if (guardianAvatar.ManualSkillCd == 0)
+                                            if (guardianAvatar.IsSkillReady())
                                             {
                                                 break;
                                             }
@@ -597,7 +617,7 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
                                 useEq.Clear(); 
-                                if (guardianAvatar.ManualSkillCd == 0)
+                                if (guardianAvatar.IsSkillReady())
                                 {
                                     if(i>0)i--;
                                     continue;
@@ -821,7 +841,7 @@ public class AutoFightTask : ISoloTask
                     {
                         TaskControl.Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
                         await Delay(200, ct);
-                        if (picker.TrySwitch())
+                        if (picker.TrySwitch(10))
                         {
                             if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))
                             {
@@ -849,7 +869,7 @@ public class AutoFightTask : ISoloTask
 
                     var find = _taskParam.QinDoublePickUp;
                     await Delay(150, ct);
-                    if (picker.TrySwitch())
+                    if (picker.TrySwitch(10))
                     {
                         if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))//有祭礼情况下可能CD已经好了
                         {
