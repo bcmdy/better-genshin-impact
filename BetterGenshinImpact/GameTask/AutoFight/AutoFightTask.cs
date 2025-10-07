@@ -377,13 +377,18 @@ public class AutoFightTask : ISoloTask
         Avatar? guardianAvatar = null;
         if (!string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar))
         {
-            if (int.Parse(_taskParam.GuardianAvatar) >= combatScenes.GetAvatars().Count) //确保序号在队伍内
+            // Logger.LogInformation("盾奶优先功能角色预处理开始..{aq}-{aa}.",_taskParam.GuardianAvatar,combatScenes.GetAvatars().Count);
+            if (int.Parse(_taskParam.GuardianAvatar) <= combatScenes.GetAvatars().Count) //确保序号在队伍内
             {
                 guardianAvatar = combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
             }
             else
             {
                 Logger.LogWarning("盾奶优先功能角色预处理失败，请检查盾奶优先功能角色配置是否正确。");
+                if (combatScenes.SelectAvatar(_taskParam.GuardianAvatar) is not null)
+                {
+                    guardianAvatar = combatScenes.SelectAvatar(int.Parse(_taskParam.GuardianAvatar));
+                }
             }
         }
 
@@ -392,11 +397,13 @@ public class AutoFightTask : ISoloTask
         ImageRegion image = null;
 
         var useEqList = (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseEqList))
-                  ? _taskParam.UseEqList.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
-                      .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
-                      .Where(n => n >= 1 && n <= 4)
-                      .ToList()
-                  : new List<int> { 1, 2, 3, 4 };
+            ? _taskParam.UseEqList.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+                .Where(n => n >= 1 && n <= combatScenes.GetAvatars().Count) // 保证序号在队伍
+                .ToList()
+            : new List<int> { 1, 2, 3, 4 }
+                .Where(n => n >= 1 && n <= combatScenes.GetAvatars().Count) // 添加此行以处理默认值
+                .ToList();
         
         var useSkillList = new List<int>();
         var useSkillListWithH = new List<int>();

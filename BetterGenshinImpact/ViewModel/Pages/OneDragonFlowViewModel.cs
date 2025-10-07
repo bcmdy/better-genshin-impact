@@ -2268,7 +2268,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                     await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
                     
                     retrySingleCount++;
-                    uidCheckResult = await VerifyUid(cts: new CancellationContext()); // 验证当前登录账号的UID
+                    uidCheckResult = await VerifyUid(CancellationContext.Instance.Cts.Token); // 验证当前登录账号的UID
                 });
                 // 如果任务已经被取消，中断所有任务
                  
@@ -2297,7 +2297,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                         await new TaskRunner().RunCurrentAsync(async () =>
                         { 
                             retrySingleCount = 0; // 重置UID验证次数
-                            switchAccountResult = await SwitchAccount(cts: new CancellationContext(), reTrySwitchCount); //失败后，切换账号
+                            switchAccountResult = await SwitchAccount(CancellationContext.Instance.Cts.Token, reTrySwitchCount); // 失败后，切换账号
                         });
                         // 如果任务已经被取消，中断所有任务
                         if (CancellationContext.Instance.Cts.IsCancellationRequested)
@@ -2587,7 +2587,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     }
 
     //UID验证
-    private async Task<bool> VerifyUid(CancellationContext cts)  
+    private async Task<bool> VerifyUid(CancellationToken cts)  
     {
         if (string.IsNullOrEmpty(SelectedConfig.Name))
         {
@@ -2596,7 +2596,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         
         if (SelectedConfig.AccountBinding == true)
         {
-            await new ReturnMainUiTask().Start(cts.Cts.Token);
+            await new ReturnMainUiTask().Start(cts);
             Clipboard.Clear();
             Simulation.SendInput.Keyboard.KeyPress(VK.VK_ESCAPE);
             
@@ -2606,7 +2606,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                 if (!closeRa.IsEmpty())
                 {
                     closeRa.ClickTo(closeRa.X + closeRa.Width*3, closeRa.X + closeRa.Height*4);
-                    await new ReturnMainUiTask().Start(cts.Cts.Token);
+                    await new ReturnMainUiTask().Start(cts);
                     break;
                 }
                 await Task.Delay(500);
@@ -2654,7 +2654,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     private AutoWoodAssets _assets;
     private readonly Login3rdParty _login3RdParty = new();
     private int _exitPhoneCount = 3; //,账号数为图标数量-1，默认记录2个账号
-    private async Task<bool> SwitchAccount(CancellationContext cts,int switchTime = 1) //基于重新登录函数ExitAndReloginJob改造
+    private async Task<bool> SwitchAccount(CancellationToken cts,int switchTime = 1) //基于重新登录函数ExitAndReloginJob改造
     {
 
         //============== 退出游戏流程 ==============
@@ -2662,7 +2662,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         _assets = AutoWoodAssets.Instance;
         SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-        await Delay(800, cts.Cts.Token);
+        await Delay(800, cts);
         
         // 菜单界面验证（带重试机制）
         try
@@ -2686,7 +2686,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
         // 点击退出按钮
         GameCaptureRegion.GameRegionClick((size, scale) => (50 * scale, size.Height - 50 * scale));
-        await Delay(500, cts.Cts.Token);
+        await Delay(500, cts);
 
         // 确认退出
         using var cr = CaptureToRectArea();
@@ -2696,7 +2696,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             ra.Dispose();
         });
             
-        await Delay(1000, cts.Cts.Token);  // 等待退出完成
+        await Delay(1000, cts);  // 等待退出完成
         
         //============== 重新登录流程 ==============
         // 0第三方登录（如果启用）
@@ -2704,8 +2704,8 @@ public partial class OneDragonFlowViewModel : ViewModel
         _login3RdParty.RefreshAvailabled();
         if (_login3RdParty is { Type: Login3rdParty.The3rdPartyType.Bilibili, IsAvailabled: true })
         {
-            await Delay(1, cts.Cts.Token);
-            _login3RdParty.Login(cts.Cts.Token);
+            await Delay(1, cts);
+            _login3RdParty.Login(cts);
             Logger.LogInformation("退出重登启用 B 服模式");
         }
         
@@ -2714,16 +2714,16 @@ public partial class OneDragonFlowViewModel : ViewModel
         var exitSwitchClickCnt = 0;
         for (var i = 0; i < 20; i++)
         {
-            await Delay(1, cts.Cts.Token);
+            await Delay(1, cts);
             using var contentRegion = CaptureToRectArea();
             using var ra = contentRegion.Find(_assets.ExitSwitchRo);
             if (!ra.IsEmpty())
             {
-                await Delay(500, cts.Cts.Token);
+                await Delay(500, cts);
                 ra.Click();
-                await Delay(500, cts.Cts.Token);//两次确认，防止卡顿
+                await Delay(500, cts);//两次确认，防止卡顿
                 ra.Click();
-                await Delay(1000, cts.Cts.Token);  
+                await Delay(1000, cts);  
                 break;
             }
             else
@@ -2731,10 +2731,10 @@ public partial class OneDragonFlowViewModel : ViewModel
                 exitSwitchClickCnt++;   
                 if (exitSwitchClickCnt > 2)
                 {
-                    await Delay(1000, cts.Cts.Token);
+                    await Delay(1000, cts);
                 }
             }
-            await Delay(2000, cts.Cts.Token);  
+            await Delay(2000, cts);  
         }
         
         // 2点击“退出”按钮
@@ -2742,7 +2742,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         var exitClickCnt = 0;
         for (var i = 0; i < 20; i++)
         {
-            await Delay(1, cts.Cts.Token);
+            await Delay(1, cts);
             var ra = CaptureToRectArea();
             var list = ra.FindMulti(new RecognitionObject
             {
@@ -2752,9 +2752,9 @@ public partial class OneDragonFlowViewModel : ViewModel
             Region? exitClickCntIcon = list.FirstOrDefault(r => r.Text.Contains("退出"));
             if (exitClickCntIcon != null)
             {
-                await Delay(500, cts.Cts.Token);
+                await Delay(500, cts);
                 exitClickCntIcon.Click();
-                await Delay(1000, cts.Cts.Token);  
+                await Delay(1000, cts);  
                 break;
             }
             else
@@ -2762,22 +2762,22 @@ public partial class OneDragonFlowViewModel : ViewModel
                 exitClickCnt++;
                 if (exitClickCnt > 2)
                 {
-                    await Delay(1000, cts.Cts.Token); 
+                    await Delay(1000, cts); 
                 }
             }
-            await Delay(1000, cts.Cts.Token);  
+            await Delay(1000, cts);  
         }
         
         // 3点击账号选择按钮
         var exitPhoneClickCnt = 0;
         for (var i = 0; i < 20; i++)
         {
-            await Delay(1, cts.Cts.Token);
+            await Delay(1, cts);
             
             var mainRegion= await NewRetry.WaitForElementAppear(
                 GetConfirmRa("进入游戏"),
                 () => {},
-                cts.Cts.Token,
+                cts,
                 20,
                 500
             );
@@ -2787,12 +2787,12 @@ public partial class OneDragonFlowViewModel : ViewModel
                 await NewRetry.WaitForElementDisappear(
                     GetConfirmRa("进入游戏"),
                     () => {GameCaptureRegion.GameRegion1080PPosClick(1200,494);},
-                    cts.Cts.Token,
+                    cts,
                     5,
                     1500
                 );
                 
-                await Delay(300, cts.Cts.Token);
+                await Delay(300, cts);
                 
                 var capturedArea = CaptureToRectArea();
                 bool isAccountBinding = false;
@@ -2857,7 +2857,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                                 Logger.LogInformation("UID: {0} 已绑定 {1}", SelectedConfig.GenshinUid, SelectedConfig.AccountBindingCode);
                                 phone.Click();
                                 isAccountBinding = true;
-                                await Delay(500, cts.Cts.Token);
+                                await Delay(500, cts);
                                 break;
                             }
                         }
@@ -2875,7 +2875,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                     Logger.LogWarning("尝试使用轮切方式切换账号...");
                     Notify.Event("未检测到账号列表匹配的绑定码，重新绑定UID可设置绑定码");
                     
-                    await Delay(500, cts.Cts.Token);
+                    await Delay(500, cts);
                     if (_exitPhoneCount == 3 || (_exitPhoneCount == 4 && switchTime == 1))
                     {
                         GameCaptureRegion.GameRegion1080PPosClick(732,670);;//如果只有两账号，固定选另一个
@@ -2887,11 +2887,11 @@ public partial class OneDragonFlowViewModel : ViewModel
                     
                 }
                 
-                await Delay(1000, cts.Cts.Token);     
+                await Delay(1000, cts);     
                 GameCaptureRegion.GameRegion1080PPosClick(1158,626);;//进入游戏
-                await Delay(1000, cts.Cts.Token);  
+                await Delay(1000, cts);  
                 GameCaptureRegion.GameRegion1080PPosClick(1158,626);;//进入游戏
-                await Delay(1000, cts.Cts.Token);   
+                await Delay(1000, cts);   
                 break;
             }
             else
@@ -2899,18 +2899,18 @@ public partial class OneDragonFlowViewModel : ViewModel
                 exitPhoneClickCnt++; 
                 if (exitPhoneClickCnt > 2)
                 {
-                    await Delay(1000, cts.Cts.Token);
+                    await Delay(1000, cts);
                     break;
                 }
             }
-            await Delay(1000, cts.Cts.Token);  
+            await Delay(1000, cts);  
         }
 
         // 4进入游戏检测
         var clickCnt = 0;
         for (var i = 0; i < 50; i++)
         {
-            await Delay(1, cts.Cts.Token);
+            await Delay(1, cts);
 
             using var contentRegion = CaptureToRectArea();
             using var ra = contentRegion.Find(_assets.EnterGameRo);
@@ -2923,11 +2923,11 @@ public partial class OneDragonFlowViewModel : ViewModel
             {
                 if (clickCnt > 2)
                 {
-                    await Delay(5000, cts.Cts.Token);
+                    await Delay(5000, cts);
                     break;
                 }
             }
-            await Delay(1000, cts.Cts.Token);  
+            await Delay(1000, cts);  
         }
         
         if (clickCnt == 0)
@@ -2947,10 +2947,10 @@ public partial class OneDragonFlowViewModel : ViewModel
                 await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
                 GameCaptureRegion.GameRegion1080PPosClick(955, 656);//非凌晨4点，点击屏幕
             }
-            await Delay(1000, cts.Cts.Token);
+            await Delay(1000, cts);
             
         }
-        await Delay(500, cts.Cts.Token);
+        await Delay(500, cts);
         return true;
     }
     
