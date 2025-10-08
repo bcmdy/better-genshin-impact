@@ -2788,7 +2788,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                 Logger.LogInformation("执行 {text} 动作","选择账号");
                 await NewRetry.WaitForElementDisappear(
                     GetConfirmRa("进入游戏"),
-                    () => {GameCaptureRegion.GameRegion1080PPosClick(1200,494);},
+                    () => {GameCaptureRegion.GameRegion1080PPosClick(1100,494);},
                     cts,
                     5,
                     1500
