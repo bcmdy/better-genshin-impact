@@ -1185,7 +1185,9 @@ public class PathExecutor
                                 
                                 await FaceTo(_lastWaypoint);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                await Delay(2000, ct);
+                                await Delay(1500, ct);
+                                await FaceTo(waypoint);
+                                await Delay(500, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
                                 Logger.LogInformation("尝试继续行走...");

@@ -502,7 +502,8 @@ public class AutoFightTask : ISoloTask
                         var skipModel = guardianAvatar != null && lastFightName != command.Name;
                         
                         if (skipModel) {
-                            if (_taskParam.AutoCombatEq) image = CaptureToRectArea();
+                            
+                            image = CaptureToRectArea();
                             
                             await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
                             _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
@@ -518,14 +519,14 @@ public class AutoFightTask : ISoloTask
                                 var useEq = new List<int>();
                                 for (var h = 1; h <= combatScenes.GetAvatars().Count; h++)
                                 {
-                                    if (!combatScenes.SelectAvatar(h).IsActive(image ?? CaptureToRectArea()))
+                                    if (!combatScenes.SelectAvatar(h).IsActive(image))
                                     {
                                         continue;
                                     }
                                     useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
                                     break;
                                 }
-
+                                
                                 // if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
                                 // {
                                 //     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
@@ -631,6 +632,7 @@ public class AutoFightTask : ISoloTask
                                     continue;
                                 }
                             }
+                            image.Dispose();
                         }
                         
                         if (fightEndFlag)break;

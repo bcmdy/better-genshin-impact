@@ -336,7 +336,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             if ((x == 758 || x == 722) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
                             {
-                                Task.Run(() =>
+                                await Task.Run(() =>
                                 {
                                     Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
                                     Task.Delay(200, ct).Wait();

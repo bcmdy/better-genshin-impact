@@ -2266,6 +2266,8 @@ public partial class OneDragonFlowViewModel : ViewModel
                 await new TaskRunner().RunCurrentAsync(async () =>
                 {
                     await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
+                    //获取原神窗口焦点
+                    SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
                     
                     retrySingleCount++;
                     uidCheckResult = await VerifyUid(CancellationContext.Instance.Cts.Token); // 验证当前登录账号的UID
