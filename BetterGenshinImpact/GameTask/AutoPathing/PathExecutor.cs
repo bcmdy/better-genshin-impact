@@ -1032,7 +1032,9 @@ public class PathExecutor
                             var pixelValue = bitmap2.SrcMat.At<Vec3b>(1010,814);
                             if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
                                   Math.Abs(pixelValue[1] - 215) <= 10 &&
-                                  Math.Abs(pixelValue[2] - 150) <= 10))
+                                  Math.Abs(pixelValue[2] - 150) <= 10) && !(Math.Abs(pixelValue[0] - 50) <= 10 &&
+                                                                            Math.Abs(pixelValue[1] - 204) <= 10 &&
+                                                                            Math.Abs(pixelValue[2] - 255) <= 10))
                             {
                                 pixel += 1;
                             }
@@ -1511,13 +1513,18 @@ public class PathExecutor
                 confirmRectArea.ClickTo(-100, 0);
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
             }
+            
+            var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);
+            if (pathingTask is not null && forceRefresh == true && !(Math.Abs(pixelValue[0] - 50) <= 10 &&
+                                                                    Math.Abs(pixelValue[1] - 204) <= 10 &&
+                                                                    Math.Abs(pixelValue[2] - 255) <= 10))
+            {
+                // Logger.LogInformation("切换失败，尝试识别角色-1{t} {t2} {3}",pixelValue[0],pixelValue[1],pixelValue[2]);
+                await ValidateGameWithTask(pathingTask,forceRefresh);
+            }
         }
         
         Logger.LogInformation("尝试切换角色{Name}失败！", avatar.Name);
-        if (pathingTask is not null && forceRefresh == true)
-        {
-            await ValidateGameWithTask(pathingTask,forceRefresh);
-        }
         return null;
     }
     

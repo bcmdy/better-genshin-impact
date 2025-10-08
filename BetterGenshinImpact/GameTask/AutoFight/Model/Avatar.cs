@@ -328,7 +328,8 @@ public class Avatar
                     LastActiveAvatar = Name;
                     Logger.LogInformation("成功切换角色:{Name}", Name);
                 }
-
+                AutoFightTask.SwitchTryCount = 0;
+                
                 return true;
             }
 
@@ -407,6 +408,7 @@ public class Avatar
         }
     }
 
+    private static readonly Random Random = new Random();
     private void Offset60Fix(int i)
     {
         // 3次失败考虑是否偏移出现问题，修改偏移位置
@@ -414,10 +416,48 @@ public class Avatar
         {
             if (i == 13 && AutoFightTask.FightStatusFlag)
             {
-                //跳一下,战斗中防卡死
-                Logger.LogWarning("尝试切换角色失败，尝试跳跃");
+                AutoFightTask.SwitchTryCount += 1;
+                //战斗中防卡死
+
                 Simulation.SendInput.SimulateAction(GIActions.Jump);
+                
+                var direction = Random.Next(4); // 返回一个 0 到 3 之间的随机整数
+                Logger.LogWarning("战斗中切换角色失败，尝试移动 {direction} ", direction);
+                
+                switch (direction)
+                {
+                    case 0:
+                        Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
+                        break;
+                    case 1:
+                        Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                        break;
+                    case 2:
+                        Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
+                        break;
+                    case 3:
+                        Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
+                        break;
+                }
+                Thread.Sleep(1000);
+                
+                //释放所有按键
+                Simulation.ReleaseAllKey();
+                
+                if (AutoFightTask.SwitchTryCount > 20)
+                {
+                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                    {
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                        Sleep(300, Ct);
+                    }
+        
+                    TpForRecover(Ct, new RetryException("战斗中切换角色连续失败，前往七天神像后重试"));
+                    AutoFightTask.SwitchTryCount = 0;
+                }
             }
+            
+            Simulation.SendInput.SimulateAction(GIActions.Drop);
             
             return;
         }

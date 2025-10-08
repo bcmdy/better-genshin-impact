@@ -61,6 +61,8 @@ public class AutoFightTask : ISoloTask
     
     public static bool FightStatusFlag = false;
     
+    public static int SwitchTryCount = 0;
+    
     public static volatile  bool FightEndFlag = false;
     
     private static volatile bool _isExperiencePickup = false;
@@ -357,6 +359,7 @@ public class AutoFightTask : ISoloTask
         // }
         // var FightEndFlag = false;
         FightEndFlag = false;
+        SwitchTryCount = 0;
         var fightEndFlag = false;
         var timeOutFlag = false;
         string lastFightName = "";
@@ -407,7 +410,7 @@ public class AutoFightTask : ISoloTask
         
         var useSkillList = new List<int>();
         var useSkillListWithH = new List<int>();
-        // var useSkillListWithF = 0;
+        var useSkillListWithF = 0;
 
         if (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseSkillList))
         {
@@ -416,8 +419,8 @@ public class AutoFightTask : ISoloTask
             foreach (var part in skillParts)
             {
                 var trimmedPart = part.Trim();
-                // var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
-                var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
+                var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
+                // var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
                 //寻找结尾时F的数字
 
                 if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍
@@ -428,10 +431,10 @@ public class AutoFightTask : ISoloTask
                     {
                         useSkillListWithH.Add(skillNumber); // 添加到带H的技能列表
                     }
-                    // if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
-                    // {
-                    //     useSkillListWithF = skillNumber; // 寻找结尾时F的数字
-                    // }
+                    if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
+                    {
+                        useSkillListWithF = skillNumber; // 寻找结尾时F的数字
+                    }
                 }
             }
         }
@@ -527,16 +530,16 @@ public class AutoFightTask : ISoloTask
                                     break;
                                 }
                                 
-                                // if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
-                                // {
-                                //     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
-                                //
-                                //     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
-                                //     {
-                                //         avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
-                                //     }
-                                //     useSkillListWithF = 0;
-                                // }
+                                if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
+                                {
+                                    var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
+                                
+                                    if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
+                                    {
+                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
+                                    }
+                                    useSkillListWithF = 0;
+                                }
 
                                 if (useEq.Count > 0)
                                 {
@@ -654,7 +657,7 @@ public class AutoFightTask : ISoloTask
                         {
                             continue;
                         }
-                        if (_taskParam.AutoCombatEq)avatar?.TrySwitch(15);
+                        if (_taskParam.AutoCombatEq)avatar?.TrySwitch(10);
                         #region 每个命令的跳过战斗判定
 
                         // 判断是否满足跳过条件:
