@@ -295,7 +295,7 @@ public class TpTask
 
             Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置");
             await MoveMapTo(x, y, mapName);
-            await Delay(300, ct);
+            await Delay(300, ct); // 等待地图移动完成
             bigMapInAllMapRect = GetBigMapRect(mapName);
         } while (true);
 
@@ -543,16 +543,19 @@ public class TpTask
                 break;
             }
 
-            int moveMouseX = (int)Math.Min(totalMoveMouseX, _tpConfig.MaxMouseMove * totalMoveMouseX / mouseDistance) * Math.Sign(xOffset);
-            int moveMouseY = (int)Math.Min(totalMoveMouseY, _tpConfig.MaxMouseMove * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
+            var moveStepDivisor = _tpConfig.MapMoveStepDivisor ? 20 : 10;
+            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height/2: _tpConfig.MaxMouseMove;
+            int moveMouseX = (int)Math.Min(totalMoveMouseX, moveStepDivisorDouble * totalMoveMouseX / mouseDistance) * Math.Sign(xOffset);
+            int moveMouseY = (int)Math.Min(totalMoveMouseY, moveStepDivisorDouble * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
             double moveMouseLength = Math.Sqrt(moveMouseX * moveMouseX + moveMouseY * moveMouseY);
-            int moveSteps = Math.Max((int)moveMouseLength / 10, 3); // 每次移动的步数最小为 3，避免除 0 错误
+            int moveSteps = Math.Max((int)moveMouseLength / moveStepDivisor, 3); // 每次移动的步数最小为 3，避免除 0 错误
 
             await MouseMoveMap(moveMouseX, moveMouseY, moveSteps);
             try
             {
                 exceptionTimes = 0;
                 mapCenterPoint = GetPositionFromBigMap(mapName); // 随循环更新的地图中心
+                Simulation.SendInput.Mouse.LeftButtonUp();
             }
             catch (Exception)
             {
@@ -661,21 +664,54 @@ public class TpTask
         int[] stepX = GenerateSteps((int)(pixelDeltaX / dpi), steps);
         int[] stepY = GenerateSteps((int)(pixelDeltaY / dpi), steps);
 
-        // 随机起点以避免地图移动无效
         GameCaptureRegion.GameRegionMove((rect, _) =>
             (rect.Width / 2d + Random.Shared.Next(-rect.Width / 6, rect.Width / 6),
                 rect.Height / 2d + Random.Shared.Next(-rect.Height / 6, rect.Height / 6)));
 
         Simulation.SendInput.Mouse.LeftButtonDown();
-        for (var i = 0; i < steps; i++)
+        
+        if (_tpConfig.MapMoveStepDivisor)
         {
-            var i1 = i;
-            await Delay(_tpConfig.StepIntervalMilliseconds, ct);
-            // Simulation.SendInput.Mouse.MoveMouseBy(stepX[i], stepY[i]);
-            GameCaptureRegion.GameRegionMoveBy((_, scale) => (stepX[i1] * scale, stepY[i1] * scale));
+            using (var image = CaptureToRectArea())
+            {
+                var pos = image.SrcMat.At<Vec3b>(500,500);
+                var pos2 = image.SrcMat.At<Vec3b>(600,500);
+               
+                for (var i = 1; i < steps; i++)
+                {
+                    var i1 = i;
+                    await Delay(_tpConfig.StepIntervalMilliseconds/2, ct);
+                    // Simulation.SendInput.Mouse.MoveMouseBy(stepX[i], stepY[i]);
+                    GameCaptureRegion.GameRegionMoveBy((_, scale) => (stepX[i1] * scale, stepY[i1] * scale));
+                    await Delay(_tpConfig.StepIntervalMilliseconds/2, ct);
+                    if (i != 0 && i % 10 == 0)
+                    {
+                        using (var image2 = CaptureToRectArea())
+                        {
+                            var pos3 = image2.SrcMat.At<Vec3b>(500,500);
+                            var pos4 = image2.SrcMat.At<Vec3b>(600,500);
+                            if (pos3 == pos && pos4 == pos2)
+                            {
+                                Logger.LogWarning("地图移动无效，重新移动");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (var i = 0; i < steps; i++)
+            {
+                var i1 = i;
+                await Delay(_tpConfig.StepIntervalMilliseconds, ct);
+                // Simulation.SendInput.Mouse.MoveMouseBy(stepX[i], stepY[i]);
+                GameCaptureRegion.GameRegionMoveBy((_, scale) => (stepX[i1] * scale, stepY[i1] * scale));
+            }
         }
 
-        Simulation.SendInput.Mouse.LeftButtonUp();
+        // Simulation.SendInput.Mouse.LeftButtonUp();
     }
 
     private int[] GenerateSteps(int delta, int steps)
