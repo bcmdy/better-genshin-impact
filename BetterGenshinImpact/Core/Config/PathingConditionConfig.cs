@@ -59,13 +59,6 @@ public partial class PathingConditionConfig : ObservableObject
         get => _lastEatTime;
         set => _lastEatTime = value;
     }
-    // 战斗点位
-    private static WaypointForTrack? _fightWaypoint = null;
-    public static WaypointForTrack? FightWaypoint
-    {
-        get => _fightWaypoint;
-        set => _fightWaypoint = value;
-    }
     
     //装配营养袋重试次数
     private static int _retryAssemblyNum = 3;
