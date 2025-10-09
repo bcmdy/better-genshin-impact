@@ -26,6 +26,7 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
 using OpenCvSharp; 
 using System.Windows.Media;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
 using BetterGenshinImpact.GameTask.Model.Area;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -132,7 +133,9 @@ public class CombatScenes : IDisposable
         while (ms > 0)
         {
             var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,318);
-            var woodNum = new Scalar(255, 255, 255);
+            // var woodNumValue = ms > 725 ? 255 : Math.Max(255 - (500 - ms + 1), 1); // 计算woodNum的值
+            // var woodNum = new Scalar(woodNumValue, woodNumValue, woodNumValue); // 创建Scalar对象
+            var woodNum = new Scalar(255, 255, 255); // 创建Scalar对象
             var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
             var labels = new Mat();
             var stats = new Mat();
@@ -164,7 +167,7 @@ public class CombatScenes : IDisposable
             ms -= 1;
             if (ms == 0)
             {
-                throw new Exception($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}");
+                Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}");
             }
         }
         
@@ -225,7 +228,7 @@ public class CombatScenes : IDisposable
             return value >= start && value <= end;
         }
         
-        if (numLabels <= 3)
+        if (avatarIndexRectList.Count <= 3)
         {
             if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) //3人世界
                 || IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256)) //二人世界
@@ -237,7 +240,7 @@ public class CombatScenes : IDisposable
         // Logger.LogInformation("队伍UP211: {numLabels}", numLabels);
         // Logger.LogInformation("队伍UP22: {Num}", up);
         
-        var model = numLabels >= 3 ? 
+        var model = avatarIndexRectList.Count > 3 ? 
             //单人世界
             IsInRange(firstComponentY, 0, 4) || IsInRange(firstComponentY, 94, 100)
             : 
