@@ -34,6 +34,7 @@ using System.Drawing;
 using BetterGenshinImpact.GameTask.AutoPick; // 添加对System.Drawing的引用
 using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 using BetterGenshinImpact.GameTask.AutoPick.Assets;
+using BetterGenshinImpact.GameTask.AutoPathing.Model;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -66,8 +67,11 @@ public class AutoFightTask : ISoloTask
     public static volatile  bool FightEndFlag = false;
     
     private static volatile bool _isExperiencePickup = false;
-    
-    public static volatile bool IsTpForRecover = false;
+
+    public static bool IsTpForRecover {get; set;} = false;
+
+    // 战斗点位
+    public static WaypointForTrack? FightWaypoint  {get; set;} = null;
     
     private class TaskFightFinishDetectConfig
     {
@@ -596,10 +600,14 @@ public class AutoFightTask : ISoloTask
                                                         await Delay(200, ct);
                                                     }
                                                     
-                                                    await Delay(100, ct);
+                                                    await Delay(99, ct);
                                                 }
                                             }
                                             
+                                            if (guardianAvatar.IsSkillReady())
+                                            {
+                                                break;
+                                            }
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                                             if (!fightEndFlag)
                                             { 
@@ -715,7 +723,7 @@ public class AutoFightTask : ISoloTask
                         #region Q前寻敌处理
                         if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.CheckBeforeBurst && (command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
                         {
-                            fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                            fightEndFlag = await CheckFightFinish(0, detectDelayTime);
                         }
                         #endregion
                         
@@ -750,7 +758,12 @@ public class AutoFightTask : ISoloTask
                                 {
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
-                                
+
+                                if (lastFightName == "玛薇卡")
+                                {
+                                    var man = combatScenes.SelectAvatar(1).Name == "玛薇卡" ? combatScenes.SelectAvatar(2) : combatScenes.SelectAvatar(1);
+                                    man.TrySwitch();
+                                }
                                 fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                             }
                         }
@@ -850,12 +863,14 @@ public class AutoFightTask : ISoloTask
                 if (picker.Name == "枫原万叶")
                 {
                     var time = TimeSpan.FromSeconds(picker.GetSkillCdSeconds());
+                    var fra = CaptureToRectArea();
                     if (!(lastFightName == picker.Name && time.TotalSeconds > 3))
                     {
                         TaskControl.Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
                         await Delay(200, ct);
                         if (picker.TrySwitch(10))
                         {
+                            await Delay(50, ct);
                             if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))
                             {
                                 await picker.WaitSkillCd(ct);
@@ -870,6 +885,7 @@ public class AutoFightTask : ISoloTask
                     {
                         TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
                     }
+                    fra.Dispose();
                 }
                 else if (picker.Name == "琴")
                 {

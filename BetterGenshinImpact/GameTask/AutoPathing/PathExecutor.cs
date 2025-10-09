@@ -256,11 +256,11 @@ public class PathExecutor
                             {
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
-                                    PathingConditionConfig.FightWaypoint = waypoint;
+                                    AutoFightTask.FightWaypoint = waypoint;
                                 }
                                 else
                                 {
-                                    PathingConditionConfig.FightWaypoint = null;
+                                    AutoFightTask.FightWaypoint = null;
                                 }
                                 // 执行 action
                                 await AfterMoveToTarget(waypoint);
@@ -1515,6 +1515,8 @@ public class PathExecutor
             }
             
             var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);
+            // var pixelValue2 = bitmap.DeriveCrop(_combatScenes.SelectAvatar(1).IndexRect).SrcMat.At<Vec3b>(1, 1);
+            // var pixelValue22 = bitmap.DeriveCrop(_combatScenes.SelectAvatar(2).IndexRect).SrcMat.At<Vec3b>(1, 1);
             if (pathingTask is not null && forceRefresh == true && !(Math.Abs(pixelValue[0] - 50) <= 10 &&
                                                                     Math.Abs(pixelValue[1] - 204) <= 10 &&
                                                                     Math.Abs(pixelValue[2] - 255) <= 10))

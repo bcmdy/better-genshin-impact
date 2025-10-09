@@ -166,7 +166,7 @@ public class Avatar
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
-            if (PathingConditionConfig.FightWaypoint is not null)
+            if (AutoFightTask.FightWaypoint is not null)
             {
                 if (!SwimmingConfirm(CaptureToRectArea())) //二次确认
                 {
@@ -177,11 +177,11 @@ public class Avatar
                 var pathExecutor = new PathExecutor(ct);
                 try
                 {
-                    pathExecutor.FaceTo(PathingConditionConfig.FightWaypoint).Wait(2000, ct);
-                    PathingConditionConfig.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
+                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, ct);
+                    AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(PathingConditionConfig.FightWaypoint,false).Wait(15000, ct);
-                    PathingConditionConfig.FightWaypoint = null;
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint,false).Wait(15000, ct);
+                    AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }
                 catch (Exception ex)
