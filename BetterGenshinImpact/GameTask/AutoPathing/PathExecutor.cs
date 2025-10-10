@@ -984,6 +984,7 @@ public class PathExecutor
         var prevPositions = new List<Point2f>();
         var fastModeColdTime = DateTime.MinValue;
         int num = 0, distanceTooFarRetryCount = 0, consecutiveRotationCountBeyondAngle = 0;
+        var distanceCount = 0;
 
         // 按下w，一直走
         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
@@ -1048,10 +1049,10 @@ public class PathExecutor
                 
                     if (pixel >= 2)
                     {
-                        if (distance < 6)
+                        if (distance < 10)
                         {
                             // 抬起w键
-                            Logger.LogInformation("到达战斗点附近");
+                            Logger.LogInformation("到达战斗点附近-2");
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                             return;
                         }
@@ -1101,6 +1102,15 @@ public class PathExecutor
                                 }
                             }
                         }
+                    }
+                }
+                if (distance < 10)
+                {
+                    distanceCount ++;
+                    if (distanceCount > 10)
+                    {
+                        Logger.LogWarning("战斗点靠近超时-1");
+                        break;
                     }
                 }
             }

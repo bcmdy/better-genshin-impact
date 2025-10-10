@@ -532,7 +532,17 @@ public class AutoFightTask : ISoloTask
                                     {
                                         continue;
                                     }
-                                    useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
+
+                                    try
+                                    {
+                                        useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Logger.LogError("自动EQ战斗：角色 {name} 识别异常 {ex}", h, ex.Message);
+                                        fightEndFlag = true;
+                                    }
+                                    
                                     break;
                                 }
                                 
@@ -658,7 +668,16 @@ public class AutoFightTask : ISoloTask
 
                         if ( _finishDetectConfig.RotateFindEnemyEnabled && i == 0 && _taskParam.IsFirstCheck)
                         {
-                            await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,true,_taskParam.RotaryFactor);
+                            try
+                            {
+                                await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime,
+                                    ct, true, _taskParam.RotaryFactor);
+                            }
+                            catch (Exception ex)
+                            {
+                                fightEndFlag = true;
+                                Logger.LogError("初始寻敌异常 {ex}", ex.Message);
+                            }
                         }
                         
                         #endregion
@@ -934,6 +953,11 @@ public class AutoFightTask : ISoloTask
                                                     }
                                                 }
                                             }
+                                            catch (Exception e)
+                                            {
+                                                Logger.LogError(e, "琴拾取物品异常");
+                                                find = false;
+                                            }
                                             finally
                                             {
                                                 Monitor.Exit(PickLock);
@@ -1032,7 +1056,7 @@ public class AutoFightTask : ISoloTask
             catch (Exception ex)
             {
                 TaskControl.Logger.LogError(ex, "SeekAndFightAsync 方法发生异常");
-                result = false;
+                result = true;
             }
             
             AutoFightSeek.RotationCount = (result == null) ? 

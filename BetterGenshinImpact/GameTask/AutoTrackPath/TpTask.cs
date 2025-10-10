@@ -29,6 +29,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog.Core;
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
@@ -104,7 +105,7 @@ public class TpTask
             revivePoint = giTpPoint;
         }
 
-        Logger.LogInformation("将传送至 {country} {area} 七天神像", country, area);
+        TaskControl.Logger.LogInformation("将传送至 {country} {area} 七天神像", country, area);
         await Tp(x, y, MapTypes.Teyvat.ToString(), false);
         if (_tpConfig.ShouldMove || _tpConfig.IsReviveInNearestStatueOfTheSeven)
         {
@@ -199,8 +200,8 @@ public class TpTask
             {
                 if (retryCount > 1)
                 {
-                    Logger.LogError("打开大地图失败，重试 {I} 次", i + 1);
-                    Logger.LogDebug(e, "打开大地图失败，重试 {I} 次", i + 1);
+                    TaskControl.Logger.LogError("打开大地图失败，重试 {I} 次", i + 1);
+                    TaskControl.Logger.LogDebug(e, "打开大地图失败，重试 {I} 次", i + 1);
                 }
 
                 if (i + 1 >= retryCount)
@@ -231,7 +232,7 @@ public class TpTask
                                            Math.Pow(nTpPoints[0].Y - nTpPoints[1].Y, 2));
         // 确保不会点错传送点的最小缩放，保证至少为 1.0
         var minZoomLevel = Math.Max(disBetweenTpPoints / 20, 1.0);
-        // 切换地区
+
         if (mapName == MapTypes.Teyvat.ToString())
         {
             // 计算传送点位置离哪张地图切换后的中心点最近，切换到该地图
@@ -242,8 +243,7 @@ public class TpTask
             // 直接切换地区
             await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
         }
-
-
+        
         // 3. 调整初始缩放等级，避免识别中心点失败
         var zoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
         if (_tpConfig.MapZoomEnabled)
@@ -255,13 +255,13 @@ public class TpTask
             {
                 await AdjustMapZoomLevel(zoomLevel, DisplayTpPointZoomLevel);
                 zoomLevel = DisplayTpPointZoomLevel;
-                Logger.LogInformation("当前缩放等级过大，调整为 {zoomLevel:0.00}", DisplayTpPointZoomLevel);
+                TaskControl.Logger.LogInformation("当前缩放等级过大，调整为 {zoomLevel:0.00}", DisplayTpPointZoomLevel);
             }
             else if (zoomLevel < _tpConfig.MinZoomLevel - _tpConfig.PrecisionThreshold)
             {
                 await AdjustMapZoomLevel(zoomLevel, _tpConfig.MinZoomLevel);
                 zoomLevel = _tpConfig.MinZoomLevel;
-                Logger.LogInformation("当前缩放等级过小，调整为 {zoomLevel:0.00}", _tpConfig.MinZoomLevel);
+                TaskControl.Logger.LogInformation("当前缩放等级过小，调整为 {zoomLevel:0.00}", _tpConfig.MinZoomLevel);
             }
         }
 
@@ -270,13 +270,20 @@ public class TpTask
         {
             if (_tpConfig.MapZoomEnabled)
             {
-                Logger.LogInformation("目标传送点有相近传送点，到目标传送点附近将缩放到{zoomLevel:0.00}", minZoomLevel);
+                TaskControl.Logger.LogInformation("目标传送点有相近传送点，到目标传送点附近将缩放到{zoomLevel:0.00}", minZoomLevel);
                 await MoveMapTo(x, y, mapName, minZoomLevel);
-                await Delay(300, ct); // 等待地图移动完成
+                if (_tpConfig.MapMoveStepDivisor)
+                {
+                    await Delay(00, ct); // 等待地图移动完成
+                }
+                else
+                {
+                    await Delay(300, ct); // 等待地图移动完成
+                }
             }
             else
             {
-                Logger.LogInformation("目标传送点有相近传送点，可能传送失败。如果失败请到设置-大地图地图传送设置开启地图缩放");
+                TaskControl.Logger.LogInformation("目标传送点有相近传送点，可能传送失败。如果失败请到设置-大地图地图传送设置开启地图缩放");
                 // TODO 部分无法区分点位强制缩放，即使没有zoomEnabled。
             }
         }
@@ -289,13 +296,20 @@ public class TpTask
             if (IsPointInBigMapWindow(mapName, bigMapInAllMapRect, x, y)) break;
             if (retryCount++ >= 5) // 防止死循环
             {
-                Logger.LogWarning("多次尝试未移动到目标传送点，传送失败");
+                TaskControl.Logger.LogWarning("多次尝试未移动到目标传送点，传送失败");
                 throw new Exception("多次尝试未移动到目标传送点，传送失败");
             }
 
-            Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置");
+            TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置");
             await MoveMapTo(x, y, mapName);
-            await Delay(300, ct); // 等待地图移动完成
+            if (_tpConfig.MapMoveStepDivisor)
+            {
+                await Delay(200, ct); // 等待地图移动完成
+            }
+            else
+            {
+                await Delay(300, ct); // 等待地图移动完成
+            }
             bigMapInAllMapRect = GetBigMapRect(mapName);
         } while (true);
 
@@ -303,7 +317,7 @@ public class TpTask
         // Debug.WriteLine($"({x},{y}) 在 {bigMapInAllMapRect} 内，计算它在窗体内的位置");
         // 注意这个坐标的原点是中心区域某个点，所以要转换一下点击坐标（点击坐标是左上角为原点的坐标系），不能只是缩放
         var (clickX, clickY) = ConvertToGameRegionPosition(mapName, bigMapInAllMapRect, x, y);
-        Logger.LogInformation("点击传送点");
+        TaskControl.Logger.LogInformation("点击传送点");
         CaptureToRectArea().ClickTo((int)clickX, (int)clickY);
 
         // 7. 触发一次快速传送功能
@@ -328,7 +342,7 @@ public class TpTask
             using var capture = CaptureToRectArea();
             if (Bv.IsInMainUi(capture))
             {
-                Logger.LogInformation("传送完成，返回主界面");
+                TaskControl.Logger.LogInformation("传送完成，返回主界面");
                 return;
             }
             //增加容错，小概率情况下碰到，前面点击传送失败
@@ -336,7 +350,7 @@ public class TpTask
             await Delay(delayMs, ct);
         }
 
-        Logger.LogWarning("传送等待超时，换台电脑吧");
+        TaskControl.Logger.LogWarning("传送等待超时，换台电脑吧");
     }
 
     /// <summary>
@@ -453,7 +467,7 @@ public class TpTask
                 Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                 await Delay(300, ct);
                 // throw; // 不抛出异常，继续重试
-                Logger.LogWarning(e.Message + "  重试");
+                TaskControl.Logger.LogWarning(e.Message + "  重试");
             }
             catch (Exception e) when (e is NormalEndException || e is TaskCanceledException)
             {
@@ -461,8 +475,8 @@ public class TpTask
             }
             catch (Exception e)
             {
-                Logger.LogError("传送失败，重试 {I} 次", i + 1);
-                Logger.LogDebug(e, "传送失败，重试 {I} 次", i + 1);
+                TaskControl.Logger.LogError("传送失败，重试 {I} 次", i + 1);
+                TaskControl.Logger.LogDebug(e, "传送失败，重试 {I} 次", i + 1);
             }
         }
 
@@ -537,25 +551,25 @@ public class TpTask
             }
 
             // 非常接近目标点，不再进一步调整
-            if (mouseDistance < _tpConfig.Tolerance)
+            if (mouseDistance < (_tpConfig.MapMoveStepDivisor ? 400 : _tpConfig.Tolerance))
             {
-                Logger.LogDebug("移动 {I} 次鼠标后，已经接近目标点，不再移动地图。", iteration + 1);
+                TaskControl.Logger.LogDebug("移动 {I} 次鼠标后，已经接近目标点，不再移动地图。", iteration + 1);
                 break;
             }
 
-            var moveStepDivisor = _tpConfig.MapMoveStepDivisor ? 20 : 10;
-            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height/2: _tpConfig.MaxMouseMove;
+            var moveStepDivisor = _tpConfig.MapMoveStepDivisor ? 40 : 10;
+            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height*3/5: _tpConfig.MaxMouseMove;
             int moveMouseX = (int)Math.Min(totalMoveMouseX, moveStepDivisorDouble * totalMoveMouseX / mouseDistance) * Math.Sign(xOffset);
             int moveMouseY = (int)Math.Min(totalMoveMouseY, moveStepDivisorDouble * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
             double moveMouseLength = Math.Sqrt(moveMouseX * moveMouseX + moveMouseY * moveMouseY);
             int moveSteps = Math.Max((int)moveMouseLength / moveStepDivisor, 3); // 每次移动的步数最小为 3，避免除 0 错误
 
+            // TaskControl.Logger.LogWarning("111:{t}-{t1}-{tt2}-{t22}",mapName,moveMouseX,moveMouseY,moveSteps);
             await MouseMoveMap(moveMouseX, moveMouseY, moveSteps);
             try
             {
                 exceptionTimes = 0;
                 mapCenterPoint = GetPositionFromBigMap(mapName); // 随循环更新的地图中心
-                Simulation.SendInput.Mouse.LeftButtonUp();
             }
             catch (Exception)
             {
@@ -564,7 +578,7 @@ public class TpTask
                     throw new Exception("多次中心点识别失败，重新传送");
                 }
 
-                Logger.LogWarning("中心点识别失败，预测移动的距离");
+                TaskControl.Logger.LogWarning("中心点识别失败，预测移动的距离");
                 mapCenterPoint += new Point2f((float)(moveMouseX * currentZoomLevel / _tpConfig.MapScaleFactor),
                     (float)(moveMouseY * currentZoomLevel / _tpConfig.MapScaleFactor));
             }
@@ -573,6 +587,7 @@ public class TpTask
             totalMoveMouseX = _tpConfig.MapScaleFactor * Math.Abs(xOffset) / currentZoomLevel;
             totalMoveMouseY = _tpConfig.MapScaleFactor * Math.Abs(yOffset) / currentZoomLevel;
             mouseDistance = Math.Sqrt(totalMoveMouseX * totalMoveMouseX + totalMoveMouseY * totalMoveMouseY);
+            if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
         }
     }
 
@@ -614,7 +629,13 @@ public class TpTask
             GameCaptureRegion.GameRegionClick((rect, scale) => (_tpConfig.ZoomButtonX * scale, _zoomOutButtonY * scale));
         }
 
-        await Delay(100, ct);
+        if (_tpConfig.MapMoveStepDivisor)
+        {
+            await Delay(50, ct);
+        }else
+        {
+            await Delay(100, ct);
+        }
     }
 
 
@@ -655,7 +676,13 @@ public class TpTask
         int initialY = (int)(_tpConfig.ZoomStartY + (_tpConfig.ZoomEndY - _tpConfig.ZoomStartY) * (zoomLevel - 1) / 5d);
         int targetY = (int)(_tpConfig.ZoomStartY + (_tpConfig.ZoomEndY - _tpConfig.ZoomStartY) * (targetZoomLevel - 1) / 5d);
         await MouseClickAndMove(_tpConfig.ZoomButtonX, initialY, _tpConfig.ZoomButtonX, targetY);
-        await Delay(100, ct);
+        if (_tpConfig.MapMoveStepDivisor)
+        {
+            await Delay(50, ct);
+        }else
+        {
+            await Delay(100, ct);
+        }
     }
 
     private async Task MouseMoveMap(int pixelDeltaX, int pixelDeltaY, int steps = 10)
@@ -663,12 +690,15 @@ public class TpTask
         double dpi = TaskContext.Instance().DpiScale;
         int[] stepX = GenerateSteps((int)(pixelDeltaX / dpi), steps);
         int[] stepY = GenerateSteps((int)(pixelDeltaY / dpi), steps);
-
+        //检查标记
+        var isMark = true;
+        
         GameCaptureRegion.GameRegionMove((rect, _) =>
             (rect.Width / 2d + Random.Shared.Next(-rect.Width / 6, rect.Width / 6),
                 rect.Height / 2d + Random.Shared.Next(-rect.Height / 6, rect.Height / 6)));
 
         Simulation.SendInput.Mouse.LeftButtonDown();
+        await Delay(50, ct);
         
         if (_tpConfig.MapMoveStepDivisor)
         {
@@ -680,11 +710,12 @@ public class TpTask
                 for (var i = 1; i < steps; i++)
                 {
                     var i1 = i;
-                    await Delay(_tpConfig.StepIntervalMilliseconds/2, ct);
+                    
                     // Simulation.SendInput.Mouse.MoveMouseBy(stepX[i], stepY[i]);
                     GameCaptureRegion.GameRegionMoveBy((_, scale) => (stepX[i1] * scale, stepY[i1] * scale));
-                    await Delay(_tpConfig.StepIntervalMilliseconds/2, ct);
-                    if (i != 0 && i % 10 == 0)
+                    if(i==1) await Delay(50, ct);
+                    await Delay(_tpConfig.StepIntervalMilliseconds, ct);
+                    if (i >= steps/2 && steps > 3 && isMark)
                     {
                         using (var image2 = CaptureToRectArea())
                         {
@@ -692,11 +723,13 @@ public class TpTask
                             var pos4 = image2.SrcMat.At<Vec3b>(600,500);
                             if (pos3 == pos && pos4 == pos2)
                             {
-                                Logger.LogWarning("地图移动无效，重新移动");
+                                Simulation.SendInput.Mouse.LeftButtonUp();
+                                TaskControl.Logger.LogWarning("地图拖动异常，重新调整");
                                 break;
                             }
+                            isMark = false;
                         }
-                    }
+                    } 
                 }
             }
         }
@@ -711,7 +744,7 @@ public class TpTask
             }
         }
 
-        // Simulation.SendInput.Mouse.LeftButtonUp();
+        if (!_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
     }
 
     private int[] GenerateSteps(int delta, int steps)
@@ -871,7 +904,7 @@ public class TpTask
         if (bigMapCenterPointNullable != null)
         {
             var bigMapCenterPoint = bigMapCenterPointNullable.Value;
-            Logger.LogDebug("识别当前大地图位置：{Pos}", bigMapCenterPoint);
+            TaskControl.Logger.LogDebug("识别当前大地图位置：{Pos}", bigMapCenterPoint);
             minDistance = Math.Sqrt(Math.Pow(bigMapCenterPoint.X - x, 2) + Math.Pow(bigMapCenterPoint.Y - y, 2));
             if (minDistance < 50)
             {
@@ -880,6 +913,13 @@ public class TpTask
             }
         }
 
+        if (_tpConfig.MapMoveStepDivisor && forceCountry != null)
+        {
+            TaskControl.Logger.LogDebug("快速拖动模式强制切换区域：{t}",forceCountry);
+            await SwitchArea(forceCountry);
+            return true;
+        }
+        
         string minCountry = "当前位置";
         foreach (var (country, position) in MapLazyAssets.Instance.CountryPositions)
         {
@@ -891,14 +931,13 @@ public class TpTask
             }
         }
 
-        Logger.LogDebug("离目标传送点最近的区域是：{Country}", minCountry);
+
         if (minCountry != "当前位置")
         {
             if (forceCountry != null)
             {
                 minCountry = forceCountry;
             }
-
             await SwitchArea(minCountry);
             return true;
         }
@@ -920,11 +959,12 @@ public class TpTask
                 ["渊下宫"] = ["渊下宮"],
             },
         });
+
         string minCountryLocalized = this.stringLocalizer.WithCultureGet(this.cultureInfo, areaName);
         Region? matchRect = list.OrderByDescending(r => r.Y).FirstOrDefault(r => r.Text.Contains(minCountryLocalized));
         if (matchRect == null)
         {
-            Logger.LogWarning("切换区域失败：{Country}", areaName);
+            TaskControl.Logger.LogWarning("切换区域失败：{Country}", areaName);
             if (areaName == MapTypes.TheChasm.GetDescription() || areaName == MapTypes.Enkanomiya.GetDescription())
             {
                 throw new Exception($"切换独立地图区域[{areaName}]失败");
@@ -933,7 +973,7 @@ public class TpTask
         else
         {
             matchRect.Click();
-            Logger.LogInformation("切换到区域：{Country}", areaName);
+            TaskControl.Logger.LogInformation("切换到区域：{Country}", areaName);
         }
 
         await Delay(500, ct);
@@ -1036,7 +1076,7 @@ public class TpTask
                     continue;
                 }
 
-                Logger.LogInformation("传送：点击 {Option}", textRegion.Text.Replace(">", ""));
+                TaskControl.Logger.LogInformation("传送：点击 {Option}", textRegion.Text.Replace(">", ""));
                 var time = TaskContext.Instance().Config.QuickTeleportConfig.TeleportListClickDelay;
                 time = time < 500 ? 500 : time;
                 Thread.Sleep(time);
