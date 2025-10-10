@@ -1412,6 +1412,8 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     public void SaveConfig()
     {
+        if (_autoRun)return;
+        
         if (string.IsNullOrEmpty(SelectedConfig.Name) || SelectedConfig.ScheduleName != Config.SelectedOneDragonFlowPlanName)
         {
             return;
@@ -1419,7 +1421,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
         SelectedConfig.TaskEnabledList.Clear();
         foreach (var task in TaskList)
-        {
+        { 
             SelectedConfig.TaskEnabledList.Add(task.Index, (task.IsEnabled, task.Name));
         }
         WriteConfig(SelectedConfig);
@@ -3020,24 +3022,21 @@ public partial class OneDragonFlowViewModel : ViewModel
             }
             
             var newConfigFromOld = new OneDragonFlowConfig();
+
+            newConfigFromOld.TaskEnabledList = AdaptTaskEnabledList(oldConfig.TaskEnabledList);
+            newConfigFromOld.Version = 1;
+            
+            // 再批量复制其它属性（排除已处理的）
             foreach (var property in typeof(OneDragonFlowConfigV0).GetProperties())
             {
-                var newProperty = typeof(OneDragonFlowConfig).GetProperty(property.Name);// 新版本的属性
+                if (property.Name == "TaskEnabledList" || property.Name == "Version") continue;
+                var newProperty = typeof(OneDragonFlowConfig).GetProperty(property.Name);
                 if (newProperty != null && newProperty.CanWrite)
                 {
-                    if (property.Name == "TaskEnabledList")
-                    {
-                        newProperty.SetValue(newConfigFromOld, AdaptTaskEnabledList(oldConfig.TaskEnabledList));
-                    }else if (property.Name == "Version")
-                    {
-                        newProperty.SetValue(newConfigFromOld, 1);
-                    }
-                    else
-                    {
-                        newProperty.SetValue(newConfigFromOld, property.GetValue(oldConfig));// 其他属性直接复制
-                    }
+                    newProperty.SetValue(newConfigFromOld, property.GetValue(oldConfig));
                 }
             }
+            
             return newConfigFromOld;
         }
         catch (Exception ex)
