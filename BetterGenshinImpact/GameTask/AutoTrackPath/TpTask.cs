@@ -498,6 +498,7 @@ public class TpTask
         double maxZoomLevel = _tpConfig.MaxZoomLevel;
         double currentZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
         int exceptionTimes = 0;
+        var falseCount = 0;
         Point2f mapCenterPoint;
         try
         {
@@ -534,9 +535,9 @@ public class TpTask
         {
             if (_tpConfig.MapZoomEnabled)
             {
-                if (mouseDistance < _tpConfig.MapZoomInDistance)
+                if (mouseDistance < (_tpConfig.MapMoveStepDivisor ? 600 : _tpConfig.MapZoomInDistance))
                 {
-                    double targetZoomLevel = currentZoomLevel * mouseDistance / _tpConfig.MapZoomInDistance;
+                    double targetZoomLevel = currentZoomLevel * mouseDistance / (_tpConfig.MapMoveStepDivisor ? 600 : _tpConfig.MapZoomInDistance);
                     targetZoomLevel = Math.Max(targetZoomLevel, minZoomLevel);
                     if (currentZoomLevel > minZoomLevel + _tpConfig.PrecisionThreshold)
                     {
@@ -573,14 +574,14 @@ public class TpTask
             }
             catch (Exception)
             {
-                if (++exceptionTimes > 2)
+                if (++exceptionTimes > (_tpConfig.MapMoveStepDivisor?1:2))
                 {
                     throw new Exception("多次中心点识别失败，重新传送");
                 }
 
                 TaskControl.Logger.LogWarning("中心点识别失败，预测移动的距离");
                 mapCenterPoint += new Point2f((float)(moveMouseX * currentZoomLevel / _tpConfig.MapScaleFactor),
-                    (float)(moveMouseY * currentZoomLevel / _tpConfig.MapScaleFactor));
+                    (float)(moveMouseY * currentZoomLevel / _tpConfig.MapScaleFactor));  
             }
 
             (xOffset, yOffset) = (x - mapCenterPoint.X, y - mapCenterPoint.Y);
@@ -692,11 +693,23 @@ public class TpTask
         int[] stepY = GenerateSteps((int)(pixelDeltaY / dpi), steps);
         //检查标记
         var isMark = true;
-        
-        GameCaptureRegion.GameRegionMove((rect, _) =>
-            (rect.Width / 2d + Random.Shared.Next(-rect.Width / 6, rect.Width / 6),
-                rect.Height / 2d + Random.Shared.Next(-rect.Height / 6, rect.Height / 6)));
 
+        if (_tpConfig.MapMoveStepDivisor)
+        {
+            int signX = -Math.Sign(pixelDeltaX);
+            int signY = -Math.Sign(pixelDeltaY);
+            GameCaptureRegion.GameRegionMove((rect, _) =>
+                (rect.Width / 2d + Random.Shared.Next(rect.Width / 5, rect.Width / 3)*signX,
+                    rect.Height / 2d + Random.Shared.Next(rect.Height / 5, rect.Height / 3)*signY));
+        }
+        else
+        {
+            GameCaptureRegion.GameRegionMove((rect, _) =>
+                (rect.Width / 2d + Random.Shared.Next(-rect.Width / 6, rect.Width / 6),
+                    rect.Height / 2d + Random.Shared.Next(-rect.Height / 6, rect.Height / 6)));
+        }
+
+        await Delay(50, ct);
         Simulation.SendInput.Mouse.LeftButtonDown();
         await Delay(50, ct);
         
@@ -723,7 +736,6 @@ public class TpTask
                             var pos4 = image2.SrcMat.At<Vec3b>(600,500);
                             if (pos3 == pos && pos4 == pos2)
                             {
-                                Simulation.SendInput.Mouse.LeftButtonUp();
                                 TaskControl.Logger.LogWarning("地图拖动异常，重新调整");
                                 break;
                             }
