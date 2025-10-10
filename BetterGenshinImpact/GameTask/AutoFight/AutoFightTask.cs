@@ -73,6 +73,8 @@ public class AutoFightTask : ISoloTask
     // 战斗点位
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
     
+    private static readonly object PickLock = new object(); 
+    
     private class TaskFightFinishDetectConfig
     {
         public int DelayTime = 1500;
@@ -913,17 +915,31 @@ public class AutoFightTask : ISoloTask
                                 foreach (var command in pickUpAction.CombatCommands)
                                 {
                                     command.Execute(combatScenes);
+                                    //异步执行，防止卡顿
+                                    //异步执行，防止卡顿
                                     Task.Run(() =>
                                     {
-                                        if (find)
+                                        if (Monitor.TryEnter(PickLock))
                                         {
-                                            var imagePick = CaptureToRectArea();
-                                            if (imagePick.Find(AutoPickAssets.Instance.PickRo).IsExist())
+                                            try
                                             {
-                                                find = false;
+                                                if (find)
+                                                {
+                                                    using (var imagePick = CaptureToRectArea())
+                                                    {
+                                                        if (imagePick.Find(AutoPickAssets.Instance.PickRo).IsExist())
+                                                        {
+                                                            find = false;
+                                                        }
+                                                    }
+                                                }
                                             }
-                                            imagePick.Dispose();
+                                            finally
+                                            {
+                                                Monitor.Exit(PickLock);
+                                            }
                                         }
+                                        // 后面没代码了，不用写return？
                                     });
                                 }
 
