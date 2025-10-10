@@ -780,11 +780,6 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
 
-                                if (lastFightName == "玛薇卡")
-                                {
-                                    var man = combatScenes.SelectAvatar(1).Name == "玛薇卡" ? combatScenes.SelectAvatar(2) : combatScenes.SelectAvatar(1);
-                                    man.TrySwitch();
-                                }
                                 fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                             }
                         }

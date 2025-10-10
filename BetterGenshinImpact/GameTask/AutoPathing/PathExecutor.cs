@@ -1104,7 +1104,7 @@ public class PathExecutor
                         }
                     }
                 }
-                if (distance < 10)
+                if (distance < 10 && waypoint.MoveMode != MoveModeEnum.Climb.Code && waypoint.MoveMode != MoveModeEnum.Fly.Code)
                 {
                     distanceCount ++;
                     if (distanceCount > 10)

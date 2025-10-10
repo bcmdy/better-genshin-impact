@@ -1161,6 +1161,39 @@ public class Avatar
                 break;
             default:
                 Simulation.SendInput.Keyboard.KeyPress(vk);
+                if (vk == User32.VK.VK_E)
+                {
+                    Thread.Sleep(200);
+                    double cd = 0;
+                    var cooldownDetected = false;
+    
+                    for (var attempt = 0; attempt < 2; attempt++)
+                    {
+                        var region = CaptureToRectArea();
+                        cd = AfterUseSkill(region);
+        
+                        if (cd > 0)
+                        {
+                            cooldownDetected = true;
+                            break;
+                        }
+        
+                        if (attempt < 2 - 1)
+                        {
+                            Thread.Sleep(100);
+                        }
+                    }
+
+                    if (cooldownDetected)
+                    {
+                        Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
+                            Name, Math.Round(cd, 2));
+                    }
+                    else
+                    {
+                        Logger.LogWarning("{Name} 战技cd未更新", Name);
+                    }
+                }
                 break;
         }
     }
