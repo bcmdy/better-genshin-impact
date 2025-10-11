@@ -905,6 +905,14 @@ public class PathExecutor
             return false;
         }
 
+        using (var bitmap = CaptureToRectArea())
+        {
+            if (bitmap.Find(AutoFightAssets.Instance.PRa).IsEmpty())
+            {
+                return false;
+            }
+        }
+
         //打开大地图操作
         await tpTask.OpenBigMapUi();
         bool changeBigMap = false;
