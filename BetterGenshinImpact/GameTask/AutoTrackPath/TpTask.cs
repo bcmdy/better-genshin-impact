@@ -274,7 +274,7 @@ public class TpTask
                 await MoveMapTo(x, y, mapName, minZoomLevel,country);
                 if (_tpConfig.MapMoveStepDivisor)
                 {
-                    await Delay(0, ct); // 等待地图移动完成
+                    await Delay(1, ct); // 等待地图移动完成
                 }
                 else
                 {
