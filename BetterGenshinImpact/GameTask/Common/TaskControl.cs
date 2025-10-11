@@ -24,6 +24,7 @@ public class TaskControl
     private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly Ping PingSender = new Ping();
     private static readonly bool NetworkDetectionConfig = TaskContext.Instance().Config.OtherConfig.NetworkDetectionConfig;
+    private static int _networkFailureCount = 0;
     
     public static bool IsSuspendedByNetwork { get; set; } = false;
 
@@ -56,9 +57,18 @@ public class TaskControl
         }
         finally
         {
-            if (!RunnerContext.Instance.IsSuspend)
+            if (isSuspend)
             {
-                IsSuspendedByNetwork = isSuspend;
+                _networkFailureCount++;
+                if (_networkFailureCount >= 2)
+                {
+                    IsSuspendedByNetwork = true;
+                }
+            }
+            else
+            {
+                _networkFailureCount = 0;
+                IsSuspendedByNetwork = false;
             }
         }
         return Task.CompletedTask;
