@@ -600,6 +600,25 @@ public class Avatar
             {
                 return;
             }
+            
+            var mwk = false;
+            if (Name == "玛薇卡")
+            {
+                var region2 = CaptureToRectArea();
+                // 获取两个点的颜色值
+                var pos = region2.SrcMat.At<Vec3b>(991, 1678);
+                var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
+                double colorDifference = Math.Sqrt(
+                    Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                    Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                    Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                );
+                // Logger.LogInformation("玛薇卡技能颜色差值:{ColorDifference}", Math.Round(colorDifference, 2));
+                if (colorDifference < 15)
+                {
+                    mwk = true;
+                }
+            }
 
             if (hold)
             {
@@ -631,25 +650,57 @@ public class Avatar
             {
                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
             }
-
-            Sleep(200, Ct);
-            var region = CaptureToRectArea();
-            ThrowWhenDefeated(region, Ct);
-
-            double cd = 0;
-            for (var attempt = 0; attempt < 2; attempt++)
-            {
-                if (attempt > 0) region = CaptureToRectArea(); // 非首次尝试时重新截图
-                cd = AfterUseSkill(region);
-                if (cd > 0) break;
-                Thread.Sleep(Name == "茜特菈莉"? 200:100);
-            }
             
-            if (cd > 0)
+            if (Name == "玛薇卡")
             {
-                Logger.LogInformation(hold ? "{Name} 长按元素战技，cd:{Cd} 秒" : "{Name} 点按元素战技，cd:{Cd} 秒", Name,
-                    Math.Round(cd, 2));
-                return;
+                if (mwk)
+                {
+                    Sleep(300, Ct);
+                    var region2 = CaptureToRectArea();
+                    // 获取两个点的颜色值
+                    var pos = region2.SrcMat.At<Vec3b>(991, 1678);
+                    var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
+                    double colorDifference = Math.Sqrt(
+                        Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                        Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                        Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                    );
+                    // Logger.LogInformation("玛薇卡技能颜色差值-2:{ColorDifference}", Math.Round(colorDifference, 2));
+                    if (colorDifference >=15)
+                    { 
+                        ManualSkillCd = 15.5;
+                        LastSkillTime = DateTime.UtcNow;
+                        Logger.LogInformation("{Name} 元素战技，技能Cd:{Cd} 秒",Name, Math.Round(GetSkillCdSeconds(), 2));
+                    } 
+                }
+                else
+                {
+                    ManualSkillCd = -1;
+                    var cdRounded = Math.Round(DateTime.UtcNow.Subtract(LastSkillTime).TotalSeconds, 2);
+                    Logger.LogInformation("{Name} 元素战技，技能cd:{Cd} 秒", Name, cdRounded > 0 && cdRounded <= 16 ? cdRounded : "未更新");
+                }
+            }
+            else
+            {
+                Sleep(200, Ct);
+                var region = CaptureToRectArea();
+                ThrowWhenDefeated(region, Ct);
+            
+                double cd = 0;
+                for (var attempt = 0; attempt < 2; attempt++)
+                {
+                    if (attempt > 0) region = CaptureToRectArea(); // 非首次尝试时重新截图
+                    cd = AfterUseSkill(region);
+                    if (cd > 0) break;
+                    Thread.Sleep(Name == "茜特菈莉"? 200:100);
+                }
+            
+                if (cd > 0)
+                {
+                    Logger.LogInformation(hold ? "{Name} 长按元素战技，cd:{Cd} 秒" : "{Name} 点按元素战技，cd:{Cd} 秒", Name,
+                        Math.Round(cd, 2));
+                    return;
+                } 
             }
         }
     }

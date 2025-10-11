@@ -958,13 +958,6 @@ public class TpTask
                 return false;
             }
         }
-
-        if (_tpConfig.MapMoveStepDivisor && forceCountry != null)
-        {
-            TaskControl.Logger.LogDebug("快速拖动模式强制切换区域：{t}",forceCountry);
-            await SwitchArea(forceCountry);
-            return true;
-        }
         
         string minCountry = "当前位置";
         foreach (var (country, position) in MapLazyAssets.Instance.CountryPositions)
@@ -976,7 +969,13 @@ public class TpTask
                 minCountry = country;
             }
         }
-
+        
+        // if (_tpConfig.MapMoveStepDivisor && forceCountry != null && minCountry == forceCountry)
+        // {
+        //     TaskControl.Logger.LogDebug("快速拖动模式强制切换区域：{t}",forceCountry);
+        //     await SwitchArea(forceCountry);
+        //     return true;
+        // }
 
         if (minCountry != "当前位置")
         {

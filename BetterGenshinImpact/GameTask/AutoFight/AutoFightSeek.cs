@@ -755,7 +755,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 Cv2.Canny(grayImage, grayImage, threshold1: (float)threshold1, threshold2: (float)threshold2);
         
                 var circles = Cv2.HoughCircles(grayImage, HoughModes.Gradient, dp: 1.2, minDist: 20,
-                    param1: 90, param2:i != avatarCurrent ? 25 : 35, minRadius: i != avatarCurrent ? 25 : 50, maxRadius:i != avatarCurrent ? 34 : 60);
+                    param1: 90, param2:i != avatarCurrent ? 25 : 40, minRadius: i != avatarCurrent ? 25 : 50, maxRadius:i != avatarCurrent ? 34 : 60);
         
                 if (circles.Length > 0)
                 {
