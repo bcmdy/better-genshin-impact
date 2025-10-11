@@ -648,6 +648,7 @@
                                      Grid.RowSpan="2"
                                      Grid.Column="1"
                                      Margin="0,0,36,0"
+                                     IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                      IsChecked="{Binding Config.TpConfig.MapZoomEnabled, Mode=TwoWay}" />
                 </Grid>
                 <Grid Margin="16">
@@ -674,6 +675,7 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                 Text="{Binding Config.TpConfig.MaxMouseMove, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 <Grid Margin="16">
@@ -700,6 +702,7 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                 Text="{Binding Config.TpConfig.MapZoomOutDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 <Grid Margin="16">
@@ -726,7 +729,9 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
-                                Text="{Binding Config.TpConfig.MapZoomInDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                                Text="{Binding Config.TpConfig.MapZoomInDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" 
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
+                                />
                 </Grid>
                 <Grid Margin="16">
                     <Grid.RowDefinitions>

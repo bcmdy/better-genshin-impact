@@ -642,7 +642,7 @@ public class Avatar
                 if (attempt > 0) region = CaptureToRectArea(); // 非首次尝试时重新截图
                 cd = AfterUseSkill(region);
                 if (cd > 0) break;
-                Thread.Sleep(100);
+                Thread.Sleep(Name == "茜特菈莉"? 200:100);
             }
             
             if (cd > 0)

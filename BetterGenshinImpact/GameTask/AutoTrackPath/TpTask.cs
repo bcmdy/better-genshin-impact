@@ -271,10 +271,10 @@ public class TpTask
             if (_tpConfig.MapZoomEnabled)
             {
                 TaskControl.Logger.LogInformation("目标传送点有相近传送点，到目标传送点附近将缩放到{zoomLevel:0.00}", minZoomLevel);
-                await MoveMapTo(x, y, mapName, minZoomLevel);
+                await MoveMapTo(x, y, mapName, minZoomLevel,country);
                 if (_tpConfig.MapMoveStepDivisor)
                 {
-                    await Delay(00, ct); // 等待地图移动完成
+                    await Delay(0, ct); // 等待地图移动完成
                 }
                 else
                 {
@@ -301,7 +301,7 @@ public class TpTask
             }
 
             TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置");
-            await MoveMapTo(x, y, mapName);
+            await MoveMapTo(x, y, mapName,2,country);
             if (_tpConfig.MapMoveStepDivisor)
             {
                 await Delay(200, ct); // 等待地图移动完成
@@ -491,7 +491,7 @@ public class TpTask
     /// <param name="y">目标y坐标</param>
     /// <param name="mapName">地图名称</param>
     /// <param name="finalZoomLevel">到达目标点的最小缩放等级，只在 MapZoomEnabled 为 True 生效</param>
-    public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2)
+    public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2, string? country = null)
     {
         // 参数初始化
         double minZoomLevel = Math.Min(finalZoomLevel, _tpConfig.MinZoomLevel);
@@ -564,8 +564,7 @@ public class TpTask
             int moveMouseY = (int)Math.Min(totalMoveMouseY, moveStepDivisorDouble * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
             double moveMouseLength = Math.Sqrt(moveMouseX * moveMouseX + moveMouseY * moveMouseY);
             int moveSteps = Math.Max((int)moveMouseLength / moveStepDivisor, 3); // 每次移动的步数最小为 3，避免除 0 错误
-
-            // TaskControl.Logger.LogWarning("111:{t}-{t1}-{tt2}-{t22}",mapName,moveMouseX,moveMouseY,moveSteps);
+            
             await MouseMoveMap(moveMouseX, moveMouseY, moveSteps);
             try
             {
@@ -578,10 +577,45 @@ public class TpTask
                 {
                     throw new Exception("多次中心点识别失败，重新传送");
                 }
-
+                
                 TaskControl.Logger.LogWarning("中心点识别失败，预测移动的距离");
                 mapCenterPoint += new Point2f((float)(moveMouseX * currentZoomLevel / _tpConfig.MapScaleFactor),
                     (float)(moveMouseY * currentZoomLevel / _tpConfig.MapScaleFactor));  
+            }
+            
+            var ra = CaptureToRectArea().SrcMat;
+            double brightness = Cv2.Mean(ra).Val0;
+            ra.Dispose();
+            TaskControl.Logger.LogDebug("地图亮度:{brightness}", brightness);
+            if (brightness < 48)
+            {
+                falseCount++;
+                
+                if (falseCount > 2)
+                {
+                    throw new Exception("地图亮度过低，重新传送");
+                }
+
+                if (falseCount > 1)
+                {
+                    Simulation.SendInput.Mouse.LeftButtonUp();
+                    TaskControl.Logger.LogWarning("地图亮度过低");
+                    if (mapName == MapTypes.Teyvat.ToString())
+                    {
+                        // 计算传送点位置离哪张地图切换后的中心点最近，切换到该地图
+                        await SwitchRecentlyCountryMap(x, y, country);
+                    }
+                    else
+                    {
+                        // 直接切换地区
+                        await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
+                    }
+                    continue;
+                }
+            }
+            else
+            {
+                falseCount = 0;
             }
 
             (xOffset, yOffset) = (x - mapCenterPoint.X, y - mapCenterPoint.Y);
@@ -699,8 +733,8 @@ public class TpTask
             int signX = -Math.Sign(pixelDeltaX);
             int signY = -Math.Sign(pixelDeltaY);
             GameCaptureRegion.GameRegionMove((rect, _) =>
-                (rect.Width / 2d + Random.Shared.Next(rect.Width / 5, rect.Width / 3)*signX,
-                    rect.Height / 2d + Random.Shared.Next(rect.Height / 5, rect.Height / 3)*signY));
+                (rect.Width / 2d + Random.Shared.Next(rect.Width / 5, rect.Width *3/10)*signX,
+                    rect.Height / 2d + Random.Shared.Next(rect.Height / 5, rect.Height *3/10)*signY));
         }
         else
         {
