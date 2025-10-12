@@ -1172,7 +1172,7 @@ public class Avatar
         
                         if (attempt < 2 - 1)
                         {
-                            Thread.Sleep(100);
+                            Thread.Sleep(Name == "茜特菈莉" ? 200 : 100);
                         }
                     }
 
@@ -1231,7 +1231,7 @@ public class Avatar
         
                         if (attempt < 2 - 1)
                         {
-                            Thread.Sleep(100);
+                            Thread.Sleep(Name == "茜特菈莉" ? 200 : 100);
                         }
                     }
 

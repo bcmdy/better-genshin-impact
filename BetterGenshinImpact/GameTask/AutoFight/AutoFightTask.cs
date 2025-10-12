@@ -535,7 +535,10 @@ public class AutoFightTask : ISoloTask
 
                                     try
                                     {
-                                        useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
+                                        if (!ct.IsCancellationRequested)
+                                        {
+                                            useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
+                                        }
                                     }
                                     catch (Exception ex)
                                     {
@@ -620,7 +623,7 @@ public class AutoFightTask : ISoloTask
                                             {
                                                 break;
                                             }
-                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime);
+                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct);
                                             if (!fightEndFlag)
                                             { 
                                                 var ms = 30;
@@ -744,7 +747,7 @@ public class AutoFightTask : ISoloTask
                         #region Q前寻敌处理
                         if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.CheckBeforeBurst && (command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
                         {
-                            fightEndFlag = await CheckFightFinish(0, detectDelayTime);
+                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct);
                         }
                         #endregion
                         
@@ -780,7 +783,7 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
 
-                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime,ct);
                             }
                         }
 
@@ -1039,19 +1042,19 @@ public class AutoFightTask : ISoloTask
                Math.Abs(a.Item3 - b.Item3) < c.Item3;
     }
 
-    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450)
+    public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default)
     {
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
             bool? result = null;
             try
             {
-                result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, _ct,false,_taskParam.RotaryFactor);
+                result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor);
             }
             catch (Exception ex)
             {
                 TaskControl.Logger.LogError(ex, "SeekAndFightAsync 方法发生异常");
-                result = true;
+                return true;
             }
             
             AutoFightSeek.RotationCount = (result == null) ? 

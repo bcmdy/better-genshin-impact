@@ -243,6 +243,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             var adjustedX = RotaryFactorMapping[rotaryFactor];
             var adjustedDivisor = rotaryFactor<=12 ? 2 : 1.3;
+            var delay = 50 + (int)(adjustedX / adjustedDivisor);
             
             // Logger.LogInformation("开始寻找敌人 {Text} ...",adjustedX);
             
@@ -402,8 +403,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 {
                     Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
                 }
-
-                await Task.Delay(50+(int)(adjustedX/adjustedDivisor),ct);
+                
+                await Task.Delay(Math.Max(delay, 1), ct);
                 // await Task.Delay(50,ct);
 
                 image = CaptureToRectArea();
