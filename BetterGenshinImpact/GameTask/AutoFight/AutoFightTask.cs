@@ -517,7 +517,7 @@ public class AutoFightTask : ISoloTask
                             await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
                             _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
 
-                            if (_taskParam.AutoCombatEq && guardianAvatar.ManualSkillCd == 0)
+                            if (_taskParam.AutoCombatEq && guardianAvatar.ManualSkillCd == 0 && !ct.IsCancellationRequested)
                             {
                                 if(i>0)i--;
                                 continue;
