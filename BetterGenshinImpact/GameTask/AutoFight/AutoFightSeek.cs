@@ -321,8 +321,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         else
                         {
+                            Task.Run(() =>
+                            {
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                            }, ct);
                         }
                         
                         if (height > 2 && height < 7)

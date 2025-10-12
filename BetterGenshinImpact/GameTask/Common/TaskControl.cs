@@ -21,7 +21,7 @@ public class TaskControl
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
-    private static readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
+    private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly Ping PingSender = new Ping();
     private static readonly bool NetworkDetectionConfig = TaskContext.Instance().Config.OtherConfig.NetworkDetectionConfig;
     private static int _networkFailureCount = 0;
@@ -30,11 +30,11 @@ public class TaskControl
 
     private static Task CheckNetworkStatusAsync()
     {
-        if (DateTime.Now - _lastCheckTime < _checkInterval)
+        if (DateTime.UtcNow - _lastCheckTime < CheckInterval)
         {
             return Task.CompletedTask;
         }
-        _lastCheckTime = DateTime.Now;
+        _lastCheckTime = DateTime.UtcNow;
 
         var isSuspend = false; 
         try
@@ -69,6 +69,15 @@ public class TaskControl
             {
                 _networkFailureCount = 0;
                 IsSuspendedByNetwork = false;
+                // var now = DateTime.UtcNow; // 声明并初始化 now 变量
+                //
+                // var targetStartTime = new DateTime(now.Year, now.Month, now.Day, 3, 59, 0); // 设置为当天的凌晨3点59分
+                // var targetEndTime = new DateTime(now.Year, now.Month, now.Day, 4, 0, 0); // 设置为当天的凌晨4点
+                //
+                // if (now - _startTime > TimeSpan.FromDays(1) || (now >= targetStartTime && now < targetEndTime))
+                // {
+                //     throw new RetryException("超过1天未启动游戏，尝试重启游戏");
+                // }
             }
         }
         return Task.CompletedTask;

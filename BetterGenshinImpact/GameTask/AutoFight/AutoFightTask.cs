@@ -52,7 +52,7 @@ public class AutoFightTask : ISoloTask
 
     private readonly BgiYoloPredictor _predictor;
 
-    private DateTime _lastFightFlagTime = DateTime.Now; // 战斗标志最近一次出现的时间
+    private DateTime _lastFightFlagTime = DateTime.UtcNow; // 战斗标志最近一次出现的时间
 
     private readonly double _dpi = TaskContext.Instance().DpiScale;
 
@@ -1100,7 +1100,7 @@ public class AutoFightTask : ISoloTask
             } ,_ct);
         }
         
-        _lastFightFlagTime = DateTime.Now;
+        _lastFightFlagTime = DateTime.UtcNow;
         return false;
     }
 
@@ -1372,7 +1372,7 @@ public class AutoFightTask : ISoloTask
                         }, cts2, 1, _taskParam.CheckInterval).Result;
 
                         if ((redBlood || gray) &&
-                            (DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds > Math.Max(_taskParam.MedicineInterval, 1500))
+                            (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds > Math.Max(_taskParam.MedicineInterval, 1500))
                         {
                             var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
                                                  (gray && RecoverCount < 2);//判断吃药上限
@@ -1383,7 +1383,7 @@ public class AutoFightTask : ISoloTask
                                 if (redBlood) resurrectionCount++;
                                 if (gray) RecoverCount++;
                                 TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
-                                PathingConditionConfig.LastEatTime = DateTime.Now;
+                                PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                                 redBlood = false;
                                 gray = false;
                                 if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
@@ -1404,7 +1404,7 @@ public class AutoFightTask : ISoloTask
                             {
                                 if (RecoverCount < 1)//只吃一次复活药
                                 {
-                                    PathingConditionConfig.LastEatTime = DateTime.Now;
+                                    PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                                     RecoverCount++;
                                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                                     if (!confirmRectArea.IsEmpty())
@@ -1577,11 +1577,11 @@ public class AutoFightTask : ISoloTask
             if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(swimming))
             {
                 //计算2上次吃药时间到现在是否超过2秒，未超过就等待
-                if ((DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
+                if ((DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
                 {
-                    await Task.Delay(1500 - (int)(DateTime.Now - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
+                    await Task.Delay(1500 - (int)(DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
                 }
-                PathingConditionConfig.LastEatTime = DateTime.Now;
+                PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                 TaskControl.Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
                 //通过编号切换角色补血,不进行确认是否吃上
                 foreach (var num in useMedicine)
@@ -1676,7 +1676,7 @@ public class AutoFightTask : ISoloTask
     {
         // if (RuntimeHelper.IsDebug)
         // {
-        //     imageRegion.SrcMat.SaveImage(Global.Absolute(@"log\fight\" + $"{DateTime.Now:yyyyMMdd_HHmmss_ffff}.png"));
+        //     imageRegion.SrcMat.SaveImage(Global.Absolute(@"log\fight\" + $"{DateTime.UtcNow:yyyyMMdd_HHmmss_ffff}.png"));
         // }
         var dict = _predictor.Detect(imageRegion);
         return dict.ContainsKey("health_bar") || dict.ContainsKey("enemy_identify");

@@ -832,10 +832,10 @@ public class PathExecutor
         // Logger.LogInformation("AutoEatCount {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
-            if (DateTime.Now > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
+            if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
             {
                 Simulation.ReleaseAllKey();
-                PathingConditionConfig.LastEatTime = DateTime.Now;
+                PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                 if (!switchOnly)
                 {
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
@@ -1644,7 +1644,7 @@ public class PathExecutor
                 }
             }else if (waypoint.Misidentification.HandlingMode == "mapRecognition"){
                 //大地图识别坐标
-                DateTime start = DateTime.Now;
+                DateTime start = DateTime.UtcNow;
                 TpTask tpTask = new TpTask(ct);
                 await tpTask.OpenBigMapUi();
                 try
@@ -1659,14 +1659,14 @@ public class PathExecutor
                 Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                 //Bv.IsInMainUi(imageRegion);
                 await WaitForCloseMap(10,200);
-                DateTime end = DateTime.Now;
+                DateTime end = DateTime.UtcNow;
                 time=(int)(end - start).TotalMilliseconds;
                 Logger.LogInformation(@$"未识别到具体路径，打开地图计算中心点({position.X},{position.Y})");
             }
             
             /*if (prePosition!=default)
             {*/
-                //position = InterpolatePointByTime(prePosition,new Point2f((float)waypoint.GameX,(float)waypoint.GameY),preTime,DateTime.Now,preTime.AddMilliseconds(maxAutoPositionTime));
+                //position = InterpolatePointByTime(prePosition,new Point2f((float)waypoint.GameX,(float)waypoint.GameY),preTime,DateTime.UtcNow,preTime.AddMilliseconds(maxAutoPositionTime));
                 //Logger.LogInformation(@$"未识别到具体路径，预测其路径为（{position.X},{position.Y}）,开始结束点位为：（{prePosition.X},{prePosition.Y}）（{waypoint.GameX},{waypoint.GameY}）");
                 //Point2f GetBigMapCenterPoint(string mapName)
 
@@ -1678,7 +1678,7 @@ public class PathExecutor
         else
         {
             prePosition = position;
-            preTime = DateTime.Now;
+            preTime = DateTime.UtcNow;
         }
 
         //Logger.LogDebug("识别到路径："+position.X+","+position.Y);

@@ -274,7 +274,7 @@ public class TpTask
                 await MoveMapTo(x, y, mapName, minZoomLevel,country);
                 if (_tpConfig.MapMoveStepDivisor)
                 {
-                    await Delay(1, ct); // 等待地图移动完成
+                    await Delay(100, ct); // 等待地图移动完成
                 }
                 else
                 {
@@ -300,7 +300,7 @@ public class TpTask
                 throw new Exception("多次尝试未移动到目标传送点，传送失败");
             }
 
-            TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置");
+            TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置-1");
             await MoveMapTo(x, y, mapName,2,country);
             if (_tpConfig.MapMoveStepDivisor)
             {
