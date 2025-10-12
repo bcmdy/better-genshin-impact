@@ -535,10 +535,7 @@ public class AutoFightTask : ISoloTask
 
                                     try
                                     {
-                                        if (!ct.IsCancellationRequested)
-                                        {
-                                            useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
-                                        }
+                                        useEq = await AutoFightSkill.AvatarQSkillAsync(image, useEqList, h);
                                     }
                                     catch (Exception ex)
                                     {
@@ -652,7 +649,7 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
                                 useEq.Clear(); 
-                                if (guardianAvatar.IsSkillReady())
+                                if (guardianAvatar.IsSkillReady() && !ct.IsCancellationRequested)
                                 {
                                     if(i>0)i--;
                                     continue;
