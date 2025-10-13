@@ -32,6 +32,8 @@ using System.Threading.Tasks;
 using Serilog.Core;
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using System;
+using System.Windows.Forms;
 
 namespace BetterGenshinImpact.GameTask.AutoTrackPath;
 
@@ -47,6 +49,7 @@ public class TpTask
     private readonly CancellationToken ct;
     private readonly CultureInfo cultureInfo;
     private readonly IStringLocalizer stringLocalizer;
+    private int screenHeight;
 
     /// <summary>
     /// 直接通过缩放比例按钮计算放大按钮的Y坐标
@@ -66,6 +69,13 @@ public class TpTask
         TpTaskParam param = new TpTaskParam();
         this.cultureInfo = param.GameCultureInfo;
         this.stringLocalizer = param.StringLocalizer;
+        // 初始化全局参数
+        var gameHandle = TaskContext.Instance().GameHandle;
+        var gameScreen = Screen.FromHandle(gameHandle);
+        var gameScreenBounds = gameScreen.Bounds;
+        screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
+            ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
+            : 1;
     }
 
     /// <summary>
@@ -557,9 +567,11 @@ public class TpTask
                 TaskControl.Logger.LogDebug("移动 {I} 次鼠标后，已经接近目标点，不再移动地图。", iteration + 1);
                 break;
             }
-
+            
+            TaskControl.Logger.LogDebug("屏幕参数：{screenHeight}", screenHeight);
+            
             var moveStepDivisor = _tpConfig.MapMoveStepDivisor ? 40 : 10;
-            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height*3/5: _tpConfig.MaxMouseMove;
+            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height*screenHeight/5: _tpConfig.MaxMouseMove;
             int moveMouseX = (int)Math.Min(totalMoveMouseX, moveStepDivisorDouble * totalMoveMouseX / mouseDistance) * Math.Sign(xOffset);
             int moveMouseY = (int)Math.Min(totalMoveMouseY, moveStepDivisorDouble * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
             double moveMouseLength = Math.Sqrt(moveMouseX * moveMouseX + moveMouseY * moveMouseY);
@@ -743,9 +755,9 @@ public class TpTask
                     rect.Height / 2d + Random.Shared.Next(-rect.Height / 6, rect.Height / 6)));
         }
 
-        await Delay(50, ct);
+        await Delay(50+_tpConfig.StepIntervalMilliseconds-2, ct);
         Simulation.SendInput.Mouse.LeftButtonDown();
-        await Delay(50, ct);
+        await Delay(50+_tpConfig.StepIntervalMilliseconds-2, ct);
         
         if (_tpConfig.MapMoveStepDivisor)
         {

@@ -777,7 +777,7 @@
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="电脑性能好的可以酌情使用，建议：鼠标移动的时间间隔:2~5ms"
+                                  Text="可调整鼠标移动的时间间隔(建议2~20ms，如异常逐步调大)"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"
