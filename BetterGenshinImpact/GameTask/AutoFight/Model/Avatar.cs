@@ -357,7 +357,12 @@ public class Avatar
             
             Offset60Fix(i);
 
-            Sleep(250, Ct);
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                return false;
+            }
+            
+            Sleep(240, Ct);
         }
 
         return false;

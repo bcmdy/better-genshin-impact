@@ -885,6 +885,7 @@ public class PathExecutor
         // tp 到七天神像回血
         var tpTask = new TpTask(ct);
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);
+        PartyConfig.MainAvatarIndex = PathingConditionConfig.InitialMainAvatarIndex;
         Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
     }
 
@@ -1210,6 +1211,7 @@ public class PathExecutor
                                 await Delay(500, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                 Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                Simulation.SendInput.SimulateAction(GIActions.Jump);
                                 Logger.LogInformation("尝试继续行走...");
                                 
                                 PathingConditionConfig.AutoEatCount = autoEatCount;

@@ -229,7 +229,7 @@ public class TpTask
     /// <param name="tpY"></param>
     /// <param name="mapName">独立地图名称</param>
     /// <param name="force">强制以当前的tpX,tpY坐标进行自动传送</param>
-    private async Task<(double, double)> TpOnce(double tpX, double tpY, string mapName = "Teyvat", bool force = false)
+    private async Task<(double, double)> TpOnce(double tpX, double tpY, string mapName = "Teyvat", bool force = false, int retryTimes = 0)
     {
         // 1. 确认在地图界面
         await OpenBigMapUi(1);
@@ -314,7 +314,8 @@ public class TpTask
             await MoveMapTo(x, y, mapName,2,country);
             if (_tpConfig.MapMoveStepDivisor)
             {
-                await Delay(200, ct); // 等待地图移动完成
+                // TaskControl.Logger.LogWarning("地图重试{retryTimes}",retryTimes>0? 500 : 200);
+                await Delay(retryTimes>0? 600 : 200, ct); // 等待地图移动完成
             }
             else
             {
@@ -469,7 +470,7 @@ public class TpTask
         {
             try
             {
-                return await TpOnce(tpX, tpY, mapName, force);
+                return await TpOnce(tpX, tpY, mapName, force,i);
             }
             catch (TpPointNotActivate e)
             {
