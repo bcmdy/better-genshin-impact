@@ -49,7 +49,7 @@ public class TpTask
     private readonly CancellationToken ct;
     private readonly CultureInfo cultureInfo;
     private readonly IStringLocalizer stringLocalizer;
-    private int screenHeight;
+    private readonly int _screenHeight;
 
     /// <summary>
     /// 直接通过缩放比例按钮计算放大按钮的Y坐标
@@ -73,9 +73,10 @@ public class TpTask
         var gameHandle = TaskContext.Instance().GameHandle;
         var gameScreen = Screen.FromHandle(gameHandle);
         var gameScreenBounds = gameScreen.Bounds;
-        screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
+        _screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
             ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
             : 1;
+        // TaskControl.Logger.LogWarning("屏幕宽高：{gameScreenBounds} 游戏分辨率：{GetGameScreenRect} 传送参数：{screenHeight}", gameScreenBounds.Size,SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Size,_screenHeight);
     }
 
     /// <summary>
@@ -229,6 +230,7 @@ public class TpTask
     /// <param name="tpY"></param>
     /// <param name="mapName">独立地图名称</param>
     /// <param name="force">强制以当前的tpX,tpY坐标进行自动传送</param>
+    /// <param name="retryTimes">重试次数</param>
     private async Task<(double, double)> TpOnce(double tpX, double tpY, string mapName = "Teyvat", bool force = false, int retryTimes = 0)
     {
         // 1. 确认在地图界面
@@ -502,6 +504,8 @@ public class TpTask
     /// <param name="y">目标y坐标</param>
     /// <param name="mapName">地图名称</param>
     /// <param name="finalZoomLevel">到达目标点的最小缩放等级，只在 MapZoomEnabled 为 True 生效</param>
+    /// <param name="country">传送地图国家</param>
+    /// <param name="retryTimes">重试次数</param>
     public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2, string? country = null, int retryTimes = 0)
     {
         // 参数初始化
@@ -569,10 +573,10 @@ public class TpTask
                 break;
             }
             
-            TaskControl.Logger.LogDebug("屏幕参数：{screenHeight}", screenHeight);
+            // TaskControl.Logger.LogDebug("屏幕参数：{screenHeight}", _screenHeight);
             
             var moveStepDivisor = _tpConfig.MapMoveStepDivisor ? 40 : 10;
-            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height*screenHeight/5: _tpConfig.MaxMouseMove;
+            var moveStepDivisorDouble = _tpConfig.MapMoveStepDivisor ? SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height*_screenHeight/5: _tpConfig.MaxMouseMove;
             int moveMouseX = (int)Math.Min(totalMoveMouseX, moveStepDivisorDouble * totalMoveMouseX / mouseDistance) * Math.Sign(xOffset);
             int moveMouseY = (int)Math.Min(totalMoveMouseY, moveStepDivisorDouble * totalMoveMouseY / mouseDistance) * Math.Sign(yOffset);
             double moveMouseLength = Math.Sqrt(moveMouseX * moveMouseX + moveMouseY * moveMouseY);
