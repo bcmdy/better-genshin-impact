@@ -343,7 +343,7 @@ public class PathExecutor
         using (var ra = CaptureToRectArea())
         {
             var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
-            var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(192, 233, 102));
+            var mask = OpenCvCommonHelper.Threshold(ra.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
             var labels = new Mat();
             var stats = new Mat();
             var centroids = new Mat();

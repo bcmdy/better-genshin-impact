@@ -311,7 +311,7 @@ public class TpTask
             }
 
             TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置-1");
-            await MoveMapTo(x, y, mapName,2,country);
+            await MoveMapTo(x, y, mapName,2,country, retryTimes);
             if (_tpConfig.MapMoveStepDivisor)
             {
                 // TaskControl.Logger.LogWarning("地图重试{retryTimes}",retryTimes>0? 500 : 200);
@@ -502,7 +502,7 @@ public class TpTask
     /// <param name="y">目标y坐标</param>
     /// <param name="mapName">地图名称</param>
     /// <param name="finalZoomLevel">到达目标点的最小缩放等级，只在 MapZoomEnabled 为 True 生效</param>
-    public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2, string? country = null)
+    public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2, string? country = null, int retryTimes = 0)
     {
         // 参数初始化
         double minZoomLevel = Math.Min(finalZoomLevel, _tpConfig.MinZoomLevel);
@@ -563,7 +563,7 @@ public class TpTask
             }
 
             // 非常接近目标点，不再进一步调整
-            if (mouseDistance < (_tpConfig.MapMoveStepDivisor ? 400 : _tpConfig.Tolerance))
+            if (mouseDistance < (_tpConfig.MapMoveStepDivisor ? retryTimes == 0 ? 400 : 300 : _tpConfig.Tolerance))
             {
                 TaskControl.Logger.LogDebug("移动 {I} 次鼠标后，已经接近目标点，不再移动地图。", iteration + 1);
                 break;
