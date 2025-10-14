@@ -60,7 +60,7 @@ public class TaskControl
             if (isSuspend)
             {
                 _networkFailureCount++;
-                if (_networkFailureCount >= 2)
+                if (_networkFailureCount >= 5)
                 {
                     IsSuspendedByNetwork = true;
                 }

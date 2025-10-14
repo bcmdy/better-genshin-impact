@@ -254,6 +254,9 @@ public partial class PathingConditionConfig : ObservableObject
             return;
         }
     
+        // 替换特定字符串
+        path = path.Replace("莫酱", "小怪").Replace("汐酱", "精英");
+        
         var config = TaskContext.Instance().Config.AutoFightConfig;
         var countryNamesList = config.CountryNamesList;
     

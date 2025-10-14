@@ -624,6 +624,25 @@ public class Avatar
                     mwk = true;
                 }
             }
+            // else if (Name == "芙宁娜")
+            // {
+            //     var ra2 = CaptureToRectArea();
+            //     var pos = ra2.SrcMat.At<Vec3b>(980, 1721);
+            //     var pos2 = ra2.SrcMat.At<Vec3b>(980, 1695);
+            //     double colorDifference = Math.Sqrt(
+            //         Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+            //         Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+            //         Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+            //     );
+            //     // Logger.LogInformation("技能颜色差值:{ColorDifference}", Math.Round(colorDifference, 2));
+            //     if (colorDifference < 15)
+            //     {
+            //         Simulation.SendInput.Mouse.LeftButtonDown();
+            //         Sleep(500);
+            //         Simulation.SendInput.Mouse.LeftButtonUp();
+            //         Sleep(300);
+            //     }
+            // }
 
             if (hold)
             {

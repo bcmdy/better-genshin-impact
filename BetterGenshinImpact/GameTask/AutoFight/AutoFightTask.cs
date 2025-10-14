@@ -226,6 +226,7 @@ public class AutoFightTask : ISoloTask
         #region 指定国家战斗脚本解析
 
         var isAutoSelectTeam = FightConfig.StrategyName.Contains("根据队伍自动选择");
+        
         var isSelectAuto = _taskParam.CountryName.Contains("自动");
         
         if (isAutoSelectTeam)
