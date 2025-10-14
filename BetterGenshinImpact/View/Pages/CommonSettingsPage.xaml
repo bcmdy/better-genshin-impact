@@ -1079,7 +1079,7 @@
                                   HorizontalAlignment="Left"
                                   VerticalAlignment="Center"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="等待网络恢复后自动恢复，注意该功能不能重试脚本和断点执行，Ping地址无需HTTP前缀。"
+                                  Text="等待网络恢复后自动恢复，Ping地址无需HTTP前缀，检测5次失败后自动暂停脚本。"
                                   TextWrapping="Wrap" />
                     
                     <ui:TextBox Grid.Row="0"
