@@ -166,6 +166,103 @@
                                          Grid.Column="1"
                                          IsChecked="{Binding PathingConfig.IsVisitStatueBeforeSwitchParty}" />
                     </Grid>
+                    <Grid Margin="016,16,16,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      FontTypography="Body"
+                                      Text="【赶路位】在冲刺和奔跑的节点大于设定距离自行执行"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="0"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="精准靠近：适合采集，节点间减速 / 连续赶路：适合锄地"
+                                      TextWrapping="Wrap" />
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="1"
+                                      FontSize="10"
+                                      Margin="0,0,10,44"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="赶路模式"
+                                      TextWrapping="Wrap" />
+                        <ComboBox Grid.Row="0"
+                                  Grid.RowSpan="2"
+                                  Grid.Column="1"
+                                  Width="110"
+                                  Margin="0,0,10,0"
+                                  ItemsSource="{Binding PathingConfig.TravelModeList}"
+                                  SelectedItem="{Binding PathingConfig.TravelMode}">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PathingConfig.HurryOnAvatar}" Value="">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.Style>
+                            </ComboBox>
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="2"
+                                      Grid.RowSpan="2"
+                                      FontSize="10"
+                                      Margin="0,0,10,44"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="赶路最小距离"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="2"
+                                    MinWidth="60"
+                                    Height="35"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding PathingConfig.Distance}">
+                                     <ui:TextBox.Style>
+                                        <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PathingConfig.HurryOnAvatar}" Value="">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:TextBox.Style>
+                        </ui:TextBox>
+
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="3"
+                                      FontSize="10"
+                                      Margin="0,0,10,44"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="赶路角色"
+                                      TextWrapping="Wrap" />
+                        <ComboBox Grid.Row="0"
+                                  Grid.RowSpan="2"
+                                  Grid.Column="3"
+                                  Width="100"
+                                  ItemsSource="{Binding PathingConfig.HurryOnAvatarList}"
+                                  SelectedItem="{Binding PathingConfig.HurryOnAvatar}" />
+                        
+                    </Grid>
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

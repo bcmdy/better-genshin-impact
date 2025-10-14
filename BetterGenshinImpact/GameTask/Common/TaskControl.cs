@@ -60,9 +60,21 @@ public class TaskControl
             if (isSuspend)
             {
                 _networkFailureCount++;
-                if (_networkFailureCount >= 5)
+                if (_networkFailureCount >= 3)
                 {
-                    IsSuspendedByNetwork = true;
+                    try
+                    {
+                        var reply2 = PingSender.Send("www.qq.com");
+                        if (reply2.Status != IPStatus.Success)
+                        {
+                            IsSuspendedByNetwork = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "网络状态检查：错误");
+                        IsSuspendedByNetwork = true;
+                    }
                 }
             }
             else

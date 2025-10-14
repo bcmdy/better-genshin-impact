@@ -6,6 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Serilog.Core;
+using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using BetterGenshinImpact.GameTask.AutoTrackPath.Model;
 
 namespace BetterGenshinImpact.Core.Config;
 
@@ -130,6 +135,22 @@ public partial class PathingPartyConfig : ObservableObject
 
     [ObservableProperty]
     private AutoFightConfig _autoFightConfig = new();
+    
+    [ObservableProperty]
+    private int _distance = 45;
+    
+    [JsonIgnore]
+    public List<string> HurryOnAvatarList { get; } = ["","自动","玛薇卡","瓦雷莎","夜兰","闲云"];
+    
+    [JsonIgnore]
+    public List<string> TravelModeList { get; } = ["精准靠近","连续赶路"];
+    
+    [ObservableProperty]
+    private string _hurryOnAvatar = "";
+    
+    [ObservableProperty]
+    private string _travelMode = "精准靠近";
+    
     public static PathingPartyConfig BuildDefault()
     {
         // 即便是不启用的情况下也设置默认值，减少后续使用的判断
