@@ -500,6 +500,11 @@ public class PathExecutor
         {
             _hurryOnAvatar = PartyConfig.HurryOnAvatar;
         }
+
+        if (string.IsNullOrEmpty(PartyConfig.TravelMode))
+        {
+            PartyConfig.TravelMode = "精准靠近";
+        }
     }
 
     private void LogScreenResolution()
@@ -1054,7 +1059,7 @@ public class PathExecutor
             Debug.WriteLine($"接近目标点中，距离为{distance}");
             
             // 自动赶路的精确模式切换角色，防止跑过头
-            if (PartyConfig.TravelMode == "精准靠近" && !hurryOnLogo && trackingLogo && distance < (_hurryOnAvatar == "瓦雷莎"? 20 : 15))
+            if (PartyConfig.TravelMode == "精准靠近" && !hurryOnLogo && trackingLogo && distance < (_hurryOnAvatar == "瓦雷莎"? 25 : 20))
             {
                 trackingLogo = false;
                 // Logger.LogInformation("自动赶路：精确靠近节点模式");

@@ -967,11 +967,11 @@ public class TpTask
         if (bigMapCenterPointNullable != null)
         {
             var bigMapCenterPoint = bigMapCenterPointNullable.Value;
-            TaskControl.Logger.LogError("识别当前大地图位置：{Pos}", bigMapCenterPoint);
+            TaskControl.Logger.LogDebug("识别当前大地图位置：{Pos}", bigMapCenterPoint);
             minDistance = Math.Sqrt(Math.Pow(bigMapCenterPoint.X - x, 2) + Math.Pow(bigMapCenterPoint.Y - y, 2));
             if (minDistance < 50)
             {
-                TaskControl.Logger.LogError("地图位置已经在传送点附近，不切换");
+                // TaskControl.Logger.LogError("地图位置已经在传送点附近，不切换");
                 // 点位很近的情况下不切换
                 return false;
             }
@@ -988,7 +988,7 @@ public class TpTask
             }
         }
         
-        TaskControl.Logger.LogInformation("切换位置2：{minCountry}", minCountry);
+        // TaskControl.Logger.LogInformation("切换位置2：{minCountry}", minCountry);
         
         // if (_tpConfig.MapMoveStepDivisor && forceCountry != null && minCountry == forceCountry)
         // {

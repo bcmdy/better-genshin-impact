@@ -703,6 +703,7 @@ public class Avatar
                     var cdRounded = Math.Round(DateTime.UtcNow.Subtract(LastSkillTime).TotalSeconds, 2);
                     Logger.LogInformation("{Name} 元素战技，技能cd:{Cd} 秒", Name, cdRounded > 0 && cdRounded <= 16 ? cdRounded : "未更新");
                 }
+                Sleep(150, Ct);
             }
             else
             {

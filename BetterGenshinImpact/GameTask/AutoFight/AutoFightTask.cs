@@ -617,10 +617,10 @@ public class AutoFightTask : ISoloTask
                                                 }
                                             }
                                             
-                                            if (guardianAvatar.IsSkillReady())
-                                            {
-                                                break;
-                                            }
+                                            // if (guardianAvatar.IsSkillReady())
+                                            // {
+                                            //     break;
+                                            // }
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct);
                                             if (!fightEndFlag)
                                             { 
@@ -636,6 +636,7 @@ public class AutoFightTask : ISoloTask
                                                     imageAfterBurst = CaptureToRectArea();
                                                     ms -= 1;
                                                 }
+                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                 imageAfterBurst.Dispose();
                                             }
                                             else
