@@ -126,53 +126,73 @@ public class CombatScenes : IDisposable
             //     imageRegion.DeriveCrop(rect).DrawSelf("avatarSideIconRectList{i}");
             // }
         }
-        
-        var ms = 1000;
-        var firstComponentY = 0;
-        var numLabels = 0;
-        while (ms > 0)
+
+        for (var i = 0; i < 2; i++)
         {
-            var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,318);
-            // var woodNumValue = ms > 725 ? 255 : Math.Max(255 - (500 - ms + 1), 1); // 计算woodNum的值
-            // var woodNum = new Scalar(woodNumValue, woodNumValue, woodNumValue); // 创建Scalar对象
-            var woodNum = new Scalar(255, 255, 255); // 创建Scalar对象
-            var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
-            var labels = new Mat();
-            var stats = new Mat();
-            var centroids = new Mat();
-
-            numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-            // Logger.LogWarning("识别: 共{Cnt}个连通区域", numLabels);
-            // Logger.LogWarning("识别: 角色avatarIndexRectList数量: {t}", avatarIndexRectList.Count);
-
-            if (numLabels > avatarIndexRectList.Count-1)
+            var ms = 1000;
+            var firstComponentY = -1;
+            var numLabels = 0;
+            while (ms > 0)
             {
-                imageRegion = CaptureToRectArea();
+                var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,318);
+                // var woodNumValue = ms > 725 ? 255 : Math.Max(255 - (500 - ms + 1), 1); // 计算woodNum的值
+                // var woodNum = new Scalar(woodNumValue, woodNumValue, woodNumValue); // 创建Scalar对象
+                var woodNum = new Scalar(255, 255, 255); // 创建Scalar对象
+                var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
+                var labels = new Mat();
+                var stats = new Mat();
+                var centroids = new Mat();
+
+                numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                    connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
+
+                // Logger.LogWarning("识别: 共{Cnt}个连通区域", numLabels);
+                // Logger.LogWarning("识别: 角色avatarIndexRectList数量: {t}", avatarIndexRectList.Count);
+
+                if (numLabels > avatarIndexRectList.Count-1)
+                {
+                    imageRegion = CaptureToRectArea();
+                    
+                    firstComponentY = stats.At<int>(1, 1);
+                    // Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
+                    labels.Dispose();
+                    centroids.Dispose();
+                    stats.Dispose();
+                    break;
+                }
                 
-                firstComponentY = stats.At<int>(1, 1);
-                // Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
                 labels.Dispose();
                 centroids.Dispose();
                 stats.Dispose();
+                
+                Thread.Sleep(1); 
+                ms -= 1;
+                if (ms == 0)
+                {
+                    Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}");
+                }
+            } 
+            
+            IndexRectOffset60Fix = AvatarSideFixOffset(firstComponentY,numLabels,avatarSideIconRectList, avatarIndexRectList);
+            PathingConditionConfig.IndexRectOffset60FixBackUp ??= IndexRectOffset60Fix;
+            if (PathingConditionConfig.IndexRectOffset60FixBackUp != IndexRectOffset60Fix && i == 0)
+            {
+               continue;
+            }
+            
+            if (firstComponentY != -1)
+            {
+                if (i >= 1)
+                {
+                    PathingConditionConfig.IndexRectOffset60FixBackUp = IndexRectOffset60Fix;
+                }
                 break;
             }
-            
-            labels.Dispose();
-            centroids.Dispose();
-            stats.Dispose();
-            
-            Thread.Sleep(1); 
-            ms -= 1;
-            if (ms == 0)
+            else
             {
-                Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}");
+                Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}"); 
             }
         }
-        
-        // 6.0 版本 队伍下的 草露 进度条 导致位置偏移
-        IndexRectOffset60Fix = AvatarSideFixOffset(firstComponentY,numLabels,avatarSideIconRectList, avatarIndexRectList);
 
         // 识别队伍
         var names = new string[avatarSideIconRectList.Count];

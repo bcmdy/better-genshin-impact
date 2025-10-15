@@ -75,6 +75,14 @@ public partial class PathingConditionConfig : ObservableObject
         get => _initialMainAvatarIndex;
         set => _initialMainAvatarIndex = value;
     }
+    
+    // 新增的私有字段和属性
+    private static bool? _indexRectOffset60FixBackUp = null;
+    public static bool? IndexRectOffset60FixBackUp
+    {
+        get => _indexRectOffset60FixBackUp;
+        set => _indexRectOffset60FixBackUp = value;
+    }
         
     public static PathingConditionConfig Default => new()
     {

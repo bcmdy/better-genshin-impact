@@ -1180,36 +1180,39 @@ public class Avatar
                 Simulation.SendInput.Keyboard.KeyUp(vk);
                 if (vk == User32.VK.VK_E)
                 {
-                    Thread.Sleep(200);
-                    double cd = 0;
-                    var cooldownDetected = false;
-    
-                    for (var attempt = 0; attempt < 2; attempt++)
-                    {
-                        var region = CaptureToRectArea();
-                        cd = AfterUseSkill(region);
+                    Task.Run(() => { 
+                        Thread.Sleep(200);
+                        double cd = 0;
+                        var cooldownDetected = false;
         
-                        if (cd > 0)
+                        for (var attempt = 0; attempt < 2; attempt++)
                         {
-                            cooldownDetected = true;
-                            break;
+                            var region = CaptureToRectArea();
+                            cd = AfterUseSkill(region);
+                            region.Dispose();
+            
+                            if (cd > 0)
+                            {
+                                cooldownDetected = true;
+                                break;
+                            }
+            
+                            if (attempt < 2 - 1)
+                            {
+                                Thread.Sleep(100);
+                            }
                         }
-        
-                        if (attempt < 2 - 1)
-                        {
-                            Thread.Sleep(Name == "茜特菈莉" ? 200 : 100);
-                        }
-                    }
 
-                    if (cooldownDetected)
-                    {
-                        Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
-                            Name, Math.Round(cd, 2));
-                    }
-                    else
-                    {
-                        Logger.LogWarning("{Name} 战技cd未更新", Name);
-                    }
+                        if (cooldownDetected)
+                        {
+                            Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
+                                Name, Math.Round(cd, 2));
+                        }
+                        else
+                        {
+                            Logger.LogWarning("{Name} 战技cd未更新", Name);
+                        }
+                    }).Wait(Ct);
                 }
                 break;
         }
@@ -1239,36 +1242,40 @@ public class Avatar
                 Simulation.SendInput.Keyboard.KeyPress(vk);
                 if (vk == User32.VK.VK_E)
                 {
-                    Thread.Sleep(200);
-                    double cd = 0;
-                    var cooldownDetected = false;
-    
-                    for (var attempt = 0; attempt < 2; attempt++)
+                    Task.Run(() =>
                     {
-                        var region = CaptureToRectArea();
-                        cd = AfterUseSkill(region);
-        
-                        if (cd > 0)
-                        {
-                            cooldownDetected = true;
-                            break;
-                        }
-        
-                        if (attempt < 2 - 1)
-                        {
-                            Thread.Sleep(Name == "茜特菈莉" ? 200 : 100);
-                        }
-                    }
+                        Thread.Sleep(200);
+                        double cd = 0;
+                        var cooldownDetected = false;
 
-                    if (cooldownDetected)
-                    {
-                        Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
-                            Name, Math.Round(cd, 2));
-                    }
-                    else
-                    {
-                        Logger.LogWarning("{Name} 战技cd未更新", Name);
-                    }
+                        for (var attempt = 0; attempt < 2; attempt++)
+                        {
+                            var region = CaptureToRectArea();
+                            cd = AfterUseSkill(region);
+                            region.Dispose();
+
+                            if (cd > 0)
+                            {
+                                cooldownDetected = true;
+                                break;
+                            }
+
+                            if (attempt < 2 - 1)
+                            {
+                                Thread.Sleep(100);
+                            }
+                        }
+
+                        if (cooldownDetected)
+                        {
+                            Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
+                                Name, Math.Round(cd, 2));
+                        }
+                        else
+                        {
+                            Logger.LogWarning("{Name} 战技cd未更新", Name);
+                        }
+                    }).Wait(Ct);
                 }
                 break;
         }
