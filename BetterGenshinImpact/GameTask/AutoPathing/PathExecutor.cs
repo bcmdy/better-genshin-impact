@@ -218,11 +218,21 @@ public class PathExecutor
                     {
                         Navigation.SetPrevPosition((float)waypoints[0].X, (float)waypoints[0].Y);
                     }
-
+                    
+                    Waypoint? nextWaypoint = null;
+                    double? nextDdistance = null;
                     foreach (var waypoint in waypoints) // 一条路径
                     {
                         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
+                        
+                        nextWaypoint = waypoint == waypoints.Last() ? null : waypoints[waypoints.IndexOf(waypoint) + 1];
+                        //计算下一个节点到当前节点的距离
+                        if (nextWaypoint != null)
+                        {
+                           nextDdistance = Navigation.GetDistance(waypoint, new Point2f((float)nextWaypoint.X, (float)nextWaypoint.Y));
+                        }
+                        
                         TryCloseSkipOtherOperations();
                         await RecoverWhenLowHp(waypoint,PartyConfig.RedBloodSwitchOnly); // 低血量恢复
 
@@ -242,7 +252,7 @@ public class PathExecutor
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
-                                await MoveTo(waypoint,true,task);
+                                await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
                             }
 
                             await BeforeMoveCloseToTarget(waypoint);
@@ -867,6 +877,9 @@ public class PathExecutor
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
                     Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                 } 
+                
+                Logger.LogInformation("自动吃药：检测到死亡页面，尝试复苏-3 {t}", PathingConditionConfig.AutoEatCount);
+                
                 using (var bitmap = CaptureToRectArea())
                 {
                     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
@@ -875,7 +888,9 @@ public class PathExecutor
                         Simulation.ReleaseAllKey();
                         PathingConditionConfig.AutoEatCount++;
                         confirmRectArea.Click();
+                        await Task.Delay(399, ct);
                         confirmRectArea.ClickTo(-100, 0);
+                        await Task.Delay(300, ct);
                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
                         await Task.Delay(500, ct);
                     }
@@ -1003,7 +1018,7 @@ public class PathExecutor
 
     public DateTime moveToStartTime;
 
-    public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null)
+    public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null, Waypoint? nextWaypoint = null,double? nextDistance = null)
     {
         // 切人
         await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
@@ -1023,6 +1038,11 @@ public class PathExecutor
         var hurryOnLogo = true;
         var sprintMouseLogo = true;
         var trackingLogo = true;
+        var distanceAsInt = nextDistance != null ? (int)Math.Round(nextDistance.Value) : 0;
+        //当前节点信息
+        // var distance2 = Navigation.GetDistance(waypoint, position);
+        Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
+        Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action,distanceAsInt);
 
         // 按下w，一直走
         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
@@ -1059,7 +1079,9 @@ public class PathExecutor
             Debug.WriteLine($"接近目标点中，距离为{distance}");
             
             // 自动赶路的精确模式切换角色，防止跑过头
-            if (PartyConfig.TravelMode == "精准靠近" && !hurryOnLogo && trackingLogo && distance < (_hurryOnAvatar == "瓦雷莎"? 25 : 20))
+            if (!hurryOnLogo && trackingLogo && 
+                (PartyConfig.TravelMode == "精准靠近" && distance < (!string.IsNullOrEmpty(nextWaypoint?.Action) ? 30 : _hurryOnAvatar == "瓦雷莎" ? 30 : 25) //精准靠近
+                 || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 10 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code)))) //连续赶路
             {
                 trackingLogo = false;
                 // Logger.LogInformation("自动赶路：精确靠近节点模式");
@@ -1095,6 +1117,7 @@ public class PathExecutor
                     {
                         Simulation.SendInput.SimulateAction(GIActions.MoveForward,KeyType.KeyUp);
                     }
+                    Logger.LogInformation("自动赶路：{t} 节点接近...",PartyConfig.TravelMode);
                 }
                 
                 region2.Dispose();
@@ -1102,7 +1125,7 @@ public class PathExecutor
             
             //自动赶路
             if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance > PartyConfig.Distance && 
-                (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code))
+                (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code)) //连续模式判断下一个节点是攀爬，不为攀爬，下一个节点没有ACTIONE,|| (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 100)
             {
                 var hurryOnAvatar = _combatScenes?.SelectAvatar(_hurryOnAvatar);
                 
@@ -1116,7 +1139,7 @@ public class PathExecutor
                         sprintMouseLogo = false;
                     }
                     
-                    hurryOnLogo = false;
+                    if (waypoint.MoveMode != MoveModeEnum.Walk.Code) hurryOnLogo = false;
                     Logger.LogInformation("自动赶路：{t} 赶路...",hurryOnAvatar.Name);
                     if (hurryOnAvatar.Name == "玛薇卡") //连续点按E类型
                     {
@@ -1144,6 +1167,22 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(500, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
+                                await Delay(800, ct);
+                                var region3 = CaptureToRectArea();
+                                // 获取两个点的颜色值
+                                var pos3 = region3.SrcMat.At<Vec3b>(978, 1692);
+                                var pos4 = region3.SrcMat.At<Vec3b>(995, 1702);
+                                double colorDifference2 = Math.Sqrt(
+                                    Math.Pow(pos3.Item0 - pos4.Item0, 2) + // 蓝通道差值的平方
+                                    Math.Pow(pos3.Item1 - pos4.Item1, 2) + // 绿通道差值的平方
+                                    Math.Pow(pos3.Item2 - pos4.Item2, 2)   // 红通道差值的平方
+                                );
+                                region2.Dispose();
+                                if (colorDifference2 > 15)
+                                {
+                                    Logger.LogInformation("自动赶路：继续...");
+                                    hurryOnLogo = true;
+                                }
                             },ct);
                         }
                         else

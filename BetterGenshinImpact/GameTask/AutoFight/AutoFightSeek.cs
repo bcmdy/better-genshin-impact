@@ -235,7 +235,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
         };
         
-        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6)
+        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null)
         {
             var bloodLower = new Scalar(255, 90, 90);
             // var bloodLower1 = new Scalar(160, 160, 160);
@@ -470,6 +470,25 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             }
             
             logger.LogInformation("寻找敌人：{Text}", "无");
+
+            if (avatar?.Name == "玛薇卡")
+            {
+                var region2 = CaptureToRectArea();
+                // 获取两个点的颜色值
+                var pos = region2.SrcMat.At<Vec3b>(978, 1692);
+                var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                double colorDifference = Math.Sqrt(
+                    Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                    Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                    Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                );
+                region2.Dispose();
+                if (colorDifference < 15)
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill); 
+                }  
+            }
+            
             return null;
         }
         
