@@ -49,7 +49,7 @@ public class TpTask
     private readonly CancellationToken ct;
     private readonly CultureInfo cultureInfo;
     private readonly IStringLocalizer stringLocalizer;
-    private readonly int _screenHeight;
+    private readonly double _screenHeight;
 
     /// <summary>
     /// 直接通过缩放比例按钮计算放大按钮的Y坐标
@@ -73,10 +73,18 @@ public class TpTask
         var gameHandle = TaskContext.Instance().GameHandle;
         var gameScreen = Screen.FromHandle(gameHandle);
         var gameScreenBounds = gameScreen.Bounds;
-        _screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
-            ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
-            : 1;
-        // TaskControl.Logger.LogWarning("屏幕宽高：{gameScreenBounds} 游戏分辨率：{GetGameScreenRect} 传送参数：{screenHeight}", gameScreenBounds.Size,SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Size,_screenHeight);
+        if (_tpConfig.MapZoomDistanceForce == 0)
+        {
+            _screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
+                ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
+                : 1;
+        }
+        else
+        {
+            _screenHeight = _tpConfig.MapZoomDistanceForce;
+        }
+        
+        TaskControl.Logger.LogDebug("屏幕宽高：{gameScreenBounds} 游戏分辨率：{GetGameScreenRect} 传送参数：{screenHeight}", gameScreenBounds.Size,SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Size,_screenHeight);
     }
 
     /// <summary>

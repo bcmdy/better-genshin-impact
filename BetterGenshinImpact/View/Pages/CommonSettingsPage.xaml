@@ -750,18 +750,21 @@
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="【2-100】数字越小移动鼠标的速度越快，如果移动地图时产生卡顿，请提高这个数值"
+                                  Text="【2-100】数字越小移动鼠标越快，如果移动地图时产生卡顿，请提高这个数值"
                                   TextWrapping="Wrap" />
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
                                 Text="{Binding Config.TpConfig.StepIntervalMilliseconds, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -782,8 +785,26 @@
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"
                                      Grid.Column="1"
+                                     HorizontalAlignment="Right"
                                      Margin="0,0,38,0"
                                      IsChecked="{Binding Config.TpConfig.MapMoveStepDivisor, Mode=TwoWay}" />
+                    
+                    <ui:TextBlock Grid.Row="2"
+                                  Grid.Column="0"
+                                  Margin="0,0,10,0"
+                                  FontTypography="Body"
+                                  Text="拖动距离等级，默认0自动适配，可调节范围0~5"
+                                  VerticalAlignment="Center"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding Config.TpConfig.MapMoveStepDivisor}" />
+                    <ui:TextBox Grid.Row="2"
+                                Grid.Column="1"
+                                MinWidth="100"
+                                MaxWidth="100"
+                                Margin="0,0,38,0"
+                                HorizontalContentAlignment="Center"
+                                Visibility="{Binding Config.TpConfig.MapMoveStepDivisor}" 
+                                Text="{Binding Config.TpConfig.MapZoomDistanceForce, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 
             </StackPanel>

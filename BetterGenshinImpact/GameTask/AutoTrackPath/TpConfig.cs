@@ -148,4 +148,9 @@ public partial class TpConfig : ObservableValidator
     [ObservableProperty]
     [property: JsonIgnore]
     private double _precisionThreshold = 0.05;
+    
+    [ObservableProperty]
+    [NotifyDataErrorInfo] 
+    [Range(0, 5, ErrorMessage = "移动参数：0~5")]
+    private double _mapZoomDistanceForce = 0;  // 回血间隔
 }
