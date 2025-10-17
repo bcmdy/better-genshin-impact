@@ -83,6 +83,15 @@ public partial class PathingConditionConfig : ObservableObject
         get => _indexRectOffset60FixBackUp;
         set => _indexRectOffset60FixBackUp = value;
     }
+    
+    private static CombatScenes? _combatScenesGoBackUp = null;
+    public static CombatScenes? CombatScenesGoBackUp
+    {
+        get => _combatScenesGoBackUp;
+        set => _combatScenesGoBackUp = value;
+    }
+    
+    private static bool? _isAutoEatEnabledBackUp = null;
         
     public static PathingConditionConfig Default => new()
     {

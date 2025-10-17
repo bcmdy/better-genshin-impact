@@ -793,7 +793,7 @@
                                   Grid.Column="0"
                                   Margin="0,0,10,0"
                                   FontTypography="Body"
-                                  Text="拖动距离等级，默认0自动适配，可调节范围0~5"
+                                  Text="拖动距离等级，默认0自动适配，可调节范围0~5（可填小数）"
                                   VerticalAlignment="Center"
                                   TextWrapping="Wrap"
                                   Visibility="{Binding Config.TpConfig.MapMoveStepDivisor , Converter={StaticResource BooleanToVisibilityConverter}}" />

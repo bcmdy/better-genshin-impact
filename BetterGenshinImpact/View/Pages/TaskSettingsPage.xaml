@@ -859,13 +859,12 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -884,12 +883,12 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="盾奶位角色在队伍中的位置"
+                                      Text="盾奶位角色序号"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="实时检测盾奶位技能情况"
+                                      Text="实时检技能情况"
                                       TextWrapping="Wrap" />
                         
                         <ComboBox Grid.Row="0"
@@ -898,7 +897,9 @@
                                   MinWidth="80"
                                   HorizontalContentAlignment="Center"
                                   VerticalContentAlignment="Center"
-                                  Margin="10,0,10,0"
+                                  HorizontalAlignment="Left"
+                                  MaxWidth="120"
+                                  Margin="10,0,20,0"
                                   ItemsSource="{Binding AvatarIndexList}"
                                   SelectedItem="{Binding Config.AutoFightConfig.GuardianAvatar, Mode=TwoWay}" />
 
@@ -934,6 +935,7 @@
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="3"
+                                         HorizontalAlignment="Center"
                                          Margin="0,0,5,0"
                                          IsChecked="{Binding Config.AutoFightConfig.GuardianCombatSkip, Mode=TwoWay}">
                             
@@ -952,47 +954,19 @@
                         <ui:TextBlock  Grid.Row="0"
                                        Grid.RowSpan="2"
                                        Grid.Column="4"
-                                       Margin="0,0,36,30"
+                                       Margin="0,0,5,30"
                                        FontSize="8"
                                        HorizontalAlignment="Center"
                                        Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                       Text="Q爆发"
+                                       Text="E长按"
                                        TextWrapping="Wrap"
                                        Style="{StaticResource GuardianVisibilityStyle}"/>
-                        
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="4"
-                                         Margin="0,0,5,0"
-                                         IsChecked="{Binding Config.AutoFightConfig.BurstEnabled, Mode=TwoWay}">
-                            
-                            <ui:ToggleSwitch.Style>
-                                <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ui:ToggleSwitch.Style>
-                        </ui:ToggleSwitch>
-                        
-                        <ui:TextBlock Grid.Row="2"
-                                      Grid.Column="0" 
-                                      Grid.ColumnSpan="4"
-                                      Margin="0,10,10,0"
-                                      FontTypography="Body"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Center"
-                                      Text="检测盾奶位战技短按或长按，禁用:短按 / 启用:长按"
-                                      TextWrapping="Wrap" 
-                                      Style="{StaticResource GuardianVisibilityStyle}"/>
-                        
-                        <ui:ToggleSwitch Grid.Row="2"
-                                         Grid.Column="4"
-                                         Margin="0,10,36,0" 
-                                         VerticalAlignment="Center"
+                                         Margin="0,0,5,0" 
+                                         HorizontalAlignment="Center"
+                                         IsEnabled="{Binding Config.AutoFightConfig.GuardianCombatSkip, Mode=TwoWay}"
                                          IsChecked="{Binding Config.AutoFightConfig.GuardianAvatarHold,Mode=TwoWay}">
                             
                             <ui:ToggleSwitch.Style>
@@ -1007,21 +981,49 @@
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
                         
-                        <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" Margin="0,10,36,0" BorderBrush="Gray" BorderThickness="1" Style="{StaticResource GuardianVisibilityStyle}"/>
+                        <ui:TextBlock  Grid.Row="0"
+                                       Grid.RowSpan="2"
+                                       Grid.Column="5"
+                                       Margin="0,0,36,30"
+                                       HorizontalAlignment="Center"
+                                       FontSize="8"
+                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                       Text="Q爆发"
+                                       TextWrapping="Wrap"
+                                       Style="{StaticResource GuardianVisibilityStyle}"/>
+                        
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="5"
+                                         Margin="0,0,5,0"
+                                         IsChecked="{Binding Config.AutoFightConfig.BurstEnabled, Mode=TwoWay}">
+                            <ui:ToggleSwitch.Style>
+                                <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Config.AutoFightConfig.GuardianAvatar}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:ToggleSwitch.Style>
+                        </ui:ToggleSwitch>
+                        
+                        <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="6" Margin="0,12,36,5" BorderBrush="Gray" BorderThickness="1" Style="{StaticResource GuardianVisibilityStyle}"/>
                         
                         <ui:TextBlock Grid.Row="4"
                                       Grid.Column="0" 
-                                      Grid.ColumnSpan="4"
+                                      Grid.ColumnSpan="5"
                                       Margin="0,10,10,0"
                                       FontTypography="Body"
-                                      HorizontalAlignment="Right"
+                                      HorizontalAlignment="Left"
                                       VerticalAlignment="Center"
-                                      Text="自动检测Q技能，按队伍中序号进行释放(比较适合EQ输出的队伍)"
+                                      Text="实时自动检测Q技能，按队伍中序号进行释放 (比较适合EQ输出的队伍)"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"/>
                         
                         <ui:ToggleSwitch Grid.Row="4"
-                                         Grid.Column="4"
+                                         Grid.Column="5"
                                          Margin="0,10,36,0" 
                                          VerticalAlignment="Center"
                                          IsChecked="{Binding Config.AutoFightConfig.AutoCombatEq,Mode=TwoWay}">
@@ -1038,28 +1040,41 @@
                             </ui:ToggleSwitch.Style>
                         </ui:ToggleSwitch>
                         
-                        
-                        <ui:TextBlock Grid.Row="5"
-                                      Grid.Column="0" 
-                                      Grid.ColumnSpan="3"
-                                      Margin="0,10,10,0"
-                                      FontTypography="Body"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Center"
-                                      Text="Q释放的序号顺序(英文逗号分隔，不填的角色完全不参与战斗)"
-                                      TextWrapping="Wrap" 
-                                      Style="{StaticResource GuardianVisibilityStyle}"/>
+                        <Grid Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="6" Visibility="{Binding Config.AutoFightConfig.AutoCombatEq, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:TextBlock Grid.Row="0"
+                                          Grid.RowSpan="2"
+                                          Grid.Column="0" 
+                                          Margin="0,10,10,0"
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Center"
+                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                          Text="Q释放的序号顺序"
+                                          TextWrapping="Wrap" 
+                                          Style="{StaticResource GuardianVisibilityStyle}"
+                                          ToolTipService.ToolTip="1、不填的序号不参与自动EQ
+                                      2、后加C：同时禁止自动EQ和战斗策略
+                                      3、如：1,2,3C（3完全禁止战斗，4禁止自动EQ但会执行战斗策略）"/>
                                        
-                        <ui:TextBox Grid.Row="5"
-                                    Grid.Column="3"
-                                    Grid.ColumnSpan="2"
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="1"
                                     HorizontalAlignment="Stretch"
                                     HorizontalContentAlignment="Center"
                                     MinWidth="100"  
                                     MaxWidth="100"  
-                                    Margin="0,10,38,0"
-                                    Text="{Binding Config.AutoFightConfig.UseEqList}"
-                                    IsEnabled="{Binding Config.AutoFightConfig.AutoCombatEq,Mode=TwoWay}" >
+                                    VerticalContentAlignment="Center"
+                                    Margin="0,10,20,0"
+                                    Text="{Binding Config.AutoFightConfig.UseEqList}">
                             <ui:TextBox.Style>
                                 <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -1072,27 +1087,30 @@
                             </ui:TextBox.Style>
                         </ui:TextBox>
                         
-                        <ui:TextBlock Grid.Row="6"
-                                      Grid.Column="0" 
-                                      Grid.ColumnSpan="3"
+                       <ui:TextBlock Grid.Row="0"
+                                     Grid.RowSpan="2"
+                                      Grid.Column="2" 
                                       Margin="0,10,10,0"
-                                      FontTypography="Body"
                                       HorizontalAlignment="Right"
                                       VerticalAlignment="Center"
-                                      Text="自动Q过程中，先释放E，加H长E，默认短E(如：1H,2,3H,4)"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="自动Q过程中的技能设置"
                                       TextWrapping="Wrap" 
-                                      Style="{StaticResource GuardianVisibilityStyle}"/>
-                                       
-                        <ui:TextBox Grid.Row="6"
+                                      Style="{StaticResource GuardianVisibilityStyle}"
+                                      ToolTipService.ToolTip="1、自动Q过程中，先释放E
+                                      2、加H长E，默认短E
+                                      3、加F为战斗开始盾位技能后第一个放E
+                                      4、如：1HF,2,3H,4"/>
+                        
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.RowSpan="2"
                                     Grid.Column="3"
-                                    Grid.ColumnSpan="2"
-                                    HorizontalAlignment="Stretch"
+                                    HorizontalAlignment="Right"
                                     HorizontalContentAlignment="Center"
-                                    MinWidth="100"  
-                                    MaxWidth="100"  
-                                    Margin="0,10,38,0"
-                                    Text="{Binding Config.AutoFightConfig.UseSkillList}"
-                                    IsEnabled="{Binding Config.AutoFightConfig.AutoCombatEq,Mode=TwoWay}" >
+                                    MinWidth="110"  
+                                    MaxWidth="110"  
+                                    Margin="0,10,0,0"
+                                    Text="{Binding Config.AutoFightConfig.UseSkillList}">
                             <ui:TextBox.Style>
                                 <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -1104,8 +1122,9 @@
                                 </Style>
                             </ui:TextBox.Style>
                         </ui:TextBox>
-                        
+                        </Grid>
                  </Grid>
+                    
                 </ui:CardExpander>
                 
                 <Separator Margin="-18,0"

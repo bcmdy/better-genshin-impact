@@ -323,7 +323,15 @@ public class AutoFightTask : ISoloTask
         _ct = ct;
 
         LogScreenResolution();
+        
         var combatScenes = GetCombatScenesWithRetry();
+
+        if (PathingConditionConfig.CombatScenesGoBackUp?.GetAvatars() == combatScenes.GetAvatars())
+        {
+            Logger.LogInformation("自动战斗：继承地图追踪队伍Cd信息...");
+            combatScenes = PathingConditionConfig.CombatScenesGoBackUp;
+        }
+        
         /*var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
         if (!combatScenes.CheckTeamInitialized())
         {
@@ -335,14 +343,28 @@ public class AutoFightTask : ISoloTask
         FightConfig.StrategyName.Contains("根据队伍自动选择")) ??
                          _combatScriptBagSecond.FindCombatScript(combatScenes.GetAvatars());
         
+        var bandList = (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseEqList))
+            ? _taskParam.UseEqList.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(s => s.Contains("C", StringComparison.OrdinalIgnoreCase)) // 检查是否包含'C'
+                .Select(s => int.TryParse(s.TrimEnd('C'), out var n) ? n : 0) // 去掉'C'并尝试解析数字
+                .Where(n => n >= 1 && n <= combatScenes.GetAvatars().Count) // 保证序号在队伍
+                .ToList()
+            : new List<int>(); // 如果没有指定AutoCombatEq，默认情况下bandList为空
+
+        var bandAvatarsName = _taskParam.AutoCombatEq ? combatScenes.GetAvatars().Where(a => bandList.Contains(a.Index)).Select(a => a.Name).ToList() : new List<string>();
+        // Logger.LogError("当前禁用角色：{CombatScriptName}", bandAvatarsName);
+        
         // 命令用到的角色名 筛选交集
         var commandAvatarNames = combatCommands.Select(c => c.Name).Distinct()
             .Select(n => combatScenes.SelectAvatar(n)?.Name)
             .WhereNotNull().ToList();
+        commandAvatarNames = commandAvatarNames.Except(bandAvatarsName).ToList();
+        
         // 过滤不可执行的脚本，Task里并不支持"当前角色"。
-        combatCommands = combatCommands
+        combatCommands = combatCommands 
             .Where(c => commandAvatarNames.Contains(c.Name))
             .ToList();
+        
         if (commandAvatarNames.Count <= 0)
         {
             throw new Exception("没有可用战斗脚本");
@@ -547,8 +569,9 @@ public class AutoFightTask : ISoloTask
                                     break;
                                 }
                                 
-                                if (useSkillListWithF>0) //自定义序号首位先放E，只执行一次
+                                if (useSkillListWithF>0 && combatScenes.SelectAvatar(useSkillListWithF).IsSkillReady()) //自定义序号首位先放E，只执行一次
                                 {
+                                    Logger.LogInformation("自动EQ战斗：执行序号 {name} 首E技能", useSkillListWithF);
                                     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
                                 
                                     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
@@ -684,7 +707,7 @@ public class AutoFightTask : ISoloTask
                         
                         #endregion
                         
-                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)) || (!useEqList.Contains(avatar.Index) && _taskParam.AutoCombatEq))
+                        if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
                         {
                             continue;
                         }
@@ -809,6 +832,7 @@ public class AutoFightTask : ISoloTask
             {
                 Simulation.ReleaseAllKey();
                 FightStatusFlag = false;
+                // if (_taskParam.TakeMedicineEnabled) RecoverCount = 0;
             }
         }, cts2.Token);
 
@@ -1025,7 +1049,6 @@ public class AutoFightTask : ISoloTask
             
             await EndBloodCheck(ct);
         }
-        
     }
 
     private void LogScreenResolution()

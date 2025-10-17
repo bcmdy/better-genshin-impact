@@ -119,11 +119,11 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        // Logger.LogInformation("检测到 {t} {t2}",PathingConditionConfig.AutoEatCount,AutoFightTask.IsTpForRecover);
+        // Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
             // Logger.LogInformation("AutoFightTask.RecoverCount {t}",AutoFightTask.RecoverCount < 2);
-            if (PathingConditionConfig.AutoEatCount < 2 && AutoFightTask.RecoverCount < 2)
+            if (PathingConditionConfig.AutoEatCount < 2)
             {
                 PathingConditionConfig.AutoEatCount++;
                 if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -150,7 +150,7 @@ public class Avatar
                 
             }
             
-            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
+            Logger.LogWarning("检测到复苏界面，-o {t}",PathingConditionConfig.AutoEatCount);
             if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
 
             using (var bitmap = CaptureToRectArea())
@@ -162,7 +162,7 @@ public class Avatar
                 }
             }
             
-            TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
+            TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活-i"));
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
@@ -246,7 +246,7 @@ public class Avatar
         // tp 到七天神像复活
         var tpTask = new TpTask(ct);
         tpTask.TpToStatueOfTheSeven().Wait(ct);
-        Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
+        Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。-p");
         throw ex;
     }
 
@@ -692,7 +692,7 @@ public class Avatar
                     // Logger.LogInformation("玛薇卡技能颜色差值-2:{ColorDifference}", Math.Round(colorDifference, 2));
                     if (colorDifference >=15)
                     { 
-                        ManualSkillCd = 15.5;
+                        ManualSkillCd = 15.6;
                         LastSkillTime = DateTime.UtcNow;
                         Logger.LogInformation("{Name} 元素战技，技能Cd:{Cd} 秒",Name, Math.Round(GetSkillCdSeconds(), 2));
                     } 
