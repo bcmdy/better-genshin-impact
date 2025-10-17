@@ -325,10 +325,12 @@ public class AutoFightTask : ISoloTask
         LogScreenResolution();
         
         var combatScenes = GetCombatScenesWithRetry();
-
-        if (PathingConditionConfig.CombatScenesGoBackUp?.GetAvatars() == combatScenes.GetAvatars())
+        
+        if (PathingConditionConfig.CombatScenesGoBackUp is not null && 
+            PathingConditionConfig.CombatScenesGoBackUp.Avatars.Select(avatar => avatar.Name).ToArray()
+                .SequenceEqual(combatScenes.Avatars.Select(a => a.Name).ToArray()))
         {
-            Logger.LogInformation("自动战斗：继承地图追踪队伍Cd信息...");
+            Logger.LogError("自动战斗：继承地图追踪队伍Cd信息...");
             combatScenes = PathingConditionConfig.CombatScenesGoBackUp;
         }
         

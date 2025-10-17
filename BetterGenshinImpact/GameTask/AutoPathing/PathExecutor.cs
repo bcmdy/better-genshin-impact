@@ -1043,7 +1043,7 @@ public class PathExecutor
         var mavikaFlyCount = 0;
         var avatar = _combatScenes?.SelectAvatar(_hurryOnAvatar);
         var mainAvatarIndex = !string.IsNullOrEmpty(PartyConfig.MainAvatarIndex) ?  PartyConfig.MainAvatarIndex : null;
-        var nextAvatarIndexStop = !string.IsNullOrEmpty(mainAvatarIndex) ? _combatScenes?.SelectAvatar(mainAvatarIndex)?.Name != _hurryOnAvatar 
+        var nextAvatarIndexStop = !string.IsNullOrEmpty(mainAvatarIndex) ? _combatScenes?.SelectAvatar(mainAvatarIndex)?.Name == _hurryOnAvatar 
             ? mainAvatarIndex : (int.Parse(mainAvatarIndex) % 4 + 1).ToString() : null;
         
         //当前节点信息
@@ -1108,7 +1108,7 @@ public class PathExecutor
                     
                         if (colorDifference < 15)
                         {
-                            Logger.LogInformation("自动赶路：{t} 节点接近... {t2}",PartyConfig.TravelMode,nextAvatarIndexStop.ToString());
+                            Logger.LogInformation("自动赶路：{t} 节点接近... {t2}",PartyConfig.TravelMode,nextAvatarIndexStop?.ToString());
                             await SwitchAvatar(nextAvatarIndexStop.ToString());
                         }
                     }
@@ -1232,9 +1232,6 @@ public class PathExecutor
                                 else
                                 {
                                     avatar.LastSkillTime = DateTime.UtcNow;
-                                    //显示avatar的技能CD
-                                    Logger.LogError("自动赶路：{t} 111222！",avatar.GetSkillCdSeconds());
-                                    
                                 }
                             },ct);
                         }
@@ -1252,6 +1249,7 @@ public class PathExecutor
                             await Delay(300, ct);
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyUp);
                             if (avatar.Name == "瓦雷莎")Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
+                            avatar.LastSkillTime = DateTime.UtcNow;
                         }
                         else
                         {
