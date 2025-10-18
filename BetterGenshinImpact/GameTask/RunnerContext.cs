@@ -73,14 +73,31 @@ public class RunnerContext : Singleton<RunnerContext>
             
             if (forceRefresh == true)
             {
-                var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
-                if (!combatScenes.CheckTeamInitialized() && _combatScenes != null)
+                var oldCombatScenes = _combatScenes;
+                for (var i = 0; i < 2; i++)
                 {
-                    Logger.LogWarning("队伍角色识别失败，使用原有队伍信息");
-                }
-                else
-                {
-                    _combatScenes = combatScenes;
+                    var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+                    if (!combatScenes.CheckTeamInitialized() && _combatScenes != null)
+                    {
+                        if (i == 1)
+                        {
+                            Logger.LogWarning("队伍角色识别失败，使用原有队伍信息");
+                            if (oldCombatScenes != null)
+                            {
+                                _combatScenes = oldCombatScenes;
+                            }
+                            else
+                            {
+                                Logger.LogError("原有队伍信息也为空，无法恢复");
+                            }
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        _combatScenes = combatScenes;
+                        break;
+                    }
                 }
             }
             else

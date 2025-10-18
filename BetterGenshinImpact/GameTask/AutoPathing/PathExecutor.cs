@@ -281,7 +281,7 @@ public class PathExecutor
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
                                     PartyConfig.MainAvatarIndex = PathingConditionConfig.InitialMainAvatarIndex;
-                                    // Logger.LogWarning("ddddd {t} GGGGG {t2}",InitialMainAvatarIndex,PartyConfig.MainAvatarIndex);
+                                    PathingConditionConfig.CombatScenesGoBackUp = null;
                                 }
                             }
                         }
@@ -339,6 +339,7 @@ public class PathExecutor
                     // 不管咋样，松开所有按键
                     Simulation.SendInput.Keyboard.KeyUp(User32.VK.VK_W);
                     Simulation.SendInput.Mouse.RightButtonUp();
+                    PathingConditionConfig.CombatScenesGoBackUp = null;
                 }
             }
         }
@@ -1041,13 +1042,25 @@ public class PathExecutor
         var trackingLogo = true;
         var distanceAsInt = nextDistance != null ? (int)Math.Round(nextDistance.Value) : 0;
         var mavikaFlyCount = 0;
-        var avatar = _combatScenes?.SelectAvatar(_hurryOnAvatar);
-        var mainAvatarIndex = !string.IsNullOrEmpty(PartyConfig.MainAvatarIndex) ?  PartyConfig.MainAvatarIndex : null;
-        var nextAvatarIndexStop = !string.IsNullOrEmpty(mainAvatarIndex) ? _combatScenes?.SelectAvatar(mainAvatarIndex)?.Name == _hurryOnAvatar 
-            ? mainAvatarIndex : (int.Parse(mainAvatarIndex) % 4 + 1).ToString() : null;
         
-        //当前节点信息
-        // var distance2 = Navigation.GetDistance(waypoint, position);
+        string nextAvatarIndexStop = "";
+        Avatar? avatar = null;
+        if (_combatScenes is not null)
+        {
+            avatar = _combatScenes.SelectAvatar(_hurryOnAvatar);
+            
+            var mainAvatarIndex = _combatScenes.SelectAvatar(PartyConfig.MainAvatarIndex);
+            if (mainAvatarIndex != null && mainAvatarIndex.Name == _hurryOnAvatar)
+            {
+                 nextAvatarIndexStop = (mainAvatarIndex.Index % 4 + 1).ToString();
+            }
+            else
+            {
+                 nextAvatarIndexStop = _combatScenes.SelectAvatar(1).Name == _hurryOnAvatar ? "2" : "1";
+            }
+        }
+        
+        //测试节点信息
         Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
         Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action,distanceAsInt);
 
@@ -1084,98 +1097,95 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
-            
-            // 自动赶路的精确模式切换角色，防止跑过头
-            if (!hurryOnLogo && trackingLogo && 
-                (PartyConfig.TravelMode == "精准靠近" && distance < (!string.IsNullOrEmpty(nextWaypoint?.Action) ? 30 : _hurryOnAvatar == "瓦雷莎" ? 30 : 25) //精准靠近
-                 || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 10 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code)))) //连续赶路
+
+            if (avatar != null)
             {
-                trackingLogo = false;
-                // Logger.LogInformation("自动赶路：精确靠近节点模式");
-                var region2 = CaptureToRectArea();
-                
-                if (avatar != null && avatar.IsActive(region2))
+                // 自动赶路的靠近节点模式
+                if (!hurryOnLogo && trackingLogo && 
+                    (PartyConfig.TravelMode == "精准靠近" && distance < (!string.IsNullOrEmpty(nextWaypoint?.Action) ? 30 : _hurryOnAvatar == "瓦雷莎" ? 30 : 25) //精准靠近
+                     || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 10 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code)))) //连续赶路
                 {
-                    if (_hurryOnAvatar == "玛薇卡")
+                    trackingLogo = false;
+                    var region2 = CaptureToRectArea();
+                    if (avatar.IsActive(region2))
                     {
-                        var pos = region2.SrcMat.At<Vec3b>(978, 1692);
-                        var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
-                        double colorDifference = Math.Sqrt(
-                            Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
-                            Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
-                            Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
-                        );
-                    
-                        if (colorDifference < 15)
+                        if (_hurryOnAvatar == "玛薇卡")
                         {
-                            Logger.LogInformation("自动赶路：{t} 节点接近... {t2}",PartyConfig.TravelMode,nextAvatarIndexStop?.ToString());
-                            await SwitchAvatar(nextAvatarIndexStop.ToString());
+                            var pos = region2.SrcMat.At<Vec3b>(978, 1692);
+                            var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                            double colorDifference = Math.Sqrt(
+                                Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                                Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                                Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                            );
+                        
+                            if (colorDifference < 15)
+                            {
+                                Logger.LogInformation("自动赶路：{t} 节点接近...-i {t2}",PartyConfig.TravelMode,nextAvatarIndexStop);
+                                await SwitchAvatar(nextAvatarIndexStop);
+                            }
                         }
-                    }
-                    else if (_hurryOnAvatar == "瓦雷莎")
-                    {
-                        if (await AutoFightSkill.AvatarSkillAsync(Logger, avatar, false, 2, ct))
+                        else if (_hurryOnAvatar == "瓦雷莎")
+                        {
+                            if (await AutoFightSkill.AvatarSkillAsync(Logger, avatar, false, 2, ct))
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward,KeyType.KeyUp);
+                                await Delay(300, ct);
+                            } 
+                        }
+                        else 
                         {
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward,KeyType.KeyUp);
-                            await Delay(300, ct);
-                        } 
+                        }
+                        Logger.LogInformation("自动赶路：{t} 节点接近...-g",PartyConfig.TravelMode);
                     }
-                    else 
-                    {
-                        Simulation.SendInput.SimulateAction(GIActions.MoveForward,KeyType.KeyUp);
-                    }
-                    Logger.LogInformation("自动赶路：{t} 节点接近...",PartyConfig.TravelMode);
-                }
 
-                if (nextDistance < 10 && waypoint.MoveMode != MoveModeEnum.Climb.Code && waypoint.Action != ActionEnum.Fight.Code)
-                {
-                    nextistanceCount ++;
-                    if (nextistanceCount > 10)
+                    if (nextDistance < 20 && waypoint.MoveMode != MoveModeEnum.Climb.Code && waypoint.Action != ActionEnum.Fight.Code)
                     {
-                        Logger.LogWarning("赶路靠近超时-2");
-                        break;
-                    }
-                }
-                region2.Dispose();
-            }
-
-            // 自动赶路的特殊处理模式，防止异常情况
-            if (!hurryOnLogo)
-            {
-                if (_hurryOnAvatar == "玛薇卡")
-                {
-                    var region2 = CaptureToRectArea();
-                    var pos = region2.SrcMat.At<Vec3b>(1012,1574);
-                    var pos2 = region2.SrcMat.At<Vec3b>(1006, 1608);
-                    var pos3 = region2.SrcMat.At<Vec3b>(1028, 1584);
-                    var colorDifference = Math.Sqrt(
-                        Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
-                        Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
-                        Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
-                    );
-                         
-                    // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference, 2));
-                    
-                    if (colorDifference < 15 && pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
-                    {
-                        mavikaFlyCount++;
-                        if (mavikaFlyCount > 8 && avatar.IsActive(region2))
+                        nextistanceCount ++;
+                        if (nextistanceCount > 10)
                         {
-                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            mavikaFlyCount = 0;
-                            Logger.LogInformation("自动赶路：靠近节点切换 {t}...",nextAvatarIndexStop);
+                            Logger.LogWarning("赶路靠近超时-2");
+                            break;
                         }
                     }
                     region2.Dispose();
                 }
-            }
-            
-            //自动赶路
-            if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance > PartyConfig.Distance && 
-                (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code)) //连续模式判断下一个节点是攀爬，不为攀爬，下一个节点没有ACTIONE,|| (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 100)
-            {
+
+                // 自动赶路的特殊处理模式，防止异常情况
+                if (!hurryOnLogo)
+                {
+                    if (_hurryOnAvatar == "玛薇卡") //玛薇卡冲坡判断
+                    {
+                        var region2 = CaptureToRectArea();
+                        var pos = region2.SrcMat.At<Vec3b>(1012,1574);
+                        var pos2 = region2.SrcMat.At<Vec3b>(1006, 1608);
+                        var pos3 = region2.SrcMat.At<Vec3b>(1028, 1584);
+                        var colorDifference = Math.Sqrt(
+                            Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                            Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                            Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                        );
+                             
+                        // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference, 2));
+                        
+                        if (colorDifference < 15 && pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
+                        {
+                            mavikaFlyCount++;
+                            if (mavikaFlyCount > 7 && avatar.IsActive(region2))
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                mavikaFlyCount = 0;
+                                Logger.LogInformation("自动赶路：靠近节点切换 {t}...",nextAvatarIndexStop);
+                            }
+                        }
+                        region2.Dispose();
+                    }
+                }
                 
-                if (avatar is not null)
+                //自动赶路
+                if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance > PartyConfig.Distance && 
+                    (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code))
                 {
                     await SwitchAvatar(avatar.Index.ToString()); 
                     
@@ -1211,9 +1221,8 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(400, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                // await Delay(500, ct);
-                                // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 await Delay(800, ct);
+                                
                                 var region3 = CaptureToRectArea();
                                 // 获取两个点的颜色值
                                 var pos3 = region3.SrcMat.At<Vec3b>(978, 1692);
@@ -1292,100 +1301,104 @@ public class PathExecutor
                             hurryOnLogo = true;
                         }
                     }
+                    
                 }
-            }
-            
-            if (waypoint.Action == ActionEnum.Fight.Code && distance < 30)//接近战斗点，确保行走位不是丝血
-            {
-                using (var bitmap = CaptureToRectArea())
-                {
-                    var pixel = 0;
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        using (var bitmap2 = CaptureToRectArea())
-                        {
-                            var pixelValue = bitmap2.SrcMat.At<Vec3b>(1010,814);
-                            if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
-                                  Math.Abs(pixelValue[1] - 215) <= 10 &&
-                                  Math.Abs(pixelValue[2] - 150) <= 10) && !(Math.Abs(pixelValue[0] - 50) <= 10 &&
-                                                                            Math.Abs(pixelValue[1] - 204) <= 10 &&
-                                                                            Math.Abs(pixelValue[2] - 255) <= 10))
-                            {
-                                pixel += 1;
-                            }
-                            else
-                            {
-                                pixel = 0;
-                            }
-                        }
-                        await Task.Delay(50, ct);
-                    }
                 
-                    if (pixel >= 2)
+                //接近战斗点，确保行走位不是丝血
+                if (waypoint.Action == ActionEnum.Fight.Code && distance < 30)
+                {
+                    using (var bitmap = CaptureToRectArea())
                     {
-                        if (distance < 10)
+                        var pixel = 0;
+
+                        for (int i = 0; i < 2; i++)
                         {
-                            // 抬起w键
-                            Logger.LogInformation("到达战斗点附近-2");
-                            Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                            return;
+                            using (var bitmap2 = CaptureToRectArea())
+                            {
+                                var pixelValue = bitmap2.SrcMat.At<Vec3b>(1010,814);
+                                if (!(Math.Abs(pixelValue[0] - 34) <= 10 &&
+                                      Math.Abs(pixelValue[1] - 215) <= 10 &&
+                                      Math.Abs(pixelValue[2] - 150) <= 10) && !(Math.Abs(pixelValue[0] - 50) <= 10 &&
+                                                                                Math.Abs(pixelValue[1] - 204) <= 10 &&
+                                                                                Math.Abs(pixelValue[2] - 255) <= 10))
+                                {
+                                    pixel += 1;
+                                }
+                                else
+                                {
+                                    pixel = 0;
+                                }
+                            }
+                            await Task.Delay(50, ct);
                         }
-                        
-                        Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
-
-                        if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
+                    
+                        if (pixel >= 2)
                         {
-                            var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
-                            
-                            var nextAvatarIndex = (avatarIndex % 4) + 1;
-                            if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
-                                _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                            if (distance < 10)
                             {
-                                nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                                // 抬起w键
+                                Logger.LogInformation("到达战斗点附近-2");
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                                return;
                             }
                             
-                            var avatar2 = _combatScenes?.SelectAvatar(avatarIndex);
+                            Logger.LogInformation("当前行走角色血量仍过低，尝试切换人-2");
 
-                            await Delay(300, ct);
+                            if (!string.IsNullOrWhiteSpace(PartyConfig.MainAvatarIndex))
+                            {
+                                var avatarIndex = int.Parse(PartyConfig.MainAvatarIndex);
+                                
+                                var nextAvatarIndex = (avatarIndex % 4) + 1;
+                                if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                                    _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                                {
+                                    nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                                }
+                                
+                                var avatar2 = _combatScenes?.SelectAvatar(avatarIndex);
 
-                            if (avatar2 != null && avatar2.IsActive(bitmap))
-                            {
-                                PartyConfig.MainAvatarIndex = nextAvatarIndex.ToString();
-                                await SwitchAvatar(nextAvatarIndex.ToString());
-                            }
-                            else
-                            {
-                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 1; i <= 4; i++)
-                            {
-                                var avatar2 = _combatScenes?.SelectAvatar(i);
+                                await Delay(300, ct);
+
                                 if (avatar2 != null && avatar2.IsActive(bitmap))
                                 {
-                                    var nextAvatarIndex = (i % 4) + 1;
-                                    if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
-                                        _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
-                                    {
-                                        nextAvatarIndex = (nextAvatarIndex % 4) + 1;
-                                    }
+                                    PartyConfig.MainAvatarIndex = nextAvatarIndex.ToString();
                                     await SwitchAvatar(nextAvatarIndex.ToString());
-                                    break;
+                                }
+                                else
+                                {
+                                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 1; i <= 4; i++)
+                                {
+                                    var avatar2 = _combatScenes?.SelectAvatar(i);
+                                    if (avatar2 != null && avatar2.IsActive(bitmap))
+                                    {
+                                        var nextAvatarIndex = (i % 4) + 1;
+                                        if (_combatScenes?.SelectAvatar(nextAvatarIndex).Name == "枫原万叶" && 
+                                            _combatScenes?.SelectAvatar(PathingConditionConfig.InitialMainAvatarIndex)?.Name != "枫原万叶")
+                                        {
+                                            nextAvatarIndex = (nextAvatarIndex % 4) + 1;
+                                        }
+                                        await SwitchAvatar(nextAvatarIndex.ToString());
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                if (distance < 10 && waypoint.MoveMode != MoveModeEnum.Climb.Code && waypoint.MoveMode != MoveModeEnum.Fly.Code)
-                {
-                    distanceCount ++;
-                    if (distanceCount > 10)
+                    
+                    //防转圈，卡地形
+                    if (distance < 10 && waypoint.MoveMode != MoveModeEnum.Climb.Code && waypoint.MoveMode != MoveModeEnum.Fly.Code)
                     {
-                        Logger.LogWarning("战斗点靠近超时-1");
-                        break;
+                        distanceCount ++;
+                        if (distanceCount > 10)
+                        {
+                            Logger.LogWarning("战斗点靠近超时-1");
+                            break;
+                        }
                     }
                 }
             }

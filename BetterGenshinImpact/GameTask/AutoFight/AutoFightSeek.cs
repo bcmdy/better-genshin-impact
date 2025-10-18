@@ -322,7 +322,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         else
                         {
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
@@ -471,7 +471,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
             logger.LogInformation("寻找敌人：{Text}", "无");
 
-            if (avatar?.Name == "玛薇卡")
+            if (avatar?.Name == "玛薇卡" &&  RotationCount >= 1)
             {
                 var region2 = CaptureToRectArea();
                 // 获取两个点的颜色值

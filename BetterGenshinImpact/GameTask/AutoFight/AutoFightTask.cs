@@ -326,11 +326,11 @@ public class AutoFightTask : ISoloTask
         
         var combatScenes = GetCombatScenesWithRetry();
         
-        if (PathingConditionConfig.CombatScenesGoBackUp is not null && 
+        if (_taskParam.AutoCombatEq && PathingConditionConfig.CombatScenesGoBackUp is not null && 
             PathingConditionConfig.CombatScenesGoBackUp.Avatars.Select(avatar => avatar.Name).ToArray()
                 .SequenceEqual(combatScenes.Avatars.Select(a => a.Name).ToArray()))
         {
-            Logger.LogError("自动战斗：继承地图追踪队伍Cd信息...");
+            Logger.LogInformation("自动战斗：继承地图追踪队伍Cd信息...");
             combatScenes = PathingConditionConfig.CombatScenesGoBackUp;
         }
         
@@ -599,14 +599,6 @@ public class AutoFightTask : ISoloTask
                                             if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 avatarQ.UseSkill(avatarQHold);
-                                                // if (avatarQ.Name == "希诺宁")
-                                                // {
-                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                //     Thread.Sleep(150); 
-                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                //     Thread.Sleep(100); 
-                                                //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                // }
                                                 var imageAfterUseSkill = CaptureToRectArea();
                                                 
                                                 var retry = 30;
@@ -622,7 +614,6 @@ public class AutoFightTask : ISoloTask
                                                     }
                                                     imageAfterUseSkill = CaptureToRectArea();
                                                     await Task.Delay(30, ct);
-                                                    // Logger.LogInformation("优先第222 {retry} ",retry);
                                                     retry -= 1;
                                                 }
                                                 imageAfterUseSkill.Dispose();
@@ -680,6 +671,10 @@ public class AutoFightTask : ISoloTask
                                 {
                                     if(i>0)i--;
                                     continue;
+                                }
+                                if (checkFightFinishStopwatch.Elapsed > checkFightFinishTime)
+                                {
+                                    break;
                                 }
                             }
                             image.Dispose();
