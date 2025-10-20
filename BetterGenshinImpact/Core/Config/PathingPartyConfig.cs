@@ -140,7 +140,7 @@ public partial class PathingPartyConfig : ObservableObject
     private int _distance = 45;
     
     [JsonIgnore]
-    public List<string> HurryOnAvatarList { get; } = ["","自动","玛薇卡","瓦雷莎","夜兰","闲云"];
+    public List<string> HurryOnAvatarList { get; } = ["","自动","玛薇卡","瓦雷莎","希诺宁"];
     
     [JsonIgnore]
     public List<string> TravelModeList { get; } = ["精准靠近","连续赶路"];
