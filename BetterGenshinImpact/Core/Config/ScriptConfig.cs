@@ -29,9 +29,6 @@ public partial class ScriptConfig : ObservableObject
     // 选择的更新渠道URL
     [ObservableProperty] private string _selectedRepoUrl = "";
     
-    // 在线脚本仓库地址
-    public readonly string OnlineRepoUrl = "https://s.bettergi.com/";
-    
     // 选择的更新渠道名称
     [ObservableProperty] private string _selectedChannelName = "";
 

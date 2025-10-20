@@ -171,7 +171,7 @@
 
                                 <ui:Button Grid.Column="0"
                                            Margin="0,0,4,0"
-                                           Command="{Binding UpdateRepoOCommand}"
+                                           Command="{Binding UpdateRepoCommand}"
                                            Content="更新仓库"
                                            Icon="{ui:SymbolIcon CloudSync24}"
                                            HorizontalAlignment="Stretch" />

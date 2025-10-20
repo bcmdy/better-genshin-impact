@@ -170,14 +170,12 @@ public partial class ScriptRepoWindow
 
     private void InitializeRepoChannels()
     {
-        var scriptConfig = TaskContext.Instance().Config.ScriptConfig;
         _repoChannels = new ObservableCollection<RepoChannel>
         {
             new("CNB", "https://cnb.cool/bettergi/bettergi-scripts-list"),
             new("GitCode", "https://gitcode.com/huiyadanli/bettergi-scripts-list"),
             new("GitHub", "https://github.com/babalae/bettergi-scripts-list"),
-            new("自定义", "https://example.com/custom-repo"),
-            new("在线仓库", scriptConfig.OnlineRepoUrl)
+            new("自定义", "https://example.com/custom-repo")
         };
 
         // 根据配置中保存的渠道名称恢复选择
@@ -219,87 +217,7 @@ public partial class ScriptRepoWindow
     }
 
     [RelayCommand]
-   private async Task UpdateRepoIn()
-    {
-        try
-        {
-            await UpdateRepo();
-        }
-        catch (Exception ex)
-        {
-            Toast.Error($"打开在线脚本仓库失败: {ex.Message}");
-        }
-    }
-
-    
-    [RelayCommand]
-    public async Task<bool> UpdateRepo(int retryCount = 0)
-    {
-        if (SelectedRepoChannel is null)
-        {
-            Toast.Warning("请选择一个脚本仓库更新渠道。");
-            return false;
-        }
-        
-        try
-        {
-            // 使用选定渠道的URL进行更新
-            string repoUrl = SelectedRepoChannel.Url;
-            if (SelectedRepoChannel.Name == "在线仓库")
-            {
-                repoUrl = _repoChannels[retryCount].Url;
-            }
-
-            // 显示更新中提示
-            Toast.Information("正在更新脚本仓库，请耐心等待...");
-
-            // 设置进度显示
-            IsUpdating = true;
-            UpdateProgressValue = 0;
-            UpdateProgressText = "准备更新，请耐心等待...";
-            // 执行更新  (repoPath, updated) 
-            var (_, updated) = await ScriptRepoUpdater.Instance.UpdateCenterRepoByGit(repoUrl,
-                (path, steps, totalSteps) =>
-                {
-                    // 更新进度显示
-                    double progressPercentage = totalSteps > 0 ? Math.Min(100, (double)steps / totalSteps * 100) : 0;
-                    UpdateProgressValue = (int)progressPercentage;
-                    UpdateProgressText = $"{path}";
-                });
-
-
-            // 更新结果提示
-            if (updated)
-            {
-                Toast.Success("脚本仓库更新成功，有新内容");
-            }
-            else
-            {
-                Toast.Success("脚本仓库已是最新");
-            }
-        }
-        catch (Exception ex)
-        {
-            retryCount++;
-            if (retryCount >= _repoChannels.Count-1)
-            {
-                await MessageBox.ErrorAsync($"更新失败，可尝试重置仓库后重新更新。失败原因：: {ex.Message}");
-                return false;
-            }
-            Toast.Warning($"更新失败，正在尝试渠道 {_repoChannels[retryCount].Name} 进行。",ToastLocation.Center);
-            IsUpdating = true;
-            return await UpdateRepo(retryCount);
-        }
-        finally
-        {
-            // 隐藏进度条
-            IsUpdating = false;
-        }
-        return true;
-    }
-    
-    [RelayCommand]
-    private async Task UpdateRepoO()
+    private async Task UpdateRepo()
     {
         if (SelectedRepoChannel is null)
         {
@@ -373,10 +291,9 @@ public partial class ScriptRepoWindow
     [RelayCommand]
     private void OpenLocalScriptRepo()
     {
-        TaskContext.Instance().Config.ScriptConfig.ScriptRepoHintDotVisible = false; ;
+        TaskContext.Instance().Config.ScriptConfig.ScriptRepoHintDotVisible = false;
         ScriptRepoUpdater.Instance.OpenLocalRepoInWebView();
-        if (SelectedRepoChannel?.Name != "在线仓库") Close();
-        IsUpdating = true;
+        Close();
     }
 
     [RelayCommand]
