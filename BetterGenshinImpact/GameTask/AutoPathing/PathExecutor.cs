@@ -1193,7 +1193,7 @@ public class PathExecutor
                         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
-                        Logger.LogInformation("瓦雷莎技能111111:{ColorDifference}", numLabels);
+                        // Logger.LogInformation("瓦雷莎技能111111:{ColorDifference}", numLabels);
                         if (numLabels > 3 && numLabels <40)
                         {
                             mavikaFlyCount++;
@@ -1202,7 +1202,7 @@ public class PathExecutor
                                 hurryOnLogo = true;
                                 Task.Run(async () =>
                                 {
-                                    await Delay(1500, ct);
+                                    await Delay(1000, ct);
                                     var region3 = CaptureToRectArea();
                                     if (avatar.IsActive(region3))
                                     {
