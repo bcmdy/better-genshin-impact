@@ -419,7 +419,7 @@ public class Avatar
         // 3次失败考虑是否偏移出现问题，修改偏移位置
         if (i <= 2 || AutoFightTask.FightStatusFlag)
         {
-            Logger.LogInformation("切换角色1111111 {t}",i);
+            // Logger.LogInformation("切换角色1111111 {t}",i);
             if (i == 13 && AutoFightTask.FightStatusFlag)
             {
                 AutoFightTask.SwitchTryCount += 1;
@@ -468,10 +468,10 @@ public class Avatar
             return;
         }
 
-        Logger.LogInformation("切换角色2222222 {t}",i);
+        // Logger.LogInformation("切换角色2222222 {t}",i);
         if (CombatScenes.IndexRectOffset60Fix)
         {
-            Logger.LogInformation("切换角色3333 {t}",i);
+            // Logger.LogInformation("切换角色3333 {t}",i);
             foreach (var avatar in CombatScenes.GetAvatars())
             {
                 var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
@@ -482,7 +482,7 @@ public class Avatar
         }
         else
         {
-            Logger.LogInformation("切换角色4444 {t}",i);
+            // Logger.LogInformation("切换角色4444 {t}",i);
             foreach (var avatar in CombatScenes.GetAvatars())
             {
                 var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
