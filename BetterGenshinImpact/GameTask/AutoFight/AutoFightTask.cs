@@ -672,10 +672,6 @@ public class AutoFightTask : ISoloTask
                                     if(i>0)i--;
                                     continue;
                                 }
-                                if (checkFightFinishStopwatch.Elapsed > checkFightFinishTime)
-                                {
-                                    break;
-                                }
                             }
                             image.Dispose();
                         }
@@ -706,6 +702,7 @@ public class AutoFightTask : ISoloTask
                         
                         if (avatar is null || (avatar.Name == guardianAvatar?.Name && (_taskParam.GuardianCombatSkip || _taskParam.BurstEnabled)))
                         {
+                            Logger.LogDebug("跳过角色{command.Name} - {avatar.Name}", command.Name,avatar?.Name);
                             continue;
                         }
                         if (_taskParam.AutoCombatEq)avatar?.TrySwitch(10);

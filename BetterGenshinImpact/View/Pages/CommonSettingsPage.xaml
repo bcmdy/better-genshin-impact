@@ -780,7 +780,7 @@
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="可调整鼠标移动的时间间隔(建议2~20ms，如异常逐步调大)"
+                                  Text="可调整鼠标移动的时间间隔（建议2~20ms，如异常逐步调大），如果拖动时地图卡顿，感觉拖不动，调高这个数值"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"
@@ -791,9 +791,10 @@
                     
                     <ui:TextBlock Grid.Row="2"
                                   Grid.Column="0"
-                                  Margin="0,0,10,0"
+                                  Margin="0,10,10,0"
                                   FontTypography="Body"
-                                  Text="拖动距离等级，默认0自动适配，可调节范围0~5（可填小数）"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="单次拖动距离等级，默认0自动适配，可调节范围0~5（默认2，可填小数），如果每次鼠标拖动太短，拖动次数过多，调高这个数值"
                                   VerticalAlignment="Center"
                                   TextWrapping="Wrap"
                                   Visibility="{Binding Config.TpConfig.MapMoveStepDivisor , Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -801,7 +802,7 @@
                                 Grid.Column="1"
                                 MinWidth="100"
                                 MaxWidth="100"
-                                Margin="0,0,38,0"
+                                Margin="0,10,38,0"
                                 HorizontalContentAlignment="Center"
                                 Visibility="{Binding Config.TpConfig.MapMoveStepDivisor , Converter={StaticResource BooleanToVisibilityConverter}}"
                                 Text="{Binding Config.TpConfig.MapZoomDistanceForce, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />

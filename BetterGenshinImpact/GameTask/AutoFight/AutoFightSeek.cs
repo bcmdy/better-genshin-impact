@@ -322,7 +322,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                         else
                         {
-                            await Task.Run(() =>
+                            Task.Run(() =>
                             {
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                             Simulation.SendInput.SimulateAction(GIActions.MoveForward);
