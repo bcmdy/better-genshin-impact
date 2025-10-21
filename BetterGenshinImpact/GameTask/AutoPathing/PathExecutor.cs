@@ -65,6 +65,7 @@ using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Job;
 using Vanara.Extensions.Reflection;
 using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.GameTask.AutoFight;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -196,7 +197,7 @@ public class PathExecutor
         var waypointsList = ConvertWaypointsForTrack(task.Positions, task);
 
         await Delay(100, ct);
-        Navigation.WarmUp(); // 提前加载地图特征点
+        Navigation.WarmUp(task.Info.MapMatchMethod);
         
         await InitializeAutoEat();//初始化自动吃药
         
@@ -677,7 +678,7 @@ public class PathExecutor
         // 把 X Y 转换为 MatX MatY
         var allList = positions.Select(waypoint =>
         {
-            WaypointForTrack wft=new WaypointForTrack(waypoint, task.Info.MapName);
+            WaypointForTrack wft = new WaypointForTrack(waypoint, task.Info.MapName, task.Info.MapMatchMethod);
             wft.Misidentification=waypoint.PointExtParams.Misidentification;
             wft.MonsterTag = waypoint.PointExtParams.MonsterTag;
             wft.EnableMonsterLootSplit = waypoint.PointExtParams.EnableMonsterLootSplit;
@@ -941,9 +942,9 @@ public class PathExecutor
         {
             tpTask = new TpTask(ct);
         }
-
+        
         // 最小5分钟间隔
-        if ((DateTime.UtcNow - _lastGetExpeditionRewardsTime).TotalMinutes < 5)
+        if ( _combatScenes?.CurrentMultiGameStatus?.IsInMultiGame == true || (DateTime.UtcNow - _lastGetExpeditionRewardsTime).TotalMinutes < 5)
         {
             return false;
         }
@@ -964,7 +965,6 @@ public class PathExecutor
         if (!RunnerContext.Instance.isAutoFetchDispatch && adventurersGuildCountry != "无")
         {
             var ra1 = CaptureToRectArea();
-
             var textRect = new Rect(60, 20, 160, 260);
             var textMat = new Mat(ra1.SrcMat, textRect);
             string text = OcrFactory.Paddle.Ocr(textMat);
@@ -1001,7 +1001,7 @@ public class PathExecutor
         TpTask tpTask = new TpTask(ct);
         await TryGetExpeditionRewardsDispatch(tpTask);
         var (tpX, tpY) = await tpTask.Tp(waypoint.GameX, waypoint.GameY, waypoint.MapName, forceTp);
-        var (tprX, tprY) = MapManager.GetMap(waypoint.MapName)
+        var (tprX, tprY) = MapManager.GetMap(waypoint.MapName, waypoint.MapMatchMethod)
             .ConvertGenshinMapCoordinatesToImageCoordinates((float)tpX, (float)tpY);
         Navigation.SetPrevPosition(tprX, tprY); // 通过上一个位置直接进行局部特征匹配
         await Delay(500, ct); // 多等一会
@@ -1595,7 +1595,6 @@ public class PathExecutor
                 {
                     if (fastMode)
                     {
-                        // Logger.LogInformation("2222");
                         Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyUp);
                     }
                     else
@@ -1655,7 +1654,6 @@ public class PathExecutor
                     if (Math.Abs((fastModeColdTime - DateTime.UtcNow).TotalMilliseconds) > 2500) //冷却时间2.5s，回复体力用
                     {
                         fastModeColdTime = DateTime.UtcNow;
-                        // Logger.LogInformation("555");
                         Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
                     }
                 }
@@ -1932,7 +1930,7 @@ public class PathExecutor
     private async Task<(Point2f point,int additionalTimeInMs)> GetPositionAndTime(ImageRegion imageRegion, WaypointForTrack waypoint)
     {
         
-        var position = Navigation.GetPosition(imageRegion, waypoint.MapName);
+        var position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
         int time = 0;
         if (position == new Point2f())
         {
@@ -1967,7 +1965,7 @@ public class PathExecutor
                 await tpTask.OpenBigMapUi();
                 try
                 {
-                    position =MapManager.GetMap(waypoint.MapName).ConvertGenshinMapCoordinatesToImageCoordinates(tpTask.GetPositionFromBigMap(waypoint.MapName));
+                    position =MapManager.GetMap(waypoint.MapName, waypoint.MapMatchMethod).ConvertGenshinMapCoordinatesToImageCoordinates(tpTask.GetPositionFromBigMap(waypoint.MapName));
                 }
                 catch (Exception e)
                 {
@@ -1984,7 +1982,7 @@ public class PathExecutor
             
             /*if (prePosition!=default)
             {*/
-                //position = InterpolatePointByTime(prePosition,new Point2f((float)waypoint.GameX,(float)waypoint.GameY),preTime,DateTime.UtcNow,preTime.AddMilliseconds(maxAutoPositionTime));
+                //position = InterpolatePointByTime(prePosition,new Point2f((float)waypoint.GameX,(float)waypoint.GameY),preTime,DateTime.Now,preTime.AddMilliseconds(maxAutoPositionTime));
                 //Logger.LogInformation(@$"未识别到具体路径，预测其路径为（{position.X},{position.Y}）,开始结束点位为：（{prePosition.X},{prePosition.Y}）（{waypoint.GameX},{waypoint.GameY}）");
                 //Point2f GetBigMapCenterPoint(string mapName)
 

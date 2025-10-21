@@ -25,10 +25,7 @@ public partial class ScriptConfig : ObservableObject
     // 已订阅的脚本路径列表
     [ObservableProperty]
     private List<string> _subscribedScriptPaths = [];
-    
-    // 选择的更新渠道URL
-    [ObservableProperty] private string _selectedRepoUrl = "";
-    
+
     // 选择的更新渠道名称
     [ObservableProperty] private string _selectedChannelName = "";
 

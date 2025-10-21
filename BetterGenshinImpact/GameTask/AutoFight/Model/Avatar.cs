@@ -256,6 +256,7 @@ public class Avatar
     /// </summary>
     public void Switch()
     {
+        var context = new AvatarActiveCheckContext();
         for (var i = 0; i < 30; i++)
         {
             if (Ct is { IsCancellationRequested: true })
@@ -266,36 +267,13 @@ public class Avatar
             var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
-            var notActiveCount = CombatScenes.GetAvatars().Count(avatar => !avatar.IsActive(region));
-            if (IsActive(region) && notActiveCount == CombatScenes.ExpectedTeamAvatarNum - 1)
+            // 切换成功
+            if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
                 return;
             }
 
-            Simulation.SendInput.SimulateAction(GIActions.Drop);
-            switch (Index)
-            {
-                case 1:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
-                    break;
-                case 2:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
-                    break;
-                case 3:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
-                    break;
-                case 4:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
-                    break;
-                case 5:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
-                    break;
-                default:
-                    break;
-            }
-
-            Offset60Fix(i);
-
+            SimulateSwitchAction(Index);
             // Debug.WriteLine($"切换到{Index}号位");
             // Cv2.ImWrite($"log/切换.png", region.SrcMat);
             Sleep(250, Ct);
@@ -310,6 +288,7 @@ public class Avatar
     /// <returns></returns>
     public bool TrySwitch(int tryTimes = 4, bool needLog = true)
     {
+        var context = new AvatarActiveCheckContext();
         for (var i = 0; i < tryTimes; i++)
         {
             if (Ct is { IsCancellationRequested: true })
@@ -320,12 +299,11 @@ public class Avatar
             var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
-            var notActiveCount = CombatScenes.GetAvatars().Count(avatar => !avatar.IsActive(region));
-            if (IsActive(region) && notActiveCount == CombatScenes.ExpectedTeamAvatarNum - 1)
+            // 切换成功
+            if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
                 if (needLog && i > 0)
                 {
-                    LastActiveAvatar = Name;
                     Logger.LogInformation("成功切换角色:{Name}", Name);
                 }
                 AutoFightTask.SwitchTryCount = 0;
@@ -333,39 +311,38 @@ public class Avatar
                 return true;
             }
 
-            Simulation.SendInput.SimulateAction(GIActions.Drop); //反正会重试就不等落地了
-            switch (Index)
-            {
-                case 1:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
-                    break;
-                case 2:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
-                    break;
-                case 3:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
-                    break;
-                case 4:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
-                    break;
-                case 5:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
-                    break;
-                default:
-                    break;
-            }
-            
-            Offset60Fix(i);
 
-            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
-            {
-                return false;
-            }
-            
-            Sleep(240, Ct);
+            SimulateSwitchAction(Index);
+
+            Sleep(250, Ct);
         }
 
         return false;
+    }
+
+    private void SimulateSwitchAction(int index)
+    {
+        Simulation.SendInput.SimulateAction(GIActions.Drop); //反正会重试就不等落地了
+        switch (index)
+        {
+            case 1:
+                Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
+                break;
+            case 2:
+                Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
+                break;
+            case 3:
+                Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
+                break;
+            case 4:
+                Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
+                break;
+            case 5:
+                Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
+                break;
+            default:
+                break;
+        }
     }
 
     /// <summary>
@@ -374,40 +351,18 @@ public class Avatar
     /// </summary>
     public void SwitchWithoutCts()
     {
+        var context = new AvatarActiveCheckContext();
         for (var i = 0; i < 10; i++)
         {
             var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
-            var notActiveCount = CombatScenes.GetAvatars().Count(avatar => !avatar.IsActive(region));
-            if (IsActive(region) && notActiveCount == 3)
+            if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
                 return;
             }
 
-            Simulation.SendInput.SimulateAction(GIActions.Drop);
-            switch (Index)
-            {
-                case 1:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
-                    break;
-                case 2:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
-                    break;
-                case 3:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
-                    break;
-                case 4:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
-                    break;
-                case 5:
-                    Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
-                    break;
-                default:
-                    break;
-            }
-            
-            Offset60Fix(i);
+            SimulateSwitchAction(Index);
 
             Sleep(250);
         }
@@ -511,7 +466,7 @@ public class Avatar
             return !white;
         }
     }
-    
+
     private bool IsIndexRectWhite(ImageRegion region, Rect rect)
     {
         // 剪裁出IndexRect区域
@@ -777,7 +732,6 @@ public class Avatar
     /// </summary>
     public void UseBurst()
     {
-        // var isBurstReleased = false;
         for (var i = 0; i < 10; i++)
         {
             if (Ct is { IsCancellationRequested: true })
@@ -790,26 +744,13 @@ public class Avatar
 
             var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
-            var notActiveCount = CombatScenes.GetAvatars().Count(avatar => !avatar.IsActive(region));
-            if (notActiveCount == 0)
+
+            if (!PartyAvatarSideIndexHelper.HasAnyIndexRect(region))
             {
-                // isBurstReleased = true;
+                // 找不到角色编号块意味者技能释放成功
                 Sleep(1500, Ct);
                 return;
             }
-            // else
-            // {
-            //     if (!isBurstReleased)
-            //     {
-            //         var cd = GetBurstCurrentCd(content);
-            //         if (cd > 0)
-            //         {
-            //             Logger.LogInformation("{Name} 释放元素爆发，cd:{Cd}", Name, cd);
-            //             // todo  把cd加入执行队列
-            //             return;
-            //         }
-            //     }
-            // }
         }
     }
 
@@ -1061,6 +1002,7 @@ public class Avatar
                     rateX = lowspeed;
                     rateY = 0;
                 }
+
                 Simulation.SendInput.Mouse.MoveMouseBy((int)(rateX * 50 * dpi), (int)(rateY * 50 * dpi));
 
                 tick = (tick + 1) % 100;

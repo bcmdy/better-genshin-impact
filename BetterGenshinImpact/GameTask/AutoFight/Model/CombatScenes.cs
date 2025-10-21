@@ -14,7 +14,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
+using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using Compunet.YoloSharp;
 using Compunet.YoloSharp.Data;
 using SixLabors.ImageSharp;
@@ -44,6 +46,14 @@ public class CombatScenes : IDisposable
     public Avatar[] Avatars { set; get; } = [];
 
     public int AvatarCount => Avatars.Length;
+
+    /// <summary>
+    /// 最近一次识别出的出战角色编号，从1开始，-1表示未识别
+    /// </summary>
+    public int LastActiveAvatarIndex { get; set; } = -1;
+
+    public MultiGameStatus? CurrentMultiGameStatus { set; get; }
+
 
     private readonly BgiYoloPredictor _predictor =
         App.ServiceProvider.GetRequiredService<BgiOnnxFactory>().CreateYoloPredictor(BgiOnnxModel.BgiAvatarSide);
@@ -78,121 +88,13 @@ public class CombatScenes : IDisposable
             InitializeTeamFromConfig(TaskContext.Instance().Config.AutoFightConfig.TeamNames);
             return this;
         }
-        
-        // 判断当前是否处于联机状态
-        List<Rect> avatarSideIconRectList;
-        List<Rect> avatarIndexRectList;
-        var pRaList = imageRegion.FindMulti(AutoFightAssets.Instance.PRa);
-        if (pRaList.Count > 0)
-        {
-            var num = pRaList.Count + 1;
-            if (num > 4)
-            {
-                throw new Exception("当前处于联机状态，但是队伍人数超过4人，无法识别");
-            }
 
-            // 联机状态下判断
-            var onePRa = imageRegion.Find(AutoFightAssets.Instance.OnePRa);
-            var p = "p";
-            if (!onePRa.IsEmpty())
-            {
-                Logger.LogInformation("当前处于联机状态，且当前账号是房主，联机人数{Num}人", num);
-                p = "1p";
-            }
-            else
-            {
-                Logger.LogInformation("当前处于联机状态，且在别人世界中，联机人数{Num}人", num);
-            }
 
-            avatarSideIconRectList = new List<Rect>(AutoFightAssets.Instance.AvatarSideIconRectListMap[$"{p}_{num}"]);
-            avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectListMap[$"{p}_{num}"]);
-
-            ExpectedTeamAvatarNum = avatarSideIconRectList.Count;
-            
-            // //画出avatarSideIconRectList的区域
-            // for (var i = 0; i < avatarSideIconRectList.Count; i++)
-            // {
-            //     var rect = avatarSideIconRectList[i];
-            //     imageRegion.DeriveCrop(rect).DrawSelf("avatarSideIconRectList{i}");
-            // }
-        }
-        else
-        {
-            avatarSideIconRectList = new List<Rect>(AutoFightAssets.Instance.AvatarSideIconRectList);
-            avatarIndexRectList = new List<Rect>(AutoFightAssets.Instance.AvatarIndexRectList);
-            // for (var i = 0; i < avatarSideIconRectList.Count; i++)
-            // {
-            //     var rect = avatarSideIconRectList[i];
-            //     imageRegion.DeriveCrop(rect).DrawSelf("avatarSideIconRectList{i}");
-            // }
-        }
-
-        for (var i = 0; i < 2; i++)
-        {
-            var ms = 1000;
-            var firstComponentY = -1;
-            var numLabels = 0;
-            while (ms > 0)
-            {
-                var imageRegionIndex = CaptureToRectArea().DeriveCrop(1860,242,1,318);
-                // var woodNumValue = ms > 725 ? 255 : Math.Max(255 - (500 - ms + 1), 1); // 计算woodNum的值
-                // var woodNum = new Scalar(woodNumValue, woodNumValue, woodNumValue); // 创建Scalar对象
-                var woodNum = new Scalar(255, 255, 255); // 创建Scalar对象
-                var mask = OpenCvCommonHelper.Threshold(imageRegionIndex.SrcMat, woodNum);
-                var labels = new Mat();
-                var stats = new Mat();
-                var centroids = new Mat();
-
-                numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                    connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
-
-                // Logger.LogWarning("识别: 共{Cnt}个连通区域", numLabels);
-                // Logger.LogWarning("识别: 角色avatarIndexRectList数量: {t}", avatarIndexRectList.Count);
-
-                if (numLabels > avatarIndexRectList.Count-1)
-                {
-                    imageRegion = CaptureToRectArea();
-                    
-                    firstComponentY = stats.At<int>(1, 1);
-                    // Logger.LogWarning("识别队伍Y轴坐标: {t}",firstComponentY);
-                    labels.Dispose();
-                    centroids.Dispose();
-                    stats.Dispose();
-                    break;
-                }
-                
-                labels.Dispose();
-                centroids.Dispose();
-                stats.Dispose();
-                
-                Thread.Sleep(1); 
-                ms -= 1;
-                if (ms == 0)
-                {
-                    Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}");
-                }
-            } 
-            
-            IndexRectOffset60Fix = AvatarSideFixOffset(firstComponentY,numLabels,avatarSideIconRectList, avatarIndexRectList);
-            PathingConditionConfig.IndexRectOffset60FixBackUp ??= IndexRectOffset60Fix;
-            if (PathingConditionConfig.IndexRectOffset60FixBackUp != IndexRectOffset60Fix && i == 0)
-            {
-               continue;
-            }
-            
-            if (firstComponentY != -1)
-            {
-                if (i >= 1)
-                {
-                    PathingConditionConfig.IndexRectOffset60FixBackUp = IndexRectOffset60Fix;
-                }
-                break;
-            }
-            else
-            {
-                Logger.LogWarning($"无法识别队伍，请确认是否在主页面或队伍人数是否正确 {ExpectedTeamAvatarNum}{avatarIndexRectList.Count}{numLabels}"); 
-            }
-        }
+        // 判断联机状态
+        CurrentMultiGameStatus = PartyAvatarSideIndexHelper.DetectedMultiGameStatus(imageRegion);
+        // 队伍角色编号和侧面头像位置
+        var (avatarIndexRectList, avatarSideIconRectList) = PartyAvatarSideIndexHelper.GetAllIndexRects(imageRegion, CurrentMultiGameStatus);
+        ExpectedTeamAvatarNum = avatarIndexRectList.Count;
 
         // 识别队伍
         var names = new string[avatarSideIconRectList.Count];
@@ -230,67 +132,54 @@ public class CombatScenes : IDisposable
 
         return this;
     }
-    
+
+
     /// <summary>
-    /// 6.0 版本 队伍下的 草露 进度条 导致位置偏移
-    /// 
+    /// 这个个方法主要用于在切人判断有误的情况下，且能够找到预期数量的角色编号框。此时只有两种情况
+    /// 1. A草露进度条导致角色编号框偏移，B退队后偏移不变，C独立地图传送后偏移还原
+    /// 2. 地图边缘环境，导致角色编号框切人判断失效
+    /// 此方法必须在判定一定存在 ExpectedTeamAvatarNum 数量的 IndexRectList 的情况下才能使用
     /// </summary>
-    /// <param name="firstComponentY"></param>
-    /// <param name="numLabels"></param>
-    /// <param name="avatarSideIconRectList"></param>
-    /// <param name="avatarIndexRectList"></param>
     /// <param name="imageRegion"></param>
-    public bool AvatarSideFixOffset(int firstComponentY,int numLabels,List<Rect> avatarSideIconRectList, List<Rect> avatarIndexRectList)
+    /// <returns>false:存在 IndexRectList 的情况下使用此方法，返回false的时候很有可能处于地图边缘环境下</returns>
+    public bool RefreshTeamAvatarIndexRectList(ImageRegion imageRegion)
     {
-        var up = false;
-        bool IsInRange(int value, int start, int end)
+        // 只用新方法判断
+        try
         {
-            return value >= start && value <= end;
-        }
-        
-        if (avatarIndexRectList.Count <= 3)
-        {
-            if (IsInRange(firstComponentY, 200, 206) || IsInRange(firstComponentY, 297, 302) //3人世界
-                || IsInRange(firstComponentY, 150, 160) || IsInRange(firstComponentY, 251, 256)) //二人世界
+            var (avatarIndexRectList, _) = PartyAvatarSideIndexHelper.GetAllIndexRectsNew(imageRegion, CurrentMultiGameStatus!);
+            if (avatarIndexRectList.Count != ExpectedTeamAvatarNum)
             {
-                up = true;
+                Logger.LogWarning("重新识别到的队伍角色数量与之前不一致，之前{Old}个，现在{New}个", ExpectedTeamAvatarNum, avatarIndexRectList.Count);
+                return false;
             }
+
+            for (var i = 0; i < ExpectedTeamAvatarNum; i++)
+            {
+                Avatars[i].IndexRect = avatarIndexRectList[i];
+            }
+
+            return true;
         }
-        
-        // Logger.LogInformation("队伍UP211: {numLabels}", numLabels);
-        // Logger.LogInformation("队伍UP22: {Num}", up);
-        
-        var model = avatarIndexRectList.Count > 3 ? 
-            //单人世界
-            IsInRange(firstComponentY, 0, 4) || IsInRange(firstComponentY, 94, 100)
-            : 
-            //联机世界
-            up;
-        
-        if (!model)
+        catch (Exception ex)
         {
+            Logger.LogDebug(ex, "使用新方法获取角色编号位置失败");
+            Logger.LogWarning("[重新识别角色编号位置]使用新方法获取角色编号位置失败，原因：" + ex.Message);
             return false;
         }
-
-        Logger.LogInformation("检测到右侧队伍上偏移，进行位置偏移,{t}", firstComponentY);
-
-        for (var i = 0; i < avatarSideIconRectList.Count; i++)
-        {
-            var rect = avatarSideIconRectList[i];
-            rect.Y -= 14;
-            avatarSideIconRectList[i] = rect;
-        }
-
-        for (var i = 0; i < avatarIndexRectList.Count; i++)
-        {
-            var rect = avatarIndexRectList[i];
-            rect.Y -= 14;
-            avatarIndexRectList[i] = rect;
-        }
-
-        return true;
     }
-    
+
+    // public static List<Rect> FindAvatarIndexRectList(ImageRegion imageRegion)
+    // {
+    //     var i1 = imageRegion.Find(ElementAssets.Instance.Index1);
+    //     var i2 = imageRegion.Find(ElementAssets.Instance.Index2);
+    //     var i3 = imageRegion.Find(ElementAssets.Instance.Index3);
+    //     var i4 = imageRegion.Find(ElementAssets.Instance.Index4);
+    //     var curr = imageRegion.Find(ElementAssets.Instance.CurrentAvatarThreshold);
+    //     // Debug.WriteLine($"i1:{i1.X},{i1.Y},{i1.Width},{i1.Height}; i2:{i2.X},{i2.Y},{i2.Width},{i2.Height}; i3:{i3.X},{i3.Y},{i3.Width},{i3.Height}; i4:{i4.X},{i4.Y},{i4.Width},{i4.Height}; curr:{curr.X},{curr.Y},{curr.Width},{curr.Height}");
+    //     return null;
+    // }
+
 
     public (string, string) ClassifyAvatarCnName(Image<Rgb24> img, int index)
     {
@@ -577,6 +466,8 @@ public class CombatScenes : IDisposable
 
     /// <summary>
     /// 获取当前出战角色名
+    /// 不考虑重新刷新编号框位置
+    /// 不推荐使用
     /// </summary>
     /// <param name="force"></param>
     /// <param name="region"></param>
@@ -585,30 +476,62 @@ public class CombatScenes : IDisposable
     public string? CurrentAvatar(bool force = false, ImageRegion? region = null,
         CancellationToken ct = default)
     {
-        if (!force && Avatar.LastActiveAvatar is not null)
+        if (!force && LastActiveAvatarIndex > 0)
         {
-            return Avatar.LastActiveAvatar;
+            return Avatars[LastActiveAvatarIndex - 1].Name;
         }
 
         var imageRegion = region ?? CaptureToRectArea();
-        string? avatarName = null;
 
-        var notActiveCount = 0;
-        foreach (var avatar in GetAvatars())
+        var rectArray = Avatars.Select(t => t.IndexRect).ToArray();
+        int index = PartyAvatarSideIndexHelper.GetAvatarIndexIsActiveWithContext(imageRegion, rectArray, new AvatarActiveCheckContext());
+
+        if (index > 0)
         {
-            if (avatar.IsActive(imageRegion))
+            LastActiveAvatarIndex = index;
+        }
+
+        return Avatars[LastActiveAvatarIndex - 1].Name;
+    }
+
+    /// <summary>
+    /// 推荐使用
+    /// 失败后自动刷新编号框位置
+    /// </summary>
+    /// <param name="imageRegion"></param>l
+    /// <param name="context"></param>
+    /// <returns></returns>
+    public int GetActiveAvatarIndex(ImageRegion imageRegion, AvatarActiveCheckContext context)
+    {
+        var rectArray = Avatars.Select(t => t.IndexRect).ToArray();
+        int index = PartyAvatarSideIndexHelper.GetAvatarIndexIsActiveWithContext(imageRegion, rectArray, context);
+
+        if (index > 0)
+        {
+            LastActiveAvatarIndex = index;
+            return index;
+        }
+        else
+        {
+            // 多次识别失败则尝试刷新角色编号位置
+            // 应对草露问题
+            if (context.TotalCheckFailedCount > 3)
             {
-                avatarName = avatar.Name;
-            }
-            else
-            {
-                notActiveCount++;
+                // 失败多次，识别是否存在满足预期的编号框
+                if (PartyAvatarSideIndexHelper.CountIndexRect(imageRegion) == Avatars.Length)
+                {
+                    bool res = RefreshTeamAvatarIndexRectList(imageRegion);
+                    Logger.LogWarning("多次识别出战角色失败，尝试刷新角色编号位置（处理草露问题），刷新结果:{Result}", res ? "成功" : "失败");
+                    if (res)
+                    {
+                        context.TotalCheckFailedCount = 0;
+                    }
+                }
             }
         }
 
-        if (notActiveCount != ExpectedTeamAvatarNum - 1) return avatarName;
-        Avatar.LastActiveAvatar = avatarName;
-        return Avatar.LastActiveAvatar;
+
+        return -1;
     }
 
 
