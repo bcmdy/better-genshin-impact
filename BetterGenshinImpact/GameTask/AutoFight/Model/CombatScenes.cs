@@ -500,8 +500,9 @@ public class CombatScenes : IDisposable
     /// </summary>
     /// <param name="imageRegion"></param>l
     /// <param name="context"></param>
+    /// <param name="moreTimes"></param>
     /// <returns></returns>
-    public int GetActiveAvatarIndex(ImageRegion imageRegion, AvatarActiveCheckContext context)
+    public int GetActiveAvatarIndex(ImageRegion imageRegion, AvatarActiveCheckContext context,bool moreTimes = false)
     {
         var rectArray = Avatars.Select(t => t.IndexRect).ToArray();
         int index = PartyAvatarSideIndexHelper.GetAvatarIndexIsActiveWithContext(imageRegion, rectArray, context);
@@ -515,7 +516,7 @@ public class CombatScenes : IDisposable
         {
             // 多次识别失败则尝试刷新角色编号位置
             // 应对草露问题
-            if (context.TotalCheckFailedCount > 3)
+            if (context.TotalCheckFailedCount > (moreTimes ? 6 : 3))
             {
                 // 失败多次，识别是否存在满足预期的编号框
                 if (PartyAvatarSideIndexHelper.CountIndexRect(imageRegion) == Avatars.Length)

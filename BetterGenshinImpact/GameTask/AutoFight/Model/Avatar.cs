@@ -300,7 +300,7 @@ public class Avatar
             ThrowWhenDefeated(region, Ct);
 
             // 切换成功
-            if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
+            if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
             {
                 if (needLog && i > 0)
                 {
