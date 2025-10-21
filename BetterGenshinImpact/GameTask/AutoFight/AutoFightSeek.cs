@@ -324,8 +324,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         {
                             Task.Run(() =>
                             {
-                            Simulation.SendInput.SimulateAction(GIActions.MoveForward);
-                            Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                                Simulation.SendInput.SimulateAction(GIActions.MoveForward);
                             }, ct);
                         }
                         

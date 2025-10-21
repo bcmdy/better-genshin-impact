@@ -595,7 +595,7 @@ public class AutoFightTask : ISoloTask
                                         {
                                             lastFightName = avatarQ.Name;
                                             countFight++;
-                                            //&& useEq.Contains(num) 禁止E功能待做
+                                            
                                             if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 avatarQ.UseSkill(avatarQHold);
@@ -633,10 +633,6 @@ public class AutoFightTask : ISoloTask
                                                 }
                                             }
                                             
-                                            // if (guardianAvatar.IsSkillReady())
-                                            // {
-                                            //     break;
-                                            // }
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct,avatarQ);
                                             if (!fightEndFlag)
                                             { 

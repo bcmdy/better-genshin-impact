@@ -313,6 +313,8 @@ public class Avatar
 
 
             SimulateSwitchAction(Index);
+            
+            Offset60Fix(i);
 
             Sleep(250, Ct);
         }
@@ -419,35 +421,7 @@ public class Avatar
             }
             
             Simulation.SendInput.SimulateAction(GIActions.Drop);
-            
-            return;
         }
-
-        // Logger.LogInformation("切换角色2222222 {t}",i);
-        if (CombatScenes.IndexRectOffset60Fix)
-        {
-            // Logger.LogInformation("切换角色3333 {t}",i);
-            foreach (var avatar in CombatScenes.GetAvatars())
-            {
-                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                avatar.IndexRect = rect1;
-            }
-            CombatScenes.IndexRectOffset60Fix = false;
-        }
-        else
-        {
-            // Logger.LogInformation("切换角色4444 {t}",i);
-            foreach (var avatar in CombatScenes.GetAvatars())
-            {
-                var originalRect = AutoFightAssets.Instance.AvatarIndexRectList[avatar.Index - 1];
-                var rect1 = new Rect(originalRect.X, originalRect.Y, originalRect.Width, originalRect.Height);
-                rect1.Y -= 14;
-                avatar.IndexRect = rect1;
-            }
-        
-            CombatScenes.IndexRectOffset60Fix = true;
-        } 
     }
 
     /// <summary>
