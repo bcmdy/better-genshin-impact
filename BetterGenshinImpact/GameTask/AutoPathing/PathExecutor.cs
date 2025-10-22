@@ -1041,6 +1041,7 @@ public class PathExecutor
         var sprintMouseLogo = true;
         var trackingLogo = true;
         var mavikaFlyCount = 0;
+        var runLogo = true;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1168,14 +1169,17 @@ public class PathExecutor
                              
                         // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference, 2));
                         
-                        if (colorDifference < 15 && pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
+                        if (colorDifference < 15)
                         {
-                            mavikaFlyCount++;
-                            if (mavikaFlyCount > 7 && avatar.IsActive(region2))
+                            if (pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                mavikaFlyCount = 0;
-                                Logger.LogInformation("自动赶路：靠近节点切换 {t}...",nextAvatarIndexStop);
+                                mavikaFlyCount++;
+                                if (mavikaFlyCount > 7 && avatar.IsActive(region2))
+                                {
+                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                    mavikaFlyCount = 0;
+                                    Logger.LogInformation("自动赶路：靠近节点切换 {t}...",nextAvatarIndexStop);
+                                } 
                             }
                         }
                         region2.Dispose();
@@ -1264,9 +1268,9 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(400, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(400, ct);
+                                await Delay(800, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
-                                await Delay(400, ct);
+                                // await Delay(400, ct);
                                 
                                 var region3 = CaptureToRectArea();
                                 // 获取两个点的颜色值
@@ -1282,6 +1286,22 @@ public class PathExecutor
                                 {
                                     Logger.LogInformation("自动赶路：继续...");
                                     hurryOnLogo = true;
+                                    
+                                    if (distance > 20)
+                                    {
+                                        if (waypoint.MoveMode == MoveModeEnum.Dash.Code)
+                                        {
+                                            Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                        }
+                                        else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
+                                        {
+                                            if (runLogo)
+                                            {
+                                                Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                                runLogo = false;
+                                            }
+                                        } 
+                                    }
                                 }
                                 else
                                 {
@@ -1309,8 +1329,55 @@ public class PathExecutor
                             {
                                 Logger.LogInformation("自动赶路：继续...");
                                 hurryOnLogo = true;
+                                if (distance > 20)
+                                {
+                                    if (waypoint.MoveMode == MoveModeEnum.Dash.Code)
+                                    {
+                                        Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                    }
+                                    else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
+                                    {
+                                        if (runLogo)
+                                        {
+                                            Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                            runLogo = false;
+                                        }
+                                    } 
+                                }
                             }
-                            
+                            else
+                            {
+                                var higher = new Scalar(0, 221, 250);
+                                var region2 = CaptureToRectArea();
+                                var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(1686, 949, 10, 10).SrcMat,higher);
+                                var labels = new Mat();
+                                var stats = new Mat();
+                                var centroids = new Mat();
+
+                                var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                                    connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+                                
+                                if (numLabels > 1)
+                                {
+                                    Logger.LogInformation("自动赶路：继续...");
+                                    hurryOnLogo = true;
+                                    if (distance > 20)
+                                    {
+                                        if (waypoint.MoveMode == MoveModeEnum.Dash.Code)
+                                        {
+                                            Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                        }
+                                        else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
+                                        {
+                                            if (runLogo)
+                                            {
+                                                Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
+                                                runLogo = false;
+                                            }
+                                        } 
+                                    }
+                                }
+                            }
                         }
                         else
                         {
