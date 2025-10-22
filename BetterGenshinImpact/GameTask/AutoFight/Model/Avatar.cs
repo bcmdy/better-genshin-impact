@@ -270,13 +270,24 @@ public class Avatar
             // 切换成功
             if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
+                region.Dispose();
                 return;
             }
 
             SimulateSwitchAction(Index);
             // Debug.WriteLine($"切换到{Index}号位");
             // Cv2.ImWrite($"log/切换.png", region.SrcMat);
-            Sleep(250, Ct);
+            
+            Offset60Fix(i);
+            
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                region.Dispose();
+                return;
+            }
+            
+            Sleep(240, Ct);
+            region.Dispose();
         }
     }
 
@@ -308,15 +319,22 @@ public class Avatar
                 }
                 AutoFightTask.SwitchTryCount = 0;
                 
+                region.Dispose();
                 return true;
             }
-
 
             SimulateSwitchAction(Index);
             
             Offset60Fix(i);
+            
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                region.Dispose();
+                return false;
+            }
 
-            Sleep(250, Ct);
+            Sleep(240, Ct);
+            region.Dispose();
         }
 
         return false;
@@ -361,12 +379,20 @@ public class Avatar
 
             if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
+                region.Dispose();
                 return;
             }
 
             SimulateSwitchAction(Index);
+            
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                region.Dispose();
+                return;
+            }
 
-            Sleep(250);
+            Sleep(240);
+            region.Dispose();
         }
     }
 

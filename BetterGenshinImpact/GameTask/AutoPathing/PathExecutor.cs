@@ -1264,7 +1264,9 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(400, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(800, ct);
+                                await Delay(400, ct);
+                                Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
+                                await Delay(400, ct);
                                 
                                 var region3 = CaptureToRectArea();
                                 // 获取两个点的颜色值
@@ -1294,7 +1296,7 @@ public class PathExecutor
                     }
                     else if (avatar.Name == "瓦雷莎") //长E类型
                     {
-                        await Delay(400, ct);
+                        await Delay(300, ct);
                         if (!await AutoFightSkill.AvatarSkillAsync(Logger, avatar, false, 2, ct))
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyDown);
