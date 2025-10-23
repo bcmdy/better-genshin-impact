@@ -1269,7 +1269,7 @@ public class PathExecutor
                                 await Delay(400, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(800, ct);
-                                Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
+                                // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
                                 var region3 = CaptureToRectArea();
