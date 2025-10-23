@@ -381,10 +381,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
 
-                if (RotationCount == 3 && retryCount == 0)
+                if ((RotationCount == 3 || RotationCount == 0)&& retryCount == 0)
                 {
                     Simulation.SendInput.Mouse.MiddleButtonClick();
-                    await Task.Delay(500, ct);
+                    await Task.Delay(RotationCount == 3 ?500:200, ct);
                 }
                 
                 if (retryCount <= 2)
@@ -576,6 +576,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                         Simulation.SendInput.SimulateAction(GIActions.Drop);
                     }
+                    
                     attempt++;
                 }
             }

@@ -79,7 +79,7 @@ public class TpTask
         {
             _screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
                 ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
-                : 1;
+                : 2;
         }
         else
         {

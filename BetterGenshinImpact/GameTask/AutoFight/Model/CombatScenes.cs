@@ -516,7 +516,7 @@ public class CombatScenes : IDisposable
         {
             // 多次识别失败则尝试刷新角色编号位置
             // 应对草露问题
-            if (context.TotalCheckFailedCount > (moreTimes ? 6 : 3))
+            if (context.TotalCheckFailedCount > (moreTimes ? 7 : 3))
             {
                 // 失败多次，识别是否存在满足预期的编号框
                 if (PartyAvatarSideIndexHelper.CountIndexRect(imageRegion) == Avatars.Length)
