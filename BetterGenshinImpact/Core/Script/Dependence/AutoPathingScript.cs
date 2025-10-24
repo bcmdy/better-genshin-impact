@@ -5,8 +5,7 @@ using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common;
 using Microsoft.Extensions.Logging;
-using BetterGenshinImpact.GameTask;
-
+using System.Threading;
 
 namespace BetterGenshinImpact.Core.Script.Dependence;
 
@@ -14,6 +13,7 @@ public class AutoPathingScript
 {
     private object? _config = null;
     private string _rootPath;
+    private CancellationToken _ct;
 
     public AutoPathingScript(string rootPath, object? config)
     {
@@ -21,17 +21,18 @@ public class AutoPathingScript
         _rootPath = rootPath;
     }
 
-    public async Task Run(string json)
+    public async Task Run(string json,CancellationToken ct = default)
     {
         try
         {
+            _ct = ct;
             var task = PathingTask.BuildFromJson(json);
-            var pathExecutor = new PathExecutor(CancellationContext.Instance.Cts.Token);
+            var pathExecutor = new PathExecutor(_ct);
             if (_config != null && _config is PathingPartyConfig patyConfig)
             {
                 pathExecutor.PartyConfig = patyConfig;
             }
-            
+
             await pathExecutor.Pathing(task);
         }
         catch (Exception e)
@@ -41,7 +42,7 @@ public class AutoPathingScript
         }
     }
 
-    public async Task RunFile(string path)
+    public async Task RunFile(string path, CancellationToken ct = default)
     {
         try
         {
@@ -62,9 +63,9 @@ public class AutoPathingScript
     /// 从已订阅的内容中获取文件
     /// </summary>
     /// <param name="path">在 `\User\AutoPathing` 目录下获取文件</param>
-    public async Task RunFileFromUser(string path)
+    public async Task RunFileFromUser(string path, CancellationToken ct)
     {
         var json = await new LimitedFile(Global.Absolute(@"User\AutoPathing")).ReadText(path);
-        await Run(json);
+        await Run(json,ct);
     }
 }
