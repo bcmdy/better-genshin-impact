@@ -61,6 +61,11 @@ public class Avatar
     /// 最近一次使用元素战技的时间
     /// </summary>
     public DateTime LastSkillTime { get; set; }
+    
+    /// <summary>
+    /// 元素战技检测锁
+    /// </summary>
+    private static readonly object SkillCheckLock = new object();
 
     /// <summary>
     /// 元素爆发是否就绪
@@ -1126,39 +1131,54 @@ public class Avatar
                 Simulation.SendInput.Keyboard.KeyUp(vk);
                 if (vk == User32.VK.VK_E)
                 {
-                    Task.Run(() => { 
-                        Thread.Sleep(200);
-                        double cd = 0;
-                        var cooldownDetected = false;
-        
-                        for (var attempt = 0; attempt < 2; attempt++)
+                    if (Monitor.TryEnter(SkillCheckLock))
+                    {
+                        try
                         {
-                            var region = CaptureToRectArea();
-                            cd = AfterUseSkill(region);
-                            region.Dispose();
-            
-                            if (cd > 0)
+                            Task.Run(() =>
                             {
-                                cooldownDetected = true;
-                                break;
-                            }
-            
-                            if (attempt < 2 - 1)
-                            {
-                                Thread.Sleep(100);
-                            }
-                        }
+                                Thread.Sleep(200);
+                                double cd = 0;
+                                var cooldownDetected = false;
 
-                        if (cooldownDetected)
-                        {
-                            Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒", 
-                                Name, Math.Round(cd, 2));
+                                for (var attempt = 0; attempt < 4; attempt++)
+                                {
+                                    var region = CaptureToRectArea();
+                                    cd = AfterUseSkill(region);
+                                    region.Dispose();
+
+                                    if (cd > 0)
+                                    {
+                                        cooldownDetected = true;
+                                        break;
+                                    }
+
+                                    if (attempt < 3)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
+                                }
+
+                                if (cooldownDetected)
+                                {
+                                    Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
+                                        Name, Math.Round(cd, 2));
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("{Name} 战技cd未更新", Name);
+                                }
+                            }).Wait(Ct);
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            Logger.LogWarning("{Name} 战技cd未更新", Name);
+                            Logger.LogError(ex, "元素战技检测异常");
                         }
-                    }).Wait(Ct);
+                        finally
+                        {
+                            Monitor.Exit(SkillCheckLock);
+                        }
+                    }
                 }
                 break;
         }
@@ -1188,40 +1208,54 @@ public class Avatar
                 Simulation.SendInput.Keyboard.KeyPress(vk);
                 if (vk == User32.VK.VK_E)
                 {
-                    Task.Run(() =>
+                    if (Monitor.TryEnter(SkillCheckLock))
                     {
-                        Thread.Sleep(200);
-                        double cd = 0;
-                        var cooldownDetected = false;
-
-                        for (var attempt = 0; attempt < 2; attempt++)
+                        try
                         {
-                            var region = CaptureToRectArea();
-                            cd = AfterUseSkill(region);
-                            region.Dispose();
-
-                            if (cd > 0)
+                            Task.Run(() =>
                             {
-                                cooldownDetected = true;
-                                break;
-                            }
+                                Thread.Sleep(200);
+                                double cd = 0;
+                                var cooldownDetected = false;
 
-                            if (attempt < 2 - 1)
-                            {
-                                Thread.Sleep(100);
-                            }
-                        }
+                                for (var attempt = 0; attempt < 4; attempt++)
+                                {
+                                    var region = CaptureToRectArea();
+                                    cd = AfterUseSkill(region);
+                                    region.Dispose();
 
-                        if (cooldownDetected)
-                        {
-                            Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
-                                Name, Math.Round(cd, 2));
+                                    if (cd > 0)
+                                    {
+                                        cooldownDetected = true;
+                                        break;
+                                    }
+
+                                    if (attempt < 3)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
+                                }
+
+                                if (cooldownDetected)
+                                {
+                                    Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
+                                        Name, Math.Round(cd, 2));
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("{Name} 战技cd未更新", Name);
+                                }
+                            }).Wait(Ct);
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            Logger.LogWarning("{Name} 战技cd未更新", Name);
+                            Logger.LogError(ex, "元素战技检测异常");
                         }
-                    }).Wait(Ct);
+                        finally
+                        {
+                            Monitor.Exit(SkillCheckLock);
+                        }
+                    }
                 }
                 break;
         }

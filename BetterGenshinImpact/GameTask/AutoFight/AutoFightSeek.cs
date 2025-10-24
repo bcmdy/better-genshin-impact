@@ -231,8 +231,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         
         private static readonly Dictionary<int, int> RotaryFactorMapping = new Dictionary<int, int> //旋转因子映射表
         {
-            { 1, 100 }, { 2, 90 }, { 3, 80}, { 4, 70 }, { 5, 60}, { 6,45 },
-            { 7, 30 }, { 8, 15 }, { 9, 6 }, { 10, 1 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
+            { 1, 40 }, { 2, 35 }, { 3, 30}, { 4, 25 }, { 5, 20}, { 6,15 },
+            { 7, 10 }, { 8, 5 }, { 9, 1 }, { 10, -5 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
         };
         
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null)
