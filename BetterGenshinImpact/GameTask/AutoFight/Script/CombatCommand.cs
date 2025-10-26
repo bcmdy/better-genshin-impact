@@ -3,6 +3,8 @@ using BetterGenshinImpact.Helpers;
 using System;
 using System.Collections.Generic;
 using TimeSpan = System.TimeSpan;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Script;
 
@@ -66,10 +68,20 @@ public class CombatCommand
 
     public void Execute(CombatScenes combatScenes)
     {
-        Avatar? avatar;
+        Avatar? avatar = null;
         if (Name == CombatScriptParser.CurrentAvatarName)
         {
-            avatar = combatScenes.SelectAvatar(1);
+            var ra = CaptureToRectArea();
+            for (var i = 1; i <= 4; i++)
+            {
+                avatar = combatScenes.SelectAvatar(i);
+                if (avatar.IsActive(ra))
+                {
+                    break;
+                }
+            }
+            ra.Dispose();
+            avatar ??= combatScenes.SelectAvatar(1);
         }
         else
         {

@@ -179,7 +179,6 @@ public class PathExecutor
             return;
         }
 
-
         // 切换队伍
         if (!await SwitchPartyBefore(task))
         {
@@ -201,12 +200,9 @@ public class PathExecutor
         Navigation.WarmUp(task.Info.MapMatchMethod);
         
         await InitializeAutoEat();//初始化自动吃药
-        
-        // Logger.LogWarning("ddddd {t} GGGGG {t2}",InitialMainAvatarIndex,PartyConfig.MainAvatarIndex);
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
-            // if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             _faceToMark = false;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
@@ -228,8 +224,8 @@ public class PathExecutor
                         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
                         
-                        nextWaypoint = waypoint == waypoints.Last() ? null : waypoints[waypoints.IndexOf(waypoint) + 1];
                         //计算下一个节点到当前节点的距离
+                        nextWaypoint = waypoint == waypoints.Last() ? null : waypoints[waypoints.IndexOf(waypoint) + 1];
                         if (nextWaypoint != null)
                         {
                            nextDdistance = Navigation.GetDistance(waypoint, new Point2f((float)nextWaypoint.X, (float)nextWaypoint.Y));
@@ -255,7 +251,23 @@ public class PathExecutor
                             }
                             else if (waypoint.Type == WaypointType.ActionOnly.Code)
                             {
-                              Logger.LogInformation("执行 {t}","ActionOnly");
+                                Logger.LogInformation("执行 {t}","ActionOnly");
+                                // 找到当前出战角色
+                                 var ra = CaptureToRectArea();
+                                 for (int k = 1; k <= 4; k++)
+                                 {
+                                     var avatar = _combatScenes?.SelectAvatar(k);
+                                     if (avatar != null && avatar.IsActive(ra))
+                                     {
+                                         Logger.LogInformation("当前出战角色 {t}",avatar.Name);
+                                         if (!string.IsNullOrEmpty(waypoint.ActionParams))
+                                         {
+                                             // waypoint.ActionParams = avatar.Name + " " + waypoint.ActionParams;
+                                         }
+                                         break;
+                                     }
+                                 }
+                                 ra.Dispose();
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
@@ -1873,8 +1885,8 @@ public class PathExecutor
             || waypoint.Action == ActionEnum.PickUpCollect.Code)
         {
             var handler = ActionFactory.GetAfterHandler(waypoint.Action);
-            //,PartyConfig
             await handler.RunAsync(ct, waypoint, PartyConfig);
+            
             //统计结束战斗的次数
             if (waypoint.Action == ActionEnum.Fight.Code)
             {
