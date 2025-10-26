@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using Microsoft.Extensions.Logging;
 using Stfu.Linq;
+using ActionEnum = BetterGenshinImpact.GameTask.AutoPathing.Model.Enum.ActionEnum;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
@@ -41,6 +42,17 @@ internal class AutoFightHandler : IActionHandler
                 ? _pathingConfig.CountryName : taskParams.CountryName;
 
             if (isAutoFightStrategy) _logger.LogInformation("地图追踪战斗将匹配 {StrategyName} 相关策略", string.Join(", ", taskParams.CountryName));
+            if (waypointForTrack?.Action == ActionEnum.Fight.Code && !string.IsNullOrEmpty(waypointForTrack?.ActionParams))
+            {
+                int number;
+                var isNumber = int.TryParse(waypointForTrack.ActionParams, out number);
+                if (isNumber)
+                {
+                    //设置超时时间
+                    _logger.LogInformation("地图追踪设置战斗超时时间为 {Timeout} 秒", number);
+                    taskParams.Timeout = number;
+                }
+            }
         }
         else
         {
