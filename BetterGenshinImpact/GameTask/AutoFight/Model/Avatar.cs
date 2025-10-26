@@ -130,9 +130,9 @@ public class Avatar
             // Logger.LogInformation("AutoFightTask.RecoverCount {t}",AutoFightTask.RecoverCount < 2);
             if (PathingConditionConfig.AutoEatCount < 2)
             {
-                PathingConditionConfig.AutoEatCount++;
                 if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                 {
+                    PathingConditionConfig.AutoEatCount++;
                     PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复-n");
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);

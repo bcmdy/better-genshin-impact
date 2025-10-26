@@ -900,7 +900,6 @@ public class PathExecutor
             }
             else
             { 
-                PathingConditionConfig.AutoEatCount++;
                 using (var bitmap = CaptureToRectArea())
                 {
                     if (Bv.IsInRevivePrompt(bitmap))
@@ -1041,7 +1040,7 @@ public class PathExecutor
         var sprintMouseLogo = true;
         var trackingLogo = true;
         var mavikaFlyCount = 0;
-        var runLogo = true;
+        var runCount = 0;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1231,8 +1230,8 @@ public class PathExecutor
                 }
                 
                 //自动赶路
-                if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance > PartyConfig.Distance && 
-                    (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code))
+                if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance >  PartyConfig.Distance && 
+                    (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code || (waypoint.MoveMode == MoveModeEnum.Climb.Code && avatar.Name == "玛薇卡")))
                 {
                     await SwitchAvatar(avatar.Index.ToString()); 
                     
@@ -1262,7 +1261,7 @@ public class PathExecutor
                         {
                             Task.Run(async () =>
                             {
-                                await Delay(400, ct);
+                                await Delay(100, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(400, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
@@ -1295,10 +1294,9 @@ public class PathExecutor
                                         }
                                         else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
                                         {
-                                            if (runLogo)
+                                            if (runCount <3)
                                             {
                                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
-                                                runLogo = false;
                                             }
                                         } 
                                     }
@@ -1337,10 +1335,9 @@ public class PathExecutor
                                     }
                                     else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
                                     {
-                                        if (runLogo)
+                                        if (runCount < 2)
                                         {
                                             Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
-                                            runLogo = false;
                                         }
                                     } 
                                 }
@@ -1369,10 +1366,9 @@ public class PathExecutor
                                         }
                                         else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
                                         {
-                                            if (runLogo)
+                                            if (runCount <2)
                                             {
                                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
-                                                runLogo = false;
                                             }
                                         } 
                                     }
