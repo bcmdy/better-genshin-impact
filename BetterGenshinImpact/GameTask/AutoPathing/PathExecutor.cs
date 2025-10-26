@@ -39,10 +39,11 @@ using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.GameTask.AutoFight;
-using BetterGenshinImpact.Core.Simulator;
-using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
-using BetterGenshinImpact.GameTask.AutoWood.Assets;
-using BetterGenshinImpact.GameTask.AutoWood.Utils;
+using System;
+using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.GameTask.AutoPathing.Model;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.Model.Area;
 using BetterGenshinImpact.View.Drawable;
@@ -244,12 +245,17 @@ public class PathExecutor
                         else
                         {
                             await BeforeMoveToTarget(waypoint);
+                            
                             // Path不用走得很近，Target需要接近，但都需要先移动到对应位置
                             if (waypoint.Type == WaypointType.Orientation.Code)
                             {
                                 // 方位点，只需要朝向
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
                                 await FaceTo(waypoint);
+                            }
+                            else if (waypoint.Type == WaypointType.ActionOnly.Code)
+                            {
+                              Logger.LogInformation("执行 {t}","ActionOnly");
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
