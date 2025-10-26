@@ -20,12 +20,13 @@ public class AutoPathingScript
         _rootPath = rootPath;
     }
 
-    public async Task Run(string json)
+    public async Task Run(string json,CancellationToken ct = default)
     {
         try
         {
+            if (ct == default) ct = CancellationContext.Instance.Cts.Token;
             var task = PathingTask.BuildFromJson(json);
-            var pathExecutor = new PathExecutor(CancellationContext.Instance.Cts.Token);
+            var pathExecutor = new PathExecutor(ct);
             if (_config != null && _config is PathingPartyConfig patyConfig)
             {
                 pathExecutor.PartyConfig = patyConfig;
@@ -40,7 +41,7 @@ public class AutoPathingScript
         }
     }
 
-    public async Task RunFile(string path)
+    public async Task RunFile(string path,CancellationToken ct = default)
     {
         try
         {
@@ -48,7 +49,7 @@ public class AutoPathingScript
             
             PathingConditionConfig.GetCountryName(path);
             
-            await Run(json);
+            await Run(json,ct);
         }
         catch (Exception e)
         {
@@ -61,9 +62,9 @@ public class AutoPathingScript
     /// 从已订阅的内容中获取文件
     /// </summary>
     /// <param name="path">在 `\User\AutoPathing` 目录下获取文件</param>
-    public async Task RunFileFromUser(string path)
+    public async Task RunFileFromUser(string path,CancellationToken ct = default)
     {
         var json = await new LimitedFile(Global.Absolute(@"User\AutoPathing")).ReadText(path);
-        await Run(json);
+        await Run(json,ct);
     }
 }
