@@ -1168,7 +1168,7 @@ public class Avatar
                                 {
                                     Logger.LogWarning("{Name} 战技cd未更新", Name);
                                 }
-                            }).Wait(Ct);
+                            },Ct);
                         }
                         catch (Exception ex)
                         {
@@ -1245,7 +1245,7 @@ public class Avatar
                                 {
                                     Logger.LogWarning("{Name} 战技cd未更新", Name);
                                 }
-                            }).Wait(Ct);
+                            },Ct);
                         }
                         catch (Exception ex)
                         {
