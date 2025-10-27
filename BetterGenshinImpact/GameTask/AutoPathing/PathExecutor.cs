@@ -1035,6 +1035,7 @@ public class PathExecutor
         var trackingLogo = true;
         var mavikaFlyCount = 0;
         var runCount = 0;
+        var endDistance = string.IsNullOrEmpty(_hurryOnAvatar)?4:5;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1261,7 +1262,7 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(300, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(700, ct);
+                                await Delay(600, ct);
                                 // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
@@ -1491,9 +1492,9 @@ public class PathExecutor
                 }
             }
             
-            if (distance < 4)
+            if (distance < endDistance)
             {
-                Logger.LogDebug("到达路径点附近");
+                Logger.LogError("到达路径点附近");
                 break;
             }
 
