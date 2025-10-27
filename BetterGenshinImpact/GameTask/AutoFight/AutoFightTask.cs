@@ -1,4 +1,4 @@
-﻿using BetterGenshinImpact.Core.Recognition.ONNX;
+using BetterGenshinImpact.Core.Recognition.ONNX;
 using BetterGenshinImpact.Core.Simulator;
 using BetterGenshinImpact.Core.Simulator.Extensions;
 using BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -1198,7 +1198,7 @@ public class AutoFightTask : ISoloTask
     //基于万叶经验值判断是否拾取
     private static Task FindExp(CancellationToken cts2)
     {
-        var autoFightAssets = new AutoFightAssets();
+        var autoFightAssets = AutoFightAssets.Instance;
 
         try  
         {

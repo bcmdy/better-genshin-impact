@@ -125,7 +125,7 @@ public class GoToCraftingBenchTask
                                    condensedResinCountRa.Y, condensedResinCountRa.Width * 5 / 3,
                                    condensedResinCountRa.Height))
                         {
-                            var autoFightAssets = new AutoFightAssets();
+                            var autoFightAssets = AutoFightAssets.Instance;
                             for (var i = 0; i < 6; i++)
                             {
                                 var countResult = countArea.Find(autoFightAssets.InitializeCondensedResin(i));

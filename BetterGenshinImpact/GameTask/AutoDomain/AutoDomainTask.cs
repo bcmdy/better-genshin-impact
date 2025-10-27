@@ -1573,7 +1573,7 @@ public class AutoDomainTask : ISoloTask
         var originalResinCount = 0; //原粹树脂
         var fragileResinCount = 0; //脆弱树脂
         var momentResinCount = 0; //须臾树脂
-        var autoFightAssets = new AutoFightAssets();
+        var autoFightAssets = AutoFightAssets.Instance;
 
         using (var ra = CaptureToRectArea())
         {
