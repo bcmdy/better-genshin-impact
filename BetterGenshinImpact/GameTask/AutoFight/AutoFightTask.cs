@@ -26,15 +26,12 @@ using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.View.Drawable;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
-using OpenCvSharp.Extensions;
-using System.IO;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
 using Vanara.PInvoke;
-using System.Drawing;
-using BetterGenshinImpact.GameTask.AutoPick; // 添加对System.Drawing的引用
 using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 using BetterGenshinImpact.GameTask.AutoPick.Assets;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
+using System.Text.RegularExpressions;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -442,6 +439,7 @@ public class AutoFightTask : ISoloTask
         var useSkillList = new List<int>();
         var useSkillListWithH = new List<int>();
         var useSkillListWithF = 0;
+        var useSkillListWithA = new Dictionary<int, int>();
 
         if (_taskParam.AutoCombatEq && !string.IsNullOrWhiteSpace(_taskParam.UseSkillList))
         {
@@ -450,9 +448,29 @@ public class AutoFightTask : ISoloTask
             foreach (var part in skillParts)
             {
                 var trimmedPart = part.Trim();
-                var skillNumber = int.TryParse(trimmedPart.Replace("H", "").Replace("F", ""), out var n) ? n : 0;
-                // var skillNumber = int.TryParse(trimmedPart.Replace("H", ""), out var n) ? n : 0;
-                //寻找结尾时F的数字
+                // 使用正则表达式移除A及其后面的括号和内容
+                var skillNumberStr = trimmedPart.Replace("H", "").Replace("F", "").Trim();
+                var match = Regex.Match(skillNumberStr, @"(\d+)A(\(\d+\))?");
+                skillNumberStr = System.Text.RegularExpressions.Regex.Replace(skillNumberStr, @"A\(\d+\)|A", "");
+                
+                if (match.Success)
+                {
+                    // 提取以A结尾的数字前面的数字
+                    if (int.TryParse(match.Groups[1].Value, out int skillNumber2))
+                    {
+                        // 提取括号中的数字，如果存在的话
+                        if (match.Groups[2].Success && int.TryParse(match.Groups[2].Value.Trim('(', ')'), out int value))
+                        {
+                            useSkillListWithA.Add(skillNumber2, value);
+                        }
+                        else
+                        {
+                            useSkillListWithA.Add(skillNumber2,600);
+                        }
+                    }
+                }
+                
+                var skillNumber = int.TryParse(skillNumberStr, out var n) ? n : 0;
 
                 if (skillNumber >= 1 && skillNumber <= combatScenes.GetAvatars().Count) //保证序号在队伍
                 {
@@ -464,9 +482,13 @@ public class AutoFightTask : ISoloTask
                     }
                     if (trimmedPart.Contains('F') && useSkillListWithF == 0) // 只记录第一个F
                     {
-                        useSkillListWithF = skillNumber; // 寻找结尾时F的数字
+                        useSkillListWithF = skillNumber; // 记录第一个带F的技能序号
                     }
                 }
+            }
+            foreach (var kvp in useSkillListWithA)
+            {
+                Logger.LogError($"{{ {kvp.Key}, {kvp.Value} }}");
             }
         }
         else
@@ -475,6 +497,8 @@ public class AutoFightTask : ISoloTask
             useSkillListWithH = new List<int>();
             // useSkillListWithF = 0;
         }
+
+        var predefinedlist = new List<string>() { "枫原万叶" ,"希诺宁"};
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -586,7 +610,13 @@ public class AutoFightTask : ISoloTask
                                 
                                     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
                                     {
-                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF)); 
+                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),2); 
+                                        var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
+                                        if (useA)
+                                        {
+                                            Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色首E技能后普攻 {time}", useSkillListWithF, useSkillListWithA[useSkillListWithF]);
+                                            avatarFirst.Attack(useSkillListWithA[useSkillListWithF]);
+                                        }
                                     }
                                     useSkillListWithF = 0;
                                 }
@@ -599,16 +629,27 @@ public class AutoFightTask : ISoloTask
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         var useE = useSkillList.Contains(num);
                                         var avatarQHold = useSkillListWithH.Contains(num);
+                                        var usePre = predefinedlist.Contains(avatarQ.Name);
+                                        var useAContainsKey = useSkillListWithA.ContainsKey(num);
+                                        var useA = (useAContainsKey && useSkillListWithA[num] > 0) || usePre;
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             lastFightName = avatarQ.Name;
                                             countFight++;
-                                            
                                             if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
                                             {
                                                 avatarQ.UseSkill(avatarQHold);
-                                                var imageAfterUseSkill = CaptureToRectArea();
+                                                if (useA)
+                                                {
+                                                    if (!useAContainsKey)
+                                                    {
+                                                        useSkillListWithA.Add(num,avatarQHold?800:600);
+                                                    }
+                                                    Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色普攻 {time}", num, useSkillListWithA[num]);
+                                                    avatarQ.Attack(useSkillListWithA[num]); 
+                                                }
                                                 
+                                                var imageAfterUseSkill = CaptureToRectArea();
                                                 var retry = 30;
                                                 while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill) && retry > 0)
                                                 {
@@ -626,19 +667,19 @@ public class AutoFightTask : ISoloTask
                                                 }
                                                 imageAfterUseSkill.Dispose();
                                                 
-                                                if (retry > 0)
-                                                {
-                                                    avatarQ.LastSkillTime = DateTime.UtcNow;
-                                                    
-                                                    if (avatarQ.Name == "枫原万叶")
-                                                    {
-                                                        await Delay(100, ct);
-                                                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                        await Delay(200, ct);
-                                                    }
-                                                    
-                                                    await Delay(99, ct);
-                                                }
+                                                // if (retry > 0)
+                                                // {
+                                                //     avatarQ.LastSkillTime = DateTime.UtcNow;
+                                                //     
+                                                //     if (avatarQ.Name == "枫原万叶")
+                                                //     {
+                                                //         await Delay(100, ct);
+                                                //         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                //         await Delay(200, ct);
+                                                //     }
+                                                //     
+                                                //     await Delay(99, ct);
+                                                // }
                                             }
                                             
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct,avatarQ);

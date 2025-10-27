@@ -338,7 +338,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                         if (height > 6 && height < 25)
                         {
-                            if ((x == 758 || x == 722) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
+                            // Logger.LogInformation("画面内有找到敌人，{t1} - {t2}",x,height);
+                            if ((x == 758 || x == 721) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
                             {
                                 Task.Run(() =>
                                 {

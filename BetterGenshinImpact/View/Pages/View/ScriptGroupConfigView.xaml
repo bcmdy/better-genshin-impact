@@ -1582,10 +1582,11 @@
                                       Text="自动Q过程中的技能设置"
                                       TextWrapping="Wrap" 
                                       Style="{StaticResource GuardianVisibilityStyle}"
-                                      ToolTipService.ToolTip="1、自动Q过程中，先释放E
+                                     ToolTipService.ToolTip="1、自动Q过程中，先释放E
                                       2、加H长E，默认短E
                                       3、加F为战斗开始盾位技能后第一个放E
-                                      4、如：1HF,2,3H,4"/>
+                                      4、加A为E后普攻，A默认600ms，A(800)自定义普攻时间(内置万叶和希诺宁)
+                                      4、如：1HF,2A(800),3H,4A"/>
                         
                         <ui:TextBox Grid.Row="0"
                                     Grid.RowSpan="2"

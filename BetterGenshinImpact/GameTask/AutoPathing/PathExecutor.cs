@@ -1011,9 +1011,13 @@ public class PathExecutor
     public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null, Waypoint? nextWaypoint = null,double? nextDistance = null)
     {
         // 切人
-        await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
-
         var screen = CaptureToRectArea();
+        var pixelYellowValue = screen.SrcMat.At<Vec3b>(1010, 814);
+        var yellowBlood = (Math.Abs(pixelYellowValue[0] - 50) <= 10 &&
+                            Math.Abs(pixelYellowValue[1] - 204) <= 10 &&
+                            Math.Abs(pixelYellowValue[2] - 255) <= 10);
+        if (!yellowBlood)await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
+        
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("粗略接近途经点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
@@ -1220,7 +1224,7 @@ public class PathExecutor
                 }
                 
                 //自动赶路
-                if (hurryOnLogo && !string.IsNullOrEmpty(_hurryOnAvatar) && distance >  PartyConfig.Distance && 
+                if (hurryOnLogo&& !yellowBlood && !string.IsNullOrEmpty(_hurryOnAvatar) && distance >  PartyConfig.Distance && 
                     (waypoint.MoveMode == MoveModeEnum.Run.Code || waypoint.MoveMode == MoveModeEnum.Dash.Code || (waypoint.MoveMode == MoveModeEnum.Climb.Code && avatar.Name == "玛薇卡")))
                 {
                     await SwitchAvatar(avatar.Index.ToString()); 
@@ -1251,13 +1255,13 @@ public class PathExecutor
                         {
                             Task.Run(async () =>
                             {
-                                await Delay(100, ct);
+                                // await Delay(100, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(400, ct);
+                                await Delay(300, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(400, ct);
+                                await Delay(300, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(800, ct);
+                                await Delay(700, ct);
                                 // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
@@ -1284,7 +1288,7 @@ public class PathExecutor
                                         }
                                         else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
                                         {
-                                            if (runCount <3)
+                                            if (runCount <4)
                                             {
                                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
                                             }

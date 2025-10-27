@@ -561,9 +561,9 @@ public class Avatar
     /// <summary>
     /// 使用元素战技 E
     /// </summary>
-    public void UseSkill(bool hold = false)
+    public void UseSkill(bool hold = false,int retryTimes = 1)
     {
-        for (var i = 0; i < 1; i++)
+        for (var i = 0; i < retryTimes; i++)
         {
             if (Ct is { IsCancellationRequested: true })
             {
