@@ -1494,7 +1494,7 @@ public class PathExecutor
             
             if (distance < endDistance)
             {
-                Logger.LogError("到达路径点附近");
+                Logger.LogDebug("到达路径点附近");
                 break;
             }
 
@@ -1888,7 +1888,7 @@ public class PathExecutor
             return null;
         }
 
-        var success = avatar.TrySwitch(6);
+        var success = avatar.TrySwitch(10);
         if (success)
         {
             await Delay(100, ct);

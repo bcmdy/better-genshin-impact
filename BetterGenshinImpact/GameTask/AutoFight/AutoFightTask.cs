@@ -610,11 +610,11 @@ public class AutoFightTask : ISoloTask
                                 
                                     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
                                     {
-                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),2); 
+                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),1); 
                                         var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
                                         if (useA)
                                         {
-                                            Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色首E技能后普攻 {time}", useSkillListWithF, useSkillListWithA[useSkillListWithF]);
+                                            Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色首E技能后普攻 {time} ms", useSkillListWithF, useSkillListWithA[useSkillListWithF]);
                                             avatarFirst.Attack(useSkillListWithA[useSkillListWithF]);
                                         }
                                     }
@@ -643,9 +643,9 @@ public class AutoFightTask : ISoloTask
                                                 {
                                                     if (!useAContainsKey)
                                                     {
-                                                        useSkillListWithA.Add(num,avatarQHold?800:600);
+                                                        useSkillListWithA.Add(num,avatarQHold?700:600);
                                                     }
-                                                    Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色普攻 {time}", num, useSkillListWithA[num]);
+                                                    Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色普攻 {time} ms", num, useSkillListWithA[num]);
                                                     avatarQ.Attack(useSkillListWithA[num]); 
                                                 }
                                                 
@@ -871,6 +871,7 @@ public class AutoFightTask : ISoloTask
             {
                 Simulation.ReleaseAllKey();
                 FightStatusFlag = false;
+                image?.Dispose();
                 // if (_taskParam.TakeMedicineEnabled) RecoverCount = 0;
             }
         }, cts2.Token);
@@ -891,7 +892,9 @@ public class AutoFightTask : ISoloTask
             if (_taskParam.EndBloodCheackEnabled)
             {
                 //防止检测战斗结束时，派蒙头冠消失
-                var pixelValue = CaptureToRectArea().SrcMat.At<Vec3b>(32, 67);
+                var ra = CaptureToRectArea();
+                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);
+                ra.Dispose();
                 // 检查每个通道的值是否在允许的范围内
                 if (!(Math.Abs(pixelValue[0] - 143) <= 10 &&
                       Math.Abs(pixelValue[1] - 196) <= 10 &&
@@ -1146,6 +1149,7 @@ public class AutoFightTask : ISoloTask
         
         var b3 = ra.SrcMat.At<Vec3b>(50, 790); //进度条颜色
         var whiteTile = ra.SrcMat.At<Vec3b>(50, 768); //白块
+        ra.Dispose();
         Simulation.SendInput.SimulateAction(GIActions.Drop);
         if (IsWhite(whiteTile.Item2, whiteTile.Item1, whiteTile.Item0) &&
             IsYellow(b3.Item2, b3.Item1,

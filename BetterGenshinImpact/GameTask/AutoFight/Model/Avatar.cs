@@ -147,7 +147,6 @@ public class Avatar
                 else
                 {
                     //等待
-                    PathingConditionConfig.AutoEatCount++;
                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     Sleep(300, ct);
                     Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试-l");
