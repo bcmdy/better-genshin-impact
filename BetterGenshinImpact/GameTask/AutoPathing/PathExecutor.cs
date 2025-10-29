@@ -346,18 +346,14 @@ public class PathExecutor
         
         using (var ra = CaptureToRectArea())
         {
-            var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
-            var mask = OpenCvCommonHelper.Threshold(ra.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
-            var labels = new Mat();
-            var stats = new Mat();
-            var centroids = new Mat();
+            using var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
+            using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+            using var labels = new Mat();
+            using var stats = new Mat();
+            using var centroids = new Mat();
 
             var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                 connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-            labels.Dispose();
-            stats.Dispose();
-            centroids.Dispose();
             
             if (numLabels <= 1)
             {
@@ -1100,7 +1096,7 @@ public class PathExecutor
                      || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 10 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code)))) //连续赶路
                 {
                     trackingLogo = false;
-                    var region2 = CaptureToRectArea();
+                    using var region2 = CaptureToRectArea();
                     if (avatar.IsActive(region2))
                     {
                         if (_hurryOnAvatar == "玛薇卡")
@@ -1143,7 +1139,6 @@ public class PathExecutor
                             break;
                         }
                     }
-                    region2.Dispose();
                 }
 
                 // 自动赶路的特殊处理模式，防止异常情况
@@ -1151,7 +1146,7 @@ public class PathExecutor
                 {
                     if (_hurryOnAvatar == "玛薇卡") //玛薇卡冲坡判断
                     {
-                        var region2 = CaptureToRectArea();
+                        using var region2 = CaptureToRectArea();
                         var pos = region2.SrcMat.At<Vec3b>(1012,1574);
                         var pos2 = region2.SrcMat.At<Vec3b>(1006, 1608);
                         var pos3 = region2.SrcMat.At<Vec3b>(1028, 1584);
@@ -1176,17 +1171,16 @@ public class PathExecutor
                                 } 
                             }
                         }
-                        region2.Dispose();
                     }
                     else if (avatar.Name == "瓦雷莎") //瓦雷莎冲刺判断
                     {
                         var lower = new Scalar(220, 150, 150);
                         var higher = new Scalar(230, 160, 180);
-                        var region2 = CaptureToRectArea();
-                        var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(948, 410, 26, 30).SrcMat, lower,higher);
-                        var labels = new Mat();
-                        var stats = new Mat();
-                        var centroids = new Mat();
+                        using var region2 = CaptureToRectArea();
+                        using var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(948, 410, 26, 30).SrcMat, lower,higher);
+                        using var labels = new Mat();
+                        using var stats = new Mat();
+                        using var centroids = new Mat();
 
                         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
@@ -1201,7 +1195,7 @@ public class PathExecutor
                                 Task.Run(async () =>
                                 {
                                     await Delay(1000, ct);
-                                    var region3 = CaptureToRectArea();
+                                    using var region3 = CaptureToRectArea();
                                     if (avatar.IsActive(region3))
                                     {
                                         Simulation.SendInput.SimulateAction(GIActions.Jump);
@@ -1216,11 +1210,9 @@ public class PathExecutor
                                         region4.Dispose();
                                     }
                                     mavikaFlyCount = 0;
-                                    region3.Dispose();
                                 }, ct);
                             }
                         }
-                        region2.Dispose();
                     }
                 }
                 
@@ -1240,7 +1232,7 @@ public class PathExecutor
                     Logger.LogInformation("自动赶路：{t} 赶路...",avatar.Name);
                     if (avatar.Name == "玛薇卡") //连续点按E类型
                     {
-                        var region2 = CaptureToRectArea();
+                        using var region2 = CaptureToRectArea();
                         // 获取两个点的颜色值
                         var pos = region2.SrcMat.At<Vec3b>(978, 1692);
                         var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
@@ -1249,7 +1241,6 @@ public class PathExecutor
                             Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
                             Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
                         );
-                        region2.Dispose();
                         // Logger.LogInformation("玛薇卡技能颜色差值-2:{ColorDifference}", Math.Round(colorDifference, 2));
                         
                         if (colorDifference >15)
@@ -1266,7 +1257,7 @@ public class PathExecutor
                                 // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
-                                var region3 = CaptureToRectArea();
+                                using var region3 = CaptureToRectArea();
                                 // 获取两个点的颜色值
                                 var pos3 = region3.SrcMat.At<Vec3b>(978, 1692);
                                 var pos4 = region3.SrcMat.At<Vec3b>(995, 1702);
@@ -1303,7 +1294,6 @@ public class PathExecutor
                                             }
                                         } 
                                     }
-                                    region2.Dispose();
                                 }
                                 else
                                 {
@@ -1349,11 +1339,11 @@ public class PathExecutor
                             else
                             {
                                 var higher = new Scalar(0, 221, 250);
-                                var region2 = CaptureToRectArea();
-                                var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(1686, 949, 10, 10).SrcMat,higher);
-                                var labels = new Mat();
-                                var stats = new Mat();
-                                var centroids = new Mat();
+                                using var region2 = CaptureToRectArea();
+                                using var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(1686, 949, 10, 10).SrcMat,higher);
+                                using var labels = new Mat();
+                                using var stats = new Mat();
+                                using var centroids = new Mat();
 
                                 var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
@@ -1742,6 +1732,7 @@ public class PathExecutor
             await Delay(100, ct);
         }
 
+        screen.Dispose();
         // 抬起w键
         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
     }

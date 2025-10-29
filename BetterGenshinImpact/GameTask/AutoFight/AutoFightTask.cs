@@ -892,7 +892,7 @@ public class AutoFightTask : ISoloTask
             if (_taskParam.EndBloodCheackEnabled)
             {
                 //防止检测战斗结束时，派蒙头冠消失
-                var ra = CaptureToRectArea();
+                using var ra = CaptureToRectArea();
                 var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);
                 ra.Dispose();
                 // 检查每个通道的值是否在允许的范围内
@@ -947,7 +947,7 @@ public class AutoFightTask : ISoloTask
                 if (picker.Name == "枫原万叶")
                 {
                     var time = TimeSpan.FromSeconds(picker.GetSkillCdSeconds());
-                    var fra = CaptureToRectArea();
+                    using var fra = CaptureToRectArea();
                     if (!(lastFightName == picker.Name && time.TotalSeconds > 3))
                     {
                         TaskControl.Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
@@ -969,7 +969,6 @@ public class AutoFightTask : ISoloTask
                     {
                         TaskControl.Logger.LogInformation("距最近一次万叶出招，时间过短，跳过此次万叶拾取！");
                     }
-                    fra.Dispose();
                 }
                 else if (picker.Name == "琴")
                 {
@@ -1291,19 +1290,14 @@ public class AutoFightTask : ISoloTask
             {
                 using (var ra = CaptureToRectArea())
                 {
-                    var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                    var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
-                    var labels = new Mat();
-                    var stats = new Mat();
-                    var centroids = new Mat();
+                    using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
+                    using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+                    using var labels = new Mat();
+                    using var stats = new Mat();
+                    using var centroids = new Mat();
 
                     var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                    mask.Dispose();
-                    labels.Dispose();
-                    stats.Dispose();
-                    centroids.Dispose();
 
                     // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
                     
@@ -1347,11 +1341,11 @@ public class AutoFightTask : ISoloTask
                                 }
 
                                 var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
-                                var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
+                                using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
                                     new Scalar(250, 91, 89));
-                                var labels = new Mat();
-                                var stats = new Mat();
-                                var centroids = new Mat();
+                                using var labels = new Mat();
+                                using var stats = new Mat();
+                                using var centroids = new Mat();
 
                                 var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
@@ -1359,7 +1353,7 @@ public class AutoFightTask : ISoloTask
                                 //死亡检查
                                 for (int h = 0; h < 4; h++)
                                 {
-                                    var croppedImage = ra.DeriveCrop(1810, 256 + 96 * h, 15, 1).SrcMat;
+                                    using var croppedImage = ra.DeriveCrop(1810, 256 + 96 * h, 15, 1).SrcMat;
                                     
                                     var isGrayscale = true;
                                     for (int i = 0; i < croppedImage.Rows; i++)
@@ -1384,14 +1378,7 @@ public class AutoFightTask : ISoloTask
                                     {
                                         gray = true;
                                     }
-                                    
-                                    croppedImage.Dispose();
                                 }
-
-                                mask.Dispose();
-                                labels.Dispose();
-                                stats.Dispose();
-                                centroids.Dispose();
 
                                 if (numLabels > 1)//红血检查
                                 {
@@ -1582,19 +1569,14 @@ public class AutoFightTask : ISoloTask
                     else
                     {
                         // 非复活药前提下再识别营养袋，优化效率
-                        var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                        var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
-                        var labels = new Mat();
-                        var stats = new Mat();
-                        var centroids = new Mat();
+                        using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
+                        using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+                        using var labels = new Mat();
+                        using var stats = new Mat();
+                        using var centroids = new Mat();
 
                         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                        mask.Dispose();
-                        labels.Dispose();
-                        stats.Dispose();
-                        centroids.Dispose();
 
                         // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
                     
@@ -1607,32 +1589,23 @@ public class AutoFightTask : ISoloTask
                    
                     for (var h = 0; h < 4; h++)
                     {
-                       var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
-                       var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),new Scalar(161, 220, 60));
-                       var labels = new Mat();
-                       var stats = new Mat();
-                       var centroids = new Mat();
+                       using var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
+                       using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),new Scalar(161, 220, 60));
+                       using var labels = new Mat();
+                       using var stats = new Mat();
+                       using var centroids = new Mat();
 
                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//非出战角色，右侧头像血量检查
 
-                       var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
-                       var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
-                       var labels2 = new Mat();
-                       var stats2 = new Mat();
-                       var centroids2 = new Mat();
+                       using var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
+                       using var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
+                       using var labels2 = new Mat();
+                       using var stats2 = new Mat();
+                       using var centroids2 = new Mat();
 
                        var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
-                       
-                       mask.Dispose();
-                       labels.Dispose();
-                       stats.Dispose();
-                       centroids.Dispose();
-                       mask2.Dispose();
-                       labels2.Dispose();
-                       stats2.Dispose();
-                       centroids2.Dispose();
 
                        if (numLabels > 1 || !(numLabels2 > 1))
                        {
@@ -1655,7 +1628,7 @@ public class AutoFightTask : ISoloTask
                ms -= 95;
             }
 
-            var swimming = CaptureToRectArea();
+            using var swimming = CaptureToRectArea();
             if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(swimming))
             {
                 //计算2上次吃药时间到现在是否超过2秒，未超过就等待
@@ -1690,8 +1663,6 @@ public class AutoFightTask : ISoloTask
             {
                 TaskControl.Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药","不执行");
             }
-            
-            swimming.Dispose();
             IsTpForRecover = false; // 复活检测打开
         }
         catch (OperationCanceledException ex)

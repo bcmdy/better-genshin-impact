@@ -172,7 +172,8 @@ public class Avatar
         {
             if (AutoFightTask.FightWaypoint is not null)
             {
-                if (!SwimmingConfirm(CaptureToRectArea())) //二次确认
+                using var bitmap = CaptureToRectArea();
+                if (!SwimmingConfirm(bitmap)) //二次确认
                 {
                     return;
                 }
@@ -195,7 +196,8 @@ public class Avatar
                 
                 Simulation.ReleaseAllKey();
                 
-                if (!SwimmingConfirm(CaptureToRectArea()))
+                using var bitmap2 = CaptureToRectArea();
+                if (!SwimmingConfirm(bitmap2))
                 {
                     Logger.LogInformation("游泳检测：游泳脱困成功");
                    return;
@@ -264,13 +266,12 @@ public class Avatar
                 return;
             }
 
-            var region = CaptureToRectArea();
+            using var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
             // 切换成功
             if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
-                region.Dispose();
                 return;
             }
 
@@ -282,12 +283,10 @@ public class Avatar
             
             if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
             {
-                region.Dispose();
                 return;
             }
             
             Sleep(240, Ct);
-            region.Dispose();
         }
     }
 
@@ -307,7 +306,7 @@ public class Avatar
                 return false;
             }
 
-            var region = CaptureToRectArea();
+            using var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
             // 切换成功
@@ -319,7 +318,6 @@ public class Avatar
                 }
                 AutoFightTask.SwitchTryCount = 0;
                 
-                region.Dispose();
                 return true;
             }
 
@@ -329,12 +327,10 @@ public class Avatar
             
             if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
             {
-                region.Dispose();
                 return false;
             }
 
             Sleep(240, Ct);
-            region.Dispose();
         }
 
         return false;
@@ -374,12 +370,11 @@ public class Avatar
         var context = new AvatarActiveCheckContext();
         for (var i = 0; i < 10; i++)
         {
-            var region = CaptureToRectArea();
+            using var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
             if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
             {
-                region.Dispose();
                 return;
             }
 
@@ -387,12 +382,10 @@ public class Avatar
             
             if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
             {
-                region.Dispose();
                 return;
             }
 
             Sleep(240);
-            region.Dispose();
         }
     }
 
@@ -435,7 +428,8 @@ public class Avatar
                 
                 if (AutoFightTask.SwitchTryCount > 15)
                 {
-                    if (Bv.IsInRevivePrompt(CaptureToRectArea()))
+                    using var bitmap = CaptureToRectArea();
+                    if (Bv.IsInRevivePrompt(bitmap))
                     {
                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                         Sleep(300, Ct);
@@ -568,7 +562,7 @@ public class Avatar
             var mwk = false;
             if (Name == "玛薇卡")
             {
-                var region2 = CaptureToRectArea();
+                using var region2 = CaptureToRectArea();
                 // 获取两个点的颜色值
                 var pos = region2.SrcMat.At<Vec3b>(991, 1678);
                 var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
@@ -583,25 +577,6 @@ public class Avatar
                     mwk = true;
                 }
             }
-            // else if (Name == "芙宁娜")
-            // {
-            //     var ra2 = CaptureToRectArea();
-            //     var pos = ra2.SrcMat.At<Vec3b>(980, 1721);
-            //     var pos2 = ra2.SrcMat.At<Vec3b>(980, 1695);
-            //     double colorDifference = Math.Sqrt(
-            //         Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
-            //         Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
-            //         Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
-            //     );
-            //     // Logger.LogInformation("技能颜色差值:{ColorDifference}", Math.Round(colorDifference, 2));
-            //     if (colorDifference < 15)
-            //     {
-            //         Simulation.SendInput.Mouse.LeftButtonDown();
-            //         Sleep(500);
-            //         Simulation.SendInput.Mouse.LeftButtonUp();
-            //         Sleep(300);
-            //     }
-            // }
 
             if (hold)
             {
@@ -639,7 +614,7 @@ public class Avatar
                 if (mwk)
                 {
                     Sleep(300, Ct);
-                    var region2 = CaptureToRectArea();
+                    using var region2 = CaptureToRectArea();
                     // 获取两个点的颜色值
                     var pos = region2.SrcMat.At<Vec3b>(991, 1678);
                     var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
@@ -678,6 +653,7 @@ public class Avatar
                     if (cd > 0) break;
                     Thread.Sleep(Name == "茜特菈莉"? 200:100);
                 }
+                region.Dispose();
             
                 if (cd > 0)
                 {
@@ -742,7 +718,7 @@ public class Avatar
             Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
             Sleep(200, Ct);
 
-            var region = CaptureToRectArea();
+            using var region = CaptureToRectArea();
             ThrowWhenDefeated(region, Ct);
 
             if (!PartyAvatarSideIndexHelper.HasAnyIndexRect(region))
@@ -1138,7 +1114,7 @@ public class Avatar
 
                                 for (var attempt = 0; attempt < 4; attempt++)
                                 {
-                                    var region = CaptureToRectArea();
+                                    using var region = CaptureToRectArea();
                                     cd = AfterUseSkill(region);
                                     region.Dispose();
 
@@ -1215,7 +1191,7 @@ public class Avatar
 
                                 for (var attempt = 0; attempt < 4; attempt++)
                                 {
-                                    var region = CaptureToRectArea();
+                                    using var region = CaptureToRectArea();
                                     cd = AfterUseSkill(region);
                                     region.Dispose();
 

@@ -29,16 +29,16 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
         public static Task<bool?> MoveForwardAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct)
         {
-            var image2 = CaptureToRectArea();
-            Mat mask2 = OpenCvCommonHelper.Threshold(
+            using var image2 = CaptureToRectArea();
+            using Mat mask2 = OpenCvCommonHelper.Threshold(
                 image2.DeriveCrop(0, 0, image2.Width * 1570 / 1920, image2.Height * 970 / 1080).SrcMat,
                 scalarLower,
                 scalarHigher
             );
 
-            Mat labels2 = new Mat();
-            Mat stats2 = new Mat();
-            Mat centroids2 = new Mat();
+            using Mat labels2 = new Mat();
+            using Mat stats2 = new Mat();
+            using Mat centroids2 = new Mat();
 
             int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2, connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
@@ -47,7 +47,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             if (numLabels2 > 1)
             {
                 // 获取第一个连通对象的统计信息（标签1）
-                Mat firstRow = stats2.Row(1); // 获取第1行（标签1）的数据
+                using Mat firstRow = stats2.Row(1); // 获取第1行（标签1）的数据
                 int[] stats;
                 bool success = firstRow.GetArray(out stats); // 使用 out 参数来接收数组数据
 
@@ -215,12 +215,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     logger.LogError("无法获取统计信息数组");
                 }
             }
-
-            mask2.Dispose();
-            labels2.Dispose();
-            stats2.Dispose();
-            centroids2.Dispose();
-            image2.Dispose();
+            
             return Task.FromResult<bool?>(null);
         }
     }
@@ -238,8 +233,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null)
         {
             var bloodLower = new Scalar(255, 90, 90);
-            // var bloodLower1 = new Scalar(160, 160, 160);
-            // var bloodLower2 = new Scalar(180, 180, 180);
 
             var adjustedX = RotaryFactorMapping[rotaryFactor];
             var adjustedDivisor = rotaryFactor<=12 ? 2 : 1.3;
@@ -258,36 +251,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 Mat stats = new Mat();
                 Mat centroids = new Mat();
                 
-                // Mat maskG = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower1,bloodLower2);
-                // Mat hierarchy = new Mat();
-                // Cv2.FindContours(maskG, out Mat[] contours, hierarchy, RetrievalModes.External, ContourApproximationModes.ApproxNone);
-                // if (contours.Length > 0)
-                // {
-                //     Logger.LogInformation("检测到{contours.Length}个轮廓", contours.Length);
-                //     for (int i = 0; i < contours.Length; i++)
-                //     {
-                //         Rect boundingRect = Cv2.BoundingRect(contours[i]);
-                //         int height = boundingRect.Height;
-                //         int width = boundingRect.Width;
-                //         if (height >= 3 && height < 7 && width >= 3 && width < 7)
-                //         {
-                //             // 近似轮廓为多边形
-                //             Mat contour = contours[i];
-                //             Mat approxContour = new Mat();
-                //             Cv2.ApproxPolyDP(contour, approxContour, 0.04 * Cv2.ArcLength(contour, true), true);
-                //
-                //             // 检查多边形的顶点数是否为4
-                //             if (approxContour.Rows == 4)
-                //             {
-                //                 Logger.LogInformation("轮廓{i}高度：{height} / 宽度：{width}", i, height, width);
-                //                 Cv2.Rectangle(image.SrcMat, boundingRect, Scalar.Red, 2);
-                //             }
-                //         }
-                //     }
-                // }
-                // hierarchy.Dispose();
-                // maskG.Dispose();
-                
                 int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
                 // if (retryCount == 0) logger.LogInformation("敌人初检数量： {numLabels}", numLabels - 1);
@@ -296,7 +259,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 {
                     // logger.LogInformation("检测画面内疑似有敌人，继续战斗...");
 
-                    Mat firstRow = stats.Row(1);
+                    using Mat firstRow = stats.Row(1);
                     int[] statsArray;
                     bool success = firstRow.GetArray(out statsArray); 
                     int height = statsArray[3];
@@ -420,7 +383,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 if (numLabels > 1)
                 {
                     // logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
-                    Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
+                    using Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
                     int[] statsArray2;
                     bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
                     int height2 = statsArray2[3];
@@ -583,12 +546,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             }
             else if (burstEnabled)
             {
-                var image = CaptureToRectArea();
+                using var image = CaptureToRectArea();
                 if (!guardianAvatar.IsActive(image))
                 {
                     var skillArea = AutoFightAssets.Instance.AvatarQRectListMap[guardianAvatar.Index - 1];//Q技能区域
                     // 首先对图像进行预处理，转为灰度图
-                    var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
+                    using var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
                 
                     //调试用
                     // grayImage.SaveImage("D:\\Images\\grayImage.png");
@@ -633,7 +596,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         
                             //普攻一下，防止在纳塔飞天
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            var imageAfterBurst = CaptureToRectArea();
+                            using var imageAfterBurst = CaptureToRectArea();
                             if (AvatarSkillAsync(Logger, guardianAvatar, true, 1, ct).Result 
                                  || !Bv.IsInMainUi(imageAfterBurst)) //Q技能CD（冷却检测）或者不在主界面（大招动画播放中）
                             {
@@ -648,13 +611,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             }
                             Logger.LogInformation("优先第 {guardianAvatarName} 盾奶位 {GuardianAvatar} 释放元素爆发：{text}",
                                 guardianAvatarName, guardianAvatar.Name, !guardianAvatar.IsBurstReady ? "成功" : "失败");
-                            
-                            imageAfterBurst.Dispose();
                         }
                     }
-                    
-                    image.Dispose();
-                    grayImage.Dispose();
                 }
             }
         }
@@ -701,18 +659,14 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         bloodLower
                     );
 
-                    var labels2 = new Mat();
-                    var stats2 = new Mat();
-                    var centroids2 = new Mat();
+                    using var labels2 = new Mat();
+                    using var stats2 = new Mat();
+                    using var centroids2 = new Mat();
 
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
                     if (model) image2.Dispose();
-                    mask2.Dispose();
-                    labels2.Dispose();
-                    stats2.Dispose();
-                    centroids2.Dispose();
                     
                     if (needLog) Logger.LogInformation("技能状态：{guardianAvatar.Name} - {skills} 状态 {text}", 
                         guardianAvatar.Name, skills?"Q技能":"E技能", numLabels2 > 1?"冷却中":"就绪");
@@ -769,8 +723,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             foreach (var i in eqList)
             {
                 var skillArea = i != avatarCurrent ? AutoFightAssets.Instance.AvatarQRectListMap[i - 1]: new Rect(1762, 915, 114, 111);
-                
-                var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
+
+                using var grayImage = image.DeriveCrop(skillArea).SrcMat.CvtColor(ColorConversionCodes.BGR2GRAY);
         
                 var meanBrightness = Cv2.Mean(grayImage);
                 var avgBrightness = meanBrightness.Val0;
@@ -786,7 +740,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 {
                     useMedicine.Add(i);
                 }
-                grayImage.Dispose();
             }
             
             image.Dispose();
