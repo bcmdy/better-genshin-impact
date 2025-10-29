@@ -214,18 +214,14 @@ public class Avatar
     /// </summary>
     public static bool SwimmingConfirm(Region region)
     {
-        var mask = OpenCvCommonHelper.Threshold(region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11).SrcMat, 
+        using var mask = OpenCvCommonHelper.Threshold(region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11).SrcMat, 
             new Scalar(242, 223, 39),new Scalar(255, 233, 44));
-        var labels = new Mat();
-        var stats = new Mat();
-        var centroids = new Mat();
+        using var labels = new Mat();
+        using var stats = new Mat();
+        using var centroids = new Mat();
 
         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-        labels.Dispose();
-        stats.Dispose();
-        centroids.Dispose();
 
         return numLabels > 1;
     }
@@ -475,7 +471,7 @@ public class Avatar
     {
         // 剪裁出IndexRect区域
         var indexRa = region.DeriveCrop(rect);
-        var mat = indexRa.CacheGreyMat;
+        using var mat = indexRa.CacheGreyMat;
         var count = OpenCvCommonHelper.CountGrayMatColor(mat, 251, 255);
         if (count * 1.0 / (mat.Width * mat.Height) > 0.5)
         {
@@ -502,7 +498,7 @@ public class Avatar
             var block = teamRa.DeriveCrop(new Rect(blockX, NameRect.Y, teamRa.Width - blockX, NameRect.Height * 2));
             // Cv2.ImWrite($"block_{Name}.png", block.SrcMat);
             // 取白色区域
-            var bMat = OpenCvCommonHelper.Threshold(block.SrcMat, new Scalar(255, 255, 255), new Scalar(255, 255, 255));
+            using var bMat = OpenCvCommonHelper.Threshold(block.SrcMat, new Scalar(255, 255, 255), new Scalar(255, 255, 255));
             // Cv2.ImWrite($"block_b_{Name}.png", bMat);
             // 矩形识别
             Cv2.FindContours(bMat, out var contours, out _, RetrievalModes.External,

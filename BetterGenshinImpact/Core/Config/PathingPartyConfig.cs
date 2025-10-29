@@ -137,7 +137,7 @@ public partial class PathingPartyConfig : ObservableObject
     private AutoFightConfig _autoFightConfig = new();
     
     [ObservableProperty]
-    private int _distance = 45;
+    private int _distance = 35;
     
     [JsonIgnore]
     public List<string> HurryOnAvatarList { get; } = ["","自动","玛薇卡","瓦雷莎","希诺宁"];

@@ -1168,7 +1168,7 @@ public class PathExecutor
                             if (pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                             {
                                 mavikaFlyCount++;
-                                if (mavikaFlyCount > 7 && avatar.IsActive(region2))
+                                if (mavikaFlyCount > 6 && avatar.IsActive(region2))
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     mavikaFlyCount = 0;
@@ -1275,12 +1275,20 @@ public class PathExecutor
                                     Math.Pow(pos3.Item1 - pos4.Item1, 2) + // 绿通道差值的平方
                                     Math.Pow(pos3.Item2 - pos4.Item2, 2)   // 红通道差值的平方
                                 );
-                                region2.Dispose();
+                                
                                 if (colorDifference2 > 15)
                                 {
                                     Logger.LogInformation("自动赶路：继续...");
                                     hurryOnLogo = true;
                                     
+                                    var isClimb = Bv.GetMotionStatus(region3) == MotionStatus.Climb;
+                                    if (isClimb)
+                                    {
+                                        Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                        await Delay(500, ct);
+                                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                    }
+
                                     if (distance > 20)
                                     {
                                         if (waypoint.MoveMode == MoveModeEnum.Dash.Code)
@@ -1295,6 +1303,7 @@ public class PathExecutor
                                             }
                                         } 
                                     }
+                                    region2.Dispose();
                                 }
                                 else
                                 {

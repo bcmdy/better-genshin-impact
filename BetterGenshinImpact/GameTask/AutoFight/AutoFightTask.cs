@@ -1300,6 +1300,7 @@ public class AutoFightTask : ISoloTask
                     var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
+                    mask.Dispose();
                     labels.Dispose();
                     stats.Dispose();
                     centroids.Dispose();
@@ -1387,6 +1388,7 @@ public class AutoFightTask : ISoloTask
                                     croppedImage.Dispose();
                                 }
 
+                                mask.Dispose();
                                 labels.Dispose();
                                 stats.Dispose();
                                 centroids.Dispose();
@@ -1589,6 +1591,7 @@ public class AutoFightTask : ISoloTask
                         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
+                        mask.Dispose();
                         labels.Dispose();
                         stats.Dispose();
                         centroids.Dispose();
@@ -1622,9 +1625,11 @@ public class AutoFightTask : ISoloTask
                        var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
                        
+                       mask.Dispose();
                        labels.Dispose();
                        stats.Dispose();
                        centroids.Dispose();
+                       mask2.Dispose();
                        labels2.Dispose();
                        stats2.Dispose();
                        centroids2.Dispose();
