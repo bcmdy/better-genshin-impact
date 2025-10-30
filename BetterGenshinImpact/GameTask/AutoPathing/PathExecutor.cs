@@ -181,6 +181,8 @@ public class PathExecutor
             {
                 try
                 {
+                    if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
+                    
                     await ResolveAnomalies(); // 异常场景处理
 
                     // 如果首个点是非TP点位，强制设置在这个点位附近优先做局部匹配
@@ -193,7 +195,6 @@ public class PathExecutor
                     double? nextDdistance = null;
                     foreach (var waypoint in waypoints) // 一条路径
                     {
-                        if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
                         
                         //计算下一个节点到当前节点的距离
@@ -1007,7 +1008,7 @@ public class PathExecutor
     public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null, Waypoint? nextWaypoint = null,double? nextDistance = null)
     {
         // 切人
-        var screen = CaptureToRectArea();
+        using var screen = CaptureToRectArea();
         var pixelYellowValue = screen.SrcMat.At<Vec3b>(1010, 814);
         var yellowBlood = (Math.Abs(pixelYellowValue[0] - 50) <= 10 &&
                             Math.Abs(pixelYellowValue[1] - 204) <= 10 &&
@@ -1031,7 +1032,7 @@ public class PathExecutor
         var trackingLogo = true;
         var mavikaFlyCount = 0;
         var runCount = 0;
-        var endDistance = string.IsNullOrEmpty(_hurryOnAvatar)?4:5;
+        // var endDistance = string.IsNullOrEmpty(_hurryOnAvatar)?4:5;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1051,8 +1052,8 @@ public class PathExecutor
         }
         
         //测试节点信息
-        // Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
-        // Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action,distanceAsInt);
+        Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
+        Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action, (int)Math.Round(nextDistance.Value));
 
         // 按下w，一直走
         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
@@ -1070,12 +1071,12 @@ public class PathExecutor
                 throw new RetryException("路径点执行超时，放弃整条路径");
             }
 
-            screen = CaptureToRectArea();
+            using var screen2 = CaptureToRectArea();
 
-            EndJudgment(screen);
+            EndJudgment(screen2);
 
             // position = await GetPosition(screen, waypoint);
-             (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
+             (position, additionalTimeInMs) = await GetPositionAndTime(screen2, waypoint);
              if (additionalTimeInMs>0)
              {
                  if (!Simulation.IsKeyDown(GIActions.MoveForward.ToActionKey().ToVK()))
@@ -1096,13 +1097,12 @@ public class PathExecutor
                      || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 10 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code)))) //连续赶路
                 {
                     trackingLogo = false;
-                    using var region2 = CaptureToRectArea();
-                    if (avatar.IsActive(region2))
+                    if (avatar.IsActive(screen2))
                     {
                         if (_hurryOnAvatar == "玛薇卡")
                         {
-                            var pos = region2.SrcMat.At<Vec3b>(978, 1692);
-                            var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                            var pos = screen2.SrcMat.At<Vec3b>(978, 1692);
+                            var pos2 = screen2.SrcMat.At<Vec3b>(995, 1702);
                             double colorDifference = Math.Sqrt(
                                 Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
                                 Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
@@ -1146,24 +1146,23 @@ public class PathExecutor
                 {
                     if (_hurryOnAvatar == "玛薇卡") //玛薇卡冲坡判断
                     {
-                        using var region2 = CaptureToRectArea();
-                        var pos = region2.SrcMat.At<Vec3b>(1012,1574);
-                        var pos2 = region2.SrcMat.At<Vec3b>(1006, 1608);
-                        var pos3 = region2.SrcMat.At<Vec3b>(1028, 1584);
+                        var pos = screen2.SrcMat.At<Vec3b>(1012,1574);
+                        var pos2 = screen2.SrcMat.At<Vec3b>(1006, 1608);
+                        var pos3 = screen2.SrcMat.At<Vec3b>(1028, 1584);
                         var colorDifference = Math.Sqrt(
                             Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
                             Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
                             Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
                         );
                              
-                        // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference, 2));
+                        // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
                         
                         if (colorDifference < 15)
                         {
                             if (pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                             {
                                 mavikaFlyCount++;
-                                if (mavikaFlyCount > 6 && avatar.IsActive(region2))
+                                if (mavikaFlyCount > 6 && avatar.IsActive(screen2))
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     mavikaFlyCount = 0;
@@ -1176,8 +1175,7 @@ public class PathExecutor
                     {
                         var lower = new Scalar(220, 150, 150);
                         var higher = new Scalar(230, 160, 180);
-                        using var region2 = CaptureToRectArea();
-                        using var mask = OpenCvCommonHelper.Threshold(region2.DeriveCrop(948, 410, 26, 30).SrcMat, lower,higher);
+                        using var mask = OpenCvCommonHelper.Threshold(screen2.DeriveCrop(948, 410, 26, 30).SrcMat, lower,higher);
                         using var labels = new Mat();
                         using var stats = new Mat();
                         using var centroids = new Mat();
@@ -1189,7 +1187,7 @@ public class PathExecutor
                         if (numLabels > 3 && numLabels <40)
                         {
                             mavikaFlyCount++;
-                            if (mavikaFlyCount > 3 && avatar.IsActive(region2))
+                            if (mavikaFlyCount > 3 && avatar.IsActive(screen2))
                             {
                                 hurryOnLogo = true;
                                 Task.Run(async () =>
@@ -1232,10 +1230,9 @@ public class PathExecutor
                     Logger.LogInformation("自动赶路：{t} 赶路...",avatar.Name);
                     if (avatar.Name == "玛薇卡") //连续点按E类型
                     {
-                        using var region2 = CaptureToRectArea();
                         // 获取两个点的颜色值
-                        var pos = region2.SrcMat.At<Vec3b>(978, 1692);
-                        var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                        var pos = screen2.SrcMat.At<Vec3b>(978, 1692);
+                        var pos2 = screen2.SrcMat.At<Vec3b>(995, 1702);
                         double colorDifference = Math.Sqrt(
                             Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
                             Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
@@ -1491,7 +1488,7 @@ public class PathExecutor
                 }
             }
             
-            if (distance < endDistance)
+            if (distance < (hurryOnLogo? 4 : 5))
             {
                 Logger.LogDebug("到达路径点附近");
                 break;
@@ -1605,7 +1602,7 @@ public class PathExecutor
             // 旋转视角
             targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
             //执行旋转
-            var diff = _rotateTask.RotateToApproach(targetOrientation, screen);
+            var diff = _rotateTask.RotateToApproach(targetOrientation, screen2);
             if (num > 20)
             {
                 if (Math.Abs(diff) > 5)
@@ -1628,7 +1625,7 @@ public class PathExecutor
             // 根据指定方式进行移动
             if (waypoint.MoveMode == MoveModeEnum.Fly.Code)
             {
-                var isFlying = Bv.GetMotionStatus(screen) == MotionStatus.Fly;
+                var isFlying = Bv.GetMotionStatus(screen2) == MotionStatus.Fly;
                 if (!isFlying)
                 {
                     Debug.WriteLine("未进入飞行状态，按下空格");
@@ -1731,8 +1728,7 @@ public class PathExecutor
 
             await Delay(100, ct);
         }
-
-        screen.Dispose();
+        
         // 抬起w键
         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
     }
@@ -1900,9 +1896,9 @@ public class PathExecutor
             var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
             if (!confirmRectArea.IsEmpty())
             {
-                Logger.LogInformation("死亡，点击确认-s");
                 Simulation.ReleaseAllKey();
                 PathingConditionConfig.AutoEatCount = 2;
+                Logger.LogInformation("死亡，点击确认-s {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);

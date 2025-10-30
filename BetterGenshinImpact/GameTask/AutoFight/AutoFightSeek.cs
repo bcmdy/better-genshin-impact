@@ -244,12 +244,23 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             while (retryCount < 25+(int)(adjustedX / 5))
             {
-                var image = CaptureToRectArea();
-                Mat mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
+                using var image = CaptureToRectArea();
+
+                if (retryCount == 1)
+                {
+                    using var confirmRectArea = image.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (confirmRectArea.IsExist())
+                    {
+                        Logger.LogWarning("旋转寻敌：{t} 停止旋转", "页面错误");
+                        return null;
+                    } 
+                }
+
+                using Mat mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
                 
-                Mat labels = new Mat();
-                Mat stats = new Mat();
-                Mat centroids = new Mat();
+                using Mat labels = new Mat();
+                using Mat stats = new Mat();
+                using Mat centroids = new Mat();
                 
                 int numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
@@ -265,12 +276,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int height = statsArray[3];
                     int x = statsArray[0];
                     // Logger.LogInformation("敌人位置: ({x}，血量高度: {height}", x, height);
-                    
-                    mask.Dispose();
-                    labels.Dispose();
-                    stats.Dispose();
-                    centroids.Dispose();
-                    image.Dispose();
                     
                     if (success)
                     {
@@ -371,29 +376,23 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 await Task.Delay(Math.Max(delay, 1), ct);
                 // await Task.Delay(50,ct);
 
-                image = CaptureToRectArea();
-                mask = OpenCvCommonHelper.Threshold(image.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
-                labels = new Mat();
-                stats = new Mat();
-                centroids = new Mat();
+                using var image2 = CaptureToRectArea();
+                using Mat mask2 = OpenCvCommonHelper.Threshold(image2.DeriveCrop(0, 0, 1500, 900).SrcMat, bloodLower);
+                using Mat labels2 = new Mat();
+                using Mat stats2 = new Mat();
+                using Mat centroids2 = new Mat();
 
-                 numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                 numLabels = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                     connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
                 if (numLabels > 1)
                 {
                     // logger.LogInformation("检测敌人第 {retryCount} 次： {numLabels}", retryCount + 1, numLabels - 1);
-                    using Mat firstRow2 = stats.Row(1); // 获取第1行（标签1）的数据
+                    using Mat firstRow2 = stats2.Row(1); // 获取第1行（标签1）的数据
                     int[] statsArray2;
                     bool success2 = firstRow2.GetArray(out statsArray2); // 使用 out 参数来接收数组数据
                     int height2 = statsArray2[3];
                     // logger.LogInformation("敌人血量 ：{height2}", height2);
-                    
-                    mask.Dispose();
-                    labels.Dispose();
-                    stats.Dispose();
-                    centroids.Dispose();
-                    image.Dispose();
 
                     if (success2)
                     {
@@ -424,12 +423,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
                 
-                mask.Dispose();
-                labels.Dispose();
-                stats.Dispose();
-                centroids.Dispose();
-                image.Dispose();
-                
                 retryCount++;
             }
             
@@ -437,7 +430,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
             if (avatar?.Name == "玛薇卡" &&  RotationCount >= 1)
             {
-                var region2 = CaptureToRectArea();
+                using var region2 = CaptureToRectArea();
                 // 获取两个点的颜色值
                 var pos = region2.SrcMat.At<Vec3b>(978, 1692);
                 var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
@@ -446,7 +439,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
                     Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
                 );
-                region2.Dispose();
+
                 if (colorDifference < 15)
                 {
                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill); 

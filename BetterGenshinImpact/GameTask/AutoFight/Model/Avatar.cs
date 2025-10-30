@@ -134,7 +134,7 @@ public class Avatar
                 {
                     PathingConditionConfig.AutoEatCount++;
                     PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n");
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n {t}",PathingConditionConfig.AutoEatCount);
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
                     if (!confirmRectArea.IsEmpty())
                     {

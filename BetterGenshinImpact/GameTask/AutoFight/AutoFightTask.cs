@@ -1340,7 +1340,7 @@ public class AutoFightTask : ISoloTask
                                     return true;
                                 }
 
-                                var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
+                                using var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
                                 using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
                                     new Scalar(250, 91, 89));
                                 using var labels = new Mat();
@@ -1478,14 +1478,12 @@ public class AutoFightTask : ISoloTask
                                         confirmRectArea.ClickTo(-100, 0);
                                         Delay(100, _ct).Wait();
                                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                                        Delay(1000, _ct).Wait();
                                         continue;
                                     }
                                 }
                                 else if (RecoverCount < 2)
                                 {
                                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
-                                    RecoverCount++;
                                     continue;
                                 }
                             }
@@ -1507,7 +1505,7 @@ public class AutoFightTask : ISoloTask
                                     Delay(500, _ct).Wait();
                                 }
                             }
-                            
+                            // Logger.LogInformation("自动吃药：检测到复活界面33，{text} ", RecoverCount);
                             IsTpForRecover = false;
                         }
 
