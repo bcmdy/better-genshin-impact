@@ -812,7 +812,7 @@ public class AutoFightTask : ISoloTask
                         }
                         #endregion
                         
-                       if(!fightEndFlag) command.Execute(combatScenes);
+                        command.Execute(combatScenes, lastCommand);
                         //统计战斗人次
                         if (i == combatCommands.Count - 1 || command.Name != combatCommands[i + 1].Name)
                         {
