@@ -1163,7 +1163,7 @@ public class PathExecutor
                 }
 
                 // 自动赶路的特殊处理模式，防止异常情况
-                if (!hurryOnLogo || PartyConfig.TravelMode == "连续赶路")
+                if (!hurryOnLogo)
                 {
                     if (avatar.Name == "玛薇卡") //玛薇卡冲坡判断
                     {
@@ -1197,15 +1197,16 @@ public class PathExecutor
                         {
                             if (distance < 4)
                             {
-                                // Logger.LogInformation("自动赶路：123231");
+                                // Logger.LogError("自动赶路：123231");
                                 Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                 break;
                             }
                             else
                             {
                                 var isClimb = Bv.GetMotionStatus(screen2) == MotionStatus.Climb;
-                                if (isClimb)
+                                if (isClimb && !hurryOnLogo)
                                 {
+                                    // Logger.LogError("自动赶路：123444");
                                     Simulation.SendInput.SimulateAction(GIActions.Drop);
                                     await Delay(500, ct);
                                 }
@@ -1312,6 +1313,7 @@ public class PathExecutor
                                     var isClimb = Bv.GetMotionStatus(region3) == MotionStatus.Climb;
                                     if (isClimb)
                                     {
+                                        Logger.LogError("自动赶路：878567");
                                         Simulation.SendInput.SimulateAction(GIActions.Drop);
                                         await Delay(500, ct);
                                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -1351,6 +1353,7 @@ public class PathExecutor
                                                 waypoint.MoveMode = MoveModeEnum.Run.Code;
                                                 await Delay(flyTime, ct);
                                                 waypoint.MoveMode = MoveModeEnum.Fly.Code;
+                                                hurryOnLogo = true;
                                             }
                                         }
                                     }
