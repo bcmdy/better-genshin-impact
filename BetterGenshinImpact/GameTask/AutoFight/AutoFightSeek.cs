@@ -498,7 +498,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         guardianAvatar.UseSkill(guardianAvatarHold);
                         var imageAfterUseSkill = CaptureToRectArea();
                         
-                        var retry = 50;
+                        var retry = 100;
                         while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);

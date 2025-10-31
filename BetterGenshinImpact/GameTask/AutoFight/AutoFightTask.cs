@@ -1493,19 +1493,19 @@ public class AutoFightTask : ISoloTask
                         {
                             RecoverCount = 2;
                             
-                            using (var bitmap = CaptureToRectArea())
-                            {
-                                var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                                if (!confirmRectArea.IsEmpty())
-                                {
-                                    Simulation.ReleaseAllKey();
-                                    confirmRectArea.Click();
-                                    confirmRectArea.ClickTo(-100, 0);
-                                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                                    Delay(500, _ct).Wait();
-                                }
-                            }
-                            // Logger.LogInformation("自动吃药：检测到复活界面33，{text} ", RecoverCount);
+                            // using (var bitmap = CaptureToRectArea())
+                            // {
+                            //     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                            //     if (!confirmRectArea.IsEmpty())
+                            //     {
+                            //         Simulation.ReleaseAllKey();
+                            //         confirmRectArea.Click();
+                            //         confirmRectArea.ClickTo(-100, 0);
+                            //         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                            //         Delay(500, _ct).Wait();
+                            //     }
+                            // }
+                            // // Logger.LogInformation("自动吃药：检测到复活界面33，{text} ", RecoverCount);
                             IsTpForRecover = false;
                         }
 
