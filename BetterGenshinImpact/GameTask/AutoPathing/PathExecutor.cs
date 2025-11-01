@@ -1034,6 +1034,7 @@ public class PathExecutor
         var mavikaFlyCount = 0;
         var runCount = 0;
         var flyDelay = waypoint.MoveMode == MoveModeEnum.Fly.Code;
+        bool? hurryOnBool = null;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1062,10 +1063,6 @@ public class PathExecutor
         //测试节点信息
         // Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
         // Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action, (int)Math.Round(nextDistance.Value));
-
-        var hurryOnBool = (waypoint.MoveMode == MoveModeEnum.Run.Code ||
-                             waypoint.MoveMode == MoveModeEnum.Dash.Code ||
-                             ((waypoint.MoveMode == MoveModeEnum.Climb.Code || (waypoint.MoveMode == MoveModeEnum.Fly.Code) ) && avatar?.Name == "玛薇卡"));
         
         // 按下w，一直走
 
@@ -1109,6 +1106,10 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
+            
+            hurryOnBool ??= (waypoint.MoveMode == MoveModeEnum.Run.Code ||
+                               waypoint.MoveMode == MoveModeEnum.Dash.Code ||
+                               ((waypoint.MoveMode == MoveModeEnum.Climb.Code || (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 30) ) && avatar?.Name == "玛薇卡"));
 
             if (avatar != null)
             {
@@ -1161,6 +1162,28 @@ public class PathExecutor
                         }
                     }
                 }
+                
+                //飞行模式下，判断状态并处理
+                if (waypoint.MoveMode == MoveModeEnum.Fly.Code &&
+                    nextWaypoint?.MoveMode != MoveModeEnum.Fly.Code && PartyConfig.TravelMode == "连续赶路")
+                {
+                    if (distance < 4)
+                    {
+                        // Logger.LogError("自动赶路：123231");
+                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                        break;
+                    }
+                    else
+                    {
+                        var isClimb = Bv.GetMotionStatus(screen2) == MotionStatus.Climb;
+                        if (isClimb && !hurryOnLogo)
+                        {
+                            // Logger.LogError("自动赶路：123444");
+                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            await Delay(500, ct);
+                        }
+                    }
+                } 
 
                 // 自动赶路的特殊处理模式，防止异常情况
                 if (!hurryOnLogo)
@@ -1191,27 +1214,6 @@ public class PathExecutor
                                 } 
                             }
                         }
-                        
-                        if (waypoint.MoveMode == MoveModeEnum.Fly.Code &&
-                            nextWaypoint?.MoveMode != MoveModeEnum.Fly.Code)
-                        {
-                            if (distance < 4)
-                            {
-                                // Logger.LogError("自动赶路：123231");
-                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                break;
-                            }
-                            else
-                            {
-                                var isClimb = Bv.GetMotionStatus(screen2) == MotionStatus.Climb;
-                                if (isClimb && !hurryOnLogo)
-                                {
-                                    // Logger.LogError("自动赶路：123444");
-                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
-                                    await Delay(500, ct);
-                                }
-                            }
-                        } 
                     }
                     else if (avatar.Name == "瓦雷莎") //瓦雷莎冲刺判断
                     {
@@ -1257,7 +1259,7 @@ public class PathExecutor
                 }
                 
                 //自动赶路
-                if (hurryOnLogo&& !yellowBlood && !string.IsNullOrEmpty(_hurryOnAvatar) && distance >  PartyConfig.Distance && hurryOnBool)
+                if (hurryOnLogo&& !yellowBlood && !string.IsNullOrEmpty(_hurryOnAvatar) && distance >  PartyConfig.Distance && (hurryOnBool ?? false))
                 {
                     await SwitchAvatar(avatar.Index.ToString()); 
                     
@@ -1963,7 +1965,7 @@ public class PathExecutor
             if (!confirmRectArea.IsEmpty())
             {
                 Simulation.ReleaseAllKey();
-                PathingConditionConfig.AutoEatCount = 2;
+                PathingConditionConfig.AutoEatCount ++;
                 Logger.LogInformation("死亡，点击确认-s {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
