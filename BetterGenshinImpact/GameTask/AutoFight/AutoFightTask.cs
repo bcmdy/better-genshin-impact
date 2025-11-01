@@ -872,6 +872,8 @@ public class AutoFightTask : ISoloTask
                 Simulation.ReleaseAllKey();
                 FightStatusFlag = false;
                 image?.Dispose();
+                GC.Collect();//释放内存
+                GC.WaitForPendingFinalizers();//释放内存
                 // if (_taskParam.TakeMedicineEnabled) RecoverCount = 0;
             }
         }, cts2.Token);
@@ -1022,6 +1024,8 @@ public class AutoFightTask : ISoloTask
                                             }
                                             finally
                                             {
+                                                GC.Collect();//释放内存
+                                                GC.WaitForPendingFinalizers();//释放内存
                                                 Monitor.Exit(PickLock);
                                             }
                                         }
@@ -1269,6 +1273,8 @@ public class AutoFightTask : ISoloTask
         finally
         {
             VisionContext.Instance().DrawContent.ClearAll();
+            GC.Collect();//释放内存
+            GC.WaitForPendingFinalizers();//释放内存
         }
         
         return Task.CompletedTask;

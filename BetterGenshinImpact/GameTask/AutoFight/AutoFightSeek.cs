@@ -445,7 +445,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill); 
                 }  
             }
-            
+
             return null;
         }
         
@@ -743,6 +743,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 return Task.FromResult(useMedicine);
             }
         
+            GC.Collect();//释放内存
+            GC.WaitForPendingFinalizers();//释放内存
             return Task.FromResult(new List<int>());
         }
     }

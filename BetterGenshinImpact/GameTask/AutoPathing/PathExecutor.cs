@@ -332,6 +332,8 @@ public class PathExecutor
                     Simulation.SendInput.Keyboard.KeyUp(User32.VK.VK_W);
                     Simulation.SendInput.Mouse.RightButtonUp();
                     PathingConditionConfig.CombatScenesGoBackUp = null;
+                    GC.Collect();//释放内存
+                    GC.WaitForPendingFinalizers();//释放内存
                 }
             }
         }
@@ -381,21 +383,19 @@ public class PathExecutor
     { 
         var result = await NewRetry.WaitForAction( () =>
             {
-                using ( var ra = CaptureToRectArea())
+
+                Logger.LogInformation("自动吃药：尝试装配便携式营养袋剩余次数 {t}",PathingConditionConfig.RetryAssemblyNum);
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyDown);
+                Delay(1000, ct).Wait();
+                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyUp);
+                Delay(1000, ct).Wait();
+                using (var ra2 = CaptureToRectArea())
                 {
-                    Logger.LogInformation("自动吃药：尝试装配便携式营养袋剩余次数 {t}",PathingConditionConfig.RetryAssemblyNum);
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyDown);
-                    Delay(1000, ct).Wait();
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyUp);
-                    Delay(1000, ct).Wait();
-                    using (var ra2 = CaptureToRectArea())
+                    var boon = ra2.Find(AutoFightAssets.Instance.NutritionBagRa);
+                    if (boon.IsExist())
                     {
-                        var boon = ra2.Find(AutoFightAssets.Instance.NutritionBagRa);
-                        if (boon.IsExist())
-                        {
-                            boon.Click();
-                            return true;
-                        }
+                        boon.Click();
+                        return true;
                     }
                 }
                 //点击一下鼠标
@@ -835,7 +835,8 @@ public class PathExecutor
             }
             
             if (PathingConditionConfig.AutoEatCount < 2) return;
-
+            Logger.LogInformation("当前角色血量过低，去七天神像恢复-q");
+            await TpStatueOfTheSeven();
             if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线-1");
         }
@@ -854,7 +855,7 @@ public class PathExecutor
     
     private async Task TpStatueOfTheSeven(bool switchOnly = false)
     {
-        // Logger.LogInformation("AutoEatCount {text}",PathingConditionConfig.AutoEatCount);
+        Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
             if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -974,6 +975,8 @@ public class PathExecutor
                 {
                     RunnerContext.Instance.isAutoFetchDispatch = false;
                     _lastGetExpeditionRewardsTime = DateTime.UtcNow; // 无论成功与否都更新时间
+                    GC.Collect();//释放内存
+                    GC.WaitForPendingFinalizers();//释放内存
                 }
             }
         }
@@ -1034,6 +1037,7 @@ public class PathExecutor
         var runCount = 0;
         var flyDelay = waypoint.MoveMode == MoveModeEnum.Fly.Code;
         bool? hurryOnBool = null;
+        var continueHurryOn = 0;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1060,9 +1064,9 @@ public class PathExecutor
         }
         
         //测试节点信息
-        Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
-        Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action, (int)Math.Round(nextDistance.Value));
-        
+        // Logger.LogWarning("赶路测试log:当前节点:({x2}),动作:({t1}),类型({t2}))", waypoint.Type, waypoint.Action, waypoint.MoveMode);
+        // Logger.LogWarning("赶路测试log:Next节点:({x2}),动作:({t1}),间隔距离({x3}),类型({t2}))", nextWaypoint?.Type?? "null", nextWaypoint?.MoveMode ,nextWaypoint?.Action, (int)Math.Round(nextDistance.Value));
+        //
         // 按下w，一直走
 
         if (!flyDelay) Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown); 
@@ -1099,11 +1103,11 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
-            Logger.LogWarning("接近目标点中，距离为{distance}", distance);
+            // Logger.LogWarning("接近目标点中，距离为{distance}", distance);
             
             hurryOnBool ??= (waypoint.MoveMode == MoveModeEnum.Run.Code ||
                                waypoint.MoveMode == MoveModeEnum.Dash.Code ||
-                               ((waypoint.MoveMode == MoveModeEnum.Climb.Code || (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 39) ) && avatar?.Name == "玛薇卡"));
+                               ((waypoint.MoveMode == MoveModeEnum.Climb.Code || (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 35) ) && avatar?.Name == "玛薇卡"));
 
             if (avatar != null)
             {
@@ -1163,7 +1167,7 @@ public class PathExecutor
                 {
                     if (distance < 4)
                     {
-                        Logger.LogError("自动赶路：123231");
+                        // Logger.LogError("自动赶路：123231");
                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                         break;
                     }
@@ -1180,6 +1184,7 @@ public class PathExecutor
                 } 
 
                 // 自动赶路的特殊处理模式，防止异常情况
+                Logger.LogInformation("自动赶路：11111 {hurryOnLogo} ",hurryOnLogo);
                 if (!hurryOnLogo)
                 {
                     if (avatar.Name == "玛薇卡") //玛薇卡冲坡判断
@@ -1193,14 +1198,14 @@ public class PathExecutor
                             Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
                         );
                              
-                        // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
+                        Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
                         
                         if (colorDifference < 15)
                         {
                             if (pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                             {
                                 mavikaFlyCount++;
-                                if (mavikaFlyCount > 6 && avatar.IsActive(screen2))
+                                if (mavikaFlyCount > 5 && avatar.IsActive(screen2))
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     mavikaFlyCount = 0;
@@ -1263,7 +1268,8 @@ public class PathExecutor
                         sprintMouseLogo = false;
                     }
                     
-                    if (waypoint.MoveMode != MoveModeEnum.Walk.Code) hurryOnLogo = false;
+                    // if (waypoint.MoveMode != MoveModeEnum.Walk.Code)
+                        hurryOnLogo = false;
                     Logger.LogInformation("自动赶路：{t} 赶路...",avatar.Name);
                     if (avatar.Name == "玛薇卡") //连续点按E类型
                     {
@@ -1287,7 +1293,7 @@ public class PathExecutor
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(300, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(600, ct);
+                                await Delay(800, ct);
                                 // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
@@ -1303,13 +1309,18 @@ public class PathExecutor
                                 
                                 if (colorDifference2 > 15)
                                 {
+                                    continueHurryOn++;
                                     Logger.LogInformation("自动赶路：继续...");
-                                    hurryOnLogo = true;
+                                    if (continueHurryOn > 1)
+                                    {
+                                        hurryOnLogo = true;
+                                        continueHurryOn = 0;
+                                    }
                                     
                                     var isClimb = Bv.GetMotionStatus(region3) == MotionStatus.Climb;
                                     if (isClimb)
                                     {
-                                        Logger.LogError("自动赶路：878567");
+                                        // Logger.LogError("自动赶路：878567");
                                         Simulation.SendInput.SimulateAction(GIActions.Drop);
                                         await Delay(500, ct);
                                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -1323,7 +1334,8 @@ public class PathExecutor
                                         }
                                         else if (waypoint.MoveMode == MoveModeEnum.Run.Code)
                                         {
-                                            if (runCount < 5)
+                                            runCount++;
+                                            if (runCount < 3)
                                             {
                                                 Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
                                             }
@@ -1682,7 +1694,6 @@ public class PathExecutor
                     await _rotateTask.WaitUntilRotatedTo(targetOrientation, 2);
                 }
             }
-            
 
             // 根据指定方式进行移动
             if (waypoint.MoveMode == MoveModeEnum.Fly.Code)
