@@ -855,7 +855,7 @@ public class PathExecutor
     
     private async Task TpStatueOfTheSeven(bool switchOnly = false)
     {
-        Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
+        // Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
             if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -1184,7 +1184,7 @@ public class PathExecutor
                 } 
 
                 // 自动赶路的特殊处理模式，防止异常情况
-                Logger.LogInformation("自动赶路：11111 {hurryOnLogo} ",hurryOnLogo);
+                // Logger.LogInformation("自动赶路：11111 {hurryOnLogo} ",hurryOnLogo);
                 if (!hurryOnLogo)
                 {
                     if (avatar.Name == "玛薇卡") //玛薇卡冲坡判断
@@ -1198,7 +1198,7 @@ public class PathExecutor
                             Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
                         );
                              
-                        Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
+                        // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
                         
                         if (colorDifference < 15)
                         {
