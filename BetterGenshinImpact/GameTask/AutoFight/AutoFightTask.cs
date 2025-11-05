@@ -291,7 +291,7 @@ public class AutoFightTask : ISoloTask
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var ra = CaptureToRectArea();
+            using var ra = CaptureToRectArea();
             var combatScenes = new CombatScenes().InitializeTeam(ra);
             if (combatScenes.CheckTeamInitialized())
             {
@@ -302,7 +302,6 @@ public class AutoFightTask : ISoloTask
             {
                 Thread.Sleep(retryDelayMs); // 可选：延迟再试
             }
-            ra.Dispose();
         }
 
         if (!Config.CustomAvatarConfigOut.CustomAvatarEnabled) throw new Exception("识别队伍角色失败（已重试 5 次）");
@@ -1469,52 +1468,17 @@ public class AutoFightTask : ISoloTask
 
                         using (var bitmap = CaptureToRectArea())//复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
                         {
-                            if (Bv.IsInRevivePrompt(bitmap))
+                            var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                            if (!confirmRectArea.IsEmpty())
                             {
-                                if (RecoverCount < 1)//只吃一次复活药
-                                {
-                                    PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                                    RecoverCount++;
-                                    var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                                    if (!confirmRectArea.IsEmpty())
-                                    {
-                                        Simulation.ReleaseAllKey();
-                                        confirmRectArea.Click();
-                                        Delay(100, _ct).Wait();
-                                        confirmRectArea.ClickTo(-100, 0);
-                                        Delay(100, _ct).Wait();
-                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                                        continue;
-                                    }
-                                }
-                                else if (RecoverCount < 2)
-                                {
-                                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);  
-                                    continue;
-                                }
+                                Simulation.ReleaseAllKey();
+                                confirmRectArea.Click();
+                                confirmRectArea.ClickTo(-100, 0);
+                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                                Delay(500, _ct).Wait();
+                                RecoverCount++;
                             }
                         }
-
-                        if (RecoverCount > 1 || FightEndFlag)
-                        {
-                            RecoverCount = 2;
-                            
-                            // using (var bitmap = CaptureToRectArea())
-                            // {
-                            //     var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                            //     if (!confirmRectArea.IsEmpty())
-                            //     {
-                            //         Simulation.ReleaseAllKey();
-                            //         confirmRectArea.Click();
-                            //         confirmRectArea.ClickTo(-100, 0);
-                            //         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                            //         Delay(500, _ct).Wait();
-                            //     }
-                            // }
-                            // // Logger.LogInformation("自动吃药：检测到复活界面33，{text} ", RecoverCount);
-                            IsTpForRecover = false;
-                        }
-
                     }
                     catch (OperationCanceledException ex)
                     {

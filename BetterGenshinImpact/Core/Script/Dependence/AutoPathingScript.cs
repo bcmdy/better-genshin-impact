@@ -20,24 +20,41 @@ public class AutoPathingScript
         _rootPath = rootPath;
     }
 
-    public async Task Run(string json,CancellationToken ct = default)
+    public async Task Run(string json, CancellationToken ct = default)
     {
         try
         {
-            if (ct == default) ct = CancellationContext.Instance.Cts.Token;
+            if (ct == default)
+            {
+                ct = CancellationContext.Instance.Cts.Token;
+            }
+            else
+            {
+                TaskControl.Logger.LogWarning("执行地图追踪传入Cts");
+                ct = CancellationContext.Instance.Register(ct);
+            }
+
             var task = PathingTask.BuildFromJson(json);
             var pathExecutor = new PathExecutor(ct);
             if (_config != null && _config is PathingPartyConfig patyConfig)
             {
                 pathExecutor.PartyConfig = patyConfig;
             }
-            
+
             await pathExecutor.Pathing(task);
+        }
+        catch (OperationCanceledException)
+        {
+            TaskControl.Logger.LogInformation("路径追踪任务被取消");
+        }
+        catch (ObjectDisposedException e)
+        {
+            TaskControl.Logger.LogError("访问已释放的对象: {Msg}", e.Message);
         }
         catch (Exception e)
         {
-            TaskControl.Logger.LogDebug(e,"执行地图追踪时候发生错误");
-            TaskControl.Logger.LogError("执行地图追踪时候发生错误: {Msg}",e.Message);
+            TaskControl.Logger.LogDebug(e, "执行地图追踪时候发生错误");
+            TaskControl.Logger.LogError("执行地图追踪时候发生错误: {Msg}", e.Message);
         }
     }
 
