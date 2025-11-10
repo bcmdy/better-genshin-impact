@@ -127,7 +127,6 @@ public class Avatar
         // Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            // Logger.LogInformation("AutoFightTask.RecoverCount {t}",AutoFightTask.RecoverCount < 2);
             if (PathingConditionConfig.AutoEatCount < 2)
             {
                 if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -182,11 +181,15 @@ public class Avatar
                 var pathExecutor = new PathExecutor(ct);
                 try
                 {
+                    Logger.LogInformation("游泳检测：11");
                     pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, ct);
+                    Logger.LogInformation("游泳检测：22");
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
+                    Logger.LogInformation("游泳检测：33");
                     pathExecutor.MoveTo(AutoFightTask.FightWaypoint,false).Wait(15000, ct);
-                    AutoFightTask.FightWaypoint = null;
+                    Logger.LogInformation("游泳检测：44");
+                    // AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }
                 catch (Exception ex)

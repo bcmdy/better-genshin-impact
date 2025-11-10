@@ -65,7 +65,7 @@ public class AutoFightTask : ISoloTask
     
     private static volatile bool _isExperiencePickup = false;
 
-    public static bool IsTpForRecover {get; set;} = false;
+    public static bool IsTpForRecover {get; set;} = true;
 
     // 战斗点位
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
@@ -517,7 +517,6 @@ public class AutoFightTask : ISoloTask
             else
             {
                 IsTpForRecover = false;
-                RecoverCount = 3;
             }
             
             #endregion
@@ -650,54 +649,79 @@ public class AutoFightTask : ISoloTask
                                                 
                                                 var imageAfterUseSkill = CaptureToRectArea();
                                                 var retry = 30;
-                                                while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct,imageAfterUseSkill) && retry > 0)
+                                                try
                                                 {
-                                                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                                    Simulation.ReleaseAllKey();
-                                                    //防止在纳塔飞天或爬墙
-                                                    if (retry % 4 == 0)
+                                                    while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ,
+                                                               false, 1, ct, imageAfterUseSkill) && retry > 0)
                                                     {
-                                                        Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                        Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                        Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                                                        Simulation.ReleaseAllKey();
+
+                                                        // 防止在纳塔飞天或爬墙
+                                                        if (retry % 4 == 0)
+                                                        {
+                                                            Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                                        }
+
+                                                        // 释放旧的截图资源
+                                                        imageAfterUseSkill.Dispose();
+
+                                                        // 获取新的截图
+                                                        imageAfterUseSkill = CaptureToRectArea();
+
+                                                        await Task.Delay(30, ct);
+                                                        retry -= 1;
                                                     }
-                                                    imageAfterUseSkill = CaptureToRectArea();
-                                                    await Task.Delay(30, ct);
-                                                    retry -= 1;
                                                 }
-                                                imageAfterUseSkill.Dispose();
-                                                
-                                                // if (retry > 0)
-                                                // {
-                                                //     avatarQ.LastSkillTime = DateTime.UtcNow;
-                                                //     
-                                                //     if (avatarQ.Name == "枫原万叶")
-                                                //     {
-                                                //         await Delay(100, ct);
-                                                //         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                                //         await Delay(200, ct);
-                                                //     }
-                                                //     
-                                                //     await Delay(99, ct);
-                                                // }
+                                                catch (Exception ex)
+                                                {
+                                                    Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
+                                                }
+                                                finally
+                                                {
+                                                    // 确保最终释放资源
+                                                    imageAfterUseSkill.Dispose();
+                                                }
                                             }
                                             
                                             fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct,avatarQ);
                                             if (!fightEndFlag)
                                             { 
-                                                var ms = 30;
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                 var imageAfterBurst = CaptureToRectArea();
-                                                while (imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo).IsExist() 
-                                                       && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, ct,imageAfterBurst,false) 
-                                                       && ms > 0)
+                                                var ms = 30; // 初始化计数器
+
+                                                try
                                                 {
-                                                    Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                    await Delay(50, ct);
-                                                    imageAfterBurst = CaptureToRectArea();
-                                                    ms -= 1;
+                                                    while (imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo)
+                                                               .IsExist()
+                                                           && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ,
+                                                               true, 1, ct, imageAfterBurst, false)
+                                                           && ms > 0)
+                                                    {
+                                                        Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                                        await Task.Delay(50, ct);
+
+                                                        // 释放旧的截图资源
+                                                        imageAfterBurst.Dispose();
+
+                                                        // 获取新的截图
+                                                        imageAfterBurst = CaptureToRectArea();
+
+                                                        ms -= 1;
+                                                    }
                                                 }
-                                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                imageAfterBurst.Dispose();
+                                                catch (Exception ex)
+                                                {
+                                                    Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
+                                                }
+                                                finally
+                                                {
+                                                    // 确保最终释放资源
+                                                    imageAfterBurst.Dispose();
+                                                }
+
                                             }
                                             else
                                             {
@@ -873,7 +897,6 @@ public class AutoFightTask : ISoloTask
                 image?.Dispose();
                 GC.Collect();//释放内存
                 GC.WaitForPendingFinalizers();//释放内存
-                // if (_taskParam.TakeMedicineEnabled) RecoverCount = 0;
             }
         }, cts2.Token);
 
@@ -1169,11 +1192,18 @@ public class AutoFightTask : ISoloTask
 
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
-            Task.Run(() =>
+            try
             {
-                Scalar bloodLower = new Scalar(255, 90, 90);
-                MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct);
-            } ,_ct);
+                Task.Run(() =>
+                {
+                    Scalar bloodLower = new Scalar(255, 90, 90);
+                    MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct);
+                }, _ct);
+            }
+            catch (Exception ex)
+            {
+                TaskControl.Logger.LogError($"任务运行时发生异常: {ex.Message}");
+            }
         }
         
         _lastFightFlagTime = DateTime.UtcNow;
@@ -1308,7 +1338,6 @@ public class AutoFightTask : ISoloTask
                     
                     if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
                     {
-                        RecoverCount = 3;
                         IsTpForRecover = false;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                         return;
@@ -1458,8 +1487,8 @@ public class AutoFightTask : ISoloTask
                             }
                             else
                             {
-                                resurrectionCount = _taskParam.RecoverMaxCount;
-                                RecoverCount = 2;
+                                resurrectionCount = 0;
+                                RecoverCount = 0;
                                 TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                 IsTpForRecover = false; // 吃完药品后，打开复活检测
                                 return;
@@ -1468,15 +1497,31 @@ public class AutoFightTask : ISoloTask
 
                         using (var bitmap = CaptureToRectArea())//复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
                         {
-                            var confirmRectArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                            if (!confirmRectArea.IsEmpty())
+                            var confirmRa =bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                            if (confirmRa.IsExist())
                             {
-                                Simulation.ReleaseAllKey();
-                                confirmRectArea.Click();
-                                confirmRectArea.ClickTo(-100, 0);
-                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                                Delay(500, _ct).Wait();
+                                confirmRa.Click();
                                 RecoverCount++;
+                                Task.Delay(1000, cts2).Wait(1000);
+                                using var bitmap2 = CaptureToRectArea();
+                                var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
+                                {
+                                    if (okRa.IsExist())
+                                    {
+                                        Logger.LogInformation("自动吃药：{text} 退出复活界面", "点击");
+                                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                                        Task.Delay(1000, cts2).Wait(1000);
+                                    }
+                                }
+                            }
+
+                            if (RecoverCount >= 2)
+                            {
+                                TaskControl.Logger.LogInformation("自动吃药：{text}", "吃复活药数量超额退出！-2");
+                                resurrectionCount = 0;
+                                RecoverCount = 0;
+                                IsTpForRecover = false; // 吃完药品后，打开复活检测
+                                return; // 吃完药品后，退出
                             }
                         }
                     }

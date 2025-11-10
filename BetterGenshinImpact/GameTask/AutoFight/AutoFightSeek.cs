@@ -497,24 +497,43 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
                         guardianAvatar.UseSkill(guardianAvatarHold);
                         var imageAfterUseSkill = CaptureToRectArea();
-                        
                         var retry = 100;
-                        while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,imageAfterUseSkill)) && retry > 0)
+
+                        try
                         {
-                            Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                            //防止在纳塔飞天或爬墙
-                            Simulation.ReleaseAllKey();
-                            if (retry % 3 == 0)
+                            while (!(await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct,
+                                       imageAfterUseSkill)) && retry > 0)
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                                Simulation.ReleaseAllKey();
+
+                                // 防止在纳塔飞天或爬墙
+                                if (retry % 3 == 0)
+                                {
+                                    Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                    Simulation.SendInput.SimulateAction(GIActions.Drop);
+                                }
+
+                                // 释放旧的截图资源
+                                imageAfterUseSkill.Dispose();
+
+                                // 获取新的截图
+                                imageAfterUseSkill = CaptureToRectArea();
+
+                                await Task.Delay(30, ct);
+                                retry -= 1;
                             }
-                            imageAfterUseSkill = CaptureToRectArea();
-                            await Task.Delay(30, ct);
-                            // Logger.LogInformation("优先第333 {t}", retry);
-                            retry -= 1;
                         }
-                        imageAfterUseSkill.Dispose();
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "优先第 {text} 盾奶位 {GuardianAvatar} 战技释放异常", guardianAvatarName, guardianAvatar.Name);
+                        }
+                        finally
+                        {
+                            // 确保最终释放资源
+                            imageAfterUseSkill.Dispose();
+                        }
+
                         
                         if (retry > 0)
                         {
