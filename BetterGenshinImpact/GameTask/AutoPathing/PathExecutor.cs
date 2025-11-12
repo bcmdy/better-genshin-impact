@@ -130,7 +130,7 @@ public class PathExecutor
     //记录点位，方便后面恢复
     public void StartSkipOtherOperations()
     {
-        Logger.LogWarning("记录恢复点位，地图追踪将到达上次点位之前将跳过走路之外的操作");
+        Logger.LogWarning("记录恢复点位，地图追踪将到达上次点位之前将跳过走路之外的操作 {t} - {t2}",PathingConditionConfig.AutoEatCount,CurWaypoints);
         _skipOtherOperations = true;
         RecordWaypoints = CurWaypoints;
         RecordWaypoint = CurWaypoint;
@@ -320,6 +320,7 @@ public class PathExecutor
                 }
                 catch (RetryException retryException)
                 {
+                    Logger.LogError("retryException.Message11111111");
                     StartSkipOtherOperations();
                     Logger.LogWarning(retryException.Message);
                 }
@@ -789,7 +790,7 @@ public class PathExecutor
         if (Bv.CurrentAvatarIsLowHp(region) && !(await TryPartyHealing() && Bv.CurrentAvatarIsLowHp(region)))
         {
             Logger.LogInformation("当前角色血量过低，去七天神像恢复-1 {t}", PathingConditionConfig.AutoEatCount);
-            // await TpStatueOfTheSeven(switchOnly);
+            await TpStatueOfTheSeven(switchOnly);
             using (var bitmap = CaptureToRectArea())
             {
                 var pixel = 0;
@@ -878,9 +879,10 @@ public class PathExecutor
             }
             
             Logger.LogInformation("当前角色血量过低，去七天神像恢复-q {t}",PathingConditionConfig.AutoEatCount);
-            await TpStatueOfTheSeven(switchOnly);
+            // await TpStatueOfTheSeven(switchOnly);
             if (PathingConditionConfig.AutoEatCount < 2) return;
-            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
+            // if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
+            Logger.LogError("回血完成后重试路线-22221 {t}",PathingConditionConfig.AutoEatCount);
             throw new RetryException("回血完成后重试路线-1");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -891,14 +893,14 @@ public class PathExecutor
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
             if (PathingConditionConfig.AutoEatCount < 2) return;
-            if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
+            // if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
             throw new RetryException("回血完成后重试路线-2");
         }
     }
     
     private async Task TpStatueOfTheSeven(bool switchOnly = false)
     {
-        // Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
+        Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {
             if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
@@ -909,7 +911,7 @@ public class PathExecutor
                 {
                     PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                     Logger.LogWarning("自动吃药：尝试使用小道具恢复-2");
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                    if(PathingConditionConfig.AutoEatCount < 1)Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                     PathingConditionConfig.AutoEatCount++;
                 } 
                 
@@ -958,8 +960,11 @@ public class PathExecutor
 
         // tp 到七天神像回血
         var tpTask = new TpTask(ct);
+        Logger.LogError("开始自动复苏-5");
         await RunnerContext.Instance.StopAutoPickRunTask(async () => await tpTask.TpToStatueOfTheSeven(), 5);
+        Logger.LogError("自动复苏完成-6");
         PartyConfig.MainAvatarIndex = PathingConditionConfig.InitialMainAvatarIndex;
+        if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
         Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置-k {t}。",PathingConditionConfig.AutoEatCount);
     }
 
@@ -1149,7 +1154,7 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
-            Logger.LogWarning("接近目标点中，距离为{distance}", distance);
+            // Logger.LogWarning("接近目标点中，距离为{distance}", distance);
             
             hurryOnBool ??= (waypoint.MoveMode == MoveModeEnum.Run.Code ||
                                waypoint.MoveMode == MoveModeEnum.Dash.Code ||
@@ -2082,7 +2087,7 @@ public class PathExecutor
             if (!confirmRectArea.IsEmpty())
             {
                 Simulation.ReleaseAllKey();
-                PathingConditionConfig.AutoEatCount =2;
+                PathingConditionConfig.AutoEatCount ++;
                 Logger.LogInformation("死亡，点击确认-s {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);

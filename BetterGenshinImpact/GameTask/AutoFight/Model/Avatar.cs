@@ -124,8 +124,8 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
-        if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
+        // Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
+        if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region) || PathingConditionConfig.AutoEatCount > 1)
         {
             if (PathingConditionConfig.AutoEatCount < 2)
             {
