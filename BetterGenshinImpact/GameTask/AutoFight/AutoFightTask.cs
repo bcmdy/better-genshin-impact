@@ -512,6 +512,7 @@ public class AutoFightTask : ISoloTask
 
             if (_taskParam.TakeMedicineEnabled)
             {
+                IsTpForRecover = true;
                 TakeMedicine(cts2.Token);
             }
             else
@@ -1502,7 +1503,7 @@ public class AutoFightTask : ISoloTask
                             {
                                 confirmRa.Click();
                                 RecoverCount++;
-                                Task.Delay(1000, cts2).Wait(1000);
+                                Task.Delay(300, cts2).Wait(300);
                                 using var bitmap2 = CaptureToRectArea();
                                 var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
                                 {
@@ -1510,7 +1511,7 @@ public class AutoFightTask : ISoloTask
                                     {
                                         Logger.LogInformation("自动吃药：{text} 退出复活界面", "点击");
                                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                                        Task.Delay(1000, cts2).Wait(1000);
+                                        Task.Delay(300, cts2).Wait(300);
                                     }
                                 }
                             }
