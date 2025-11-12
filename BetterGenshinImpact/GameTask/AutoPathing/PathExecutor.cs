@@ -130,7 +130,7 @@ public class PathExecutor
     //记录点位，方便后面恢复
     public void StartSkipOtherOperations()
     {
-        Logger.LogWarning("记录恢复点位，地图追踪将到达上次点位之前将跳过走路之外的操作 {t} - {t2}",PathingConditionConfig.AutoEatCount,CurWaypoints);
+        // Logger.LogWarning("记录恢复点位，地图追踪将到达上次点位之前将跳过走路之外的操作 {t} - {t2}",PathingConditionConfig.AutoEatCount,CurWaypoints);
         _skipOtherOperations = true;
         RecordWaypoints = CurWaypoints;
         RecordWaypoint = CurWaypoint;
@@ -320,7 +320,7 @@ public class PathExecutor
                 }
                 catch (RetryException retryException)
                 {
-                    Logger.LogError("retryException.Message11111111");
+                    // Logger.LogError("retryException.Message11111111");
                     StartSkipOtherOperations();
                     Logger.LogWarning(retryException.Message);
                 }
@@ -750,7 +750,7 @@ public class PathExecutor
                     return true;
                 }
             }
-            else if (avatar.Name == "爱可菲" || avatar.Name == "闲云" || avatar.Name == "茜特菈莉")
+            else if (avatar.Name == "爱可菲" || avatar.Name == "闲云")
             {
                 //获取出战角色
                 var avatarCurrent = _combatScenes.CurrentAvatar();
@@ -1439,7 +1439,7 @@ public class PathExecutor
                                         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     }
                                     
-                                    Logger.LogInformation("自动赶路：{t} 继续...", distance);
+                                    // Logger.LogInformation("自动赶路：{t} 继续...", distance);
 
                                     if (distance > 20)
                                     {
