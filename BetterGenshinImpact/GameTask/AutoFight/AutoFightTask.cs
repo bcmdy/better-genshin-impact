@@ -1515,7 +1515,7 @@ public class AutoFightTask : ISoloTask
                                 }
                             }
 
-                            if (RecoverCount >= 2)
+                            if (RecoverCount > 2)
                             {
                                 TaskControl.Logger.LogInformation("自动吃药：{text}", "吃复活药数量超额退出！-2");
                                 resurrectionCount = 0;
