@@ -1165,7 +1165,7 @@ public class PathExecutor
                 // 自动赶路的靠近节点模式
                 if (!hurryOnLogo && trackingLogo && 
                     (PartyConfig.TravelMode == "精准靠近" && distance < (!string.IsNullOrEmpty(nextWaypoint?.Action) ? 30 : avatar.Name == "瓦雷莎" ? 30 : 25) //精准靠近
-                     || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 15 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code)))) //连续赶路
+                     || (PartyConfig.TravelMode == "连续赶路" && distance < 30 && (nextDistance < 15 || nextWaypoint?.Type == WaypointType.Target.Code || waypoint.Type == WaypointType.Target.Code || nextWaypoint?.Action == MoveModeEnum.Fly.Code || waypoint?.Action == ActionEnum.CombatScript.Code)))) //连续赶路
                 {
                     trackingLogo = false;
                     if (avatar.IsActive(screen2))

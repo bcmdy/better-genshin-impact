@@ -65,7 +65,7 @@ public class AutoFightTask : ISoloTask
     
     private static volatile bool _isExperiencePickup = false;
 
-    public static bool IsTpForRecover {get; set;} = true;
+    public static bool IsTpForRecover {get; set;} = false;
 
     // 战斗点位
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
