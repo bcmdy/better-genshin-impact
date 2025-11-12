@@ -704,7 +704,8 @@ public class PathExecutor
     private async Task<bool> TryPartyHealing()
     {
         if (_combatScenes is null) return false;
-        foreach (var avatar in _combatScenes.GetAvatars())
+        var avatars = _combatScenes.GetAvatars();
+        foreach (var avatar in avatars)
         {
             if (avatar.Name == "白术")
             {
@@ -750,25 +751,30 @@ public class PathExecutor
             }
             else if (avatar.Name == "爱可菲" || avatar.Name == "闲云" || avatar.Name == "茜特菈莉")
             {
-                if (avatar.TrySwitch())
+                //获取出战角色
+                var avatarCurrent = _combatScenes.CurrentAvatar();
+                //计算出战角色在avatars队伍中的序号
+                var currentIndex = avatars.FirstOrDefault(a => a.Name == avatarCurrent)?.Index;
+                if (currentIndex == null) return false;
+                using (var bitmap = CaptureToRectArea())
                 {
-                    using (var bitmap = CaptureToRectArea())
+                    var num = _combatScenes.GetAvatars().Count();
+                    List<int> useEqList = Enumerable.Range(1, num).ToList();
+                    var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, currentIndex);
+                    if (qSkill.Contains(avatar.Index))
                     {
-                        var num = _combatScenes.GetAvatars().Count();
-                        List<int> useEqList = Enumerable.Range(1, num).ToList();
-                        var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, avatar.Index);
-                        if (qSkill.Contains(avatar.Index))
+                        if (avatar.TrySwitch())
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                            await Delay(4000, ct);
+                            await Delay(5000, ct);
                             await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                            return true;   
+                            return true;
                         }
                     }
                 }
+                
             }
         }
-
 
         return false;
     }
