@@ -178,18 +178,13 @@ public class Avatar
                 }
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
-                var pathExecutor = new PathExecutor(ct);
-                var moveTask = Task.CompletedTask; // 初始化为一个已完成的任务
-                var faceTo = Task.CompletedTask; 
-
+                
                 try
                 {
-                    faceTo = pathExecutor.FaceTo(AutoFightTask.FightWaypoint);
-                    faceTo.Wait(2000, ct);
+                    new PathExecutor(ct).FaceTo(AutoFightTask.FightWaypoint).Wait(2000,ct);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    moveTask = pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false);
-                    moveTask.Wait(15000, ct);
+                    new PathExecutor(ct).MoveTo(AutoFightTask.FightWaypoint, false).Wait(2000,ct);
                     AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }
@@ -203,15 +198,6 @@ public class Avatar
                 }
                 finally
                 {
-                    if (moveTask != Task.CompletedTask && !moveTask.IsCompleted)
-                    {
-                        moveTask.Dispose();
-                    }
-                    if (faceTo != Task.CompletedTask && !faceTo.IsCompleted)
-                    {
-                        faceTo.Dispose();
-                    }
-                    
                     Simulation.ReleaseAllKey();
                 }
                 

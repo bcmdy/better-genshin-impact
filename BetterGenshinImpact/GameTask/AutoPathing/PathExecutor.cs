@@ -1061,7 +1061,6 @@ public class PathExecutor
                             Math.Abs(pixelYellowValue[1] - 204) <= 10 &&
                             Math.Abs(pixelYellowValue[2] - 255) <= 10);
         if (!yellowBlood)await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
-        Logger.LogError("888999111");
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("粗略接近途经点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
@@ -1150,7 +1149,7 @@ public class PathExecutor
              }
             var distance = Navigation.GetDistance(waypoint, position);
             Debug.WriteLine($"接近目标点中，距离为{distance}");
-            // Logger.LogWarning("接近目标点中，距离为{distance}", distance);
+            Logger.LogWarning("接近目标点中，距离为{distance}", distance);
             
             hurryOnBool ??= (waypoint.MoveMode == MoveModeEnum.Run.Code ||
                                waypoint.MoveMode == MoveModeEnum.Dash.Code ||
