@@ -186,7 +186,7 @@ public class Avatar
                     pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000,cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(2000,cts.Token);
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000,cts.Token);
                     cts.Cancel();
                     AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
