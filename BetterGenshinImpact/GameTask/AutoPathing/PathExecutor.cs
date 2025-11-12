@@ -1061,7 +1061,7 @@ public class PathExecutor
                             Math.Abs(pixelYellowValue[1] - 204) <= 10 &&
                             Math.Abs(pixelYellowValue[2] - 255) <= 10);
         if (!yellowBlood)await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
-        
+        Logger.LogError("888999111");
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("粗略接近途经点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
@@ -1084,21 +1084,7 @@ public class PathExecutor
         var continueHurryOn = 0;
         var isClimbLogo = 0;
         var isFlyingMwk = false;
-        if (flyDelay)
-        {
-            if (int.TryParse(waypoint.ActionParams, out int actionParams))//&& isFlyingMwk
-            {
-                Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
-                waypoint.ActionParams = (actionParams + actionParams*0.2).ToString();
-                Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
-            }
-            else
-            {
-                Logger.LogInformation("自动赶路：222333y {t}",waypoint.ActionParams);
-                waypoint.ActionParams = "1000";
-                Logger.LogInformation("自动赶路：222333yy {t}",waypoint.ActionParams);
-            }
-        }
+        var aa = false;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1232,14 +1218,23 @@ public class PathExecutor
                 if (waypoint.MoveMode == MoveModeEnum.Fly.Code &&
                     nextWaypoint?.MoveMode != MoveModeEnum.Fly.Code && PartyConfig.TravelMode == "连续赶路" || waypoint.Action == ActionEnum.StopFlying.Code)
                 {
-                    var isClimb = Bv.GetMotionStatus(screen2) == MotionStatus.Climb;
-                    if (isClimb && !hurryOnLogo&& isClimbLogo<3 && waypoint.MoveMode != MoveModeEnum.Climb.Code)
+                    if (distance < 4)
                     {
-                        // Logger.LogError("自动赶路：123444");
-                        await Delay(1000, ct);
-                        Simulation.SendInput.SimulateAction(GIActions.Drop);
-                        await Delay(500, ct);
-                        isClimbLogo ++ ;
+                        // Logger.LogError("自动赶路：123231");
+                        //判断飞行状态
+                        
+                    }
+                    else
+                    {
+                        var isClimb = Bv.GetMotionStatus(screen2) == MotionStatus.Climb;
+                        if (isClimb && !hurryOnLogo&& isClimbLogo<3 && waypoint.MoveMode != MoveModeEnum.Climb.Code)
+                        {
+                            // Logger.LogError("自动赶路：123444");
+                            await Delay(1000, ct);
+                            Simulation.SendInput.SimulateAction(GIActions.Drop);
+                            await Delay(500, ct);
+                            isClimbLogo ++ ;
+                        }
                     }
                 } 
 
@@ -1260,7 +1255,7 @@ public class PathExecutor
                              
                         // Logger.LogInformation("玛薇卡技能颜色差值-12222:{ColorDifference}", Math.Round(colorDifference));
                         
-                        if (colorDifference < 15)
+                        if (colorDifference < 15 && !isFlyingMwk)
                         {
                             if (pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                             {
@@ -1269,7 +1264,7 @@ public class PathExecutor
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     mavikaFlyCount = 0;
-                                    Logger.LogInformation("自动赶路：靠近节点切换 {t}...",nextAvatarIndexStop);
+                                    Logger.LogInformation("自动赶路：靠近节点切换 {t}...-HH {t2}",nextAvatarIndexStop,waypoint.MoveMode);
                                 } 
                             }
                         }
@@ -1334,14 +1329,7 @@ public class PathExecutor
                     
                     // if (waypoint.MoveMode != MoveModeEnum.Walk.Code)
 
-                    // if (waypoint.MoveMode == MoveModeEnum.Fly.Code)
-                    // {
-                    //     hurryOnLogo = true;
-                    // }
-                    // else
-                    // {
-                    //     hurryOnLogo = false;
-                    // } 
+                    hurryOnLogo = false; 
               
                     Logger.LogInformation("自动赶路：{t} 赶路...",avatar.Name);
                     if (avatar.Name == "玛薇卡") //连续点按E类型
@@ -1362,12 +1350,11 @@ public class PathExecutor
                             {
                                 // await Delay(100, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(300, ct);
+                                await Delay(200, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(300, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                await Delay(600, ct);
-                                
+                                await Delay(700, ct);
                                 // Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                                 // await Delay(400, ct);
                                 
@@ -1377,7 +1364,23 @@ public class PathExecutor
                                 
                                 if (waypoint.MoveMode == MoveModeEnum.Fly.Code)
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.Jump);
+                                    if (!aa)
+                                    {
+                                        if (int.TryParse(waypoint.ActionParams, out int actionParams))//&& isFlyingMwk
+                                        {
+                                            Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
+                                            waypoint.ActionParams = (actionParams + actionParams*0.2).ToString();
+                                            Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
+                                        }
+                                        else
+                                        {
+                                            Logger.LogInformation("自动赶路：222333y {t}",waypoint.ActionParams);
+                                            waypoint.ActionParams = "1000";
+                                            Logger.LogInformation("自动赶路：222333yy {t}",waypoint.ActionParams);
+                                        }
+                                        Simulation.SendInput.SimulateAction(GIActions.Jump);
+                                        aa = true;
+                                    }
                                     Logger.LogInformation("玛薇卡技能11111");
                                     // waypoint.MoveMode = MoveModeEnum.Run.Code;
                                     // var pos11 = region3.SrcMat.At<Vec3b>(1012,1574);
@@ -1411,11 +1414,12 @@ public class PathExecutor
                                     continueHurryOn++;
                                     Logger.LogError("自动赶路：继续...");
                                     
-                                     if(waypoint.MoveMode == MoveModeEnum.Fly.Code)
-                                    {
-                                        hurryOnLogo = true; 
-                                    }
-                                    else if (continueHurryOn > 1)
+                                    //  if(waypoint.MoveMode == MoveModeEnum.Fly.Code)
+                                    // {
+                                    //     hurryOnLogo = true; 
+                                    // }
+                                    // else 
+                                     if (continueHurryOn > 0 && waypoint.MoveMode != MoveModeEnum.Fly.Code)
                                     {
                                         hurryOnLogo = true;
                                         continueHurryOn = 0;
@@ -1452,11 +1456,11 @@ public class PathExecutor
                                             var flyTime = distance switch
                                             {
                                                 > 140 => 3500,
-                                                > 100 => 2500,
-                                                > 80 => 1100,
-                                                > 70 => 700,
-                                                > 60 => 400,
-                                                > 50 => 200,
+                                                > 100 => 2400,
+                                                > 80 => 900,
+                                                > 70 => 500,
+                                                > 60 => 300,
+                                                > 50 => 100,
                                                 // > 40 => 10, 
                                                 _ => 0 
                                             };
@@ -1467,13 +1471,10 @@ public class PathExecutor
                                             {
                                                 waypoint.MoveMode = MoveModeEnum.Run.Code;
                                                 await Delay(flyTime, ct);
-                                                waypoint.MoveMode = MoveModeEnum.Fly.Code;
-                                                hurryOnLogo = false;
+                                                // waypoint.MoveMode = MoveModeEnum.Fly.Code;
+                                                // hurryOnLogo = false;
                                             }
-                                            else
-                                            {
-                                                waypoint.MoveMode = MoveModeEnum.Fly.Code;
-                                            }
+                                            waypoint.MoveMode = MoveModeEnum.Fly.Code;
                                             hurryOnLogo = false;
                                         }
                                     }
@@ -2069,7 +2070,7 @@ public class PathExecutor
             return null;
         }
 
-        var success = avatar.TrySwitch(10);
+        var success = avatar.TrySwitch(15);
         if (success)
         {
             await Delay(100, ct);

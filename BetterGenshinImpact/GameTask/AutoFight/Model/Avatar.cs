@@ -124,7 +124,7 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        // Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
+        Logger.LogInformation("检测到 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
             if (PathingConditionConfig.AutoEatCount < 2)
@@ -179,25 +179,41 @@ public class Avatar
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
                 var pathExecutor = new PathExecutor(ct);
+                var moveTask = Task.CompletedTask; // 初始化为一个已完成的任务
+                var faceTo = Task.CompletedTask; 
+
                 try
                 {
-                    Logger.LogInformation("游泳检测：11");
-                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, ct);
-                    Logger.LogInformation("游泳检测：22");
-                    AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code;//改为跳飞
+                    faceTo = pathExecutor.FaceTo(AutoFightTask.FightWaypoint);
+                    faceTo.Wait(2000, ct);
+                    AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    Logger.LogInformation("游泳检测：33");
-                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint,false).Wait(15000, ct);
-                    Logger.LogInformation("游泳检测：44");
-                    // AutoFightTask.FightWaypoint = null;
+                    moveTask = pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false);
+                    moveTask.Wait(15000, ct);
+                    AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
+                }
+                catch (TaskCanceledException)
+                {
+                    Logger.LogWarning("游泳检测：回到战斗地点任务被取消");
                 }
                 catch (Exception ex)
                 {
                     Logger.LogWarning(ex, "游泳检测：回到战斗地点异常");
                 }
-                
-                Simulation.ReleaseAllKey();
+                finally
+                {
+                    if (moveTask != Task.CompletedTask && !moveTask.IsCompleted)
+                    {
+                        moveTask.Dispose();
+                    }
+                    if (faceTo != Task.CompletedTask && !faceTo.IsCompleted)
+                    {
+                        faceTo.Dispose();
+                    }
+                    
+                    Simulation.ReleaseAllKey();
+                }
                 
                 using var bitmap2 = CaptureToRectArea();
                 if (!SwimmingConfirm(bitmap2))
