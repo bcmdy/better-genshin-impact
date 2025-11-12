@@ -22,7 +22,7 @@ using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
 using BetterGenshinImpact.GameTask.AutoPathing;
-using BetterGenshinImpact.GameTask.AutoPathing.Model;
+using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -178,23 +178,26 @@ public class Avatar
                 }
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
+                var cts = new CancellationTokenSource();
+                var pathExecutor = new PathExecutor(cts.Token);
                 
                 try
                 {
-                    new PathExecutor(ct).FaceTo(AutoFightTask.FightWaypoint).Wait(2000,ct);
+                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000,cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    new PathExecutor(ct).MoveTo(AutoFightTask.FightWaypoint, false).Wait(2000,ct);
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(2000,cts.Token);
+                    cts.Cancel();
                     AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                 }
                 catch (TaskCanceledException)
                 {
-                    Logger.LogWarning("游泳检测：回到战斗地点任务被取消");
+                    Logger.LogError("游泳检测：回到战斗地点任务被取消");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogWarning(ex, "游泳检测：回到战斗地点异常");
+                    Logger.LogError(ex, "游泳检测：回到战斗地点异常");
                 }
                 finally
                 {
