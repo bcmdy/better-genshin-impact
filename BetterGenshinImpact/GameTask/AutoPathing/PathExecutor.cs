@@ -882,7 +882,7 @@ public class PathExecutor
             // await TpStatueOfTheSeven(switchOnly);
             if (PathingConditionConfig.AutoEatCount < 2) return;
             // if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 3)  PathingConditionConfig.AutoEatCount = 0;
-            Logger.LogError("回血完成后重试路线-22221 {t}",PathingConditionConfig.AutoEatCount);
+            // Logger.LogError("回血完成后重试路线-22221 {t}",PathingConditionConfig.AutoEatCount);
             throw new RetryException("回血完成后重试路线-1");
         }
         else if (Bv.ClickIfInReviveModal(region))
@@ -1372,20 +1372,20 @@ public class PathExecutor
                                     {
                                         if (int.TryParse(waypoint.ActionParams, out int actionParams))//&& isFlyingMwk
                                         {
-                                            Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
+                                            // Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
                                             waypoint.ActionParams = (actionParams + actionParams*0.2).ToString();
-                                            Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
+                                            // Logger.LogInformation("自动赶路：222333 {t}",waypoint.ActionParams);
                                         }
                                         else
                                         {
-                                            Logger.LogInformation("自动赶路：222333y {t}",waypoint.ActionParams);
+                                            // Logger.LogInformation("自动赶路：222333y {t}",waypoint.ActionParams);
                                             waypoint.ActionParams = "1000";
-                                            Logger.LogInformation("自动赶路：222333yy {t}",waypoint.ActionParams);
+                                            // Logger.LogInformation("自动赶路：222333yy {t}",waypoint.ActionParams);
                                         }
                                         Simulation.SendInput.SimulateAction(GIActions.Jump);
                                         aa = true;
                                     }
-                                    Logger.LogInformation("玛薇卡技能11111");
+                                    // Logger.LogInformation("玛薇卡技能11111");
                                     // waypoint.MoveMode = MoveModeEnum.Run.Code;
                                     // var pos11 = region3.SrcMat.At<Vec3b>(1012,1574);
                                     // var pos22 = region3.SrcMat.At<Vec3b>(1006, 1608);
@@ -1399,7 +1399,7 @@ public class PathExecutor
                                 }
                                 else
                                 {
-                                    Logger.LogInformation("玛薇卡技能2222");
+                                    // Logger.LogInformation("玛薇卡技能2222");
                                     isFlyingMwk = false;
                                     // 获取两个点的颜色值
                                     var pos3 = region3.SrcMat.At<Vec3b>(978, 1692);
@@ -1411,12 +1411,12 @@ public class PathExecutor
                                     );
                                 }
                                 
-                                Logger.LogInformation("玛薇卡技能颜色差值-3:{ColorDifference} - {isFlyingMwk}", Math.Round(colorDifference2, 2),isFlyingMwk);
+                                // Logger.LogInformation("玛薇卡技能颜色差值-3:{ColorDifference} - {isFlyingMwk}", Math.Round(colorDifference2, 2),isFlyingMwk);
                                 
                                 if (colorDifference2 > 15 || isFlyingMwk)// colorDifference2 < 15
                                 {
                                     continueHurryOn++;
-                                    Logger.LogError("自动赶路：继续...");
+                                    // Logger.LogError("自动赶路：继续...");
                                     
                                     //  if(waypoint.MoveMode == MoveModeEnum.Fly.Code)
                                     // {
