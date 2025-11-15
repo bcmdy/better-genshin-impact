@@ -373,12 +373,9 @@ public class PartyAvatarSideIndexHelper
         var whiteCount = 0;
         var notWhiteRectNum = 0;
         var mat = imageRegion.CacheGreyMat;
-        Mat[] mats = new Mat[rectArray.Length];
         for (int i = 0; i < rectArray.Length; i++)
         {
-            using var indexMat = new Mat(mat, rectArray[i]);
-            mats[i] = indexMat;
-            if (IsWhiteRect(indexMat))
+            if (IsWhiteRect(mat, rectArray[i]))
             {
                 whiteCount++;
             }
@@ -394,17 +391,16 @@ public class PartyAvatarSideIndexHelper
         }
         else
         {
-            // 使用更加靠谱的差值识别（-1是未识别）
-            return ImageDifferenceDetector.FindMostDifferentImage(mats);
+            return -1;
         }
     }
 
-    public static bool IsWhiteRect(Mat indexMat)
+    public static bool IsWhiteRect(Mat greyMat, Rect rect)
     {
-
+        using var indexMat = new Mat(greyMat, rect);
         var count1 = OpenCvCommonHelper.CountGrayMatColor(indexMat, 251, 255); // 白
         var count2 = OpenCvCommonHelper.CountGrayMatColor(indexMat, 50, 54); // 黑色文字
-        if ((count1 + count2) * 1.0 / (indexMat.Width * indexMat.Height) > 0.4)
+        if ((count1 + count2) * 1.0 / (indexMat.Width * indexMat.Height) > 0.5)
         {
             // Debug.WriteLine($"白色矩形占比{(count1 + count2) * 1.0 / (indexMat.Width * indexMat.Height)}");
             return true;
@@ -428,11 +424,6 @@ public class PartyAvatarSideIndexHelper
         }
 
         var curr = imageRegion.Find(ElementAssets.Instance.CurrentAvatarThreshold); // 当前出战角色标识
-        if (curr.IsEmpty())
-        {
-            return -1;
-        }
-        
         for (int i = 0; i < rectArray.Length; i++)
         {
             if (IsIntersecting(curr.Y, curr.Height, rectArray[i].Y, rectArray[i].Height))

@@ -586,15 +586,13 @@ public class CombatScenes : IDisposable
         {
             // 多次识别失败则尝试刷新角色编号位置
             // 应对草露问题
-            //if (context.TotalCheckFailedCount > (moreTimes ? 7 : 3))
-            if (context.TotalCheckFailedCount % 3 == 0 && context.TotalCheckFailedCount > 0 && context.TotalCheckFailedCount < 10)
+            if (context.TotalCheckFailedCount > (moreTimes ? 7 : 3))
             {
                 // 失败多次，识别是否存在满足预期的编号框
                 if (PartyAvatarSideIndexHelper.CountIndexRect(imageRegion) == Avatars.Length)
                 {
                     bool res = RefreshTeamAvatarIndexRectList(imageRegion);
                     _logger.LogWarning("多次识别出战角色失败，尝试刷新角色编号位置（处理草露问题），刷新结果:{Result}", res ? "成功" : "失败");
-                    imageRegion.SrcMat.SaveImage(Global.Absolute("log\\refresh_avatar_index_rect.png"));
                     if (res)
                     {
                         context.TotalCheckFailedCount = 0;
