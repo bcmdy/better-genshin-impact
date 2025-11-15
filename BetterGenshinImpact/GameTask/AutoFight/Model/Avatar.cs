@@ -430,7 +430,7 @@ public class Avatar
                         break;
                 }
                 Thread.Sleep(1000);
-                
+                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                 //释放所有按键
                 Simulation.ReleaseAllKey();
                 

@@ -151,6 +151,9 @@ public partial class PathingPartyConfig : ObservableObject
     [ObservableProperty]
     private string _travelMode = "精准靠近";
     
+    [ObservableProperty]
+    private string? _recoverAvatarIndex = null;
+    
     public static PathingPartyConfig BuildDefault()
     {
         // 即便是不启用的情况下也设置默认值，减少后续使用的判断

@@ -606,6 +606,12 @@ public class AutoFightTask : ISoloTask
                                 {
                                     Logger.LogInformation("自动EQ战斗：执行序号 {name} 首E技能", useSkillListWithF);
                                     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
+                                    
+                                    // if (Bv.GetMotionStatus(image) == MotionStatus.Fly)
+                                    // {
+                                    //     Logger.LogWarning("自动EQ战斗：进入飞行状态，尝试下落攻击");
+                                    //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                                    // }
                                 
                                     if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
                                     {
@@ -1021,7 +1027,6 @@ public class AutoFightTask : ISoloTask
                                 foreach (var command in pickUpAction.CombatCommands)
                                 {
                                     command.Execute(combatScenes);
-                                    //异步执行，防止卡顿
                                     //异步执行，防止卡顿
                                     Task.Run(() =>
                                     {
@@ -1503,7 +1508,7 @@ public class AutoFightTask : ISoloTask
                             {
                                 confirmRa.Click();
                                 RecoverCount++;
-                                Task.Delay(300, cts2).Wait(300);
+                                Task.Delay(500, cts2).Wait(500);
                                 using var bitmap2 = CaptureToRectArea();
                                 var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
                                 {
@@ -1511,7 +1516,7 @@ public class AutoFightTask : ISoloTask
                                     {
                                         Logger.LogInformation("自动吃药：{text} 退出复活界面", "点击");
                                         Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                                        Task.Delay(300, cts2).Wait(300);
+                                        Task.Delay(500, cts2).Wait(500);
                                     }
                                 }
                             }

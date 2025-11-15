@@ -51,7 +51,7 @@
                     </Grid>
                 </ui:CardExpander.Header>
                 <StackPanel>
-                    <Grid Margin="16">
+                    <Grid Margin="16,16,16,10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -84,6 +84,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
@@ -93,22 +94,41 @@
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="非实时，触发地图追踪红血和复活检测后尝试吃药。(红血仅切角色:切到非红血角色不吃药)"
+                                      Text="非实时，触发红血和复活检测尝试吃药。(红血仅切角色:切非红血角色不吃药)"
                                       TextWrapping="Wrap" />
-                        <ui:ToggleSwitch Grid.Row="0"
-                                         Grid.RowSpan="2"
-                                         Grid.Column="1"
-                                         IsChecked="{Binding PathingConfig.AutoEatEnabled}" />
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="1"
+                                      Grid.RowSpan="2"
+                                      FontSize="10"
+                                      Margin="0,0,10,44"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="Q技能回血"
+                                      TextWrapping="Wrap" />
+                        <ComboBox Grid.Row="0"
+                                  Grid.RowSpan="2"
+                                  Grid.Column="1"
+                                  Width="70"
+                                  Margin="0,0,10,0"
+                                  Text="{Binding PathingConfig.RecoverAvatarIndex}"
+                                  ItemsSource="{Binding PathingConfig.AvatarIndexList}"
+                                  SelectedItem="{Binding PathingConfig.RecoverAvatarIndex}"/>
+                        
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="2"
+                                         IsChecked="{Binding PathingConfig.AutoEatEnabled}" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="3"
                                          Margin="5,0,-0,0"
                                          HorizontalAlignment="Center"
                                          IsEnabled="{Binding PathingConfig.AutoEatEnabled}"
                                          IsChecked="{Binding PathingConfig.RedBloodSwitchOnly}" />
                         <ui:TextBlock  Grid.Row="0"
                                        Grid.RowSpan="2"
-                                       Grid.Column="2"
+                                       Grid.Column="3"
                                        Margin="5,0,0,30"
                                        FontSize="8"
                                        HorizontalAlignment="Center"
