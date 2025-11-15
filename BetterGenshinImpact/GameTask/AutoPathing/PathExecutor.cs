@@ -1162,8 +1162,9 @@ public class PathExecutor
                 waypoint.MoveMode = MoveModeEnum.Run.Code;
                 Task.Run(async () =>
                 {
+                    Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyDown);
                     await Delay(1000, ct);
-                    Simulation.SendInput.SimulateAction(GIActions.SprintMouse);  
+                    Simulation.SendInput.SimulateAction(GIActions.SprintMouse, KeyType.KeyUp);  
                 }, ct);
                 runToDash = null;
             }
