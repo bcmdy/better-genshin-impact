@@ -1172,7 +1172,7 @@ public class PathExecutor
             hurryOnBool ??= (waypoint.MoveMode == MoveModeEnum.Run.Code ||
                                waypoint.MoveMode == MoveModeEnum.Dash.Code ||
                                ((waypoint.MoveMode == MoveModeEnum.Climb.Code || (waypoint.MoveMode == MoveModeEnum.Fly.Code && distance > 35) 
-                                                                              || waypoint.MoveMode == MoveModeEnum.Jump.Code || (waypoint.MoveMode == MoveModeEnum.Climb.Code && nextDistance < 20)) && avatar?.Name == "玛薇卡"));
+                                                                              || waypoint.MoveMode == MoveModeEnum.Jump.Code || (waypoint.MoveMode == MoveModeEnum.Climb.Code && distance < 20)) && avatar?.Name == "玛薇卡"));
             
 
             if (avatar != null)
@@ -1393,14 +1393,14 @@ public class PathExecutor
                                         {
                                             var param = actionParams switch
                                             {
-                                                > 10000 => 0.09,
-                                                > 8000 => 0.1,
-                                                > 7000 => 0.13,
-                                                > 6000 => 0.14,
-                                                > 5000 => 0.15,
-                                                > 4000 => 0.16,
-                                                > 3000 => 0.17,
-                                                > 2000 => 0.18,
+                                                > 10000 => 0.08,
+                                                > 8000 => 0.09,
+                                                > 7000 => 0.11,
+                                                > 6000 => 0.12,
+                                                > 5000 => 0.13,
+                                                > 4000 => 0.14,
+                                                > 3000 => 0.15,
+                                                > 2000 => 0.16,
                                                 > 1000 => 0.19,
                                                 > 500 => 0.2,
                                                 _ => 0.2,
@@ -1454,9 +1454,9 @@ public class PathExecutor
                                     //     hurryOnLogo = true; 
                                     // }
                                     // else 
-                                     if (continueHurryOn > 1 && waypoint.MoveMode != MoveModeEnum.Fly.Code)
+                                     if (continueHurryOn > 0 && waypoint.MoveMode != MoveModeEnum.Fly.Code)//?????
                                     {
-                                        Logger.LogError("自动赶路：继续...");
+                                        Logger.LogInformation("自动赶路：继续...");
                                         hurryOnLogo = true;
                                         continueHurryOn = 0;
                                     }

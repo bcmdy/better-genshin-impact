@@ -1478,7 +1478,7 @@ public class AutoFightTask : ISoloTask
                             (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds > Math.Max(_taskParam.MedicineInterval, 1500))
                         {
                             var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
-                                                 (gray && RecoverCount < 2);//判断吃药上限
+                                                 (gray && RecoverCount < 3);//判断吃药上限
                             if (shouldRecover)
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
