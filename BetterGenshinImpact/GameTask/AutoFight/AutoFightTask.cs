@@ -32,6 +32,7 @@ using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 using BetterGenshinImpact.GameTask.AutoPick.Assets;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using System.Text.RegularExpressions;
+using BetterGenshinImpact.Core.Script.Dependence;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -1145,6 +1146,7 @@ public class AutoFightTask : ISoloTask
 
     public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default,Avatar? avatar = null)
     {
+        if(Dispatcher.IsCustomCts) return false;
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
             bool? result = null;

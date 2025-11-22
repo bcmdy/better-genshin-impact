@@ -9,6 +9,7 @@ using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using Microsoft.Extensions.Logging;
 using Stfu.Linq;
 using ActionEnum = BetterGenshinImpact.GameTask.AutoPathing.Model.Enum.ActionEnum;
+using BetterGenshinImpact.Core.Script.Dependence;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
@@ -52,6 +53,11 @@ internal class AutoFightHandler : IActionHandler
                     _logger.LogInformation("地图追踪设置战斗超时时间为 {Timeout} 秒", number);
                     taskParams.Timeout = number;
                 }
+            }
+            if(Dispatcher.IsCustomCts)
+            {
+                _logger.LogWarning("异步战斗任务，关闭打开队伍的战斗结束检测");
+                taskParams.FightFinishDetectEnabled = false;
             }
         }
         else

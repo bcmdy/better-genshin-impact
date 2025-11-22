@@ -16,6 +16,7 @@ using BetterGenshinImpact.GameTask.Common.BgiVision;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using  OpenCvSharp;
 using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.Core.Script.Dependence;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -329,7 +330,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
                 
-                if (retryCount == 0)
+                if (retryCount == 0 && !Dispatcher.IsCustomCts)
                 {
                     await Delay(delayTime,ct);
                     Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);

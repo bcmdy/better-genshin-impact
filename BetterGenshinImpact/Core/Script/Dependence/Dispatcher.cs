@@ -51,6 +51,8 @@ public class Dispatcher
     private readonly ILogger<Dispatcher> _logger = App.GetLogger<Dispatcher>();
 
     private readonly object _config;
+    
+    public static bool IsCustomCts { get; private set; } = false;
 
     private AllConfig AllConfig { get; set; } = TaskContext.Instance().Config;
     
@@ -254,11 +256,15 @@ public class Dispatcher
 
         if (customCt != null)
         {
+            // Logger.LogError("使用自定义取消令牌");
+            IsCustomCts = true;
             cancellationToken = customCt.Value;
         }
         else
         {
             // 如果没有自定义令牌，就使用全局令牌
+            // Logger.LogError("使用全局取消令牌");
+            IsCustomCts = false;
             cancellationToken = CancellationContext.Instance.Cts.Token;
         }
 
