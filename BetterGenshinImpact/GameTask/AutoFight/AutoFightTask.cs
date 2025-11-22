@@ -1344,7 +1344,7 @@ public class AutoFightTask : ISoloTask
                     
                     if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
                     {
-                        IsTpForRecover = false;
+                        IsTpForRecover = true;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
                         return;
                     }

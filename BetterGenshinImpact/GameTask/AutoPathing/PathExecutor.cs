@@ -175,6 +175,7 @@ public class PathExecutor
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
+            AutoFightTask.IsTpForRecover = false;
             _faceToMark = false;
             CurWaypoints = (waypointsList.FindIndex(wps => wps == waypoints), waypoints);
             for (var i = 0; i < RetryTimes; i++)
@@ -1153,7 +1154,7 @@ public class PathExecutor
             if(runToDash == false && distance > 40 && waypoint.MoveMode == MoveModeEnum.Run.Code && avatar?.Name == "玛薇卡")
             {
                 runToDash = true;
-                distanceHalf = distance*3/4;
+                distanceHalf = distance*2/4;
                 Logger.LogInformation("自动赶路：玛薇卡切换冲刺模式...");
                 waypoint.MoveMode = MoveModeEnum.Dash.Code;
             }
@@ -1210,7 +1211,7 @@ public class PathExecutor
                                     {
                                         await SwitchAvatar(nextAvatarIndexStop);   
                                     },ct);
-                                    // if (nextWaypoint?.Action != MoveModeEnum.Fly.Code || waypoint?.Action != MoveModeEnum.Fly.Code)
+                                    // if ((nextWaypoint?.Action != MoveModeEnum.Fly.Code || nextDistance < 10) && waypoint?.Action == MoveModeEnum.Fly.Code)
                                     // {
                                     //     Logger.LogError("565656");
                                     //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
@@ -1246,7 +1247,7 @@ public class PathExecutor
                 
                 //飞行模式下，判断状态并处理&&nextWaypoint?.MoveMode != MoveModeEnum.Fly.Code 
                 if (waypoint?.MoveMode == MoveModeEnum.Fly.Code && PartyConfig.TravelMode == "连续赶路"
-                    || waypoint?.Action == ActionEnum.StopFlying.Code || waypoint?.MoveMode == MoveModeEnum.Run.Code)
+                    || waypoint?.Action == ActionEnum.StopFlying.Code || waypoint?.MoveMode == MoveModeEnum.Dash.Code)
                 {
                     if (distance > 4)
                     {
@@ -1258,6 +1259,15 @@ public class PathExecutor
                             await Delay(500, ct);
                             isClimbLogo ++ ;
                         }
+                        // else if (nextWaypoint?.MoveMode != MoveModeEnum.Fly.Code || nextWaypoint?.Action != ActionEnum.StopFlying.Code)
+                        // {
+                        //     var isFlying = Bv.GetMotionStatus(screen2) == MotionStatus.Fly;
+                        //     if (isFlying && isFlyingMwk)
+                        //     {
+                        //         Logger.LogError("565656");
+                        //         Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                        //     }
+                        // }
                     }
                 } 
 
@@ -1393,15 +1403,15 @@ public class PathExecutor
                                         {
                                             var param = actionParams switch
                                             {
-                                                > 10000 => 0.08,
-                                                > 8000 => 0.09,
-                                                > 7000 => 0.11,
-                                                > 6000 => 0.12,
-                                                > 5000 => 0.13,
-                                                > 4000 => 0.14,
-                                                > 3000 => 0.15,
-                                                > 2000 => 0.16,
-                                                > 1000 => 0.19,
+                                                > 10000 => 0.07,
+                                                > 8000 => 0.08,
+                                                > 7000 => 0.10,
+                                                > 6000 => 0.11,
+                                                > 5000 => 0.12,
+                                                > 4000 => 0.13,
+                                                > 3000 => 0.14,
+                                                > 2000 => 0.15,
+                                                > 1000 => 0.18,
                                                 > 500 => 0.2,
                                                 _ => 0.2,
                                             };
@@ -1449,12 +1459,12 @@ public class PathExecutor
                                     continueHurryOn++;
                                     
                                     
-                                    //  if(waypoint.MoveMode == MoveModeEnum.Fly.Code)
+                                    //  if(waypoint.MoveMode != MoveModeEnum.Fly.Code)
                                     // {
                                     //     hurryOnLogo = true; 
                                     // }
                                     // else 
-                                     if (continueHurryOn > 0 && waypoint.MoveMode != MoveModeEnum.Fly.Code)//?????
+                                     if (continueHurryOn > 0 && (waypoint.MoveMode != MoveModeEnum.Fly.Code && !isFlyingMwk))//?????
                                     {
                                         Logger.LogInformation("自动赶路：继续...");
                                         hurryOnLogo = true;
