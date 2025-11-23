@@ -52,7 +52,7 @@ public class Dispatcher
 
     private readonly object _config;
     
-    public static bool IsCustomCts { get; private set; } = false;
+    public static bool IsCustomCts { get; set; } = false;
 
     private AllConfig AllConfig { get; set; } = TaskContext.Instance().Config;
     

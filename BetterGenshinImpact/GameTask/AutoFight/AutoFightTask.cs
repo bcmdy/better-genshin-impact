@@ -905,6 +905,7 @@ public class AutoFightTask : ISoloTask
                 image?.Dispose();
                 GC.Collect();//释放内存
                 GC.WaitForPendingFinalizers();//释放内存
+                Dispatcher.IsCustomCts = false;
             }
         }, cts2.Token);
 

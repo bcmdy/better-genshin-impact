@@ -1395,9 +1395,9 @@ public class PathExecutor
 
                                 double colorDifference2 = 0;
                                 
-                                if (waypoint.MoveMode == MoveModeEnum.Fly.Code)
+                                if (waypoint?.MoveMode == MoveModeEnum.Fly.Code)
                                 {
-                                    if (!aa)
+                                    if (!aa && isFlyingMwk)
                                     {
                                         if (int.TryParse(waypoint.ActionParams, out int actionParams))//&& isFlyingMwk
                                         {
