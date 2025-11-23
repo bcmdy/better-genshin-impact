@@ -1397,6 +1397,18 @@ public class PathExecutor
                                 
                                 if (waypoint?.MoveMode == MoveModeEnum.Fly.Code)
                                 {
+                                    // Logger.LogInformation("玛薇卡技能11111");
+                                    // waypoint.MoveMode = MoveModeEnum.Run.Code;
+                                    // var pos11 = region3.SrcMat.At<Vec3b>(1012,1574);
+                                    // var pos22 = region3.SrcMat.At<Vec3b>(1006, 1608);
+                                    var pos33 = region3.SrcMat.At<Vec3b>(1028, 1584);
+                                    //  colorDifference2 = Math.Sqrt(
+                                    //     Math.Pow(pos11.Item0 - pos22.Item0, 2) + // 蓝通道差值的平方
+                                    //     Math.Pow(pos11.Item1 - pos22.Item1, 2) + // 绿通道差值的平方
+                                    //     Math.Pow(pos11.Item2 - pos22.Item2, 2)   // 红通道差值的平方
+                                    // );
+                                    isFlyingMwk = (pos33.Item0 == 255 && pos33.Item1 == 255 && pos33.Item2 == 255);
+                                    
                                     if (!aa && isFlyingMwk)
                                     {
                                         if (int.TryParse(waypoint.ActionParams, out int actionParams))//&& isFlyingMwk
@@ -1426,17 +1438,6 @@ public class PathExecutor
                                         Simulation.SendInput.SimulateAction(GIActions.Jump);
                                         aa = true;
                                     }
-                                    // Logger.LogInformation("玛薇卡技能11111");
-                                    // waypoint.MoveMode = MoveModeEnum.Run.Code;
-                                    // var pos11 = region3.SrcMat.At<Vec3b>(1012,1574);
-                                    // var pos22 = region3.SrcMat.At<Vec3b>(1006, 1608);
-                                    var pos33 = region3.SrcMat.At<Vec3b>(1028, 1584);
-                                    //  colorDifference2 = Math.Sqrt(
-                                    //     Math.Pow(pos11.Item0 - pos22.Item0, 2) + // 蓝通道差值的平方
-                                    //     Math.Pow(pos11.Item1 - pos22.Item1, 2) + // 绿通道差值的平方
-                                    //     Math.Pow(pos11.Item2 - pos22.Item2, 2)   // 红通道差值的平方
-                                    // );
-                                    isFlyingMwk = (pos33.Item0 == 255 && pos33.Item1 == 255 && pos33.Item2 == 255);
                                 }
                                 else
                                 {
