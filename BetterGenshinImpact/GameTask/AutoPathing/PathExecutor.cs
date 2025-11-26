@@ -39,6 +39,7 @@ using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Map.Maps;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.GameTask.Common.Job;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -56,6 +57,7 @@ public class PathExecutor
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
     private string _hurryOnAvatar = "";
+    private readonly ReturnMainUiTask _returnMainUiTask = new();
 
     public PathExecutor(CancellationToken ct)
     {
@@ -357,7 +359,7 @@ public class PathExecutor
         using (var ra = CaptureToRectArea())
         {
             using var bloodtRect = ra.DeriveCrop(1817, 781, 4, 14);
-            using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+            using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,new Scalar(185, 225, 95), new Scalar(200, 240, 110));//new Scalar(192, 233, 102), new Scalar(193, 233, 103
             using var labels = new Mat();
             using var stats = new Mat();
             using var centroids = new Mat();
@@ -390,12 +392,13 @@ public class PathExecutor
     { 
         var result = await NewRetry.WaitForAction( () =>
             {
-
+                _returnMainUiTask.Start(ct).Wait(5000,ct);
                 Logger.LogInformation("自动吃药：尝试装配便携式营养袋剩余次数 {t}",PathingConditionConfig.RetryAssemblyNum);
+                Delay(1000, ct).Wait();
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyDown);
                 Delay(1000, ct).Wait();
                 Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget, KeyType.KeyUp);
-                Delay(1000, ct).Wait();
+                Delay(1500, ct).Wait();
                 using (var ra2 = CaptureToRectArea())
                 {
                     var boon = ra2.Find(AutoFightAssets.Instance.NutritionBagRa);
@@ -404,6 +407,7 @@ public class PathExecutor
                         boon.Click();
                         return true;
                     }
+                    Logger.LogWarning("自动吃药：小道具页面未发现营养袋");
                 }
                 //点击一下鼠标
                 Simulation.SendInput.Mouse.LeftButtonClick();
