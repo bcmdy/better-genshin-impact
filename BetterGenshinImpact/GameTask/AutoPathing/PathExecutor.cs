@@ -1060,7 +1060,10 @@ public class PathExecutor
         var yellowBlood = (Math.Abs(pixelYellowValue[0] - 50) <= 10 &&
                             Math.Abs(pixelYellowValue[1] - 204) <= 10 &&
                             Math.Abs(pixelYellowValue[2] - 255) <= 10);
-        if (!yellowBlood)await SwitchAvatar(PartyConfig.MainAvatarIndex,false,task,true);
+        if (!yellowBlood && _combatScenes?.GetAvatars().Count > 1)
+        {
+            Task.Run(async () => { await SwitchAvatar(PartyConfig.MainAvatarIndex, false, task, true); }, ct);
+        }
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("粗略接近途经点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
@@ -1622,7 +1625,7 @@ public class PathExecutor
                 }
                 
                 //接近战斗点，确保行走位不是丝血
-                if (waypoint?.Action == ActionEnum.Fight.Code && distance < 30)
+                if (waypoint?.Action == ActionEnum.Fight.Code && distance < 30 && _combatScenes?.GetAvatars().Count > 1)
                 {
                     using (var bitmap = CaptureToRectArea())
                     {
