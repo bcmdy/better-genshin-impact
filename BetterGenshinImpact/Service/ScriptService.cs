@@ -591,7 +591,7 @@ public partial class ScriptService : IScriptService
                             continue;
                         }
 
-                        var content = TaskControl.CaptureToRectArea();
+                        using var content = TaskControl.CaptureToRectArea();
                         if (Bv.IsInMainUi(content) || Bv.IsInAnyClosableUi(content) || Bv.IsInDomain(content))
                         {
                             return;
