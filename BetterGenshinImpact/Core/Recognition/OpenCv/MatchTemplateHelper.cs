@@ -21,44 +21,58 @@ public class MatchTemplateHelper
     /// <param name="matchMode">匹配方式</param>
     /// <param name="maskMat">遮罩</param>
     /// <param name="threshold">阈值</param>
+    /// <param name="retryCount">重试次数</param>
     /// <returns>左上角的标点,由于(0,0)点作为未匹配的结果，所以不能做完全相同的模板匹配</returns>
-    public static Point MatchTemplate(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat = null, double threshold = 0.8)
+    public static Point MatchTemplate(Mat srcMat, Mat dstMat, TemplateMatchModes matchMode, Mat? maskMat = null, double threshold = 0.8, int retryCount = 2)
     {
-        try
+        int attempt = 0;
+        while (attempt < retryCount)
         {
-            using var result = new Mat();
-            Cv2.MatchTemplate(srcMat, dstMat, result, matchMode, maskMat!);
-
-            if (matchMode is TemplateMatchModes.SqDiff or TemplateMatchModes.CCoeff or TemplateMatchModes.CCorr)
+            try
             {
-                Cv2.Normalize(result, result, 0, 1, NormTypes.MinMax);
-            }
+                using var result = new Mat();
+                Cv2.MatchTemplate(srcMat, dstMat, result, matchMode, maskMat!);
 
-            Cv2.MinMaxLoc(result, out var minValue, out var maxValue, out var minLoc, out var maxLoc);
-
-            if (matchMode is TemplateMatchModes.SqDiff or TemplateMatchModes.SqDiffNormed)
-            {
-                if (minValue <= 1 - threshold)
+                if (matchMode is TemplateMatchModes.SqDiff or TemplateMatchModes.CCoeff or TemplateMatchModes.CCorr)
                 {
-                    return minLoc;
+                    Cv2.Normalize(result, result, 0, 1, NormTypes.MinMax);
                 }
-            }
-            else
-            {
-                if (maxValue >= threshold)
-                {
-                    return maxLoc;
-                }
-            }
 
-            return default;
+                Cv2.MinMaxLoc(result, out var minValue, out var maxValue, out var minLoc, out var maxLoc);
+
+                if (matchMode is TemplateMatchModes.SqDiff or TemplateMatchModes.SqDiffNormed)
+                {
+                    if (minValue <= 1 - threshold)
+                    {
+                        return minLoc;
+                    }
+                }
+                else
+                {
+                    if (maxValue >= threshold)
+                    {
+                        return maxLoc;
+                    }
+                }
+
+                return default;
+            }
+            catch (OpenCvSharp.OpenCVException ex)
+            {
+                _logger.LogError($"OpenCV内存异常, 重试1次: {ex.Message}");
+                attempt++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                _logger.LogDebug(ex, ex.Message);
+                return default;
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex.Message);
-            _logger.LogDebug(ex, ex.Message);
-            return default;
-        }
+
+        // 如果达到最大重试次数仍然失败，记录最终失败信息
+        _logger.LogError("MatchTemplate方法在最大重试次数后仍然失败。");
+        return default;
     }
 
     /// <summary>
