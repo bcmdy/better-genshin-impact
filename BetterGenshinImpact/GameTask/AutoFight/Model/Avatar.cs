@@ -333,8 +333,14 @@ public class Avatar
             
             Offset60Fix(i);
             
-            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (resultRa.IsExist())
             {
+                if (i == 10)
+                {
+                    resultRa.Click();
+                    resultRa.ClickTo(-100,0);
+                }
                 return false;
             }
 
