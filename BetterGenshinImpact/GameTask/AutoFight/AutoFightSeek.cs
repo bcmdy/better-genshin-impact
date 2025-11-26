@@ -726,9 +726,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
         }
         
-        public static Task<List<int>> AvatarQSkillAsync(ImageRegion? image = null, List<int>? useEqList = null,int? avatarCurrent = null)
+        public static Task<List<int>> AvatarQSkillAsync(ImageRegion image, List<int>? useEqList = null,int? avatarCurrent = null)
         {
-            image ??= CaptureToRectArea();
             image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度
             var useMedicine = new List<int>();
             var eqList = useEqList ?? new List<int> { 1, 2, 3, 4 };
@@ -755,8 +754,6 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 }
             }
             
-            image.Dispose();
-        
             if (useMedicine.Count > 0)
             {
                 Logger.LogInformation("元素爆发 {text} 的角色序号：{useMedicine}", "就绪", useMedicine);

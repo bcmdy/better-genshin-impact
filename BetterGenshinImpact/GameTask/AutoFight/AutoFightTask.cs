@@ -559,7 +559,7 @@ public class AutoFightTask : ISoloTask
                         
                         var skipModel = guardianAvatar != null && lastFightName != command.Name;
                         
-                        if (skipModel) {
+                        if (skipModel && guardianAvatar is not null) {
                             
                             image = CaptureToRectArea();
                             
