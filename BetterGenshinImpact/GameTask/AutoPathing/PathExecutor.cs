@@ -1066,7 +1066,8 @@ public class PathExecutor
                             Math.Abs(pixelYellowValue[2] - 255) <= 10);
         if (!yellowBlood && _combatScenes?.GetAvatars().Count > 1)
         {
-            Task.Run(async () => { await SwitchAvatar(PartyConfig.MainAvatarIndex, false, task, true); }, ct);
+            await SwitchAvatar(PartyConfig.MainAvatarIndex, false, task, true);
+            // Task.Run(async () => { await SwitchAvatar(PartyConfig.MainAvatarIndex, false, task, true); }, ct);
         }
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
@@ -2223,7 +2224,6 @@ public class PathExecutor
     public bool GetPositionAndTimeSuspendFlag = false;
     private async Task<(Point2f point,int additionalTimeInMs)> GetPositionAndTime(ImageRegion imageRegion, WaypointForTrack waypoint)
     {
-        
         var position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
         int time = 0;
         if (position == new Point2f())
