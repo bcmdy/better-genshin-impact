@@ -1,4 +1,4 @@
-﻿using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.Core.Simulator;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
 using BetterGenshinImpact.GameTask.AutoWood.Assets;
 using BetterGenshinImpact.GameTask.AutoWood.Utils;
