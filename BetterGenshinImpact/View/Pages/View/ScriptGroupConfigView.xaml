@@ -141,7 +141,7 @@
                         <ui:TextBlock  Grid.Row="0"
                                        Grid.RowSpan="2"
                                        Grid.Column="3"
-                                       Margin="5,0,0,30"
+                                       Margin="5,0,0,40"
                                        FontSize="8"
                                        HorizontalAlignment="Center"
                                        Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
