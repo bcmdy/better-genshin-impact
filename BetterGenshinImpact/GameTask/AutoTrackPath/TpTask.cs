@@ -792,6 +792,7 @@ public class TpTask
                     GameCaptureRegion.GameRegionMoveBy((_, scale) => (stepX[i1] * scale, stepY[i1] * scale));
                     if(i==1) await Delay(50, ct);
                     await Delay(_tpConfig.StepIntervalMilliseconds, ct);
+                    
                     if (i >= steps/2 && steps > 3 && isMark)
                     {
                         using (var image2 = CaptureToRectArea())
@@ -800,7 +801,19 @@ public class TpTask
                             var pos4 = image2.SrcMat.At<Vec3b>(600,500);
                             if (pos3 == pos && pos4 == pos2)
                             {
-                                TaskControl.Logger.LogWarning("地图拖动异常，重新调整");
+                                using var esc = image2.Find(QuickTeleportAssets.Instance.MapCloseButtonWhiteRo);
+                                if (esc.IsExist())
+                                {
+                                    TaskControl.Logger.LogWarning("地图遮挡，重新调整");
+                                    await Delay(500, ct);
+                                    esc.Click();
+                                    await Delay(1000, ct);
+                                }
+                                else
+                                {
+                                    TaskControl.Logger.LogWarning("地图拖动异常，重新调整");
+                                }
+                                
                                 break;
                             }
                             isMark = false;
