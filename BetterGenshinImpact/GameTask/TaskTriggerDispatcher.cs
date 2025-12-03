@@ -204,7 +204,7 @@ namespace BetterGenshinImpact.GameTask
                     }
                     else
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-1");
                     }
 
                     UiTaskStopTickEvent?.Invoke(sender, e);
@@ -220,7 +220,7 @@ namespace BetterGenshinImpact.GameTask
                     // 检查游戏是否已结束
                     if (TaskContext.Instance().SystemInfo.GameProcess.HasExited)
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-2");
                         UiTaskStopTickEvent?.Invoke(sender, e);
                         return;
                     }
