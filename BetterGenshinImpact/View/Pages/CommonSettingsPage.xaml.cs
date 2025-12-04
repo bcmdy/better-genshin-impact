@@ -65,7 +65,7 @@ public partial class CommonSettingsPage : Page
             SkillCd = double.Parse(SkillCdTextBox.Text),
             SkillHoldCd = double.Parse(SkillHoldCdTextBox.Text),
             BurstCd = double.Parse(BurstCdTextBox.Text),
-            Alias = new List<string> { AliasTextBox.Text }
+            Alias = new List<string> { NameTextBox.Text,NameEnTextBox.Text,AliasTextBox.Text }
         };
         
         var nameList = config.Select(x => x.Name).ToList();

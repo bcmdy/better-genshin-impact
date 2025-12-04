@@ -1583,7 +1583,7 @@
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="开启队伍角色假装识别功能"
+                                  Text="开启队伍角色假装识别功能（添加新角色角色后重启BGI）"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
