@@ -1835,7 +1835,7 @@
                                <ui:TextBlock Grid.Row="0"
                                              Grid.Column="4"
                                              FontTypography="Body"
-                                             Text="战后检测回血"
+                                             Text="战后检测吃药回血"
                                              HorizontalAlignment="Right"
                                              TextWrapping="Wrap" />
                                <ui:TextBlock Grid.Row="1"
@@ -1855,6 +1855,7 @@
                                                 Grid.Column="5"
                                                 Margin="10,23,36,0"
                                                 HorizontalAlignment="Right"
+                                                IsEnabled="{Binding PathingConfig.AutoFightConfig.EndBloodCheackEnabled}"
                                                 IsChecked="{Binding PathingConfig.AutoFightConfig.QRecoverAvatar, Mode=TwoWay}" />
                                
                         </Grid>

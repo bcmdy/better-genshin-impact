@@ -1622,7 +1622,7 @@ public class AutoFightTask : ISoloTask
 
                     for (var h = 0; h < 4; h++)
                     {
-                        using var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
+                        using var bloodtRect = ra.DeriveCrop(1694, 267 + h * 96, 3, 24);
                         using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),
                             new Scalar(161, 220, 60));
                         using var labels = new Mat();
@@ -1632,7 +1632,7 @@ public class AutoFightTask : ISoloTask
                         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S); //非出战角色，右侧头像血量检查
 
-                        using var bloodtRect2 = ra.DeriveCrop(1859, 278 + h * 96, 3, 3);
+                        using var bloodtRect2 = ra.DeriveCrop(1859, 264 + h * 96, 3, 3);
                         using var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
                         using var labels2 = new Mat();
                         using var stats2 = new Mat();
@@ -1642,13 +1642,17 @@ public class AutoFightTask : ISoloTask
                             connectivity: PixelConnectivity.Connectivity4,
                             ltype: MatType.CV_32S); //出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
 
+                        // Logger.LogInformation("自动结束吃药：{text} 血量检查，{text4}", h + 1, numLabels);
                         if (numLabels > 1 || !(numLabels2 > 1))
                         {
-                            ms = 1; // 发现红血，退出
+                            ms = 1; 
                             useMedicine.Remove(h + 1);
+                            // Logger.LogInformation("自动结束吃药：{text} 发现红血 {t4}", h + 1,useMedicine);
                         }
                     }
                 }
+                
+                // Logger.LogWarning("自动结束吃药：{text} 个", useMedicine.Count);
 
                 if (useMedicine.Count > 0 && !endBloodCheck) //发现红血角色，可能因为游泳等误判，进行复检
                 {
@@ -1666,13 +1670,14 @@ public class AutoFightTask : ISoloTask
             using var swimming = CaptureToRectArea();
             if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(swimming))
             {
-                // if (_taskParam.QRecoverAvatar)
-                // {
-                var pathExecutor = new PathExecutor(ct);
-                Logger.LogWarning("自动结束吃药：{text} 结束吃药，执行技能恢复 {text2}", useMedicine,PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex);
-                await pathExecutor.TryPartyHealing(combatScenes,PathingConditionConfig.PartyConfigBackUp);
-                if (_taskParam.QRecoverAvatar) return; 
-                // }
+                if (_taskParam.QRecoverAvatar && PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex is not null)
+                {
+                    var pathExecutor = new PathExecutor(ct);
+                    Logger.LogWarning("自动结束吃药：{text} 结束吃药，执行技能恢复 {text2}", useMedicine,PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex);
+                    await pathExecutor.TryPartyHealing(combatScenes,PathingConditionConfig.PartyConfigBackUp);
+                    // if (_taskParam.QRecoverAvatar) return; 
+                    return;
+                }
 
                 //计算2上次吃药时间到现在是否超过2秒，未超过就等待
                 if ((DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
