@@ -1841,7 +1841,7 @@
                                <ui:TextBlock Grid.Row="1"
                                              Grid.Column="4"
                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                             Text="仅通过技能回血"
+                                             Text="战后仅通过技能回血"
                                              HorizontalAlignment="Right"
                                              TextWrapping="Wrap" />  
                                <ui:ToggleSwitch Grid.Row="0"
