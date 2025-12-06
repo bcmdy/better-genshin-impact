@@ -62,6 +62,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         UseEqList = autoFightConfig.UseEqList;
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
         UseSkillList = autoFightConfig.UseSkillList;
+        QRecoverAvatar = autoFightConfig.QRecoverAvatar;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -110,6 +111,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string UseEqList { get; set; } = "1,2,3,4";
     
     public string UseSkillList { get; set; } = "1,2,3,4";
+    
+    public bool QRecoverAvatar { get; set; } = false;
 
     public AutoFightParam(string? strategyName = null) : base(null, null)
     {

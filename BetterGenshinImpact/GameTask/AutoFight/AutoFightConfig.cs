@@ -189,6 +189,9 @@ public partial class AutoFightConfig : ObservableObject
     private bool _endBloodCheackEnabled = false;
     
     [ObservableProperty]
+    private bool _qRecoverAvatar = false;
+    
+    [ObservableProperty]
     private string _useEqList = "1,2,3,4";
     
     [ObservableProperty]

@@ -91,7 +91,12 @@ public partial class PathingConditionConfig : ObservableObject
         set => _combatScenesGoBackUp = value;
     }
     
-    private static bool? _isAutoEatEnabledBackUp = null;
+    private static PathingPartyConfig? _partyConfigBackUp = new PathingPartyConfig();
+    public static PathingPartyConfig PartyConfigBackUp
+    {
+        get => _partyConfigBackUp?? new PathingPartyConfig();
+        set => _partyConfigBackUp = value;
+    }
         
     public static PathingConditionConfig Default => new()
     {

@@ -33,6 +33,7 @@ using BetterGenshinImpact.GameTask.AutoPick.Assets;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using System.Text.RegularExpressions;
 using BetterGenshinImpact.Core.Script.Dependence;
+using BetterGenshinImpact.GameTask.AutoPathing;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -942,7 +943,7 @@ public class AutoFightTask : ISoloTask
                     await Delay(1000, ct);
                 }
             
-                await EndBloodCheck(ct);
+                await EndBloodCheck(ct,combatScenes);
             }
             
             return;
@@ -1135,7 +1136,7 @@ public class AutoFightTask : ISoloTask
                 await Delay(1000, ct);
             }
             
-            await EndBloodCheck(ct);
+            await EndBloodCheck(ct,combatScenes);
         }
     }
 
@@ -1573,33 +1574,36 @@ public class AutoFightTask : ISoloTask
         GIActions.SwitchMember3,
         GIActions.SwitchMember4
     };
-    
-    private async Task EndBloodCheck(CancellationToken ct)
+
+    private async Task EndBloodCheck(CancellationToken ct, CombatScenes? combatScenes = null)
     {
         IsTpForRecover = true; // 复活检测关闭
         var ms = 2500;  //检测区域是否有红血，没有发现红血，则退出
         var useMedicine = new List<int> { 1, 2, 3, 4 };
         var endBloodCheck = false;//血量复检标志位
-        
+
         try
-        { 
-            await TakeMedicine(ct,true);//尝试吃药和复活角色
-            
+        {
+            await TakeMedicine(ct, true); //尝试吃药和复活角色
+
             while (ms > 0)
             {
-               using (var ra = CaptureToRectArea())
-               {
-                    var pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);//TakeMedicine后，不会有死亡角色，如出现死亡角色导致变复活药，说明死超过2位角色，也不用执行了
+                using (var ra = CaptureToRectArea())
+                {
+                    var pixelValue =
+                        ra.SrcMat.At<Vec3b>(785, 1818); //TakeMedicine后，不会有死亡角色，如出现死亡角色导致变复活药，说明死超过2位角色，也不用执行了
                     if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
                     {
+                        if(!_taskParam.QRecoverAvatar) return;
                         Logger.LogInformation("自动结束吃药：检测到复活药，{text} 结束吃恢复药", "不执行");
-                        return;
+                        Logger.LogInformation("自动结束吃药：{text} 执行技能恢复", "尝试执行");
                     }
                     else
                     {
                         // 非复活药前提下再识别营养袋，优化效率
                         using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                        using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+                        using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat, new Scalar(192, 233, 102),
+                            new Scalar(193, 233, 103));
                         using var labels = new Mat();
                         using var stats = new Mat();
                         using var centroids = new Mat();
@@ -1608,63 +1612,75 @@ public class AutoFightTask : ISoloTask
                             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
                         // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
-                    
-                        if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
+
+                        if (!(numLabels > 1)) //判断是否带营养袋，连通性检测药品上方的绿色块
                         {
-                            Logger.LogInformation("自动结束吃药：{t} 营养袋，结束吃药关闭","未发现");
+                            Logger.LogInformation("自动结束吃药：{t} 营养袋，结束吃药关闭", "未发现");
                             return;
                         }
                     }
-                   
+
                     for (var h = 0; h < 4; h++)
                     {
-                       using var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
-                       using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),new Scalar(161, 220, 60));
-                       using var labels = new Mat();
-                       using var stats = new Mat();
-                       using var centroids = new Mat();
+                        using var bloodtRect = ra.DeriveCrop(1694, 281 + h * 96, 3, 10);
+                        using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),
+                            new Scalar(161, 220, 60));
+                        using var labels = new Mat();
+                        using var stats = new Mat();
+                        using var centroids = new Mat();
 
-                       var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//非出战角色，右侧头像血量检查
+                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
+                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S); //非出战角色，右侧头像血量检查
 
-                       using var bloodtRect2 = ra.DeriveCrop(1859, 278+ h * 96, 3, 3);
-                       using var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
-                       using var labels2 = new Mat();
-                       using var stats2 = new Mat();
-                       using var centroids2 = new Mat();
+                        using var bloodtRect2 = ra.DeriveCrop(1859, 278 + h * 96, 3, 3);
+                        using var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
+                        using var labels2 = new Mat();
+                        using var stats2 = new Mat();
+                        using var centroids2 = new Mat();
 
-                       var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
-                           connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);//出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
+                        var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
+                            connectivity: PixelConnectivity.Connectivity4,
+                            ltype: MatType.CV_32S); //出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
 
-                       if (numLabels > 1 || !(numLabels2 > 1))
-                       {
-                           ms = 1;// 发现红血，退出
-                           useMedicine.Remove(h+1);
-                       }
+                        if (numLabels > 1 || !(numLabels2 > 1))
+                        {
+                            ms = 1; // 发现红血，退出
+                            useMedicine.Remove(h + 1);
+                        }
                     }
-               }
+                }
 
-               if (useMedicine.Count > 0 && !endBloodCheck)//发现红血角色，可能因为游泳等误判，进行复检
-               {
-                   endBloodCheck = true;
-                   TaskControl.Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
-                   ms = 100;// 设置100会再次检测
-                   useMedicine = new List<int> { 1, 2, 3, 4 };
-                   await Task.Delay(500, ct);
-               }
-               
-               await Task.Delay(100, ct);
-               ms -= 95;
+                if (useMedicine.Count > 0 && !endBloodCheck) //发现红血角色，可能因为游泳等误判，进行复检
+                {
+                    endBloodCheck = true;
+                    TaskControl.Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
+                    ms = 100; // 设置100会再次检测
+                    useMedicine = new List<int> { 1, 2, 3, 4 };
+                    await Task.Delay(500, ct);
+                }
+
+                await Task.Delay(100, ct);
+                ms -= 95;
             }
 
             using var swimming = CaptureToRectArea();
             if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(swimming))
             {
+                // if (_taskParam.QRecoverAvatar)
+                // {
+                var pathExecutor = new PathExecutor(ct);
+                Logger.LogWarning("自动结束吃药：{text} 结束吃药，执行技能恢复 {text2}", useMedicine,PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex);
+                await pathExecutor.TryPartyHealing(combatScenes,PathingConditionConfig.PartyConfigBackUp);
+                if (_taskParam.QRecoverAvatar) return; 
+                // }
+
                 //计算2上次吃药时间到现在是否超过2秒，未超过就等待
                 if ((DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
                 {
-                    await Task.Delay(1500 - (int)(DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
+                    await Task.Delay(
+                        1500 - (int)(DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
                 }
+
                 PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                 TaskControl.Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
                 //通过编号切换角色补血,不进行确认是否吃上
@@ -1672,12 +1688,12 @@ public class AutoFightTask : ISoloTask
                 {
                     Simulation.ReleaseAllKey();
                     await Task.Delay(700, ct);
-                    Simulation.SendInput.SimulateAction(MemberActions[num-1]);
+                    Simulation.SendInput.SimulateAction(MemberActions[num - 1]);
                     await Task.Delay(800, ct);
-               
+
                     using (var bitmap = CaptureToRectArea())
                     {
-                        if (Bv.IsInRevivePrompt(bitmap))//如果在复活界面，说明没复活药了
+                        if (Bv.IsInRevivePrompt(bitmap)) //如果在复活界面，说明没复活药了
                         {
                             Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                             await Task.Delay(500, ct);
@@ -1690,8 +1706,9 @@ public class AutoFightTask : ISoloTask
             }
             else
             {
-                TaskControl.Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药","不执行");
+                TaskControl.Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药", "不执行");
             }
+
             IsTpForRecover = false; // 复活检测打开
         }
         catch (OperationCanceledException ex)
@@ -1701,6 +1718,10 @@ public class AutoFightTask : ISoloTask
         catch (Exception ex)
         {
             Console.WriteLine($"战斗结束血量检测发生异常: {ex.Message}");
+        }
+        finally
+        {
+            // PathingConditionConfig.PartyConfigBackUp = new PathingPartyConfig();
         }
     }
 

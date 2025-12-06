@@ -53,12 +53,17 @@ public class PathExecutor
     //路径追踪完全走完所有路径结束的标识
     public bool SuccessEnd = false;
     private PathingPartyConfig? _partyConfig;
-    private PathingPartyConfig? _partyConfig2;
     private CancellationToken ct;
     private PathExecutorSuspend pathExecutorSuspend;
     private string _hurryOnAvatar = "";
     private readonly ReturnMainUiTask _returnMainUiTask = new();
-
+    
+    public PathingPartyConfig PartyConfig
+    {
+        get => _partyConfig ?? PathingPartyConfig.BuildDefault();
+        set => _partyConfig = value;
+    }
+    
     public PathExecutor(CancellationToken ct)
     {
         _trapEscaper = new(ct);
@@ -66,19 +71,13 @@ public class PathExecutor
         this.ct = ct;
         pathExecutorSuspend = new PathExecutorSuspend(this);
     }
-
-    public PathingPartyConfig PartyConfig
-    {
-        get => _partyConfig ?? PathingPartyConfig.BuildDefault();
-        set => _partyConfig = value;
-    }
     
     /// <summary>
     /// 判断是否中止地图追踪的条件
     /// </summary>
     public Func<ImageRegion, bool>? EndAction { get; set; }
 
-    private CombatScenes? _combatScenes;
+    public CombatScenes? _combatScenes;
     // private readonly Dictionary<string, string> _actionAvatarIndexMap = new();
 
     private DateTime _elementalSkillLastUseTime = DateTime.MinValue;
@@ -174,6 +173,8 @@ public class PathExecutor
         Navigation.WarmUp(task.Info.MapMatchMethod);
         
         await InitializeAutoEat();//初始化自动吃药
+        PathingConditionConfig.PartyConfigBackUp = PartyConfig;
+        // Logger.LogError("开始寻路{t1}-{t2}",PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex,PartyConfig.RecoverAvatarIndex);
 
         foreach (var waypoints in waypointsList) // 按传送点分割的路径
         {
@@ -708,9 +709,29 @@ public class PathExecutor
     /// <summary>
     /// 尝试队伍回血，如果单人回血，由于记录检查时是哪位残血，则当作行走位处理。
     /// </summary>
-    private async Task<bool> TryPartyHealing()
+    public async Task<bool> TryPartyHealing(CombatScenes? combatScenes = null,PathingPartyConfig? partyConfig = null)
     {
-        if (_combatScenes is null) return false;
+        if (_combatScenes is null)
+        {
+            if (combatScenes is null)
+            {
+                Logger.LogWarning("回血失败，未获取到战斗场景");
+                return false; 
+            }
+            _combatScenes = combatScenes;
+        }
+
+        if (_combatScenes is null)
+        {
+            Logger.LogWarning("回血失败，未获取到战斗场景2");
+            return false; 
+        }
+
+        if (partyConfig is not null)
+        {
+            PartyConfig = partyConfig;
+        }
+        
         var avatars = _combatScenes.GetAvatars();
         foreach (var avatar in avatars)
         {
@@ -758,17 +779,57 @@ public class PathExecutor
             }
             else if (avatar.Name == "爱可菲" || avatar.Name == "闲云" || avatar.Index.ToString() == PartyConfig.RecoverAvatarIndex)
             {
-                //获取出战角色
-                var avatarCurrent = _combatScenes.CurrentAvatar();
-                //计算出战角色在avatars队伍中的序号
-                var currentIndex = avatars.FirstOrDefault(a => a.Name == avatarCurrent)?.Index;
-                if (currentIndex == null) return false;
+                // //获取出战角色
+                // var avatarCurrent = _combatScenes.CurrentAvatar();
+                // //计算出战角色在avatars队伍中的序号
+                // var currentIndex = avatars.FirstOrDefault(a => a.Name == avatarCurrent)?.Index;
+                // if (currentIndex == null) return false;
+               
+                var currentIndex = 0;
                 using (var bitmap = CaptureToRectArea())
                 {
-                    var num = _combatScenes.GetAvatars().Count();
-                    List<int> useEqList = Enumerable.Range(1, num).ToList();
-                    var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, currentIndex);
-                    if (qSkill.Contains(avatar.Index))
+                    if (PartyConfig.RecoverAvatarIndex != null)
+                    {
+                        for (int i = 1; i <= 4; i++)
+                        {
+                            var avatar2 = _combatScenes.SelectAvatar(i);
+                            if (avatar2.IsActive(bitmap))
+                            {
+                                currentIndex = i;
+                            }
+                        }
+                    
+                        // Logger.LogInformation("当前行走角色序号：{Index}", currentIndex);
+
+                        if (currentIndex == 0)
+                        {
+                            return false;
+                        } 
+                        var num = _combatScenes.GetAvatars().Count();
+                        List<int> useEqList = Enumerable.Range(1, num).ToList();
+                        var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, currentIndex);
+                        if (qSkill.Contains(avatar.Index))
+                        {
+                            if (avatar.TrySwitch())
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                await Delay(5000, ct);
+                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                                return true;
+                            }
+                        }
+                        else
+                        {
+                            if (avatar.TrySwitch())
+                            {
+                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                await Delay(5000, ct);
+                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                                return true;
+                            }
+                        }
+                    }
+                    else
                     {
                         if (avatar.TrySwitch())
                         {
@@ -779,7 +840,6 @@ public class PathExecutor
                         }
                     }
                 }
-                
             }
         }
 
