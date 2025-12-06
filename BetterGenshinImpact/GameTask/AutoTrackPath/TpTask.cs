@@ -80,7 +80,7 @@ public class TpTask
         {
             _screenHeight = gameScreenBounds.Height > SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height 
                 ? (SystemControl.GetGameScreenRect(TaskContext.Instance().GameHandle).Height <= 1080 ? 3 : 2) 
-                : 2;
+                : 2.3;
         }
         else
         {
@@ -805,9 +805,9 @@ public class TpTask
                                 if (esc.IsExist())
                                 {
                                     TaskControl.Logger.LogWarning("地图遮挡，重新调整");
-                                    await Delay(500, ct);
-                                    esc.Click();
-                                    await Delay(1000, ct);
+                                    await Delay(1500, ct);
+                                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                                    await Delay(1500, ct);
                                 }
                                 else
                                 {
