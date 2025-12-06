@@ -1981,5 +1981,29 @@
     "nameEn": "Nefer",
     "skillCD": 9,
     "weapon": "10"
+  },
+  {
+    "alias": [
+      "雅珂达",
+      "Jahoda"
+    ],
+    "burstCD": 18,
+    "id": "30000002",
+    "name": "雅珂达",
+    "nameEn": "Jahoda",
+    "skillCD": 15,
+    "weapon": "10"
+  },
+  {
+    "alias": [
+      "杜林",
+      "Durin"
+    ],
+    "burstCD": 18,
+    "id": "30000001",
+    "name": "杜林",
+    "nameEn": "Durin",
+    "skillCD": 12,
+    "weapon": "1"
   }
 ]
