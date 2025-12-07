@@ -169,7 +169,7 @@ public partial class AutoPickTrigger : ITaskTrigger
         var speedTimer = new SpeedTimer();
 
         using var foundRectArea = content.CaptureRectArea.Find(_pickRo);
-        
+
         if (foundRectArea.IsEmpty())
         {
             // 没有识别到F键，先判断是否有滚轮图标信息
@@ -179,7 +179,7 @@ public partial class AutoPickTrigger : ITaskTrigger
                 Simulation.SendInput.Mouse.VerticalScroll(2);
                 Thread.Sleep(50);
             }
-            // _logger.LogInformation("测试拾取功能959595kg");
+
             return;
         }
 
@@ -262,7 +262,6 @@ public partial class AutoPickTrigger : ITaskTrigger
             return;
         }
 
-        // var textMat = new Mat(content.CaptureRectArea.SrcGreyMat, textRect);
         using var gradMat = new Mat(content.CaptureRectArea.CacheGreyMat,
             new Rect(textRect.X, textRect.Y, textRect.Width, Math.Min(textRect.Height, 3)));
         var avgGrad = gradMat.Sobel(MatType.CV_32F, 1, 0).Mean().Val0;
@@ -282,6 +281,7 @@ public partial class AutoPickTrigger : ITaskTrigger
         {
             using var textMat = new Mat(content.CaptureRectArea.SrcMat, textRect);
             var boundingRect = TextRectExtractor.GetTextBoundingRect(textMat);
+            // var boundingRect = new Rect(); // 不使用自己写的文字区域提取
             // 如果找到有效区域
             if (boundingRect.X <20 && boundingRect.Width > 5 && boundingRect.Height > 5)
             {
