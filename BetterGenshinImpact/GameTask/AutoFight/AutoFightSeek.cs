@@ -14,9 +14,12 @@ using System.Linq;
 using System.Collections.Generic;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
-using  OpenCvSharp;
 using BetterGenshinImpact.GameTask.Model.Area;
 using BetterGenshinImpact.Core.Script.Dependence;
+// using Serilog.Core;
+using SDPoint = System.Drawing.Point;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -59,7 +62,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     // int width = stats[2];
                     int height = stats[3];
 
-                    Point firstPixel = new Point(x, y);
+                    SDPoint firstPixel = new SDPoint(x, y);
                     logger.LogInformation("敌人位置: ({firstPixel.X}, {firstPixel.Y})，血量高度: {height}", firstPixel.X, firstPixel.Y, height);
                     
                     if (firstPixel.X < 580 || firstPixel.X > 1315 || firstPixel.Y > 800)
@@ -220,10 +223,14 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             return Task.FromResult<bool?>(null);
         }
     }
+    
 
     public class AutoFightSeek
     {
         public static int RotationCount = 0;
+        
+        private static readonly IntPtr GameHandle=TaskContext.Instance().GameHandle;
+        private  static readonly Rectangle GameScreenBounds=Screen.FromHandle(GameHandle).Bounds;
         
         private static readonly Dictionary<int, int> RotaryFactorMapping = new Dictionary<int, int> //旋转因子映射表
         {
@@ -359,12 +366,25 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 
                 if (retryCount <= 2)
                 {
-                   var offsets = new (int x, int y)[] {
-                        (image.Width / 6, image.Height / 7), 
-                        (image.Width / 6, 0),                 
-                        (image.Width / 6, -image.Height / 5),
-                        (image.Width / 6, -image.Height),  
-                    };
+                    (int x, int y)[] offsets;
+                    if (GameScreenBounds.Width > 1920)
+                    {
+                         offsets = new (int x, int y)[] {
+                            (image.Width / 6, image.Height / 7), 
+                            (image.Width / 6, 0),                 
+                            (image.Width / 6, -image.Height / 5),
+                            (image.Width / 6, -image.Height),  
+                        };
+                    }
+                    else
+                    {
+                         offsets = new (int x, int y)[] {
+                            (image.Width / 12, image.Height / 7), 
+                            (image.Width / 12, 0),                 
+                            (image.Width / 12, -image.Height / 5),
+                            (image.Width / 12, -image.Height),  
+                        };
+                    }
 
                     var offsetIndex = RotationCount < 2 ? 0 : (RotationCount == 2) ? 1 : (RotationCount >= 3) ? 2 : 3;
                     Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
