@@ -64,7 +64,7 @@ public class UpdateService : IUpdateService
             // 方便调试窗口
             if (RuntimeHelper.IsDebuggerAttached && option.Trigger == UpdateTrigger.Manual)
             {
-                await OpenCheckUpdateWindow(option, newVersion);
+                // await OpenCheckUpdateWindow(option, newVersion);
                 return;
             }
             // ---- 如果是调试模式且手动的检查更新的情况下，强制打开更新窗口 -----
@@ -86,7 +86,7 @@ public class UpdateService : IUpdateService
                 return;
             }
 
-            await OpenCheckUpdateWindow(option, newVersion);
+            // await OpenCheckUpdateWindow(option, newVersion);
         }
         catch (Exception e)
         {
