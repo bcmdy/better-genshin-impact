@@ -230,7 +230,9 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         public static int RotationCount = 0;
         
         private static readonly IntPtr GameHandle=TaskContext.Instance().GameHandle;
-        private  static readonly Rectangle GameScreenBounds=Screen.FromHandle(GameHandle).Bounds;
+        private static readonly Rectangle GameScreenBounds = Screen.FromHandle(GameHandle).Bounds;
+        private  static readonly int RetryCountReset = GameScreenBounds.Width > 1920 ? 0 : -6;
+        
         
         private static readonly Dictionary<int, int> RotaryFactorMapping = new Dictionary<int, int> //旋转因子映射表
         {
@@ -250,7 +252,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             
             int retryCount = isEndCheck? 1 : 0;
 
-            while (retryCount < 25+(int)(adjustedX / 5))
+            while (retryCount < 25+(int)(adjustedX / 5)+RetryCountReset)
             {
                 using var image = CaptureToRectArea();
 
