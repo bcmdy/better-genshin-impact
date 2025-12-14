@@ -29,7 +29,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Serilog.Core;
+
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using System;
@@ -1055,8 +1055,8 @@ public class TpTask
         Region? matchRect = list.OrderByDescending(r => r.Y).FirstOrDefault(r => r.Text.Contains(minCountryLocalized));
         if (matchRect == null)
         {
-            TaskControl.Logger.LogWarning("切换区域失败：{Country}", areaName);
-            if (areaName == MapTypes.TheChasm.GetDescription() || areaName == MapTypes.Enkanomiya.GetDescription())
+            Logger.LogWarning("切换区域失败：{Country}", areaName);
+            if (areaName == MapTypes.TheChasm.GetDescription() || areaName == MapTypes.Enkanomiya.GetDescription() || areaName == MapTypes.SeaOfBygoneEras.GetDescription())
             {
                 throw new Exception($"切换独立地图区域[{areaName}]失败");
             }
