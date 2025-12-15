@@ -74,6 +74,8 @@ public class AutoFightTask : ISoloTask
     
     private static readonly object PickLock = new object(); 
     
+    private static readonly object ZLock = new object(); 
+    
     private class TaskFightFinishDetectConfig
     {
         public int DelayTime = 1500;
@@ -1490,25 +1492,39 @@ public class AutoFightTask : ISoloTask
                         {
                             var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
                                                  (gray && RecoverCount < 3);//判断吃药上限
-                            if (shouldRecover)
+
+                            if (Monitor.TryEnter(ZLock))
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                                Simulation.ReleaseAllKey();
-                                if (redBlood) resurrectionCount++;
-                                if (gray) RecoverCount++;
-                                TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
-                                PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                                redBlood = false;
-                                gray = false;
-                                if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
-                            }
-                            else
-                            {
-                                resurrectionCount = 0;
-                                RecoverCount = 0;
-                                TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
-                                IsTpForRecover = false; // 吃完药品后，打开复活检测
-                                return;
+                                try
+                                {
+                                    if (shouldRecover )
+                                    {
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                                        Simulation.ReleaseAllKey();
+                                        if (redBlood) resurrectionCount++;
+                                        if (gray) RecoverCount++;
+                                        TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
+                                        PathingConditionConfig.LastEatTime = DateTime.UtcNow;
+                                        redBlood = false;
+                                        gray = false;
+                                        if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
+                                    }
+                                    else
+                                    {
+                                        resurrectionCount = 0;
+                                        RecoverCount = 0;
+                                        TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
+                                        IsTpForRecover = false; // 吃完药品后，打开复活检测
+                                        return;
+                                    }   
+                                }catch (Exception ex)
+                                {
+                                    TaskControl.Logger.LogError($"自动吃药异常: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    Monitor.Exit(ZLock);
+                                }
                             }
                         }
 

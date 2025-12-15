@@ -2172,6 +2172,11 @@ public class PathExecutor
             return null;
         }
 
+        if (!(int.TryParse(index, out var idx) && _combatScenes?.GetAvatars().Count <= idx))
+        {
+            return null;
+        }
+        
         var success = avatar.TrySwitch(15);
         if (success)
         {
