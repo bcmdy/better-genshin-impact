@@ -2159,7 +2159,7 @@ public class PathExecutor
 
     private async Task<Avatar?> SwitchAvatar(string index, bool needSkill = false , PathingTask? pathingTask = null, bool? forceRefresh = false)
     {
-        if (string.IsNullOrEmpty(index))
+        if (string.IsNullOrEmpty(index) && !(int.TryParse(index, out var idx) && _combatScenes?.GetAvatars().Count <= idx))
         {
             return null;
         }
@@ -2169,11 +2169,6 @@ public class PathExecutor
         if (needSkill && !avatar.IsSkillReady())
         {
             Logger.LogInformation("角色{Name}技能未冷却，跳过。", avatar.Name);
-            return null;
-        }
-
-        if (!(int.TryParse(index, out var idx) && _combatScenes?.GetAvatars().Count <= idx))
-        {
             return null;
         }
         
