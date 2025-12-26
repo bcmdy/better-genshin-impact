@@ -601,7 +601,15 @@ internal class GoToSereniteaPotTask
         {
             if (!Bv.IsInMainUi(CaptureToRectArea()))
             {
-                Logger.LogError("领取尘歌壶奖励:{text}", "阿圆对话框退出出错。");
+                Logger.LogError("领取尘歌壶奖励:{text}", "阿圆对话框退出出错-1。");
+                await Delay(5000, ct);
+                var quitOption2 = await _chooseTalkOptionTask.SingleSelectText(this.ayuanByeString, ct);
+                if (quitOption2 != TalkOptionRes.FoundAndClick)
+                {
+                    Logger.LogError("领取尘歌壶奖励:{text}", "阿圆对话框退出出错-2。");
+                    return;
+                }
+                Logger.LogError("领取尘歌壶奖励:{text}", "阿圆对话框退出出错-3。");
                 return;
             }
             else
