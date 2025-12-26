@@ -115,6 +115,7 @@
                                       FontSize="10"
                                       Margin="0,0,10,44"
                                       HorizontalAlignment="Center"
+                                      Visibility="{Binding PathingConfig.AutoEatEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Text="Q技能回血"
                                       TextWrapping="Wrap" />
@@ -123,6 +124,7 @@
                                   Grid.Column="1"
                                   Width="70"
                                   Margin="0,0,10,0"
+                                  Visibility="{Binding PathingConfig.AutoEatEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"
                                   Text="{Binding PathingConfig.RecoverAvatarIndex}"
                                   ItemsSource="{Binding PathingConfig.AvatarIndexList}"
                                   SelectedItem="{Binding PathingConfig.RecoverAvatarIndex}"/>
