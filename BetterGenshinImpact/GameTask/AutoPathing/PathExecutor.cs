@@ -1270,10 +1270,10 @@ public class PathExecutor
                                 if (Bv.GetMotionStatus(screen2) != MotionStatus.Fly || !(pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255))
                                 {
                                     Logger.LogInformation("自动赶路：{t} 节点接近...-i {t2} {t3}",PartyConfig.TravelMode,nextAvatarIndexStop,waypoint?.MoveMode);
-                                    Task.Run(async () =>
-                                    {
-                                        await SwitchAvatar(nextAvatarIndexStop);   
-                                    },ct);
+                                    
+                                    using var screen3 = CaptureToRectArea(); 
+                                    var isFlying = Bv.GetMotionStatus(screen3) == MotionStatus.Fly;
+                                    if (!isFlying) await SwitchAvatar(nextAvatarIndexStop);   
                                 }
                             }
                         }

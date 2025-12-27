@@ -527,7 +527,8 @@ public class CombatScenes : IDisposable
     {
         if (avatarIndex < 1 || avatarIndex > AvatarCount)
         {
-            _logger.LogError("切换角色编号错误，当前角色数量{Count}，编号{Index}", AvatarCount, avatarIndex);
+            _logger.LogWarning("切换角色编号错误，当前角色数量{Count}，编号{Index}", AvatarCount, avatarIndex);
+            if (CurrentMultiGameStatus is not null && CurrentMultiGameStatus.IsInMultiGame) return Avatars[0];
             throw new Exception("不存在的角色编号");
         }
 
