@@ -54,10 +54,10 @@ public partial class OtherConfig : ObservableObject
         // 自定义角色1名称,初始化用于举例
         public string CustomAvatar1Name { get; set; } = "申鹤";
         public string CustomAvatar1Name2 { get; set; } = "甘雨";
-        public string CustomAvatar1Name3 { get; set; } = "芭芭拉";
+        public string CustomAvatar1Name3 { get; set; } = "琴";
     
         // 自定义角色1假装名称
-        public string CustomAvatar1DisplayName { get; set; } = "伊涅芙";
+        public string CustomAvatar1DisplayName { get; set; } = "琴";
     
         // 自定义角色2名称
         public string CustomAvatar2Name { get; set; } = "凯亚";
