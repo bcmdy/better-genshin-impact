@@ -378,7 +378,7 @@ public partial class ScriptService : IScriptService
                                 _logger.LogInformation("------------------------------");
                             }
 
-                            await Task.Delay(2000);
+                            await Task.Delay(1000);
                         }
 
                         if (!RunnerContext.Instance.IsPreExecution && taskProgress != null)
