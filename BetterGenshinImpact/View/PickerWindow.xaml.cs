@@ -19,6 +19,7 @@ using System.Windows.Media.Imaging;
 using TorchSharp.Data;
 using Vanara.PInvoke;
 using Wpf.Ui.Controls;
+using System.Management;
 
 namespace BetterGenshinImpact.View;
 
@@ -28,6 +29,8 @@ public class CapturableWindow
     public string Name { get; }
     public string ProcessName { get; }
     public ImageSource? Icon { get; }
+    
+    public string Owner { get; }      // 新增：进程所属 Windows 帐户
 
     public CapturableWindow(IntPtr handle, string name, string processName, ImageSource? icon)
     {
@@ -107,6 +110,9 @@ public partial class PickerWindow : FluentWindow
 
             _ = User32.GetWindowThreadProcessId(hWnd, out var processId);
             var process = Process.GetProcessById((int)processId);
+            
+            // 获取进程所属用户
+            var owner = GetProcessOwner((int)processId) ?? string.Empty;
 
             // 获取窗口图标 - 转换 HWND 为 IntPtr
             var icon = GetWindowIcon((IntPtr)hWnd);
@@ -116,10 +122,44 @@ public partial class PickerWindow : FluentWindow
             return true;
         }, IntPtr.Zero);
 
-        var sortedWindows = windows.OrderByDescending(IsGenshinWindow)
-            .ThenByDescending(x => x.Handle).ToList();
+        // 排序：优先原神窗口 -> 优先属于当前登录用户的进程 -> 再按句柄/其它
+        var currentUser = Environment.UserName;
+        var sortedWindows = windows
+            .OrderByDescending(IsGenshinWindow)
+            .ThenByDescending(x => string.Equals(x.Owner, currentUser, StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(x => x.Handle)
+            .ToList();
 
         WindowList.ItemsSource = sortedWindows;
+    }
+    
+    private static string? GetProcessOwner(int processId)
+    {
+        try
+        {
+            // 使用 WMI 查询进程所有者
+            using var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_Process WHERE ProcessId = {processId}");
+            foreach (ManagementObject obj in searcher.Get())
+            {
+                // GetOwner 返回一个数组：User, Domain
+                var outParams = obj.InvokeMethod("GetOwner", null, null) as ManagementBaseObject;
+                if (outParams != null)
+                {
+                    var user = outParams["User"]?.ToString();
+                    var domain = outParams["Domain"]?.ToString();
+                    if (!string.IsNullOrEmpty(user))
+                    {
+                        return string.IsNullOrEmpty(domain) ? user : $"{domain}\\{user}";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"查询进程所属用户失败: {ex.Message}");
+        }
+
+        return null;
     }
 
     private ImageSource? GetWindowIcon(IntPtr hWnd)
