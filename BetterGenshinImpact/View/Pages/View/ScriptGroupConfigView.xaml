@@ -304,7 +304,7 @@
                                       HorizontalAlignment="Left"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Text="飞行赶路"
-                                      TextWrapping="Wrap" />
+                                      TextWrapping="Wrap" />                      
                         <ui:ToggleSwitch Grid.Row="0"
                                                           Grid.RowSpan="2"
                                                           Grid.Column="3"
