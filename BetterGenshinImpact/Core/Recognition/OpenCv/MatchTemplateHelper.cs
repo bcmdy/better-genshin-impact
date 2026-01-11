@@ -60,6 +60,9 @@ public class MatchTemplateHelper
             catch (OpenCvSharp.OpenCVException ex)
             {
                 _logger.LogError($"OpenCV内存异常, 重试1次: {ex.Message}");
+                //内存清理
+                GC.Collect();//释放内存
+                GC.WaitForPendingFinalizers();//释放内存
                 attempt++;
             }
             catch (Exception ex)
