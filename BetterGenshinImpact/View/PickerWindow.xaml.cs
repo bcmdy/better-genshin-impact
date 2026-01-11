@@ -32,11 +32,12 @@ public class CapturableWindow
     
     public string Owner { get; }      // 新增：进程所属 Windows 帐户
 
-    public CapturableWindow(IntPtr handle, string name, string processName, ImageSource? icon)
+    public CapturableWindow(IntPtr handle, string name, string processName, string owner, ImageSource? icon)
     {
         Handle = handle;
         Name = name;
         ProcessName = processName;
+        Owner = owner;
         Icon = icon;
     }
 }
@@ -117,7 +118,7 @@ public partial class PickerWindow : FluentWindow
             // 获取窗口图标 - 转换 HWND 为 IntPtr
             var icon = GetWindowIcon((IntPtr)hWnd);
 
-            windows.Add(new CapturableWindow((IntPtr)hWnd, title.ToString(), process.ProcessName, icon));
+            windows.Add(new CapturableWindow((IntPtr)hWnd, title.ToString(), process.ProcessName, owner, icon));
 
             return true;
         }, IntPtr.Zero);
