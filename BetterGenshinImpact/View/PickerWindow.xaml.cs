@@ -22,6 +22,9 @@ using Wpf.Ui.Controls;
 using System.Management;
 using System.Runtime.InteropServices;
 
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+
+
 namespace BetterGenshinImpact.View;
 
 public class CapturableWindow
@@ -134,10 +137,12 @@ public partial class PickerWindow : FluentWindow
 
         WindowList.ItemsSource = sortedWindows;
         Debug.WriteLine("找到窗口数量: " + sortedWindows.Count);
+        Logger.LogError("找到窗口数量: " + sortedWindows.Count);
         //输出找到的LOG信息
         foreach (var window in sortedWindows)
         {
             Debug.WriteLine($"窗口句柄: {window.Handle}, 标题: {window.Name}, 进程名: {window.ProcessName}, 所属用户: {window.Owner}");
+            Logger.LogError($"窗口句柄: {window.Handle}, 标题: {window.Name}, 进程名: {window.ProcessName}, 所属用户: {window.Owner}");
         }
         
     }
