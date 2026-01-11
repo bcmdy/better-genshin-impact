@@ -152,6 +152,9 @@ public partial class PathingPartyConfig : ObservableObject
     private string _travelMode = "精准靠近";
     
     [ObservableProperty]
+    private bool _mwkFlyEnabled = true;
+    
+    [ObservableProperty]
     private string? _recoverAvatarIndex = null;
     
     public static PathingPartyConfig BuildDefault()

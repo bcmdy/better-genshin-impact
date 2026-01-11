@@ -349,6 +349,58 @@ public class Avatar
 
         return false;
     }
+    
+    /// <summary>
+    /// 尝试切换到本角色
+    /// </summary>
+    /// <param name="tryTimes"></param>
+    /// <param name="needLog"></param>
+    /// <returns></returns>
+    public bool TrySwitch2(int tryTimes = 4, bool needLog = true)
+    {
+        var context = new AvatarActiveCheckContext();
+        for (var i = 0; i < tryTimes; i++)
+        {
+            if (Ct is { IsCancellationRequested: true })
+            {
+                return false;
+            }
+
+            using var region = CaptureToRectArea();
+            // ThrowWhenDefeated(region, Ct);
+
+            // 切换成功
+            if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
+            {
+                if (needLog && i > 0)
+                {
+                    Logger.LogInformation("成功切换角色:{Name}", Name);
+                }
+                AutoFightTask.SwitchTryCount = 0;
+                
+                return true;
+            }
+
+            SimulateSwitchAction(Index);
+            
+            Offset60Fix(i);
+            
+            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (resultRa.IsExist())
+            {
+                if (i == 10)
+                {
+                    resultRa.Click();
+                    resultRa.ClickTo(-100,0);
+                }
+                return false;
+            }
+
+            Sleep(240, Ct);
+        }
+
+        return false;
+    }
 
     private void SimulateSwitchAction(int index)
     {

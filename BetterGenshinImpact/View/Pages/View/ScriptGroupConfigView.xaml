@@ -226,7 +226,7 @@
                                       Grid.RowSpan="2"
                                       Grid.Column="1"
                                       FontSize="10"
-                                      Margin="0,0,10,44"
+                                      Margin="0,0,10,34"
                                       HorizontalAlignment="Center"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Text="赶路模式"
@@ -254,7 +254,7 @@
                                       Grid.Column="2"
                                       Grid.RowSpan="2"
                                       FontSize="10"
-                                      Margin="0,0,10,44"
+                                      Margin="0,0,10,34"
                                       HorizontalAlignment="Center"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Text="赶路最小距离"
@@ -284,7 +284,7 @@
                                       Grid.RowSpan="2"
                                       Grid.Column="3"
                                       FontSize="10"
-                                      Margin="0,0,10,44"
+                                      Margin="0,0,10,34"
                                       HorizontalAlignment="Center"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Text="赶路角色"
@@ -295,6 +295,36 @@
                                   Width="100"
                                   ItemsSource="{Binding PathingConfig.HurryOnAvatarList}"
                                   SelectedItem="{Binding PathingConfig.HurryOnAvatar}" />
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="3"
+                                      FontSize="10"
+                                      Margin="10,70,5,0"
+                                      HorizontalAlignment="Left"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="飞行赶路"
+                                      TextWrapping="Wrap" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                                          Grid.RowSpan="2"
+                                                          Grid.Column="3"
+                                                          FontSize="10"
+                                                          Margin="0,64,5,0"
+                                                          HorizontalAlignment="Right"
+                                                          IsChecked="{Binding PathingConfig.MwkFlyEnabled, Mode=TwoWay}">
+                                             <ui:ToggleSwitch.Style>
+                                                 <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+                                                     <!-- 默认禁用 -->
+                                                     <Setter Property="IsEnabled" Value="False"/>
+                                                     <Style.Triggers>
+                                                         <!-- 当 HurryOnAvatar 等于 '玛位卡' 时启用 -->
+                                                         <DataTrigger Binding="{Binding PathingConfig.HurryOnAvatar}" Value="玛薇卡">
+                                                             <Setter Property="IsEnabled" Value="True"/>
+                                                         </DataTrigger>
+                                                     </Style.Triggers>
+                                                 </Style>
+                                             </ui:ToggleSwitch.Style>
+                                         </ui:ToggleSwitch>                
                         
                     </Grid>
                     <Grid Margin="16">
