@@ -20,6 +20,7 @@ using TorchSharp.Data;
 using Vanara.PInvoke;
 using Wpf.Ui.Controls;
 using System.Management;
+using System.Runtime.InteropServices;
 
 namespace BetterGenshinImpact.View;
 
@@ -111,11 +112,11 @@ public partial class PickerWindow : FluentWindow
 
             _ = User32.GetWindowThreadProcessId(hWnd, out var processId);
             var process = Process.GetProcessById((int)processId);
-            
+
             // 获取进程所属用户
             var owner = GetProcessOwner((int)processId) ?? string.Empty;
 
-            // 获取窗口图标 - 转换 HWND 为 IntPtr
+            // 获取窗口图标
             var icon = GetWindowIcon((IntPtr)hWnd);
 
             windows.Add(new CapturableWindow((IntPtr)hWnd, title.ToString(), process.ProcessName, owner, icon));
@@ -132,36 +133,103 @@ public partial class PickerWindow : FluentWindow
             .ToList();
 
         WindowList.ItemsSource = sortedWindows;
+        Debug.WriteLine("找到窗口数量: " + sortedWindows.Count);
+        //输出找到的LOG信息
+        foreach (var window in sortedWindows)
+        {
+            Debug.WriteLine($"窗口句柄: {window.Handle}, 标题: {window.Name}, 进程名: {window.ProcessName}, 所属用户: {window.Owner}");
+        }
+        
     }
     
-    private static string? GetProcessOwner(int processId)
+   // 替换原有 GetProcessOwner 方法为以下实现
+private static string? GetProcessOwner(int processId)
+{
+    const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+    const uint TOKEN_QUERY = 0x0008;
+    const int TokenUser = 1;
+
+    IntPtr hProcess = IntPtr.Zero;
+    IntPtr hToken = IntPtr.Zero;
+    IntPtr tokenInfo = IntPtr.Zero;
+
+    try
     {
-        try
+        hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)processId);
+        if (hProcess == IntPtr.Zero)
+            return null;
+
+        if (!OpenProcessToken(hProcess, TOKEN_QUERY, out hToken) || hToken == IntPtr.Zero)
+            return null;
+
+        // 首次调用获得所需缓冲区大小
+        if (GetTokenInformation(hToken, TokenUser, IntPtr.Zero, 0, out var requiredLength) || Marshal.GetLastWin32Error() == 122) // ERROR_INSUFFICIENT_BUFFER
         {
-            // 使用 WMI 查询进程所有者
-            using var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_Process WHERE ProcessId = {processId}");
-            foreach (ManagementObject obj in searcher.Get())
+            tokenInfo = Marshal.AllocHGlobal(requiredLength);
+            if (!GetTokenInformation(hToken, TokenUser, tokenInfo, requiredLength, out _))
+                return null;
+
+            var tokenUser = Marshal.PtrToStructure<TOKEN_USER>(tokenInfo);
+            var sid = tokenUser.User.Sid;
+            if (sid == IntPtr.Zero)
+                return null;
+
+            // Lookup account name and domain
+            uint nameLen = 0;
+            uint domainLen = 0;
+            _ = LookupAccountSid(null, sid, null, ref nameLen, null, ref domainLen, out _);
+            var nameSb = new StringBuilder((int)nameLen);
+            var domainSb = new StringBuilder((int)domainLen);
+            if (LookupAccountSid(null, sid, nameSb, ref nameLen, domainSb, ref domainLen, out _))
             {
-                // GetOwner 返回一个数组：User, Domain
-                var outParams = obj.InvokeMethod("GetOwner", null, null) as ManagementBaseObject;
-                if (outParams != null)
-                {
-                    var user = outParams["User"]?.ToString();
-                    var domain = outParams["Domain"]?.ToString();
-                    if (!string.IsNullOrEmpty(user))
-                    {
-                        return string.IsNullOrEmpty(domain) ? user : $"{domain}\\{user}";
-                    }
-                }
+                var domain = domainSb.ToString();
+                var name = nameSb.ToString();
+                return string.IsNullOrEmpty(domain) ? name : $"{domain}\\{name}";
             }
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"查询进程所属用户失败: {ex.Message}");
-        }
-
-        return null;
     }
+    catch (Exception ex)
+    {
+        Debug.WriteLine($"GetProcessOwner 异常: {ex.Message}");
+    }
+    finally
+    {
+        if (tokenInfo != IntPtr.Zero) Marshal.FreeHGlobal(tokenInfo);
+        if (hToken != IntPtr.Zero) CloseHandle(hToken);
+        if (hProcess != IntPtr.Zero) CloseHandle(hProcess);
+    }
+
+    return null;
+}
+
+// P/Invoke 和 结构体定义（放在同一文件任意位置）
+[StructLayout(LayoutKind.Sequential)]
+private struct SID_AND_ATTRIBUTES
+{
+    public IntPtr Sid;
+    public int Attributes;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+private struct TOKEN_USER
+{
+    public SID_AND_ATTRIBUTES User;
+}
+
+[DllImport("kernel32.dll", SetLastError = true)]
+private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+
+[DllImport("advapi32.dll", SetLastError = true)]
+private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
+
+[DllImport("advapi32.dll", SetLastError = true)]
+private static extern bool GetTokenInformation(IntPtr TokenHandle, int TokenInformationClass, IntPtr TokenInformation, int TokenInformationLength, out int ReturnLength);
+
+[DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+private static extern bool LookupAccountSid(string lpSystemName, IntPtr Sid, StringBuilder Name, ref uint cchName, StringBuilder ReferencedDomainName, ref uint cchReferencedDomainName, out int peUse);
+
+[DllImport("kernel32.dll", SetLastError = true)]
+private static extern bool CloseHandle(IntPtr hObject);
 
     private ImageSource? GetWindowIcon(IntPtr hWnd)
     {
