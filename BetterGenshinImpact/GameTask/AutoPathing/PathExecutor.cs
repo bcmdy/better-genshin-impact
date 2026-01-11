@@ -1299,7 +1299,7 @@ public class PathExecutor
                                 if (Bv.GetMotionStatus(screen2) != MotionStatus.Fly || !(pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                                     || nextWaypoint?.Action != MoveModeEnum.Fly.Code|| waypoint?.Action != MoveModeEnum.Fly.Code)
                                 {
-                                    Logger.LogInformation("自动赶路：{t} 节点接近...-i {t2} {t3} {t4}",PartyConfig.TravelMode,nextAvatarIndexStop,waypoint?.MoveMode,colorDifference);
+                                    Logger.LogInformation("自动赶路：{t} 节点接近...-i {t2} {t3} {t4}",PartyConfig.TravelMode,nextAvatarIndexStop,waypoint?.MoveMode,Math.Round(colorDifference));
                                     
                                     using var screen3 = CaptureToRectArea(); 
                                     var isFlying = Bv.GetMotionStatus(screen3) == MotionStatus.Fly;
@@ -1443,7 +1443,7 @@ public class PathExecutor
 
                     hurryOnLogo = false; 
               
-                    Logger.LogInformation("自动赶路：{t} 赶路...{t2}",avatar.Name,distance);
+                    Logger.LogInformation("自动赶路：{t} 赶路...{t2}",avatar.Name,Math.Round(distance));
                     if (avatar.Name == "玛薇卡") //连续点按E类型
                     {
                         // 获取两个点的颜色值

@@ -171,6 +171,7 @@ public class Avatar
         {
             if (AutoFightTask.FightWaypoint is not null)
             {
+                Sleep(1000, ct);
                 using var bitmap = CaptureToRectArea();
                 if (!SwimmingConfirm(bitmap)) //二次确认
                 {
