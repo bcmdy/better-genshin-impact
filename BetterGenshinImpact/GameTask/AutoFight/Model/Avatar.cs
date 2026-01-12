@@ -369,6 +369,15 @@ public class Avatar
 
             using var region = CaptureToRectArea();
             // ThrowWhenDefeated(region, Ct);
+            
+            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (resultRa.IsExist())
+            {
+                Logger.LogError("复活窗口出现，尝试点击确认");
+                resultRa.Click();
+                resultRa.ClickTo(-100,0);
+                return false;
+            }
 
             // 切换成功
             if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
@@ -385,17 +394,6 @@ public class Avatar
             SimulateSwitchAction(Index);
             
             Offset60Fix(i);
-            
-            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
-            if (resultRa.IsExist())
-            {
-                if (i == 10)
-                {
-                    resultRa.Click();
-                    resultRa.ClickTo(-100,0);
-                }
-                return false;
-            }
 
             Sleep(240, Ct);
         }

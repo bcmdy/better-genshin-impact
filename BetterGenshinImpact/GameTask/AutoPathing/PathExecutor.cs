@@ -1184,6 +1184,7 @@ public class PathExecutor
         bool? runToDash = false;
         double distanceHalf = 0;
         bool dushed = true;
+        bool relifed = false;
         
         string nextAvatarIndexStop = "";
         Avatar? avatar = null;
@@ -1305,7 +1306,22 @@ public class PathExecutor
                                     var isFlying = Bv.GetMotionStatus(screen3) == MotionStatus.Fly;
                                     if (!isFlying)
                                     {
-                                        Task.Run(() => {SwitchAvatar2(nextAvatarIndexStop); }, ct);
+                                        Task.Run(async () =>
+                                        {
+                                            var switchedAvatar = await SwitchAvatar2(nextAvatarIndexStop);
+                                           if( switchedAvatar == null)
+                                           {
+                                               if (PathingConditionConfig.AutoEatCount < 3)
+                                               {
+                                                   PathingConditionConfig.AutoEatCount = 2;
+                                               }
+                                               relifed = true;
+                                           }
+                                           else
+                                           {
+                                               relifed = false;
+                                           }
+                                        }, ct);
                                     }   
                                 }
                             }
@@ -1797,7 +1813,7 @@ public class PathExecutor
                             Logger.LogWarning("战斗节点靠近超时-1");
                             break;
                         }
-                    }
+                    }                   
                 }
             }
             
@@ -2085,6 +2101,7 @@ public class PathExecutor
             }
 
             await Delay(100, ct);
+            
         }
         
         // 抬起w键

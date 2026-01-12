@@ -29,28 +29,42 @@ public class SystemControl
             return IntPtr.Zero;
         }
 
-        // 直接exe启动
+        // 先检查是否已有当前用户的原神窗口
+        var existingHandle = FindGenshinImpactHandle();
+        if (existingHandle != 0)
+        {
+            //Logger.LogInformation($"检测到已运行的原神窗口，直接使用句柄：{existingHandle}");
+            return existingHandle;
+        }
+
+        //Logger.LogError("启动原神，路径111：" + path);
         Process.Start(new ProcessStartInfo(path)
         {
             UseShellExecute = true,
             Arguments = TaskContext.Instance().Config.GenshinStartConfig.GenshinStartArgs,
             WorkingDirectory = Path.GetDirectoryName(path)
         });
+       // Logger.LogError("启动原神，路径222：" + path);
 
-        for (var i = 0; i < 5; i++)
+        // 等待新启动的进程创建窗口，带超时保护
+        var sw = Stopwatch.StartNew();
+        var timeout = TimeSpan.FromSeconds(60);
+        while (sw.Elapsed < timeout)
         {
             var handle = FindGenshinImpactHandle();
             if (handle != 0)
             {
-                await Task.Delay(2333);
+                // 稳定等待，确保窗口完全初始化
+                await Task.Delay(3000);
                 handle = FindGenshinImpactHandle();
-                await Task.Delay(2577);
+                await Task.Delay(2500);
                 return handle;
             }
 
-            await Task.Delay(5577);
+            await Task.Delay(2000);
         }
 
+        // 超时后再做一次最终尝试
         return FindGenshinImpactHandle();
     }
 
@@ -82,7 +96,7 @@ public class SystemControl
         foreach (var name in names)
         {
             var pros = Process.GetProcessesByName(name);
-            Logger.LogError($"FindHandleByProcessName_ee: Searching for Process Name={name}, Found={pros.Length}, Current User={currentUser}");
+            // Logger.LogError($"FindHandleByProcessName_ee: Searching for Process Name={name}, Found={pros.Length}, Current User={currentUser}");
             if (pros.Length == 0)
                 continue;
 
@@ -113,7 +127,7 @@ public class SystemControl
             var fallback = pros.FirstOrDefault(pp => pp.MainWindowHandle != IntPtr.Zero);
             //log输出结果信息
             Debug.WriteLine( $"FindHandleByProcessName: Process Name={name}, Found={pros.Length}, Fallback Handle={(fallback != null ? fallback.MainWindowHandle.ToString() : "None")}");
-            Logger.LogError( $"FindHandleByProcessName: Process Name={name}, Found={pros.Length}, Fallback Handle={(fallback != null ? fallback.MainWindowHandle.ToString() : "None")}");
+            // Logger.LogError( $"FindHandleByProcessName: Process Name={name}, Found={pros.Length}, Fallback Handle={(fallback != null ? fallback.MainWindowHandle.ToString() : "None")}");
             if (fallback != null)
                 return fallback.MainWindowHandle;
         }
