@@ -29,23 +29,30 @@ public class SystemControl
             return IntPtr.Zero;
         }
 
-        // 先检查是否已有当前用户的原神窗口
-        var existingHandle = FindGenshinImpactHandle();
-        if (existingHandle != 0)
-        {
-            //Logger.LogInformation($"检测到已运行的原神窗口，直接使用句柄：{existingHandle}");
-            Logger.LogDebug("找到:{existingHandle}", existingHandle);
-            return existingHandle;
-        }
+        var cfg = TaskContext.Instance().Config.GenshinStartConfig;
+        var workdir = Path.GetDirectoryName(path) ?? "";
+        var arg = cfg.GenshinStartArgs;
 
-        //Logger.LogError("启动原神，路径111：" + path);
-        Process.Start(new ProcessStartInfo(path)
+        if (cfg.StartGameWithCmd)
         {
-            UseShellExecute = true,
-            Arguments = TaskContext.Instance().Config.GenshinStartConfig.GenshinStartArgs,
-            WorkingDirectory = Path.GetDirectoryName(path)
-        });
-       // Logger.LogError("启动原神，路径222：" + path);
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" /d \"{workdir}\" \"{path}\" {arg}",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            Process.Start(psi);
+        }
+        else
+        {
+            Process.Start(new ProcessStartInfo(path)
+            {
+                UseShellExecute = true,
+                Arguments = arg,
+                WorkingDirectory = workdir
+            });
+        }
 
         // 等待新启动的进程创建窗口，带超时保护
         var sw = Stopwatch.StartNew();
