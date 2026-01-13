@@ -628,6 +628,7 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -663,6 +664,7 @@
                                             IsSnapToTickEnabled="True"
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Center" />
+                                    
                                     <ui:TextBlock Grid.Row="1"
                                                   Grid.Column="0"
                                                   Grid.ColumnSpan="3"
@@ -712,6 +714,24 @@
                                                   FontTypography="Body"
                                                   Text="尝试面敌"
                                                   TextWrapping="Wrap" />
+                                    
+                                    <ui:TextBlock Grid.Row="3"
+                                                  Grid.Column="0"
+                                                  Grid.ColumnSpan="1"
+                                                  HorizontalAlignment="Left"
+                                                  VerticalAlignment="Center"
+                                                  FontTypography="Body"
+                                                  Margin="0,0,0,0"
+                                                  Text="单次接近敌人行走时间（毫秒）："
+                                                  TextWrapping="Wrap" />
+                                                  
+                                     <ui:TextBox Grid.Row="3"
+                                                  Grid.Column="1"
+                                                  Margin="0,0,36,0"
+                                                  HorizontalAlignment="Center"
+                                                  IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
+                                                  Text="{Binding Config.AutoFightConfig.FinishDetectConfig.GoDistance, Mode=TwoWay}" />
+                                    
                                 </Grid>
 
                             <Grid Margin="16">

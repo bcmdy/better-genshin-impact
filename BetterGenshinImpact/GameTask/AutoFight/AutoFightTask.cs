@@ -773,7 +773,7 @@ public class AutoFightTask : ISoloTask
                             try
                             {
                                 await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime,
-                                    ct, true, _taskParam.RotaryFactor,avatar);
+                                    ct, true, _taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance);
                             }
                             catch (Exception ex)
                             {
@@ -1163,7 +1163,7 @@ public class AutoFightTask : ISoloTask
             bool? result = null;
             try
             {
-                result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar);
+                result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance);
             }
             catch (Exception ex)
             {
@@ -1216,7 +1216,7 @@ public class AutoFightTask : ISoloTask
                 Task.Run(() =>
                 {
                     Scalar bloodLower = new Scalar(255, 90, 90);
-                    MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct);
+                    MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct,_taskParam.FinishDetectConfig.GoDistance);
                 }, _ct);
             }
             catch (Exception ex)

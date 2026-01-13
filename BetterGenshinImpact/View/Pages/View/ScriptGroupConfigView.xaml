@@ -1111,7 +1111,7 @@
                                     Text="{Binding PathingConfig.AutoFightConfig.ActionSchedulerByCd, Mode=TwoWay}"
                                     TextWrapping="Wrap" />
                     </Grid>
-                    <Grid Margin="16">
+                    <Grid Margin="16,16,16,10">
 
                         <!-- 自动检测战斗结束 -->
                         <ui:CardExpander Margin="0,0,36,12"
@@ -1216,6 +1216,7 @@
                                                                 MinWidth="180"
                                                                 MaxWidth="800"
                                                                 Margin="0,0,36,0"
+                                                                HorizontalAlignment="Center"
                                                                 Text="{Binding PathingConfig.AutoFightConfig.FinishDetectConfig.FastCheckParams, Mode=TwoWay}"
                                                                 TextWrapping="Wrap" />
                                                 </Grid>
@@ -1224,8 +1225,9 @@
                                     </Grid>
                                 </Grid>
                                 
-                                  <Grid Margin="16,0,16,16">
+                                  <Grid Margin="16,0,16,5">
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
@@ -1313,6 +1315,22 @@
                                                   FontTypography="Body"
                                                   Text="尝试面敌"
                                                   TextWrapping="Wrap" />
+                                                  
+                                                  <ui:TextBlock Grid.Row="3"
+                                                                                                    Grid.Column="0"
+                                                                                                    Grid.ColumnSpan="1"
+                                                                                                    HorizontalAlignment="Left"
+                                                                                                    VerticalAlignment="Center"
+                                                                                                    FontTypography="Body"
+                                                                                                    Margin="0,0,0,0"
+                                                                                                    Text="单次接近敌人行走时间（毫秒）："
+                                                                                                    TextWrapping="Wrap" />
+                                                                                                    
+                                                                                       <ui:TextBox Grid.Row="3"
+                                                                                                    Grid.Column="1"
+                                                                                                    Margin="0,0,36,0"
+                                                                                                    IsEnabled="{Binding PathingConfig.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
+                                                                                                    Text="{Binding PathingConfig.AutoFightConfig.FinishDetectConfig.GoDistance, Mode=TwoWay}" />
                                 </Grid>
                                 
                                 <Grid Margin="16">
@@ -1371,7 +1389,7 @@
                     </Grid>
                     
                     <!-- 盾奶位角色优先释放技能 -->
-                    <ui:CardExpander Margin="16,10,52,12"
+                    <ui:CardExpander Margin="16,0,52,12"
                                  ContentPadding="0"
                                  IsExpanded="False">
 

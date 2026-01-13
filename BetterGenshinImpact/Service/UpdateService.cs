@@ -127,6 +127,7 @@ public class UpdateService : IUpdateService
                     case CheckUpdateWindow.CheckUpdateWindowButton.Update:
                     {
                         // 唤起更新程序
+                        return;
                         string updaterExePath = Global.Absolute("BetterGI.update.exe");
                         if (!File.Exists(updaterExePath))
                         {

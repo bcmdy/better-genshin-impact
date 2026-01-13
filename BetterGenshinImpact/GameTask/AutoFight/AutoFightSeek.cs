@@ -26,12 +26,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
     public static  class MoveForwardTask
     {
 
-        public static async Task ExecuteAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct)
+        public static async Task ExecuteAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct,int distance = 1000)
         {
-            await MoveForwardAsync(scalarLower, scalarHigher, logger, ct);
+            await MoveForwardAsync(scalarLower, scalarHigher, logger, ct,distance);
         }
 
-        public static Task<bool?> MoveForwardAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct)
+        public static Task<bool?> MoveForwardAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct,int distance = 1000)
         {
             using var image2 = CaptureToRectArea();
             using Mat mask2 = OpenCvCommonHelper.Threshold(
@@ -78,7 +78,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
                                 }, ct);
@@ -94,7 +94,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyUp);
                                 }, ct);
@@ -110,7 +110,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
                                 }, ct);
@@ -126,7 +126,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
                                     Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyUp);
                                 }, ct);
@@ -141,7 +141,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(() =>
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                                 }, ct);
                             }
@@ -155,7 +155,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(() =>
                                 {
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                    Task.Delay(1000, ct).Wait();
+                                    Task.Delay(distance, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
                                 }, ct);
                             }
@@ -188,7 +188,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Task.Run(() =>
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(1000, ct).Wait();
+                                Task.Delay(distance, ct).Wait();
                                 Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                             }, ct);
                         }
@@ -198,7 +198,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Task.Run(() =>
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                Task.Delay(1000, ct).Wait();
+                                Task.Delay(distance, ct).Wait();
                                 Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
                             }, ct);
                         }
@@ -240,7 +240,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             { 7, 10 }, { 8, 5 }, { 9, 1 }, { 10, -5 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
         };
         
-        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null)
+        public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null,int distance = 1000)
         {
             var bloodLower = new Scalar(255, 90, 90);
 
@@ -310,7 +310,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         if (height > 2 && height < 7)
                         {
                             // logger.LogInformation("画面内有找到敌人，尝试移动...");
-                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
+                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct,distance); }, ct);
                             return false;
                         }
 
@@ -429,7 +429,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         if (height2 > 2 && height2 < 7)
                         {
                             // logger.LogInformation("画面内有找到敌人，尝试移动...");
-                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct); }, ct);
+                            Task.Run(() => { MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, logger, ct,distance); }, ct);
                             return false;
                         }
 

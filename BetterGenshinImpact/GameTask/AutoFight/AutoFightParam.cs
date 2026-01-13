@@ -16,6 +16,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public string CheckEndDelay = "";
         public string BeforeDetectDelay = "";
         public bool RotateFindEnemyEnabled = false;
+        public int GoDistance { get; set; } = 1000;
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -33,7 +34,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.CheckEndDelay = autoFightConfig.FinishDetectConfig.CheckEndDelay;
         FinishDetectConfig.BeforeDetectDelay = autoFightConfig.FinishDetectConfig.BeforeDetectDelay;
         FinishDetectConfig.RotateFindEnemyEnabled = autoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled;
-
+        FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -63,6 +64,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
         UseSkillList = autoFightConfig.UseSkillList;
         QRecoverAvatar = autoFightConfig.QRecoverAvatar;
+        
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
