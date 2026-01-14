@@ -635,7 +635,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private List<string> _craftingBenchCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
-    [ObservableProperty] private List<string> _adventurersGuildCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
+    [ObservableProperty] private List<string> _adventurersGuildCountry = ["挪德卡莱", "枫丹", "稻妻", "璃月", "蒙德"];
 
     // [ObservableProperty] private List<string> _domainNameList = ["","新建自定义任务",.._customDomainList,..MapLazyAssets.Instance.DomainNameList];
 
