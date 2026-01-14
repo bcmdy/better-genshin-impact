@@ -130,7 +130,7 @@ public abstract class SceneBaseMap : ISceneMap
         {
             try
             {
-                var result = SiftMatcher.KnnMatch(layer.TrainKeyPoints, layer.TrainDescriptors, greyMiniMapMat, null, DescriptorMatcherType.BruteForce);
+                var result = SiftMatcher.KnnMatch(layer.TrainKeyPoints, layer.TrainDescriptors, greyMiniMapMat);
                 if (result != default)
                 {
                     return result;
