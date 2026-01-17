@@ -2662,7 +2662,12 @@ public partial class OneDragonFlowViewModel : ViewModel
     private int _exitPhoneCount = 3; //,账号数为图标数量-1，默认记录2个账号
     private async Task<bool> SwitchAccount(CancellationToken cts,int switchTime = 1) //基于重新登录函数ExitAndReloginJob改造
     {
-
+        //回到主页
+        await new ReturnMainUiTask().Start(cts);
+        
+        //月卡检测
+        await _blessingOfTheWelkinMoonTask.Start(cts);
+        
         //============== 退出游戏流程 ==============
         Logger.LogInformation("退出至登录页面");
         _assets = AutoWoodAssets.Instance;
@@ -2924,6 +2929,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             {
                 clickCnt++;
                 GameCaptureRegion.GameRegion1080PPosClick(955, 656);
+                GameCaptureRegion.GameRegion1080PPosClick(1660, 282);//非凌晨4点，点击屏幕
             }
             else
             {
@@ -2952,9 +2958,18 @@ public partial class OneDragonFlowViewModel : ViewModel
             {
                 await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
                 GameCaptureRegion.GameRegion1080PPosClick(955, 656);//非凌晨4点，点击屏幕
+                GameCaptureRegion.GameRegion1080PPosClick(1660, 282);//非凌晨4点，点击屏幕
             }
+            
             await Delay(1000, cts);
             
+           if (i == 49)
+           {
+               Logger.LogWarning("更换账号失败");
+               await Delay(500, cts);
+               return false;
+           }
+           
         }
         await Delay(500, cts);
         return true;
