@@ -545,7 +545,7 @@ public class AutoFightTask : ISoloTask
                         if (minCoolDown > 0)
                         {
                             TaskControl.Logger.LogInformation("队伍中所有角色的技能都在冷却中,等待{MinCoolDown}秒后继续。", Math.Round(minCoolDown, 2));
-                            await Delay((int)Math.Ceiling(minCoolDown * 1000), ct);
+                            await Delay((int)Math.Ceiling(minCoolDown * 1000), cts2.Token);
                         }
                     }
 
@@ -567,9 +567,9 @@ public class AutoFightTask : ISoloTask
                             image = CaptureToRectArea();
                             
                             await AutoFightSkill.EnsureGuardianSkill(guardianAvatar,lastCommand,lastFightName,
-                            _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,ct,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
+                            _taskParam.GuardianAvatar,_taskParam.GuardianAvatarHold,5,cts2.Token,_taskParam.GuardianCombatSkip,_taskParam.BurstEnabled);
                             
-                            if (_taskParam.AutoCombatEq && guardianAvatar.ManualSkillCd == 0 && !ct.IsCancellationRequested)
+                            if (_taskParam.AutoCombatEq && guardianAvatar.ManualSkillCd == 0 && !cts2.Token.IsCancellationRequested)
                             {
                                 if (timeoutStopwatch.Elapsed > fightTimeout)
                                 {
@@ -618,7 +618,7 @@ public class AutoFightTask : ISoloTask
                                     //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     // }
                                 
-                                    if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, ct))
+                                    if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, cts2.Token))
                                     {
                                         avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),1); 
                                         var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
@@ -646,7 +646,7 @@ public class AutoFightTask : ISoloTask
                                         {
                                             lastFightName = avatarQ.Name;
                                             countFight++;
-                                            if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, ct))
+                                            if (useE && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, false, 1, cts2.Token))
                                             {
                                                 avatarQ.UseSkill(avatarQHold);
                                                 if (useA)
@@ -664,7 +664,7 @@ public class AutoFightTask : ISoloTask
                                                 try
                                                 {
                                                     while (!await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ,
-                                                               false, 1, ct, imageAfterUseSkill) && retry > 0)
+                                                               false, 1, cts2.Token, imageAfterUseSkill) && retry > 0)
                                                     {
                                                         Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                                         Simulation.ReleaseAllKey();
@@ -682,7 +682,7 @@ public class AutoFightTask : ISoloTask
                                                         // 获取新的截图
                                                         imageAfterUseSkill = CaptureToRectArea();
 
-                                                        await Task.Delay(30, ct);
+                                                        await Task.Delay(30, cts2.Token);
                                                         retry -= 1;
                                                     }
                                                 }
@@ -699,7 +699,7 @@ public class AutoFightTask : ISoloTask
                                                 }
                                             }
                                             
-                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct,avatarQ);
+                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, cts2.Token,avatarQ);
                                             if (!fightEndFlag)
                                             { 
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
@@ -708,19 +708,20 @@ public class AutoFightTask : ISoloTask
 
                                                 try
                                                 {
-                                                    while (imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo)
-                                                               .IsExist()
-                                                           && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ,
-                                                               true, 1, ct, imageAfterBurst, false)
-                                                           && ms > 0)
+                                                    while (imageAfterBurst.Find(ElementAssets.Instance.PaimonMenuRo).IsExist() && ms > 0)
                                                     {
+                                                        var skillSucceeded = await AutoFightSkill.AvatarSkillAsync(Logger, avatarQ, true, 1, cts2.Token, imageAfterBurst, false);
+
+                                                        if (skillSucceeded)
+                                                        {
+                                                            break;
+                                                        }
+
+                                                        // 原逻辑：触发一次大招并等待，再更新截图重试
                                                         Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                                        await Task.Delay(50, ct);
+                                                        await Task.Delay(50, cts2.Token);
 
-                                                        // 释放旧的截图资源
                                                         imageAfterBurst.Dispose();
-
-                                                        // 获取新的截图
                                                         imageAfterBurst = CaptureToRectArea();
 
                                                         ms -= 1;
@@ -751,7 +752,7 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
                                 useEq.Clear(); 
-                                if (guardianAvatar.IsSkillReady() && !ct.IsCancellationRequested)
+                                if (guardianAvatar.IsSkillReady() && !cts2.Token.IsCancellationRequested)
                                 {
                                     if(i>0)i--;
                                     continue;
@@ -773,7 +774,7 @@ public class AutoFightTask : ISoloTask
                             try
                             {
                                 await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime,
-                                    ct, true, _taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance);
+                                    cts2.Token, true, _taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance);
                             }
                             catch (Exception ex)
                             {
@@ -848,7 +849,7 @@ public class AutoFightTask : ISoloTask
                         #region Q前寻敌处理
                         if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.CheckBeforeBurst && (command.Method == Method.Burst || command.Args.Contains("q") || command.Args.Contains("Q")))
                         {
-                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, ct,avatar);
+                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, cts2.Token,avatar);
                         }
                         #endregion
                         
@@ -884,7 +885,7 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
 
-                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime,ct,avatar);
+                                fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime,cts2.Token,avatar);
                             }
                         }
 
