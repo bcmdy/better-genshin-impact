@@ -274,6 +274,7 @@ public class PathExecutor
                                 }
                                 else
                                 {
+                                    AutoFightTask.FightEndFlag = true;
                                     AutoFightTask.FightWaypoint = null;
                                 }
                                 // 执行 action
