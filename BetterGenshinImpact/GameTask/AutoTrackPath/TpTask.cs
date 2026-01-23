@@ -266,7 +266,9 @@ public class TpTask
             // 直接切换地区
             await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
         }
-        
+        await Delay(50, ct);
+
+
         // 3. 调整初始缩放等级，避免识别中心点失败
         var zoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
         if (_tpConfig.MapZoomEnabled)
