@@ -15,6 +15,7 @@ public class ElementAssets : BaseAssets<ElementAssets>
     public RecognitionObject BtnWhiteCancel;
     public RecognitionObject BtnBlackConfirm;
     public RecognitionObject BtnBlackCancel;
+    public RecognitionObject BtnBackTeyvat;
     public RecognitionObject BtnOnlineYes;
     public RecognitionObject BtnOnlineNo;
     public Lazy<RecognitionObject> BtnExitDoor;
@@ -90,6 +91,10 @@ public class ElementAssets : BaseAssets<ElementAssets>
     
     public RecognitionObject MiMenuRo;
 
+    public RecognitionObject EscDown;
+    public RecognitionObject EscWonderlandHome;
+    public RecognitionObject WonderlandEnter;
+
     public RecognitionObject Index1;
     public RecognitionObject Index2;
     public RecognitionObject Index3;
@@ -148,6 +153,12 @@ public class ElementAssets : BaseAssets<ElementAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "btn_black_cancel.png", systemInfo),
             Use3Channels = true
+        }.InitTemplate();
+        BtnBackTeyvat = new RecognitionObject
+        {
+            Name = "BtnBackTeyvat",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "btn_back_teyvat.png", systemInfo),
         }.InitTemplate();
         BtnOnlineYes = new RecognitionObject
         {
@@ -688,6 +699,25 @@ public class ElementAssets : BaseAssets<ElementAssets>
             TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "mi_menu.png"),
             RegionOfInterest = new Rect(CaptureRect.Width *8/10, CaptureRect.Height *8/10, CaptureRect.Width *2/10, CaptureRect.Height *2/10),
             DrawOnWindow = false
+        }.InitTemplate();
+        
+        EscDown = new RecognitionObject
+        {
+            Name = "EscDown",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "esc_down.png", systemInfo),
+        }.InitTemplate();
+        EscWonderlandHome = new RecognitionObject
+        {
+            Name = "EscWonderlandHome",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "esc_wonderland_home.png", systemInfo),
+        }.InitTemplate();
+        WonderlandEnter = new RecognitionObject
+        {
+            Name = "WonderlandEnter",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "wonderland_enter.png", systemInfo),
         }.InitTemplate();
 
         Rect partyRect = new Rect(CaptureRect.Width - (int)(65 * AssetScale), (int)(155 * AssetScale), (int)(35 * AssetScale), (int)(600 * AssetScale));
