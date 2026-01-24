@@ -815,26 +815,33 @@ public class PathExecutor
                         } 
                         var num = _combatScenes.GetAvatars().Count();
                         List<int> useEqList = Enumerable.Range(1, num).ToList();
-                        var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, currentIndex);
-                        if (qSkill.Contains(avatar.Index))
+                        try
                         {
-                            if (avatar.TrySwitch())
+                            var qSkill = await AutoFightSkill.AvatarQSkillAsync(bitmap, useEqList, currentIndex);
+                            if (qSkill.Contains(avatar.Index))
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                await Delay(5000, ct);
-                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                                return true;
+                                if (avatar.TrySwitch())
+                                {
+                                    Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                    await Delay(5000, ct);
+                                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                                    return true;
+                                }
+                            }
+                            else if (avatar.Name == "爱可菲" || avatar.Name == "闲云")
+                            {
+                                if (avatar.TrySwitch())
+                                {
+                                    Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
+                                    await Delay(5000, ct);
+                                    await SwitchAvatar(PartyConfig.MainAvatarIndex);
+                                    return true;
+                                }
                             }
                         }
-                        else if (avatar.Name == "爱可菲" || avatar.Name == "闲云")
+                        catch (Exception ex)
                         {
-                            if (avatar.TrySwitch())
-                            {
-                                Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                                await Delay(5000, ct);
-                                await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                                return true;
-                            }
+                            Logger.LogError("尝试识别元素爆发技能失败，原因：{Ex}", ex.Message);
                         }
                     }
                     else

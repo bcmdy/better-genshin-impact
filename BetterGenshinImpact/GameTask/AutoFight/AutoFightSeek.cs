@@ -20,15 +20,40 @@ using BetterGenshinImpact.Core.Script.Dependence;
 using SDPoint = System.Drawing.Point;
 using System.Drawing;
 using System.Windows.Forms;
+using System;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
     public static  class MoveForwardTask
     {
-
-        public static async Task ExecuteAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct,int distance = 1000)
+        // 新增：通用异步按键保持方法，确保在取消/异常时释放按键
+        private static async Task HoldKeysAsync((GIActions action, KeyType type)[] holdKeys, int delayMs, CancellationToken ct)
         {
-            await MoveForwardAsync(scalarLower, scalarHigher, logger, ct,distance);
+            // 按下所有按键
+            foreach (var k in holdKeys)
+            {
+                Simulation.SendInput.SimulateAction(k.action, k.type);
+            }
+
+            try
+            {
+                // 使用 await 等待，可响应 ct 取消
+                await Task.Delay(delayMs, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // 取消时吞掉异常，后续 finally 确保释放按键
+            }
+            finally
+            {
+                // 释放对应按键：用 KeyUp 或不带类型的 SimulateAction（保持兼容原调用）
+                foreach (var k in holdKeys)
+                {
+                    // 如果原先按下是 KeyType.KeyDown，则释放用 KeyType.KeyUp
+                    // 这里统一使用 KeyUp 释放
+                    Simulation.SendInput.SimulateAction(k.action, KeyType.KeyUp);
+                }
+            }
         }
 
         public static Task<bool?> MoveForwardAsync(Scalar scalarLower, Scalar scalarHigher, ILogger logger, CancellationToken ct,int distance = 1000)
@@ -74,13 +99,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在左上，向前加向左移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -90,13 +115,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在右上，向前加向右移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -106,13 +131,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在左下，向后加向左移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -122,13 +147,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在右下，向后加向右移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -138,11 +163,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在上方，向前移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -152,11 +179,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (height <= 6)
                             {
                                 logger.LogInformation("敌人在下方，向后移动");
-                                Task.Run(() =>
+                                Task.Run(async () =>
                                 {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                    Task.Delay(distance, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
+                                    await HoldKeysAsync(
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        distance,
+                                        ct
+                                    ).ConfigureAwait(false);
                                 }, ct);
                             }
                         }
@@ -185,21 +214,25 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         else if (firstPixel.X < 1315 && firstPixel.X > 500 && firstPixel.Y < 800 && height > 2)
                         {
                             logger.LogInformation("敌人在上方，向前移动");
-                            Task.Run(() =>
+                            Task.Run(async () =>
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                                Task.Delay(distance, ct).Wait();
-                                Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                                await HoldKeysAsync(
+                                    new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                    distance,
+                                    ct
+                                ).ConfigureAwait(false);
                             }, ct);
                         }
                         else if (firstPixel.X < 1315 && firstPixel.X > 500 && firstPixel.Y > 800 && height > 2)
                         {
                             logger.LogInformation("敌人在下方，向后移动");
-                            Task.Run(() =>
+                            Task.Run(async () =>
                             {
-                                Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
-                                Task.Delay(distance, ct).Wait();
-                                Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyUp);
+                                await HoldKeysAsync(
+                                    new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                    distance,
+                                    ct
+                                ).ConfigureAwait(false);
                             }, ct);
                         }
                         else if (height < 3)
@@ -666,86 +699,95 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         /// <param name="needLog">是否需要日志输出</param>
         /// <param name="isResetCd">是否重置技能冷却状态</param>
         /// <returns>技能是否就绪</returns>
-        public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills , int retryCount, 
-            CancellationToken ct,ImageRegion? image = null,bool needLog = false, bool isResetCd = false)
+        // csharp
+        public static async Task<bool> AvatarSkillAsync(ILogger logger, Avatar guardianAvatar, bool skills, int retryCount,
+            CancellationToken ct, ImageRegion? image = null, bool needLog = false, bool isResetCd = false)
         {
-            if (guardianAvatar.TrySwitch())
+            if (!guardianAvatar.TrySwitch())
             {
-                Scalar bloodLower = new Scalar(255, 255, 255);
-                int attempt = 0;
-                var model = image is null;
-
-                while (attempt < retryCount)
+                if (!isResetCd)
+                    return false;
+        
+                if (skills) guardianAvatar.IsBurstReady = false;
+                else guardianAvatar.AfterUseSkill();
+        
+                return false;
+            }
+        
+            Scalar bloodLower = new Scalar(255, 255, 255);
+            int attempt = 0;
+            var model = image is null;
+        
+            while (attempt < retryCount)
+            {
+                if (ct.IsCancellationRequested) return false;
+        
+                ImageRegion? image2 = null;
+                try
                 {
-                    var image2 = model ? CaptureToRectArea() : image ?? CaptureToRectArea();
-
-                    // var image2 = CaptureToRectArea();
-
+                    image2 = model ? CaptureToRectArea() : image ?? CaptureToRectArea();
+        
                     var skillAra = !skills
                         ? new Rect(image2.Width * 1688 / 1920, image2.Height * 988 / 1080,
                             image2.Width * 22 / 1920, image2.Height * 12 / 1080) //E技能区域
-                        
                         : new Rect(image2.Width * 1809 / 1920, image2.Height * 968 / 1080,
                             image2.Width * 30 / 1920, image2.Height * 15 / 1080); //Q技能区域
-                    
-                    var mask2 = OpenCvCommonHelper.Threshold(
+        
+                    using var mask2 = OpenCvCommonHelper.Threshold(
                         image2.DeriveCrop(skillAra).SrcMat,
                         bloodLower,
                         bloodLower
                     );
-
+        
                     using var labels2 = new Mat();
                     using var stats2 = new Mat();
                     using var centroids2 = new Mat();
-
+        
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                    if (model) image2.Dispose();
-                    
-                    if (needLog) Logger.LogInformation("技能状态：{guardianAvatar.Name} - {skills} 状态 {text}", 
-                        guardianAvatar.Name, skills?"Q技能":"E技能", numLabels2 > 1?"冷却中":"就绪");
-                    
-                    // Logger.LogInformation("技能状态：{numLabels2} 数量", numLabels2);
+        
+                    if (needLog) logger.LogInformation("技能状态：{Name} - {Skill} 状态 {Text}",
+                        guardianAvatar.Name, skills ? "Q技能" : "E技能", numLabels2 > 1 ? "冷却中" : "就绪");
+        
                     if (numLabels2 > 2)
                     {
-                        if (!isResetCd)
-                        {
-                            return true;
-                        }
-                        if (skills)
-                        {
-                            guardianAvatar.IsBurstReady = true;
-                        }
-                        else
-                        {
-                            guardianAvatar.ManualSkillCd = 0;
-                        }
-                        
+                        if (!isResetCd) return true;
+        
+                        if (skills) guardianAvatar.IsBurstReady = true;
+                        else guardianAvatar.ManualSkillCd = 0;
+        
                         return true;
                     }
-                    
+        
                     attempt++;
-                   if (retryCount > 1) await Task.Delay(100, ct);
+        
+                    if (retryCount > 1)
+                    {
+                        try
+                        {
+                            await Task.Delay(100, ct).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                finally
+                {
+                    if (model && image2 != null)
+                    {
+                        image2.Dispose();
+                    }
                 }
             }
-
-            if (!isResetCd)
-            {
-                return false;
-            }
-
-            if (skills)
-            {
-                guardianAvatar.IsBurstReady = false;
-            }
-            else
-            {
-                guardianAvatar.AfterUseSkill();
-            }
-
+        
+            if (!isResetCd) return false;
+        
+            if (skills) guardianAvatar.IsBurstReady = false;
+            else guardianAvatar.AfterUseSkill();
+        
             return false;
-
         }
         
         public static Task<List<int>> AvatarQSkillAsync(ImageRegion image, List<int>? useEqList = null,int? avatarCurrent = null)
