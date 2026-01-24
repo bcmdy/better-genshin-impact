@@ -978,7 +978,7 @@ public class AutoFightTask : ISoloTask
                 
                 //等待寻找2秒队伍按钮出现
                 var timeWaitStart = 0;
-                while(timeWaitStart < 2000)
+                while(timeWaitStart < 6000)
                 {
                     using var ra = CaptureToRectArea();
                     var partyViewBtn = ra.Find(ElementAssets.Instance.PartyBtnChooseView);
