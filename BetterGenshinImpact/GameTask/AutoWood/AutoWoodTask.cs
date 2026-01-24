@@ -25,6 +25,7 @@ using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.GameTask.Common.Element.Assets;
 using BetterGenshinImpact.GameTask.Common.Job;
 using BetterGenshinImpact.Core.Recognition.OCR;
+using BetterGenshinImpact.GameTask.Common.Job;
 
 namespace BetterGenshinImpact.GameTask.AutoWood;
 
@@ -49,6 +50,8 @@ public partial class AutoWoodTask : ISoloTask
 
     private CancellationToken _ct;
     
+    private EnterAndExitWonderlandJob _enterAndExitWonderlandJob;
+    
     // 静态字段，用于记录全局的木材类型和数量
     public static Dictionary<string, int> GlobalResultDict = new Dictionary<string, int>();
 
@@ -59,10 +62,11 @@ public partial class AutoWoodTask : ISoloTask
         AutoWoodAssets.DestroyInstance();
     }
 
-    public Task Start(CancellationToken ct)
+    public async Task Start(CancellationToken ct)
     {
         _assets = AutoWoodAssets.Instance;
         _printer = new WoodStatisticsPrinter(_assets);
+        _enterAndExitWonderlandJob = new EnterAndExitWonderlandJob();
         var runTimeWatch = new Stopwatch();
         _ct = ct;
         _printer.Ct = _ct;
@@ -134,12 +138,12 @@ public partial class AutoWoodTask : ISoloTask
                     break;
                 }
 
-                Felling(_taskParam,i + 1 == _taskParam.WoodRoundNum).Wait();
+                await Felling(_taskParam, i + 1 == _taskParam.WoodRoundNum);
                 VisionContext.Instance().DrawContent.ClearAll();
                 Sleep(500, _ct);
             }
 
-            return Task.CompletedTask;
+            return;
         }
         finally
         {
@@ -470,11 +474,19 @@ public partial class AutoWoodTask : ISoloTask
                 return;
             }
 
-            // 2. 按下 ESC 打开菜单 并退出游戏
-            PressEsc();
+            if (TaskContext.Instance().Config.AutoWoodConfig.UseWonderlandRefresh)
+            {
+                // 使用进出千星奇域刷新CD
+                await _enterAndExitWonderlandJob.Start(_ct);
+            }
+            else
+            {
+                // 2. 按下 ESC 打开菜单 并退出游戏
+                PressEsc(taskParam);
 
-            // 3. 等待进入游戏
-            EnterGame();
+                // 3. 等待进入游戏
+                EnterGame(taskParam);
+            }
 
             // 手动 GC
             GC.Collect();
@@ -556,7 +568,7 @@ public partial class AutoWoodTask : ISoloTask
         // Sleep(TaskContext.Instance().Config.AutoWoodConfig.AfterZSleepDelay, _ct);
     }
 
-    private void PressEsc()
+    private void PressEsc(WoodTaskParam taskParam)
     {
         SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
         Simulation.SendInput.Keyboard.KeyPress(VK.VK_ESCAPE);
@@ -605,7 +617,7 @@ public partial class AutoWoodTask : ISoloTask
         });
     }
 
-    private void EnterGame( )
+    private void EnterGame(WoodTaskParam taskParam)
     {
         if (_login3RdParty.IsAvailabled)
         {
