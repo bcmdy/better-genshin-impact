@@ -76,6 +76,10 @@ public class AutoFightTask : ISoloTask
     
     private static readonly object ZLock = new object(); 
     
+    private readonly double _assetScale = TaskContext.Instance().SystemInfo.AssetScale;
+    
+    private readonly ReturnMainUiTask _returnMainUiTask = new();
+    
     private class TaskFightFinishDetectConfig
     {
         public int DelayTime = 1500;
@@ -960,7 +964,40 @@ public class AutoFightTask : ISoloTask
             // 队伍中存在万叶的时候使用一次长E
             var picker = combatScenes.SelectAvatar("枫原万叶") ?? combatScenes.SelectAvatar("琴");
             
-            var oldPartyName = RunnerContext.Instance.PartyName;
+            string? oldPartyName = null;
+            if (RunnerContext.Instance.PartyName is not null)
+            {
+                 oldPartyName = RunnerContext.Instance.PartyName;
+            }
+            else
+            {
+                await Delay(2000, ct);
+                await _returnMainUiTask.Start(ct);
+                Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
+                await Delay(2000, ct);
+                
+                //等待寻找2秒队伍按钮出现
+                var timeWaitStart = 0;
+                while(timeWaitStart < 2000)
+                {
+                    using var ra = CaptureToRectArea();
+                    var partyViewBtn = ra.Find(ElementAssets.Instance.PartyBtnChooseView);
+                    if (partyViewBtn.IsExist())
+                    {
+                        // OCR 当前队伍名称（无法单字，中间禁止空格）
+                        oldPartyName = ra.Find(new RecognitionObject
+                        {
+                            RecognitionType = RecognitionTypes.Ocr,
+                            RegionOfInterest = new Rect(partyViewBtn.Right, partyViewBtn.Top, (int)(350 * _assetScale),
+                                partyViewBtn.Height)
+                        }).Text;
+                        break;
+                    }
+                    await Delay(200, ct);
+                    timeWaitStart += 200;
+                }
+            }
+            
             var switchPartyFlag = false;
             if (picker == null && !timeOutFlag &&!string.IsNullOrEmpty(_taskParam.KazuhaPartyName) && oldPartyName != _taskParam.KazuhaPartyName)
             {
