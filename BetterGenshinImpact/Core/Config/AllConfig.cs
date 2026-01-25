@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.GetGridIcons;
 using BetterGenshinImpact.GameTask.AutoEat;
+using BetterGenshinImpact.GameTask.MapMask;
 using BetterGenshinImpact.GameTask.UseRedeemCode;
 
 namespace BetterGenshinImpact.Core.Config;
@@ -222,6 +223,11 @@ public partial class AllConfig : ObservableObject
     public AutoEatConfig AutoEatConfig { get; set; } = new();
     
     /// <summary>
+    ///   地图遮罩
+    /// </summary>
+    public MapMaskConfig MapMaskConfig { get; set; } = new();
+    
+    /// <summary>
     /// 自动使用
     /// </summary>
     public AutoRedeemCodeConfig AutoRedeemCodeConfig { get; set; } = new();
@@ -310,6 +316,7 @@ public partial class AllConfig : ObservableObject
         AutoArtifactSalvageConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoRedeemCodeConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoEatConfig.PropertyChanged += OnAnyPropertyChanged;
+        MapMaskConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoMusicGameConfig.PropertyChanged += OnAnyPropertyChanged;
         TpConfig.PropertyChanged += OnAnyPropertyChanged;
         ScriptConfig.PropertyChanged += OnAnyPropertyChanged;
