@@ -1305,6 +1305,7 @@ public class PathExecutor
                             );
                             if (colorDifference < 15)
                             {
+                                hurryOnIn = true;
                                 if (Bv.GetMotionStatus(screen2) != MotionStatus.Fly || !(pos3.Item0 == 255 && pos3.Item1 == 255 && pos3.Item2 == 255)
                                     || nextWaypoint?.Action != MoveModeEnum.Fly.Code|| waypoint?.Action != MoveModeEnum.Fly.Code)
                                 {
@@ -1484,7 +1485,7 @@ public class PathExecutor
                         {
                             Task.Run(async () =>
                             {
-                                hurryOnIn = true;
+                                // hurryOnIn = true;
                                 // await Delay(100, ct);
                                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                 await Delay(200, ct);
@@ -1838,7 +1839,7 @@ public class PathExecutor
                             Math.Pow(pos3.Item1 - pos4.Item1, 2) + // 绿通道差值的平方
                             Math.Pow(pos3.Item2 - pos4.Item2, 2)   // 红通道差值的平方
                         );
-          
+                
                         if (colorDifference2 < 15)
                         {
                             Logger.LogWarning("到达路径点附近-9");

@@ -2428,7 +2428,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         // 当次执行配置单完成后，检查和最终结束的任务
         await new TaskRunner().RunThreadAsync(async () =>
         {
-            await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
+            // await new CheckRewardsTask().Start(CancellationContext.Instance.Cts.Token);
             await Task.Delay(500);
             Notify.Event(NotificationEvent.DragonEnd).Success($"配置单 {SelectedConfig.Name} 绑定 {SelectedConfig.GenshinUid}，一条龙和配置组任务结束");
             _logger.LogInformation("配置单 {SelectedConfig.Name} 绑定UID {GenshinUid} 一条龙和配置组任务结束",
