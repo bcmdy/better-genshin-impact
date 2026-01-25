@@ -972,22 +972,24 @@ public class AutoFightTask : ISoloTask
             else if(picker is null)
             {
                 Logger.LogWarning("换队拾取：当前队伍名称为空，尝试读取");
-                await Delay(2000, ct);
-                await _returnMainUiTask.Start(ct);
-                Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
-                
-                var enterGameAppear = await NewRetry.WaitForElementAppear(
-                    ElementAssets.Instance.PartyBtnChooseView,
-                    () =>
-                    {
-                        Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
-                    },
-                    ct,
-                    3,
-                    4200
-                );
-                
                 await Delay(1000, ct);
+                await _returnMainUiTask.Start(ct);
+
+                for( int attempt = 0; attempt < 3; attempt++)
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
+                    var enterGameAppear = await NewRetry.WaitForElementAppear(
+                        ElementAssets.Instance.PartyBtnChooseView,
+                        () => { },
+                        ct,
+                        15,
+                        500
+                    );
+                    if(attempt == 2)
+                    {
+                        Logger.LogWarning("换队拾取：读取队伍名称失败");
+                    }
+                }
                 
                 //等待寻找2秒队伍按钮出现
                 var timeWaitStart = 0;
