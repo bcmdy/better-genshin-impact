@@ -18,6 +18,7 @@ using Fischless.GameCapture.Graphics;
 using BetterGenshinImpact.Service;
 using Vanara.PInvoke;
 using Rect = OpenCvSharp.Rect;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
 namespace BetterGenshinImpact.GameTask
 {
@@ -115,7 +116,6 @@ namespace BetterGenshinImpact.GameTask
                     SetTriggers(GameTaskManager.ConvertToTriggerList(true));
                     return true;
                 }
-
                 return false;
             }
         }
@@ -133,7 +133,7 @@ namespace BetterGenshinImpact.GameTask
             // 初始化触发器(一定要在任务上下文初始化完毕后使用)
             _triggers = GameTaskManager.LoadInitialTriggers();
             GameLoadingTrigger.GlobalEnabled = TaskContext.Instance().Config.GenshinStartConfig.AutoEnterGameEnabled;
-
+            
             // if (GraphicsCapture.IsHdrEnabled(hWnd))
             // {
             //     _logger.LogError("游戏窗口在HDR模式下无法获取正常颜色的截图，请关闭HDR模式！");
@@ -146,13 +146,13 @@ namespace BetterGenshinImpact.GameTask
                     { "autoFixWin11BitBlt", OsVersionHelper.IsWindows11_OrGreater && TaskContext.Instance().Config.AutoFixWin11BitBlt }
                 }
             );
-
+            
             // 使用 SetWinEventHook 监听窗口移动和大小变化事件
             _winEventProc = WinEventCallback;
             var flags = (User32.WINEVENT)(WINEVENT_SKIPOWNPROCESS | WINEVENT_SKIPOWNTHREAD);
             _winEventHookMoveSize = User32.SetWinEventHook(EVENT_SYSTEM_MOVESIZESTART, EVENT_SYSTEM_MOVESIZEEND, default, _winEventProc, 0, 0, flags);
             _winEventHookLocation = User32.SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE, default, _winEventProc, 0, 0, flags);
-
+            
             // 启动定时器
             _frameIndex = 0;
             _timer.Interval = interval;
@@ -174,7 +174,6 @@ namespace BetterGenshinImpact.GameTask
                 User32.UnhookWinEvent(_winEventHookMoveSize);
                 _winEventHookMoveSize = default;
             }
-
             if (_winEventHookLocation != default)
             {
                 User32.UnhookWinEvent(_winEventHookLocation);
@@ -225,7 +224,7 @@ namespace BetterGenshinImpact.GameTask
                     }
                     else
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-1");
                     }
 
                     PictureInPictureService.Hide(resetManual: true);
@@ -237,8 +236,8 @@ namespace BetterGenshinImpact.GameTask
                 // 检查游戏是否在前台
                 var hasBackgroundTriggerToRun = false;
                 var autoSkipConfig = TaskContext.Instance().Config.AutoSkipConfig;
-                var shouldShowPictureInPicture = autoSkipConfig.Enabled
-                                                 && autoSkipConfig.PictureInPictureEnabled
+                var shouldShowPictureInPicture = autoSkipConfig.Enabled 
+                                                 && autoSkipConfig.PictureInPictureEnabled 
                                                  && !PictureInPictureService.IsManuallyClosed
                                                  && TaskControl.TaskSemaphore.CurrentCount == 1; // 没有任务持有锁（也就是没有任务正在运行）
                 var active = SystemControl.IsGenshinImpactActive();
@@ -247,7 +246,7 @@ namespace BetterGenshinImpact.GameTask
                     // 检查游戏是否已结束
                     if (TaskContext.Instance().SystemInfo.GameProcess.HasExited)
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-2");
                         UiTaskStopTickEvent?.Invoke(sender, e);
                         return;
                     }
@@ -495,20 +494,39 @@ namespace BetterGenshinImpact.GameTask
 
                 var name = $@"{DateTime.Now:yyyyMMddHHmmssffff}.png";
                 var savePath = Global.Absolute($@"log\screenshot\{name}");
-                if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                if (!TaskContext.Instance().Config.CommonConfig.SaveAs1080P)
                 {
-                    var assetScale = TaskContext.Instance().SystemInfo.ScaleTo1080PRatio;
-                    var rect = new Rect((int)(mat.Width - MaskWindowConfig.UidCoverRightBottomRect.X * assetScale),
-                        (int)(mat.Height - MaskWindowConfig.UidCoverRightBottomRect.Y * assetScale),
-                        (int)(MaskWindowConfig.UidCoverRightBottomRect.Width * assetScale),
-                        (int)(MaskWindowConfig.UidCoverRightBottomRect.Height * assetScale));
-                    mat.Rectangle(rect, Scalar.White, -1);
+                    if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                    {
+                        var assetScale = TaskContext.Instance().SystemInfo.ScaleTo1080PRatio;
+                        var rect = new Rect((int)(mat.Width - MaskWindowConfig.UidCoverRightBottomRect.X * assetScale),
+                            (int)(mat.Height - MaskWindowConfig.UidCoverRightBottomRect.Y * assetScale),
+                            (int)(MaskWindowConfig.UidCoverRightBottomRect.Width * assetScale),
+                            (int)(MaskWindowConfig.UidCoverRightBottomRect.Height * assetScale));
+                        mat.Rectangle(rect, Scalar.White, -1);
+                    }
                     Cv2.ImWrite(savePath, mat);
                 }
                 else
                 {
-                    Cv2.ImWrite(savePath, mat);
+                    var ra = CaptureToRectArea();
+                    
+                    // if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                    // {
+                    //     var rect = new Rect((int)(ra.Width - MaskWindowConfig.UidCoverRightBottomRect.X),
+                    //         (int)(ra.Height - MaskWindowConfig.UidCoverRightBottomRect.Y),
+                    //         (int)(MaskWindowConfig.UidCoverRightBottomRect.Width),
+                    //         (int)(MaskWindowConfig.UidCoverRightBottomRect.Height));
+                    //     ra.SrcMat.Rectangle(rect, Scalar.White, -1);
+                    // }
+                    
+                    using (var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write))
+                    {
+                        var encoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder();
+                        ra.CacheImage.Save(fileStream,encoder); 
+                    }
                 }
+
 
                 mat.Dispose();
 
