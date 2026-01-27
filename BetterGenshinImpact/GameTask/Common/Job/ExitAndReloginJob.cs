@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Simulator;
@@ -69,10 +70,14 @@ public class ExitAndReloginJob
             Logger.LogInformation("退出重登启用 B 服模式");
         }
 
+        Debug.WriteLine("[ExitAndReloginJob] Wait for enter game button.");
         // 等待进入游戏按钮出现并点击
         var enterGameAppear = await NewRetry.WaitForElementAppear(
             _assets.EnterGameRo,
-            () => { },
+            () =>
+            {
+                Debug.WriteLine("[ExitAndReloginJob] Click enter game button2.");
+            },
             ct,
             120,
             1000
