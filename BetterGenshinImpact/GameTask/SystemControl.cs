@@ -34,6 +34,7 @@ public class SystemControl
         if (existingHandle != 0)
         {
             //Logger.LogInformation($"检测到已运行的原神窗口，直接使用句柄：{existingHandle}");
+            Logger.LogDebug("找到:{existingHandle}", existingHandle);
             return existingHandle;
         }
 
@@ -52,6 +53,7 @@ public class SystemControl
         while (sw.Elapsed < timeout)
         {
             var handle = FindGenshinImpactHandle();
+            Logger.LogDebug("等待进程:{handle}", handle);
             if (handle != 0)
             {
                 // 稳定等待，确保窗口完全初始化
@@ -60,7 +62,6 @@ public class SystemControl
                 await Task.Delay(2500);
                 return handle;
             }
-
             await Task.Delay(2000);
         }
 

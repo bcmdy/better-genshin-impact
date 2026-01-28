@@ -614,40 +614,45 @@ public class TpTask
                 mapCenterPoint += new Point2f((float)(moveMouseX * currentZoomLevel / _tpConfig.MapScaleFactor),
                     (float)(moveMouseY * currentZoomLevel / _tpConfig.MapScaleFactor));  
             }
-            
-            var ra = CaptureToRectArea().SrcMat;
-            double brightness = Cv2.Mean(ra).Val0;
-            ra.Dispose();
-            TaskControl.Logger.LogDebug("地图亮度:{brightness}", brightness);
-            if (brightness < 48)
-            {
-                falseCount++;
-                
-                if (falseCount > 2)
-                {
-                    throw new Exception("地图亮度过低，重新传送");
-                }
 
-                if (falseCount > 1)
-                {
-                    Simulation.SendInput.Mouse.LeftButtonUp();
-                    TaskControl.Logger.LogWarning("地图亮度过低");
-                    if (mapName == MapTypes.Teyvat.ToString())
-                    {
-                        // 计算传送点位置离哪张地图切换后的中心点最近，切换到该地图
-                        await SwitchRecentlyCountryMap(x, y, country);
-                    }
-                    else
-                    {
-                        // 直接切换地区
-                        await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
-                    }
-                    continue;
-                }
-            }
-            else
+            // Logger.LogError("地图名称:{mapName}", mapName);;//mapName
+            if (_tpConfig.MapMoveStepDivisor)
             {
-                falseCount = 0;
+
+                var ra = CaptureToRectArea().SrcMat;
+                double brightness = Cv2.Mean(ra).Val0;
+                ra.Dispose();
+                TaskControl.Logger.LogDebug("地图亮度:{brightness}", brightness);
+                if (brightness < (mapName=="SeaOfBygoneEras" ? 35:48))
+                {
+                    falseCount++;
+                
+                    if (falseCount > 2)
+                    {
+                        throw new Exception("地图亮度过低，重新传送");
+                    }
+
+                    if (falseCount > 1)
+                    {
+                        Simulation.SendInput.Mouse.LeftButtonUp();
+                        TaskControl.Logger.LogWarning("地图亮度过低");
+                        if (mapName == MapTypes.Teyvat.ToString())
+                        {
+                            // 计算传送点位置离哪张地图切换后的中心点最近，切换到该地图
+                            await SwitchRecentlyCountryMap(x, y, country);
+                        }
+                        else
+                        {
+                            // 直接切换地区
+                            await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
+                        }
+                        continue;
+                    }
+                }
+                else
+                {
+                    falseCount = 0;
+                }  
             }
 
             (xOffset, yOffset) = (x - mapCenterPoint.X, y - mapCenterPoint.Y);
