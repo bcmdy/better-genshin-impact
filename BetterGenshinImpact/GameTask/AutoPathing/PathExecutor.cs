@@ -2282,7 +2282,7 @@ public class PathExecutor
             if (!confirmRectArea.IsEmpty())
             {
                 Simulation.ReleaseAllKey();
-                if(PathingConditionConfig.AutoEatCount <=3)PathingConditionConfig.AutoEatCount ++;
+                if(PathingConditionConfig.AutoEatCount <2)PathingConditionConfig.AutoEatCount ++;
                 Logger.LogInformation("死亡，点击确认-s1 {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
@@ -2333,7 +2333,7 @@ public class PathExecutor
             if (!confirmRectArea.IsEmpty())
             {
                 Simulation.ReleaseAllKey();
-                if(PathingConditionConfig.AutoEatCount <=3)PathingConditionConfig.AutoEatCount ++;
+                if(PathingConditionConfig.AutoEatCount <2)PathingConditionConfig.AutoEatCount ++;
                 Logger.LogInformation("死亡，点击确认-s2 {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
