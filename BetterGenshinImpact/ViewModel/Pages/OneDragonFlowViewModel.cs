@@ -2267,17 +2267,20 @@ public partial class OneDragonFlowViewModel : ViewModel
             int retrySingleCount = 0; // 当前账号的UID验证次数
             
             for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
+                _logger.LogDebug("测试1: 0000");
                 await new TaskRunner().RunCurrentAsync(async () =>
                 {
+                    _logger.LogDebug("测试1: 1111");
                     await new BlessingOfTheWelkinMoonTask().Start(CancellationContext.Instance.Cts.Token);
+                    _logger.LogDebug("测试1: 2222");
                     //获取原神窗口焦点
                     SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
-                    
+                    _logger.LogDebug("测试1: 252525");
                     retrySingleCount++;
                     uidCheckResult = await VerifyUid(CancellationContext.Instance.Cts.Token); // 验证当前登录账号的UID
                 });
                 // 如果任务已经被取消，中断所有任务
-                 
+                _logger.LogDebug("测试1: 3333");
                 if (CancellationContext.Instance.Cts.IsCancellationRequested)
                 {
                     _continuousExecutionMark = false;// 标记连续执行结束

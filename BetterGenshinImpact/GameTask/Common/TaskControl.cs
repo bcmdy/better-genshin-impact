@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,13 +66,17 @@ public class TaskControl
                 {
                     if (okRa.IsExist())
                     {
-                        Logger.LogWarning("弹窗状态:{0}",okRa.IsExist());
+                        Logger.LogInformation("弹窗状态:{0}",okRa.IsExist());
                         var enter = qq.FindMulti(GetConfirmRa());
                         var enterDone = enter.FirstOrDefault(t =>
                             Regex.IsMatch(t.Text, "连接已断开"));
                         if (enterDone != null)
                         {
                             IsSuspendedByWindow = true;
+                        }
+                        else
+                        {
+                            return Task.CompletedTask;
                         }
                     }
                 }

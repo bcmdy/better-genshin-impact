@@ -247,7 +247,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             Name = "Confirm",
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "confirm.png", this.systemInfo),
-            RegionOfInterest = new Rect(0, CaptureRect.Height / 2, CaptureRect.Width / 2, CaptureRect.Height / 2),
+            RegionOfInterest = new Rect(0, CaptureRect.Height / 2, CaptureRect.Width / 2, CaptureRect.Height / 3),
             DrawOnWindow = false
         }.InitTemplate();
         ArtifactAreaRa = new RecognitionObject
