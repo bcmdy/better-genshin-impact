@@ -85,9 +85,10 @@ public class SetTimeTask
     private async Task CancelAnimation(CancellationToken ct)
     {
         GameCaptureRegion.GameRegion1080PPosMove(200, 200);
+        Simulation.SendInput.Mouse.LeftButtonDown();
+        Simulation.SendInput.Mouse.LeftButtonUp();
         Simulation.SendInput.Mouse.LeftButtonClick();
         Simulation.SendInput.Mouse.LeftButtonDown();
-        await Delay(10, ct);
         Simulation.SendInput.Mouse.LeftButtonUp();
     }
 
