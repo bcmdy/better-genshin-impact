@@ -87,7 +87,10 @@ public class SetTimeTask
         GameCaptureRegion.GameRegion1080PPosMove(200, 200);
         Simulation.SendInput.Mouse.LeftButtonDown();
         Simulation.SendInput.Mouse.LeftButtonUp();
-        Simulation.SendInput.Mouse.LeftButtonClick();
+        Simulation.SendInput.Mouse.LeftButtonDown();
+        Simulation.SendInput.Mouse.LeftButtonUp();
+        Simulation.SendInput.Mouse.LeftButtonDown();
+        Simulation.SendInput.Mouse.LeftButtonUp();
         Simulation.SendInput.Mouse.LeftButtonDown();
         Simulation.SendInput.Mouse.LeftButtonUp();
     }
