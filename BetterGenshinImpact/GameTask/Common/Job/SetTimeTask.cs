@@ -61,7 +61,7 @@ public class SetTimeTask
         if (skipTimeAdjustmentAnimation)
         {
             // 跳过调整动画
-            await Delay(10, ct);
+            // await Delay(1, ct);
             await CancelAnimation(ct);
             await Delay(1010, ct);
             GameCaptureRegion.GameRegion1080PPosClick(45, 715);
@@ -85,6 +85,7 @@ public class SetTimeTask
     private async Task CancelAnimation(CancellationToken ct)
     {
         GameCaptureRegion.GameRegion1080PPosMove(200, 200);
+        Simulation.SendInput.Mouse.LeftButtonClick();
         Simulation.SendInput.Mouse.LeftButtonDown();
         await Delay(10, ct);
         Simulation.SendInput.Mouse.LeftButtonUp();
