@@ -354,11 +354,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             {
                                 Task.Run(() =>
                                 {
-                                    Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
-                                    Task.Delay(100, ct).Wait();
+                                    // Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
+                                    // Task.Delay(100, ct).Wait();
                                     Simulation.SendInput.SimulateAction(GIActions.MoveRight);
                                     Task.Delay(100, ct).Wait();
                                     Simulation.SendInput.Mouse.MiddleButtonClick();
+                                    Task.Delay(100, ct).Wait();
                                 }, ct);
                             }
                             // logger.LogInformation("画面内有找到敌人，继续战斗...");
