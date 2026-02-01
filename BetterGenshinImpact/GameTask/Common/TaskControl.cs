@@ -11,6 +11,17 @@ using OpenCvSharp;
 using Vanara.PInvoke;
 using System.Net.NetworkInformation;
 using BetterGenshinImpact.GameTask.Common.Job;
+using System.Threading;
+using System.Threading.Tasks;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
+using System.Linq;
+using BetterGenshinImpact.Core.Recognition;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using BetterGenshinImpact.GameTask.Common;
 
 namespace BetterGenshinImpact.GameTask.Common;
 
@@ -22,18 +33,49 @@ public class TaskControl
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
+    private static readonly TimeSpan CheckIntervalWin = TimeSpan.FromSeconds(30);
     private static readonly Ping PingSender = new Ping();
     private static readonly bool NetworkDetectionConfig = TaskContext.Instance().Config.OtherConfig.NetworkDetectionConfig;
     private static int _networkFailureCount = 0;
     
+    private static RecognitionObject GetConfirmRa(bool isOcrMatch = false,params string[] targetText)
+    {
+        var screenArea = CaptureToRectArea();
+        var x = (int)(screenArea.Width * 0.3);
+        var y = (int)(screenArea.Height * 0.1);
+        var width = (int)(screenArea.Width * 0.65);
+        var height = (int)(screenArea.Height * 0.85);
+        
+        return isOcrMatch ? RecognitionObject.OcrMatch(x, y, width, height, targetText) : 
+            RecognitionObject.Ocr(x, y, width, height);
+    }
+    
     public static bool IsSuspendedByNetwork { get; set; } = false;
+    
+    public static bool IsSuspendedByWindow { get; set; } = false;
 
     private static Task CheckNetworkStatusAsync()
     {
         if (DateTime.UtcNow - _lastCheckTime < CheckInterval)
         {
-            return Task.CompletedTask;
+            if (DateTime.UtcNow - _lastCheckTime > CheckIntervalWin)
+            { 
+                using var qq = CaptureToRectArea();
+                var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                {
+                    if (okRa.IsExist())
+                    {
+                        Logger.LogWarning("弹窗状态:{0}",okRa.IsExist());
+                        IsSuspendedByWindow = true;
+                    }
+                }
+            }
+            else
+            {
+                return Task.CompletedTask;
+            }
         }
+        
         _lastCheckTime = DateTime.UtcNow;
 
         var isSuspend = false; 
@@ -41,9 +83,9 @@ public class TaskControl
         {
             var reply = PingSender.Send(TaskContext.Instance().Config.OtherConfig.NetworkDetectionUrl);
             isSuspend = reply.Status != IPStatus.Success;
-            if (IsSuspendedByNetwork)
+            if (IsSuspendedByNetwork || IsSuspendedByWindow)
             {
-                Logger.LogWarning("网络恢复中...");
+                Logger.LogWarning(IsSuspendedByWindow ? "窗口弹窗状态恢复中..." : "网络恢复中...");
                 if (NetworkRecovery.Start(CancellationToken.None).Wait(10000))
                 {
                     isSuspend = false;

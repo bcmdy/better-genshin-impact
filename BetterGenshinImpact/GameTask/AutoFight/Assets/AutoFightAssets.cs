@@ -24,6 +24,7 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
     public RecognitionObject WandererIconRa;
     public RecognitionObject WandererIconNoActiveRa;
     public RecognitionObject ConfirmRa;
+    public RecognitionObject ConfirmRaZ;
     public RecognitionObject ArtifactAreaRa;
     public RecognitionObject ExitRa;
     public RecognitionObject ClickAnyCloseTipRa;
@@ -237,6 +238,16 @@ public class AutoFightAssets : BaseAssets<AutoFightAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "confirm.png", this.systemInfo),
             RegionOfInterest = new Rect(CaptureRect.Width / 2, CaptureRect.Height / 2, CaptureRect.Width / 2, CaptureRect.Height / 2),
+            DrawOnWindow = false
+        }.InitTemplate();
+        
+        // 右下角的按钮
+        ConfirmRaZ = new RecognitionObject
+        {
+            Name = "Confirm",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("AutoFight", "confirm.png", this.systemInfo),
+            RegionOfInterest = new Rect(0, CaptureRect.Height / 2, CaptureRect.Width / 2, CaptureRect.Height / 2),
             DrawOnWindow = false
         }.InitTemplate();
         ArtifactAreaRa = new RecognitionObject
