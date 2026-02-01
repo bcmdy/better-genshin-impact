@@ -46,6 +46,9 @@ public partial class OtherConfig : ObservableObject
     [ObservableProperty]
     private CustomAvatarConfig _customAvatarConfigOut = new CustomAvatarConfig();
     
+    [ObservableProperty]
+    private int _setTime = 7;
+    
     public partial class CustomAvatarConfig : ObservableObject
     {
         //自定义角色开关
