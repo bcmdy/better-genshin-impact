@@ -969,7 +969,7 @@ public class AutoFightTask : ISoloTask
             {
                  oldPartyName = RunnerContext.Instance.PartyName;
             }
-            else if(picker is null)
+            else if(picker is null && !string.IsNullOrEmpty(_taskParam.KazuhaPartyName))
             {
                 Logger.LogWarning("换队拾取：当前队伍名称为空，尝试读取");
                 await Delay(1000, ct);
