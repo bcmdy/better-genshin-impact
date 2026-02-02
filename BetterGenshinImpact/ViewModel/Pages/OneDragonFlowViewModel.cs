@@ -2290,6 +2290,7 @@ public partial class OneDragonFlowViewModel : ViewModel
                     Notify.Event(NotificationEvent.DragonEnd).Success("连续一条龙：任务结束");
                     return; // 后续的检查任务也不执行
                 }
+                _logger.LogDebug("测试1: 4444");
                 if (!uidCheckResult)
                 {   
                     if (retrySingleCount >= retrySingleTimes)
@@ -2337,7 +2338,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         {
             _logger.LogWarning("连续一条龙：绑定UID {GenshinUid} 一致，继续执行",SelectedConfig.GenshinUid);
         }
-        
+        _logger.LogDebug("测试1: 5555");
         _lastUid = SelectedConfig.GenshinUid;//记录上一次切换的UID
         
         if (taskListCopy.Count(t => t.IsEnabled) == 0)
@@ -2347,7 +2348,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             Notify.Event(NotificationEvent.DragonEnd).Success("没有配置,退出执行!");
             return;
         }
-        
+        _logger.LogDebug("测试1: 6666");
         // 筛选出配置组任务
         var scriptGroupsDefaultNames = ScriptGroupsDefault.Select(sgd => sgd.Name).ToHashSet();
         enabledTaskCount = taskListCopy.Count(t => t.IsEnabled && !scriptGroupsDefaultNames.Contains(taskListCopy.FirstOrDefault(tl => tl.Index == t.Index)?.Name));

@@ -53,13 +53,14 @@ public class TaskRunner
         try
         {
             _logger.LogInformation("→ {Text}", _name + "任务启动！");
-
+            
             // 初始化
             Init();
-            
+            _logger.LogDebug("任务启动：1111");
             CancellationContext.Instance.Set();
+            _logger.LogDebug("任务启动：2222");
             RunnerContext.Instance.Clear();
-
+            _logger.LogDebug("任务启动：3333");
             await action();
         }
         catch (NormalEndException e)
