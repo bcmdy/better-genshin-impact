@@ -125,19 +125,24 @@ public class TaskRunner
 
     public void Init()
     {
+        _logger.LogDebug("测试12: 0000");
         if (!TaskContext.Instance().IsInitialized)
         {
+            _logger.LogDebug("测试12: 3434");
             UIDispatcherHelper.Invoke(() => { Toast.Warning("请先在启动页，启动截图器再使用本功能"); });
             throw new NormalEndException("请先在启动页，启动截图器再使用本功能");
         }
-
+        _logger.LogDebug("测试12: 1111");
         // 清空实时任务触发器
         TaskTriggerDispatcher.Instance().ClearTriggers();
-        
+        _logger.LogDebug("测试12: 2222");
         // 激活原神窗口
         var maskWindow = MaskWindow.Instance();
+        _logger.LogDebug("测试12: 3333");
         SystemControl.ActivateWindow();
+        _logger.LogDebug("测试12: 4444");
         maskWindow.Invoke(maskWindow.Show);
+        _logger.LogDebug("测试12: 5555");
     }
 
     public void End()
