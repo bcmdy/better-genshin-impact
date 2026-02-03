@@ -382,12 +382,11 @@ public class Avatar
             // 切换成功
             if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
             {
-                if (needLog && i > 0)
-                {
-                    Logger.LogInformation("成功切换角色:{Name}", Name);
-                }
+                // if (needLog && i > 0)
+                // {
+                //     Logger.LogInformation("成功切换角色:{Name}", Name);
+                // }
                 AutoFightTask.SwitchTryCount = 0;
-                
                 return true;
             }
 
@@ -397,6 +396,8 @@ public class Avatar
 
             Sleep(240, Ct);
         }
+        
+        Logger.LogWarning("切换角色失败:{Name}", Name);
 
         return false;
     }
