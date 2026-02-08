@@ -222,8 +222,9 @@ public class TpTask
             {
                 if (retryCount > 1)
                 {
-                    TaskControl.Logger.LogError("打开大地图失败，重试 {I} 次", i + 1);
-                    TaskControl.Logger.LogDebug(e, "打开大地图失败，重试 {I} 次", i + 1);
+                    Logger.LogError("打开大地图失败，重试 {I} 次", i + 1);
+                    Logger.LogDebug(e, "打开大地图失败，重试 {I} 次", i + 1);
+                    await _blessingOfTheWelkinMoonTask.Start(ct);
                 }
 
                 if (i + 1 >= retryCount)
