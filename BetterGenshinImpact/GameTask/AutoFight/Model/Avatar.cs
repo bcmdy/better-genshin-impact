@@ -179,30 +179,32 @@ public class Avatar
                 }
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
-                var cts = new CancellationTokenSource();
+                // 使用using语句确保CancellationTokenSource被正确释放
+                using var cts = new CancellationTokenSource();
                 var pathExecutor = new PathExecutor(cts.Token);
-                
+
                 try
                 {
-                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000,cts.Token);
+                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000,cts.Token);
-                    cts.Cancel();
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000, cts.Token);
                     AutoFightTask.FightWaypoint = null;
-                    Simulation.SendInput.Mouse.RightButtonUp();
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
-                    Logger.LogError("游泳检测：回到战斗地点任务被取消");
+                    Logger.LogInformation("操作被取消");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "游泳检测：回到战斗地点异常");
+                    Logger.LogError(ex, "执行过程中发生异常");
                 }
                 finally
                 {
+                    // 确保在任何情况下都能释放鼠标右键
+                    Simulation.SendInput.Mouse.RightButtonUp();
                     Simulation.ReleaseAllKey();
+                    cts.Cancel();
                 }
                 
                 using var bitmap2 = CaptureToRectArea();
