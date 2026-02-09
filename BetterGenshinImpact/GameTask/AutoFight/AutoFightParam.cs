@@ -100,7 +100,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     
     public int MedicineInterval { get; set; } = 1500;
     
-    public int CheckInterval { get; set; } =  200;
+    public int CheckInterval { get; set; } =  100;
     
     public int RecoverMaxCount { get; set; } =  5;
     

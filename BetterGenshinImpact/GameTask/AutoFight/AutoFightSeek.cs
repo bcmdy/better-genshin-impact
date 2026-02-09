@@ -792,6 +792,64 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             return false;
         }
         
+        public static Task<bool> MedicinalCdAsync(ILogger logger, bool skills, int retryCount,
+            CancellationToken ct, ImageRegion? image = null)
+        {
+            Scalar bloodLower = new Scalar(255, 255, 255);
+            int attempt = 0;
+            var model = image is null;
+        
+            while (attempt < retryCount)
+            {
+                if (ct.IsCancellationRequested) return Task.FromResult(false);
+        
+                ImageRegion? image2 = null;
+                try
+                {
+                    image2 = model ? CaptureToRectArea() : image ?? CaptureToRectArea(); //1800,817/1836,834
+        
+                    var skillAra = !skills
+                        ? new Rect(image2.Width * 1800 / 1920, image2.Height * 817 / 1080,
+                            image2.Width * 36 / 1920, image2.Height * 17 / 1080) //药物区域
+                        : new Rect(image2.Width * 1809 / 1920, image2.Height * 968 / 1080,
+                            image2.Width * 30 / 1920, image2.Height * 15 / 1080); //未定义
+        
+                    using var mask2 = OpenCvCommonHelper.Threshold(
+                        image2.DeriveCrop(skillAra).SrcMat,
+                        bloodLower,
+                        bloodLower
+                    );
+        
+                    using var labels2 = new Mat();
+                    using var stats2 = new Mat();
+                    using var centroids2 = new Mat();
+        
+                    int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
+                        connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
+        
+                    // logger.LogInformation("药物状态：{Skill} 状态 {Text}",
+                    //      skills ? "恢复药" : "复活药", numLabels2 > 2 ? "冷却中" : "就绪");
+        
+                    if (numLabels2 > 2)
+                    {
+                        return Task.FromResult(true);
+                    }
+        
+                    attempt++;
+                    
+                }
+                finally
+                {
+                    if (model && image2 != null)
+                    {
+                        image2.Dispose();
+                    }
+                }
+            }
+            
+            return Task.FromResult(false);
+        }
+        
         public static Task<List<int>> AvatarQSkillAsync(ImageRegion image, List<int>? useEqList = null,int? avatarCurrent = null)
         {
             image.SrcMat.ConvertTo(image.SrcMat, MatType.CV_8UC3, alpha: 2, beta: -200); // 增加亮度和对比度

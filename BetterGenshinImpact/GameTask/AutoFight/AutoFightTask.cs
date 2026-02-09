@@ -1431,7 +1431,11 @@ public class AutoFightTask : ISoloTask
         var resurrectionCount = 0; // 吃复活药次数
         var tolerance = 10;// 定义容错范围
         var greenBlood = 0; // 绿血标记
-        
+        int finalCheckInterval = Math.Max(_taskParam.CheckInterval - 150, 1);
+        //吃药间隔时间
+        var medicineInterval = 20;
+        DateTime lastMedicineTime = DateTime.MinValue;
+
         try
         {
             Task.Run(() =>
@@ -1439,7 +1443,8 @@ public class AutoFightTask : ISoloTask
                 using (var ra = CaptureToRectArea())
                 {
                     using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                    using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat,new Scalar(192, 233, 102), new Scalar(193, 233, 103));
+                    using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat, new Scalar(192, 233, 102),
+                        new Scalar(193, 233, 103));
                     using var labels = new Mat();
                     using var stats = new Mat();
                     using var centroids = new Mat();
@@ -1448,8 +1453,8 @@ public class AutoFightTask : ISoloTask
                         connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
 
                     // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
-                    
-                    if (!(numLabels > 1))//判断是否带营养袋，连通性检测药品上方的绿色块
+
+                    if (!(numLabels > 1)) //判断是否带营养袋，连通性检测药品上方的绿色块
                     {
                         IsTpForRecover = true;
                         TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
@@ -1457,9 +1462,11 @@ public class AutoFightTask : ISoloTask
                     }
                     else
                     {
-                        if (!endBloodCheck)  TaskControl.Logger.LogInformation(
-                            "自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}，结束吃药{endBloodCheck}",
-                            _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount, _taskParam.EndBloodCheackEnabled ? "开" : "关");
+                        if (!endBloodCheck)
+                            TaskControl.Logger.LogInformation(
+                                "自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}，结束吃药{endBloodCheck}",
+                                _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount,
+                                _taskParam.EndBloodCheackEnabled ? "开" : "关");
                     }
                 }
 
@@ -1467,7 +1474,7 @@ public class AutoFightTask : ISoloTask
                 {
                     var gray = false;
                     var redBlood = false;
-                    
+
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
@@ -1476,19 +1483,20 @@ public class AutoFightTask : ISoloTask
                         {
                             using (var ra = CaptureToRectArea())
                             {
-                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);//派蒙头冠颜色，比模板匹配快，在开大或其他页面不进行检查
+                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67); //派蒙头冠颜色，比模板匹配快，在开大或其他页面不进行检查
                                 var paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
-                                             Math.Abs(pixelValue[1] - 196) <= tolerance &&
-                                             Math.Abs(pixelValue[2] - 233) <= tolerance);
+                                              Math.Abs(pixelValue[1] - 196) <= tolerance &&
+                                              Math.Abs(pixelValue[2] - 233) <= tolerance);
                                 if (!paiMon)
                                 {
                                     //延时_taskParam.CheckInterval毫秒再次检查
-                                    Sleep(_taskParam.CheckInterval-10, _ct);
+                                    Sleep(finalCheckInterval, _ct);
                                     return true;
                                 }
 
                                 using var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
-                                using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(250, 90, 89),
+                                using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,
+                                    new Scalar(250, 90, 89),
                                     new Scalar(250, 91, 89));
                                 using var labels = new Mat();
                                 using var stats = new Mat();
@@ -1500,8 +1508,8 @@ public class AutoFightTask : ISoloTask
                                 //死亡检查
                                 for (int h = 0; h < 4; h++)
                                 {
-                                    using var croppedImage = ra.DeriveCrop(1810, 256 + 96 * h, 15, 1).SrcMat;
-                                    
+                                    using var croppedImage = ra.DeriveCrop(1797, 249 + 96 * h, 8, 1).SrcMat;
+
                                     var isGrayscale = true;
                                     for (int i = 0; i < croppedImage.Rows; i++)
                                     {
@@ -1527,7 +1535,7 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
 
-                                if (numLabels > 1)//红血检查
+                                if (numLabels > 1) //红血检查
                                 {
                                     pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
                                     if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
@@ -1537,6 +1545,7 @@ public class AutoFightTask : ISoloTask
                                             Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
                                             resurrectionCount = -1;
                                         }
+
                                         redBlood = false;
                                     }
                                     else
@@ -1545,13 +1554,13 @@ public class AutoFightTask : ISoloTask
                                     }
                                 }
                                 else
-                                {  
-                                    pixelValue = ra.SrcMat.At<Vec3b>(1010,814);//在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
+                                {
+                                    pixelValue = ra.SrcMat.At<Vec3b>(1010, 814); //在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
                                     if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
-                                         Math.Abs(pixelValue[1] - 215) <= tolerance &&
-                                         Math.Abs(pixelValue[2] - 150) <= tolerance))
-                                    { 
-                                        greenBlood ++;
+                                          Math.Abs(pixelValue[1] - 215) <= tolerance &&
+                                          Math.Abs(pixelValue[2] - 150) <= tolerance))
+                                    {
+                                        greenBlood++;
                                         if (greenBlood > 3 || endBloodCheck && greenBlood > 0)
                                         {
                                             pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
@@ -1562,6 +1571,7 @@ public class AutoFightTask : ISoloTask
                                                     Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
                                                     resurrectionCount = -1;
                                                 }
+
                                                 redBlood = false;
                                             }
                                             else
@@ -1574,34 +1584,54 @@ public class AutoFightTask : ISoloTask
                                     {
                                         greenBlood = 0;
                                     }
-                                    
+
                                 }
 
                                 return redBlood || gray;
                             }
-                        }, cts2, 1, _taskParam.CheckInterval).Result;
+                        }, cts2, 1, _taskParam.CheckInterval - 150).Result;
 
                         if ((redBlood || gray) &&
-                            (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds > Math.Max(_taskParam.MedicineInterval, 1500))
+                            (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds >
+                            Math.Max(_taskParam.MedicineInterval, 1500))
                         {
                             var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
-                                                 (gray && RecoverCount < 3);//判断吃药上限
+                                                (gray && RecoverCount < 3); //判断吃药上限
 
                             if (Monitor.TryEnter(ZLock))
                             {
                                 try
                                 {
-                                    if (shouldRecover )
+                                    if (shouldRecover)
                                     {
-                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
-                                        Simulation.ReleaseAllKey();
+                                        try
+                                        {
+
+                                            if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
+                                            {
+                                                Simulation.SendInput.SimulateAction(GIActions
+                                                    .QuickUseGadget); //1800,816 1838,835
+                                                Simulation.ReleaseAllKey();
+                                            }
+                                        }
+                                        catch (OperationCanceledException ex)
+                                        {
+                                            Console.WriteLine($"自动结束吃药12：{ex.Message}");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine($"自动结束吃药发生异常12: {ex.Message}");
+                                        }
+
                                         if (redBlood) resurrectionCount++;
                                         if (gray) RecoverCount++;
-                                        TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具", redBlood ? "发现红血" : "发现角色死亡");
+                                        TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具",
+                                            redBlood ? "发现红血" : "发现角色死亡");
                                         PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                                         redBlood = false;
                                         gray = false;
-                                        if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1)) return;//单次检测复用
+                                        if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1))
+                                            return; //单次检测复用
                                     }
                                     else
                                     {
@@ -1610,8 +1640,9 @@ public class AutoFightTask : ISoloTask
                                         TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
                                         IsTpForRecover = false; // 吃完药品后，打开复活检测
                                         return;
-                                    }   
-                                }catch (Exception ex)
+                                    }
+                                }
+                                catch (Exception ex)
                                 {
                                     TaskControl.Logger.LogError($"自动吃药异常: {ex.Message}");
                                 }
@@ -1621,10 +1652,37 @@ public class AutoFightTask : ISoloTask
                                 }
                             }
                         }
+                        
+                        
+                        
 
-                        using (var bitmap = CaptureToRectArea())//复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
+                        using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
                         {
-                            var confirmRa =bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                            var pixelValue =
+                                bitmap.SrcMat.At<Vec3b>(785, 1818); //
+                            if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255 && (DateTime.Now - lastMedicineTime).TotalSeconds > medicineInterval)
+                            {
+                                try
+                                {
+                                    if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
+                                    {
+                                        lastMedicineTime = DateTime.Now;
+                                        Logger.LogInformation("自动吃药2：{text} " + "使用小道具", "发现角色死亡");
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
+                                        Simulation.ReleaseAllKey();
+                                    }
+                                }
+                                catch (OperationCanceledException ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药12：{ex.Message}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药发生异常12: {ex.Message}");
+                                }
+                            }
+                            
+                            var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
                             if (confirmRa.IsExist())
                             {
                                 confirmRa.Click();
@@ -1671,6 +1729,45 @@ public class AutoFightTask : ISoloTask
         catch (Exception ex)
         {
             Console.WriteLine($"自动吃药发生异常: {ex.Message}");
+        }
+        finally
+        {
+            using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
+            {
+                var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                if (confirmRa.IsExist())
+                {
+                    confirmRa.Click();
+                    Task.Delay(500, cts2).Wait(500);
+                    using var bitmap2 = CaptureToRectArea();
+                    var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
+                    {
+                        if (okRa.IsExist())
+                        {
+                            Logger.LogInformation("自动吃药：{text} 复活界面", "退出");
+                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                            Task.Delay(500, cts2).Wait(1000);
+                            try
+                            {
+
+                                if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
+                                {
+                                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
+                                    Simulation.ReleaseAllKey();
+                                }
+                            }
+                            catch (OperationCanceledException ex)
+                            {
+                                Console.WriteLine($"自动结束吃药123：{ex.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"自动结束吃药发生异常123: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         return Task.CompletedTask;
@@ -1815,7 +1912,22 @@ public class AutoFightTask : ISoloTask
                         }
                     }
 
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                    try
+                    {
+                        if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1,ct).Result)
+                        {
+                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                        } 
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        Console.WriteLine($"自动结束吃药1：{ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"自动结束吃药发生异常1: {ex.Message}");
+                    }
+                    
                     await Task.Delay(700, ct);
                 }
             }

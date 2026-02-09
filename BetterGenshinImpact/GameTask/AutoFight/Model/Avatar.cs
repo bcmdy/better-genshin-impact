@@ -339,7 +339,7 @@ public class Avatar
             var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
             if (resultRa.IsExist())
             {
-                if (i == 10)
+                if (i == 9)
                 {
                     resultRa.Click();
                     resultRa.ClickTo(-100,0);
