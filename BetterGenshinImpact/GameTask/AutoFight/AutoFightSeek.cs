@@ -20,7 +20,41 @@ using BetterGenshinImpact.Core.Script.Dependence;
 using SDPoint = System.Drawing.Point;
 using System.Drawing;
 using System.Windows.Forms;
+using BetterGenshinImpact.Service.Notification;
+using BetterGenshinImpact.View.Drawable;
+using Microsoft.Extensions.Logging;
+using OpenCvSharp;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask.AutoTrackPath;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Common.Job;
+using BetterGenshinImpact.Service.Notification.Model.Enum;
+using Vanara.PInvoke;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using static Vanara.PInvoke.Kernel32;
+using static Vanara.PInvoke.User32;
+using Microsoft.Extensions.Localization;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
+using System.Collections.ObjectModel;
+using BetterGenshinImpact.Core.Script.Dependence;
+using BetterGenshinImpact.GameTask.AutoDomain.Model;
+using BetterGenshinImpact.GameTask.Common;
+using Compunet.YoloSharp;
+using Microsoft.Extensions.DependencyInjection;
+using BetterGenshinImpact.Core.Config;
+using OpenCvSharp.Extensions;
+using BetterGenshinImpact.GameTask.AutoFight;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -827,12 +861,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
                         connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
         
-                    // logger.LogInformation("药物状态：{Skill} 状态 {Text}",
-                    //      skills ? "恢复药" : "复活药", numLabels2 > 2 ? "冷却中" : "就绪");
+                    logger.LogInformation("药物状态：{Skill} 状态 {Text} ：{n}",
+                         skills ? "恢复药" : "复活药", numLabels2 > 2 ? "冷却中" : "就绪", numLabels2);
         
                     if (numLabels2 > 2)
                     {
-                        return Task.FromResult(true);
+                        //识别到文字
+                        var replenishStringArea = image2.FindMulti(RecognitionObject.Ocr(skillAra));
+                        //如果replenishStringArea为空
+                        if (replenishStringArea.Count != 0) return Task.FromResult(true);
                     }
         
                     attempt++;
