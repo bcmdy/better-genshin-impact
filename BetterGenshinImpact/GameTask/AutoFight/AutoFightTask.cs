@@ -622,14 +622,20 @@ public class AutoFightTask : ISoloTask
                                     //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     // }
                                 
-                                    if (avatarFirst.TrySwitch(15) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, cts2.Token))
+                                    // 先尝试切换角色，成功再单独 await 技能执行结果
+                                    if (avatarFirst.TrySwitch(15))
                                     {
-                                        avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),1); 
-                                        var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
-                                        if (useA)
+                                        var skillSucceeded = await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, cts2.Token);
+                                        if (!skillSucceeded)
                                         {
-                                            Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色首E技能后普攻 {time} ms", useSkillListWithF, useSkillListWithA[useSkillListWithF]);
-                                            avatarFirst.Attack(useSkillListWithA[useSkillListWithF]);
+                                            // 原有在条件不满足时的处理逻辑
+                                            avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF), 1);
+                                            var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
+                                            if (useA)
+                                            {
+                                                Logger.LogInformation("自动EQ战斗：执行序号 {name} 角色首E技能后普攻 {time} ms", useSkillListWithF, useSkillListWithA[useSkillListWithF]);
+                                                avatarFirst.Attack(useSkillListWithA[useSkillListWithF]);
+                                            }
                                         }
                                     }
                                     useSkillListWithF = 0;
