@@ -344,12 +344,13 @@ public class Avatar
                     resultRa.Click();
                     resultRa.ClickTo(-100,0);
                 }
+                Logger.LogInformation("切换识别失败1:{Name} 索引:{Index}", Name,Index);
                 return false;
             }
 
             Sleep(240, Ct);
         }
-
+        Logger.LogInformation("切换识别失败2:{Name} 索引:{Index}", Name,Index);
         return false;
     }
     
@@ -473,6 +474,7 @@ public class Avatar
                 
                 var direction = Random.Next(4); // 返回一个 0 到 3 之间的随机整数
                 Logger.LogWarning("战斗中切换角色失败，尝试移动 {direction} ", direction);
+                Simulation.ReleaseAllKey();
                 
                 switch (direction)
                 {

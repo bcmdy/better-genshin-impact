@@ -622,7 +622,7 @@ public class AutoFightTask : ISoloTask
                                     //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                     // }
                                 
-                                    if (avatarFirst.TrySwitch(10) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, cts2.Token))
+                                    if (avatarFirst.TrySwitch(15) && !await AutoFightSkill.AvatarSkillAsync(Logger, avatarFirst, false, 1, cts2.Token))
                                     {
                                         avatarFirst.UseSkill(useSkillListWithH.Contains(useSkillListWithF),1); 
                                         var useA = useSkillListWithA.ContainsKey(useSkillListWithF) && useSkillListWithA[useSkillListWithF] > 0;
@@ -795,7 +795,7 @@ public class AutoFightTask : ISoloTask
                             Logger.LogDebug("跳过角色{command.Name} - {avatar.Name}", command.Name,avatar?.Name);
                             continue;
                         }
-                        if (_taskParam.AutoCombatEq)avatar?.TrySwitch(10);
+                        if (_taskParam.AutoCombatEq)avatar?.TrySwitch(15);
                         #region 每个命令的跳过战斗判定
 
                         // 判断是否满足跳过条件:
