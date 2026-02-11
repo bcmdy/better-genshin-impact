@@ -98,7 +98,7 @@ public class TpTask
         await CheckInBigMapUi();
 
         // 提前调整至恰当的缩放以更快的传送
-        if (_tpConfig.MapZoomEnabled)
+        if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
         {
             double currentZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
             if (currentZoomLevel > DisplayTpPointZoomLevel)
@@ -272,7 +272,7 @@ public class TpTask
 
         // 3. 调整初始缩放等级，避免识别中心点失败
         var zoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
-        if (_tpConfig.MapZoomEnabled)
+        if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
         {
             /* 动态调整缩放逻辑：
                 1. 如果当前缩放大于显示传送点级别 -> 缩小
@@ -294,7 +294,7 @@ public class TpTask
         // 4. zoomLevel不满足条件，强制进行一次 MoveMapTo，避免传送点相近导致误点
         if (zoomLevel > minZoomLevel)
         {
-            if (_tpConfig.MapZoomEnabled)
+            if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
             {
                 TaskControl.Logger.LogInformation("目标传送点有相近传送点，到目标传送点附近将缩放到{zoomLevel:0.00}", minZoomLevel);
                 await MoveMapTo(x, y, mapName, minZoomLevel,country);
@@ -546,7 +546,7 @@ public class TpTask
         double totalMoveMouseY = _tpConfig.MapScaleFactor * Math.Abs(yOffset) / currentZoomLevel;
         double mouseDistance = Math.Sqrt(totalMoveMouseX * totalMoveMouseX + totalMoveMouseY * totalMoveMouseY);
         // 缩小地图到恰当的缩放
-        if (_tpConfig.MapZoomEnabled)
+        if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
         {
             if (mouseDistance > _tpConfig.MapZoomOutDistance)
             {
@@ -564,7 +564,7 @@ public class TpTask
         // 开始移动并放大地图
         for (var iteration = 0; iteration < _tpConfig.MaxIterations; iteration++)
         {
-            if (_tpConfig.MapZoomEnabled)
+            if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
             {
                 if (mouseDistance < (_tpConfig.MapMoveStepDivisor ? 600 : _tpConfig.MapZoomInDistance))
                 {
@@ -620,9 +620,8 @@ public class TpTask
             if (_tpConfig.MapMoveStepDivisor)
             {
 
-                var ra = CaptureToRectArea().SrcMat;
+                using var ra = CaptureToRectArea().SrcMat;
                 double brightness = Cv2.Mean(ra).Val0;
-                ra.Dispose();
                 TaskControl.Logger.LogDebug("地图亮度:{brightness}", brightness);
                 if (brightness < (mapName=="SeaOfBygoneEras" ? 35:48))
                 {
