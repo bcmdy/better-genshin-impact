@@ -94,10 +94,14 @@ namespace BetterGenshinImpact.GameTask
 
         public void ClearTriggers()
         {
+            _logger.LogDebug("测试123: 0000");
             lock (_triggerListLocker)
             {
+                _logger.LogDebug("测试123: 00001 {_triggerListLocker}",_triggerListLocker.GetType());
                 GameTaskManager.ClearTriggers();
+                _logger.LogDebug("测试123: 00002");
                 _triggers?.Clear();
+                _logger.LogDebug("测试123: 00003");
             }
         }
 
