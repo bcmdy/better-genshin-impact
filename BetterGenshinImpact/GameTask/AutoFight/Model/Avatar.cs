@@ -181,15 +181,14 @@ public class Avatar
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
                 // 使用using语句确保CancellationTokenSource被正确释放
                 using var cts = new CancellationTokenSource();
-                var pathExecutor = new PathExecutor(cts.Token);
 
                 try
                 {
+                    var pathExecutor = new PathExecutor(cts.Token);
                     pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
                     pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000, cts.Token);
-                    AutoFightTask.FightWaypoint = null;
                 }
                 catch (OperationCanceledException)
                 {
@@ -202,6 +201,7 @@ public class Avatar
                 finally
                 {
                     // 确保在任何情况下都能释放鼠标右键
+                    AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                     Simulation.ReleaseAllKey();
                     cts.Cancel();
