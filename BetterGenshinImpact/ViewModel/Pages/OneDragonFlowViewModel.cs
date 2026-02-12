@@ -2270,21 +2270,23 @@ public partial class OneDragonFlowViewModel : ViewModel
             if (TaskContext.Instance().Config.MapMaskConfig.Enabled)
             {
                 //返回主页
-                await _blessingOfTheWelkinMoonTask.Start(CancellationContext.Instance.Cts.Token);
-                await returnMainUiTask.Start(CancellationContext.Instance.Cts.Token);
-                await Task.Delay(1000);
+                using var cancellationTokenSource = new CancellationTokenSource();
+                await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
+                await returnMainUiTask.Start(cancellationTokenSource.Token);
+                await Task.Delay(1000,cancellationTokenSource.Token);
             }
             
             for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
 
                 await new TaskRunner().RunCurrentAsync(async () =>
                 {
-                    await _blessingOfTheWelkinMoonTask.Start(CancellationContext.Instance.Cts.Token);
+                    using var cancellationTokenSource = new CancellationTokenSource();
+                    await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
                     //获取原神窗口焦点
                     SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
                     retrySingleCount++;
-                    await returnMainUiTask.Start(CancellationContext.Instance.Cts.Token);
-                    uidCheckResult = await VerifyUid(CancellationContext.Instance.Cts.Token); // 验证当前登录账号的UID
+                    await returnMainUiTask.Start(cancellationTokenSource.Token);
+                    uidCheckResult = await VerifyUid(cancellationTokenSource.Token); // 验证当前登录账号的UID
                 });
                 
                 // 如果任务已经被取消，中断所有任务
