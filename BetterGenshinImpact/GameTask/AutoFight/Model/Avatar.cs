@@ -180,7 +180,7 @@ public class Avatar
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
                 // 使用using语句确保CancellationTokenSource被正确释放
-                using var cts = new CancellationTokenSource();
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
                 try
                 {
@@ -189,6 +189,8 @@ public class Avatar
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
                     pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000, cts.Token);
+                    Logger.LogInformation("游泳检测：移动结束");
+                    cts?.Cancel();
                 }
                 catch (OperationCanceledException)
                 {
@@ -204,7 +206,7 @@ public class Avatar
                     AutoFightTask.FightWaypoint = null;
                     Simulation.SendInput.Mouse.RightButtonUp();
                     Simulation.ReleaseAllKey();
-                    cts.Cancel();
+                    cts?.Cancel();
                 }
                 
                 using var bitmap2 = CaptureToRectArea();

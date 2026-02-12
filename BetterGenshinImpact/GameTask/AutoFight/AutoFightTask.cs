@@ -1423,6 +1423,7 @@ public class AutoFightTask : ISoloTask
             VisionContext.Instance().DrawContent.ClearAll();
             GC.Collect();//释放内存
             GC.WaitForPendingFinalizers();//释放内存
+            FightEndFlag = true; 
         }
         
         return Task.CompletedTask;
@@ -1658,9 +1659,6 @@ public class AutoFightTask : ISoloTask
                                 }
                             }
                         }
-                        
-                        
-                        
 
                         using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
                         {
@@ -1673,7 +1671,7 @@ public class AutoFightTask : ISoloTask
                                     if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
                                     {
                                         lastMedicineTime = DateTime.Now;
-                                        Logger.LogInformation("自动吃药2：{text} " + "使用小道具", "发现角色死亡");
+                                        Logger.LogInformation("自动吃药：{text} " + "使用小道具", "发现复活药");
                                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
                                         Simulation.ReleaseAllKey();
                                     }

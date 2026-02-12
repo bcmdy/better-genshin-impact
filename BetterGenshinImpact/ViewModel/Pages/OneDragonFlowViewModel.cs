@@ -2269,23 +2269,18 @@ public partial class OneDragonFlowViewModel : ViewModel
 
             if (TaskContext.Instance().Config.MapMaskConfig.Enabled)
             {
-                _logger.LogDebug("测试1: 00003232");
                 //返回主页
                 await returnMainUiTask.Start(CancellationContext.Instance.Cts.Token);
                 await Task.Delay(1000);
             }
             
             for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
-                _logger.LogDebug("测试1: 0000");
 
                 await new TaskRunner().RunCurrentAsync(async () =>
                 {
-                    _logger.LogDebug("测试1: 1111");
                     await _blessingOfTheWelkinMoonTask.Start(CancellationContext.Instance.Cts.Token);
-                    _logger.LogDebug("测试1: 2222");
                     //获取原神窗口焦点
                     SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
-                    _logger.LogDebug("测试1: 252525");
                     retrySingleCount++;
                     await returnMainUiTask.Start(CancellationContext.Instance.Cts.Token);
                     uidCheckResult = await VerifyUid(CancellationContext.Instance.Cts.Token); // 验证当前登录账号的UID
