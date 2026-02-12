@@ -2599,7 +2599,7 @@ public partial class OneDragonFlowViewModel : ViewModel
     //UID验证
     private async Task<bool> VerifyUid(CancellationToken cts)  
     {
-        if (string.IsNullOrEmpty(SelectedConfig.Name))
+        if (string.IsNullOrEmpty(SelectedConfig?.Name))
         {
             return false;
         }
