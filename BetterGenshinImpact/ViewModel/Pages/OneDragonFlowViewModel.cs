@@ -2270,6 +2270,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             if (TaskContext.Instance().Config.MapMaskConfig.Enabled)
             {
                 //返回主页
+                await _blessingOfTheWelkinMoonTask.Start(CancellationContext.Instance.Cts.Token);
                 await returnMainUiTask.Start(CancellationContext.Instance.Cts.Token);
                 await Task.Delay(1000);
             }
