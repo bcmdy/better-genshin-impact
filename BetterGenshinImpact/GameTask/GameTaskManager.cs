@@ -44,6 +44,7 @@ using BetterGenshinImpact.Service;
 using Vanara.PInvoke;
 using Rect = OpenCvSharp.Rect;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.SkillCd;
 
 namespace BetterGenshinImpact.GameTask;
 
@@ -70,6 +71,7 @@ internal class GameTaskManager
         TriggerDictionary.TryAdd("AutoCook", new AutoCook.AutoCookTrigger());
         TriggerDictionary.TryAdd("AutoEat", new AutoEat.AutoEatTrigger());
         TriggerDictionary.TryAdd("MapMask", new MapMaskTrigger());
+        TriggerDictionary.TryAdd("SkillCd", new SkillCdTrigger());
 
         return ConvertToTriggerList();
     }
@@ -145,6 +147,7 @@ internal class GameTaskManager
             TriggerDictionary.GetValueOrDefault("AutoCook")?.Init();
             TriggerDictionary.GetValueOrDefault("AutoEat")?.Init();
             TriggerDictionary.GetValueOrDefault("MapMask")?.Init();
+            TriggerDictionary.GetValueOrDefault("SkillCd")?.Init();
             // 清理画布
             VisionContext.Instance().DrawContent.ClearAll();
         }
