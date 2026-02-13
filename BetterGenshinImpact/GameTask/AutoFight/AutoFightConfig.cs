@@ -111,7 +111,7 @@ public partial class AutoFightConfig : ObservableObject
         /// GoDistance 寻敌移动距离
         /// </summary>
         [ObservableProperty]
-        private int _goDistance = 1000;
+        private int _goDistance = 500;
         
         /// <summary>
         /// 是有元素爆发前检查战斗结束

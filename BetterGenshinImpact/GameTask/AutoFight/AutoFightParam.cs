@@ -16,7 +16,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public string CheckEndDelay = "";
         public string BeforeDetectDelay = "";
         public bool RotateFindEnemyEnabled = false;
-        public int GoDistance { get; set; } = 1000;
+        public int GoDistance { get; set; } = 500;
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)

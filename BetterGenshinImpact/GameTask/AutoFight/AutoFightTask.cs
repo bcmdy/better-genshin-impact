@@ -1423,7 +1423,7 @@ public class AutoFightTask : ISoloTask
             VisionContext.Instance().DrawContent.ClearAll();
             GC.Collect();//释放内存
             GC.WaitForPendingFinalizers();//释放内存
-            FightEndFlag = true; 
+            // FightEndFlag = true; 
         }
         
         return Task.CompletedTask;
