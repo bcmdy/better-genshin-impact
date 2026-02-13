@@ -1936,7 +1936,7 @@
                                       FontSize="10"
                                       FontTypography="Body"
                                       VerticalAlignment="Bottom"
-                                      Text="(基于经验：检测精英死亡经验值 / 琴二次拾取：首次拾取空,再次拾取)"
+                                      Text="(二次拾取：琴首次拾取空,再次拾取。即使万叶刚使用过技能，也会强制再次拾取。)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
