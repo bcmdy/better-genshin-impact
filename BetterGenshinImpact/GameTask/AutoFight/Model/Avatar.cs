@@ -413,18 +413,23 @@ public class Avatar
         switch (index)
         {
             case 1:
+                Logger.LogDebug("切换到第1号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
                 break;
             case 2:
+                Logger.LogDebug("切换到第2号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
                 break;
             case 3:
+                Logger.LogDebug("切换到第3号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
                 break;
             case 4:
+                Logger.LogDebug("切换到第4号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
                 break;
             case 5:
+                Logger.LogDebug("切换到第5号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
                 break;
             default:
@@ -482,14 +487,22 @@ public class Avatar
                 {
                     case 0:
                         Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
+                        SimulateSwitchAction(Index);
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动后退 {direction}", direction);
                         break;
                     case 1:
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动前进 {direction}", direction);
+                        SimulateSwitchAction(Index);
                         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                         break;
                     case 2:
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动右移 {direction}", direction);
+                        SimulateSwitchAction(Index);
                         Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
                         break;
                     case 3:
+                        SimulateSwitchAction(Index);
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动左移 {direction}", direction);
                         Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
                         break;
                 }
