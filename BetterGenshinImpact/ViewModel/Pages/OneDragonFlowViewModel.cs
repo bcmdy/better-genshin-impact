@@ -58,6 +58,21 @@ using System.Windows.Media;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 using TextBox = Wpf.Ui.Controls.TextBox;
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.Core.Simulator.Extensions;
+using BetterGenshinImpact.Helpers;
+using BetterGenshinImpact.Service.Notification;
+using BetterGenshinImpact.Service.Notification.Model.Enum;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
 
 namespace BetterGenshinImpact.ViewModel.Pages;
@@ -2273,7 +2288,20 @@ public partial class OneDragonFlowViewModel : ViewModel
                 using var cancellationTokenSource = new CancellationTokenSource();
                 await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
                 await returnMainUiTask.Start(cancellationTokenSource.Token);
-                await Task.Delay(1000,cancellationTokenSource.Token);
+                await Task.Delay(2000,cancellationTokenSource.Token);
+            }
+
+            if (TaskContext.Instance().Config.SkillCdConfig.Enabled)
+            {
+                using var ra = CaptureToRectArea();
+                if (Bv.IsInMainUi(ra))
+                {
+                    using var cancellationTokenSource2 = new CancellationTokenSource();
+                    await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource2.Token);
+                    Simulation.SendInput.SimulateAction(GIActions.OpenAdventurerHandbook); 
+                    await returnMainUiTask.Start(cancellationTokenSource2.Token);
+                    await Task.Delay(2000,cancellationTokenSource2.Token);
+                }
             }
             
             for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
