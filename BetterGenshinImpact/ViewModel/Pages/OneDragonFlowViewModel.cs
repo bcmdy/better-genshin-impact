@@ -2282,41 +2282,84 @@ public partial class OneDragonFlowViewModel : ViewModel
             int retrySingleTimes = 3; // 当前账号的UID验证最大次数
             int retrySingleCount = 0; // 当前账号的UID验证次数
 
-            if (TaskContext.Instance().Config.MapMaskConfig.Enabled)
+            try
             {
-                //返回主页
-                using var cancellationTokenSource = new CancellationTokenSource();
-                await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
-                await returnMainUiTask.Start(cancellationTokenSource.Token);
-                await Task.Delay(2000,cancellationTokenSource.Token);
-            }
-
-            if (TaskContext.Instance().Config.SkillCdConfig.Enabled)
-            {
-                using var ra = CaptureToRectArea();
-                if (Bv.IsInMainUi(ra))
+                if (TaskContext.Instance().Config.MapMaskConfig.Enabled)
                 {
-                    using var cancellationTokenSource2 = new CancellationTokenSource();
-                    await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource2.Token);
-                    Simulation.SendInput.SimulateAction(GIActions.OpenAdventurerHandbook); 
-                    await returnMainUiTask.Start(cancellationTokenSource2.Token);
-                    await Task.Delay(2000,cancellationTokenSource2.Token);
+                    //返回主页
+                    using var cancellationTokenSource = new CancellationTokenSource();
+                    await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
+                    await returnMainUiTask.Start(cancellationTokenSource.Token);
+                    await Task.Delay(2000, cancellationTokenSource.Token);
+                }
+
+                if (TaskContext.Instance().Config.SkillCdConfig.Enabled)
+                {
+                    using var ra = CaptureToRectArea();
+                    if (Bv.IsInMainUi(ra))
+                    {
+                        using var cancellationTokenSource2 = new CancellationTokenSource();
+                        await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource2.Token);
+                        Simulation.SendInput.SimulateAction(GIActions.OpenAdventurerHandbook);
+                        await returnMainUiTask.Start(cancellationTokenSource2.Token);
+                        await Task.Delay(2000, cancellationTokenSource2.Token);
+                    }
                 }
             }
+            //ctrl+c取消任务c处理
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogInformation("UID验证过程中任务被取消");
+                return;
+            }
+            catch (OperationCanceledException ex)   
+            {
+                _logger.LogError(ex, "UID验证:  {SelectedConfig.Name} / {SelectedConfig.GenshinUid} 配置单任务," +
+                                     "验证UID时发生错误,退出执行",
+                    SelectedConfig.Name, SelectedConfig.GenshinUid);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "UID验证:  {SelectedConfig.Name} / {SelectedConfig.GenshinUid} 配置单任务," +
+                                     "验证UID时发生未知错误,退出执行",
+                    SelectedConfig.Name, SelectedConfig.GenshinUid);
+            }
+            
             
             for (int i = 0; i < retrySingleTimes * reTrySwitchTimes; i++){
 
-                await new TaskRunner().RunCurrentAsync(async () =>
+                try
                 {
                     using var cancellationTokenSource = new CancellationTokenSource();
                     await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
-                    //获取原神窗口焦点
-                    SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
-                    retrySingleCount++;
-                    await returnMainUiTask.Start(cancellationTokenSource.Token);
-                    uidCheckResult = await VerifyUid(cancellationTokenSource.Token); // 验证当前登录账号的UID
-                });
-                
+                    await new TaskRunner().RunCurrentAsync(async () =>
+                    {
+                        await _blessingOfTheWelkinMoonTask.Start(cancellationTokenSource.Token);
+                        //获取原神窗口焦点
+                        SystemControl.FocusWindow(TaskContext.Instance().GameHandle);
+                        retrySingleCount++;
+                        await returnMainUiTask.Start(cancellationTokenSource.Token);
+                        uidCheckResult = await VerifyUid(cancellationTokenSource.Token); // 验证当前登录账号的UID
+                    });
+                }
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogInformation("UID验证过程中任务被取消1");
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger.LogInformation("UID验证过程中任务被取消2");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "UID验证:  {SelectedConfig.Name} / {SelectedConfig.GenshinUid} 配置单任务," +
+                                         "验证UID时发生未知错误,退出执行",
+                        SelectedConfig.Name, SelectedConfig.GenshinUid);
+                }
+
                 // 如果任务已经被取消，中断所有任务
              
                 if (CancellationContext.Instance.Cts.IsCancellationRequested)
