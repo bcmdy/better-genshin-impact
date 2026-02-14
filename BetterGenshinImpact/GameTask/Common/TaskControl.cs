@@ -23,7 +23,7 @@ using BetterGenshinImpact.Core.Recognition;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using BetterGenshinImpact.GameTask.Common;
-
+using BetterGenshinImpact.GameTask.AutoWood.Assets;
 namespace BetterGenshinImpact.GameTask.Common;
 
 public class TaskControl
@@ -33,6 +33,7 @@ public class TaskControl
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
+    private static DateTime _lastCheckTimeEnter = DateTime.MinValue;
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly TimeSpan CheckIntervalWin = TimeSpan.FromSeconds(30);
     private static readonly Ping PingSender = new Ping();
@@ -45,7 +46,7 @@ public class TaskControl
         var x = (int)(screenArea.Width * 0.3);
         var y = (int)(screenArea.Height * 0.1);
         var width = (int)(screenArea.Width * 0.65);
-        var height = (int)(screenArea.Height * 0.85);
+        var height = (int)(screenArea.Height * 0.87);
         
         return isOcrMatch ? RecognitionObject.OcrMatch(x, y, width, height, targetText) : 
             RecognitionObject.Ocr(x, y, width, height);
@@ -59,27 +60,30 @@ public class TaskControl
     {
         if (DateTime.UtcNow - _lastCheckTime < CheckInterval)
         {
-            if (DateTime.UtcNow - _lastCheckTime > CheckIntervalWin)
+            if (DateTime.UtcNow - _lastCheckTimeEnter > CheckIntervalWin)
             { 
+                _lastCheckTimeEnter = DateTime.UtcNow;
                 using var qq = CaptureToRectArea();
-                var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                using var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                using var enterRa = qq.Find(AutoWoodAssets.Instance.ExitSwitchRo);
+                Logger.LogWarning("弹窗状态测试:点击进入：{t} - 确认按键：{t2}",enterRa.IsExist(),okRa.IsExist());
+                if (okRa.IsExist()|| enterRa.IsExist())
                 {
-                    if (okRa.IsExist())
+                    var enter = qq.FindMulti(GetConfirmRa());
+                    using var enterDone = enter.FirstOrDefault(t =>
+                        Regex.IsMatch(t.Text, "连接已断开") || Regex.IsMatch(t.Text, "点击进入"));
+                    if (enterDone != null)
                     {
-                        Logger.LogInformation("弹窗状态:{0}",okRa.IsExist());
-                        var enter = qq.FindMulti(GetConfirmRa());
-                        var enterDone = enter.FirstOrDefault(t =>
-                            Regex.IsMatch(t.Text, "连接已断开"));
-                        if (enterDone != null)
-                        {
-                            IsSuspendedByWindow = true;
-                        }
-                        else
-                        {
-                            return Task.CompletedTask;
-                        }
+                        IsSuspendedByWindow = true;
+                        Logger.LogWarning("点击: {enterDone.Text}",enterDone.Text);
+                        enterDone.Click();
+                    }
+                    else
+                    {
+                        return Task.CompletedTask;
                     }
                 }
+                
             }
             else
             {
