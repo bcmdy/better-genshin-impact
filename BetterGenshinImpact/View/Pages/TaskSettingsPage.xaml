@@ -1408,7 +1408,7 @@
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
-                                      Margin="90,0,5,0"
+                                      Margin="60,0,5,0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       FontSize="10"
                                       FontTypography="Body"
