@@ -1404,16 +1404,16 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="聚集材料动作"
+                                      Text="聚集材料"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
-                                      Margin="90,0,5,0"
+                                      Margin="60,0,5,0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       FontSize="10"
                                       FontTypography="Body"
                                       VerticalAlignment="Bottom"
-                                      Text="(基于经验：检测精英死亡经验值 / 二次拾取：琴拾取空,再次拾取，万叶强制再次拾取)"
+                                      Text="(基于经验:检测精英经验值/二次拾取:琴拾取空,再拾取,万叶忽略最近出招强制拾取)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
@@ -1457,7 +1457,7 @@
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
                                       Margin="0,0,38,26"
                                       FontTypography="Body"
-                                      Text="琴二次拾取"
+                                      Text="二次拾取"
                                       TextWrapping="Wrap" />
                     </Grid>
                 

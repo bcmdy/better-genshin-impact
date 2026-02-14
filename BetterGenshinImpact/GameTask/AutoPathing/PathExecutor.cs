@@ -221,7 +221,7 @@ public class PathExecutor
                             await HandleTeleportWaypoint(waypoint);
                             if (_lastWaypoint == null || waypoint.MapName != _lastWaypoint.MapName)
                             {
-                                Logger.LogInformation("地图切换，强制校验");
+                                Logger.LogInformation("线路切换，强制校验");
                                 await ValidateGameWithTask(task,true);
                             }
                         }
