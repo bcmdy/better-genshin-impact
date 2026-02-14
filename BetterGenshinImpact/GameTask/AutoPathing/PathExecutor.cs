@@ -219,6 +219,11 @@ public class PathExecutor
                                 await Delay(1000, ct);
                             }
                             await HandleTeleportWaypoint(waypoint);
+                            if (_lastWaypoint == null || waypoint.MapName != _lastWaypoint.MapName)
+                            {
+                                Logger.LogInformation("地图切换，强制校验");
+                                await ValidateGameWithTask(task,true);
+                            }
                         }
                         else
                         {
@@ -1107,7 +1112,7 @@ public class PathExecutor
         return changeBigMap;
     }
 
-    private async Task HandleTeleportWaypoint(WaypointForTrack waypoint)
+    private async Task HandleTeleportWaypoint(WaypointForTrack waypoint,WaypointForTrack? lastWaypoint = null)
     {
         var forceTp = waypoint.Action == ActionEnum.ForceTp.Code;
         TpTask tpTask = new TpTask(ct);
@@ -1117,6 +1122,7 @@ public class PathExecutor
             .ConvertGenshinMapCoordinatesToImageCoordinates(new Point2f((float)tpX, (float)tpY));
         Navigation.SetPrevPosition(tprX, tprY); // 通过上一个位置直接进行局部特征匹配
         await Delay(500, ct); // 多等一会
+        //如果前后地图不同
     }
 
     public async Task FaceTo(WaypointForTrack waypoint)

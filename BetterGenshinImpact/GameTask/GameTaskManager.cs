@@ -95,9 +95,7 @@ internal class GameTaskManager
 
     public static void ClearTriggers()
     {
-        _logger.LogDebug("测试123: 0000133");
         TriggerDictionary?.Clear();
-        _logger.LogDebug("测试123: 0000244");
     }
 
     /// <summary>
