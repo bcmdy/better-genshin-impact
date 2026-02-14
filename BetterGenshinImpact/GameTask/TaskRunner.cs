@@ -142,6 +142,7 @@ public class TaskRunner
                 }
             }
         });
+        VisionContext.Instance().DrawContent.ClearAll(); 
         
         // 激活原神窗口
         var maskWindow = MaskWindow.Instance();
