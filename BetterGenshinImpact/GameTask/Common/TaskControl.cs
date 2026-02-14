@@ -76,7 +76,7 @@ public class TaskControl
                     {
                         IsSuspendedByWindow = true;
                         Logger.LogWarning("点击: {enterDone.Text}",enterDone.Text);
-                        enterDone.Click();
+                        if(enterRa.IsExist())enterDone.Click();
                     }
                     else
                     {
