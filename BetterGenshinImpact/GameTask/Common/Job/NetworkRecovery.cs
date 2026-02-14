@@ -22,7 +22,7 @@ public class NetworkRecovery
         var x = (int)(screenArea.Width * 0.3);
         var y = (int)(screenArea.Height * 0.1);
         var width = (int)(screenArea.Width * 0.65);
-        var height = (int)(screenArea.Height * 0.85);
+        var height = (int)(screenArea.Height * 0.87);
         
         return isOcrMatch ? RecognitionObject.OcrMatch(x, y, width, height, targetText) : 
             RecognitionObject.Ocr(x, y, width, height);
@@ -41,10 +41,10 @@ public class NetworkRecovery
                 var confirm =
                     screen.FindMulti(GetConfirmRa());
                 var confirmDone = confirm.LastOrDefault(t =>
-                    Regex.IsMatch(t.Text, "确认"));
+                    Regex.IsMatch(t.Text, "确认") || Regex.IsMatch(t.Text, "点击进入"));
                 if (confirmDone != null)
                 {
-                    Logger.LogWarning("点击确认");
+                    Logger.LogWarning("点击: {confirmDone.Text}",confirmDone.Text);
                     confirmDone.Click();
                     confirmDone.Dispose();
                 }

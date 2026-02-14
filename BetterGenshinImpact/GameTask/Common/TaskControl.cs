@@ -23,6 +23,8 @@ using BetterGenshinImpact.Core.Recognition;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.AutoWood.Assets;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
 
 namespace BetterGenshinImpact.GameTask.Common;
 
@@ -33,6 +35,7 @@ public class TaskControl
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
     
     private static DateTime _lastCheckTime = DateTime.MinValue;
+    private static DateTime _lastCheckTimeEnter = DateTime.MinValue;
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
     private static readonly TimeSpan CheckIntervalWin = TimeSpan.FromSeconds(30);
     private static readonly Ping PingSender = new Ping();
@@ -45,7 +48,7 @@ public class TaskControl
         var x = (int)(screenArea.Width * 0.3);
         var y = (int)(screenArea.Height * 0.1);
         var width = (int)(screenArea.Width * 0.65);
-        var height = (int)(screenArea.Height * 0.85);
+        var height = (int)(screenArea.Height * 0.87);
         
         return isOcrMatch ? RecognitionObject.OcrMatch(x, y, width, height, targetText) : 
             RecognitionObject.Ocr(x, y, width, height);
@@ -59,27 +62,54 @@ public class TaskControl
     {
         if (DateTime.UtcNow - _lastCheckTime < CheckInterval)
         {
-            if (DateTime.UtcNow - _lastCheckTime > CheckIntervalWin)
+            if (DateTime.UtcNow - _lastCheckTimeEnter > CheckIntervalWin)
             { 
+                _lastCheckTimeEnter = DateTime.UtcNow;
                 using var qq = CaptureToRectArea();
-                var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                using var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                using var enterRa = qq.Find(AutoWoodAssets.Instance.ExitSwitchRo);
+                //如果现在是4点到4点5分内
+                if (DateTime.UtcNow.Hour == 4 && DateTime.UtcNow.Minute >= 0 && DateTime.UtcNow.Minute < 3)
                 {
-                    if (okRa.IsExist())
+                    if ((Bv.IsInBlessingOfTheWelkinMoon(qq)))   
                     {
-                        Logger.LogInformation("弹窗状态:{0}",okRa.IsExist());
-                        var enter = qq.FindMulti(GetConfirmRa());
-                        var enterDone = enter.FirstOrDefault(t =>
-                            Regex.IsMatch(t.Text, "连接已断开"));
-                        if (enterDone != null)
+                        try
                         {
-                            IsSuspendedByWindow = true;
+                            Logger.LogInformation("空月任务4点检测执行");
+                            new BlessingOfTheWelkinMoonTask().Start(CancellationToken.None).Wait(25000);
                         }
-                        else
+                        catch (TaskCanceledException)
                         {
-                            return Task.CompletedTask;
+                            Logger.LogWarning("空月任务执行取消");
+                        }
+                        catch (TimeoutException)
+                        {
+                            Logger.LogWarning("空月任务执行超时");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "空月任务执行失败");
                         }
                     }
                 }
+                
+                if (okRa.IsExist()|| enterRa.IsExist())
+                {
+                    var enter = qq.FindMulti(GetConfirmRa());
+                    using var enterDone = enter.FirstOrDefault(t =>
+                        Regex.IsMatch(t.Text, "连接已断开") || Regex.IsMatch(t.Text, "点击进入"));
+                    if (enterDone != null)
+                    {
+                        IsSuspendedByWindow = true;
+                        Logger.LogWarning("点击: {enterDone.Text}",enterDone.Text);
+                        if(enterRa.IsExist())enterDone.Click();
+                    }
+                    else
+                    {
+                        return Task.CompletedTask;
+                    }
+                }
+                
             }
             else
             {
