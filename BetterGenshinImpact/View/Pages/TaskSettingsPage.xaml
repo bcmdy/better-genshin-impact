@@ -1404,7 +1404,7 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="聚集材料动作"
+                                      Text="聚集材料"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
