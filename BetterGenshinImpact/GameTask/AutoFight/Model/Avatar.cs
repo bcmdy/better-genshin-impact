@@ -346,6 +346,44 @@ public class Avatar
                     resultRa.Click();
                     resultRa.ClickTo(-100,0);
                 }
+                
+                using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
+                {
+                    var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (confirmRa.IsExist())
+                    {
+                        confirmRa.Click();
+                        Task.Delay(500, Ct).Wait(500);
+                        using var bitmap2 = CaptureToRectArea();
+                        var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
+                        {
+                            if (okRa.IsExist())
+                            {
+                                Logger.LogInformation("自动吃药：{text} 复活界面", "退出");
+                                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                                Task.Delay(500, Ct).Wait(1000);
+                                try
+                                {
+
+                                    if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, Ct).Result)
+                                    {
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
+                                        Simulation.ReleaseAllKey();
+                                    }
+                                }
+                                catch (OperationCanceledException ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药123：{ex.Message}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药发生异常123: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 Logger.LogInformation("切换识别失败1:{Name} 索引:{Index}", Name,Index);
                 return false;
             }
