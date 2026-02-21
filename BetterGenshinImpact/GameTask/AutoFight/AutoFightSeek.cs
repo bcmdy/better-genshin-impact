@@ -152,7 +152,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(async () =>
                                 {
                                     await HoldKeysAsync(
-                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveRight, KeyType.KeyDown) },
                                         distance,
                                         ct
                                     ).ConfigureAwait(false);
@@ -168,7 +168,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(async () =>
                                 {
                                     await HoldKeysAsync(
-                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        new (GIActions, KeyType)[] { (GIActions.MoveBackward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
                                         distance,
                                         ct
                                     ).ConfigureAwait(false);
@@ -184,7 +184,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(async () =>
                                 {
                                     await HoldKeysAsync(
-                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        new (GIActions, KeyType)[] { (GIActions.MoveBackward, KeyType.KeyDown), (GIActions.MoveRight, KeyType.KeyDown) },
                                         distance,
                                         ct
                                     ).ConfigureAwait(false);
@@ -200,7 +200,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(async () =>
                                 {
                                     await HoldKeysAsync(
-                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveForward, KeyType.KeyDown) },
                                         distance,
                                         ct
                                     ).ConfigureAwait(false);
@@ -216,7 +216,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                 Task.Run(async () =>
                                 {
                                     await HoldKeysAsync(
-                                        new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                        new (GIActions, KeyType)[] { (GIActions.MoveBackward, KeyType.KeyDown), (GIActions.MoveBackward, KeyType.KeyDown) },
                                         distance,
                                         ct
                                     ).ConfigureAwait(false);
@@ -251,7 +251,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Task.Run(async () =>
                             {
                                 await HoldKeysAsync(
-                                    new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                    new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveForward, KeyType.KeyDown) },
                                     distance,
                                     ct
                                 ).ConfigureAwait(false);
@@ -263,7 +263,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             Task.Run(async () =>
                             {
                                 await HoldKeysAsync(
-                                    new (GIActions, KeyType)[] { (GIActions.MoveForward, KeyType.KeyDown), (GIActions.MoveLeft, KeyType.KeyDown) },
+                                    new (GIActions, KeyType)[] { (GIActions.MoveBackward, KeyType.KeyDown), (GIActions.MoveBackward, KeyType.KeyDown) },
                                     distance,
                                     ct
                                 ).ConfigureAwait(false);
