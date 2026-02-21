@@ -57,6 +57,8 @@ public class TaskControl
     public static bool IsSuspendedByNetwork { get; set; } = false;
     
     public static bool IsSuspendedByWindow { get; set; } = false;
+    
+    private static bool _isBless = false;
 
     private static Task CheckNetworkStatusAsync()
     {
@@ -71,12 +73,13 @@ public class TaskControl
                 //如果现在是4点到4点5分内
                 if (DateTime.UtcNow.Hour == 4 && DateTime.UtcNow.Minute >= 0 && DateTime.UtcNow.Minute < 3)
                 {
-                    if ((Bv.IsInBlessingOfTheWelkinMoon(qq)))   
+                    if ((Bv.IsInBlessingOfTheWelkinMoon(qq)) && !_isBless)   
                     {
                         try
                         {
                             Logger.LogInformation("空月任务4点检测执行");
-                            new BlessingOfTheWelkinMoonTask().Start(CancellationToken.None).Wait(25000);
+                            _isBless = true;
+                            new BlessingOfTheWelkinMoonTask().Start(CancellationToken.None).Wait(10000);
                         }
                         catch (TaskCanceledException)
                         {
@@ -89,6 +92,10 @@ public class TaskControl
                         catch (Exception ex)
                         {
                             Logger.LogError(ex, "空月任务执行失败");
+                        }
+                        finally
+                        {
+                            Logger.LogDebug("空月任务4点检测执行完毕");
                         }
                     }
                 }
