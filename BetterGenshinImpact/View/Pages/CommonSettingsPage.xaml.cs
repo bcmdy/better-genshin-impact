@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using BetterGenshinImpact.View.Windows;
 
+
 namespace BetterGenshinImpact.View.Pages;
 
 public partial class CommonSettingsPage : Page

@@ -15,7 +15,8 @@
       ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       FontFamily="{StaticResource TextThemeFontFamily}"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      mc:Ignorable="d">
+      mc:Ignorable="d"
+      x:Name="CommonSettings">
 
     <StackPanel Margin="42,16,42,12">
         <ui:TextBlock Margin="0,0,0,8"
@@ -595,18 +596,18 @@
                     <ui:TextBlock Grid.Row="0"
                                   Grid.Column="0"
                                   FontTypography="Body"
-                                  Text="命令行启动时也自动更新"
+                                  Text="保存图片为1080P(不支持UID遮盖)"
                                   TextWrapping="Wrap" />
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="通过命令行参数启动配置组/一条龙时，先等待脚本更新完成再执行"
+                                  Text="如关闭则保存为当前游戏分辨率截图"
                                   TextWrapping="Wrap" />
                     <ui:ToggleSwitch Grid.Row="0"
                                      Grid.RowSpan="2"
                                      Grid.Column="1"
                                      Margin="0,0,36,0"
-                                     IsChecked="{Binding Config.ScriptConfig.AutoUpdateBeforeCommandLineRun, Mode=TwoWay}" />
+                                     IsChecked="{Binding Config.CommonConfig.SaveAs1080P, Mode=TwoWay}" />
                 </Grid>
             </StackPanel>
         </ui:CardExpander>
@@ -784,6 +785,7 @@
                                      Grid.RowSpan="2"
                                      Grid.Column="1"
                                      Margin="0,0,36,0"
+                                     IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                      IsChecked="{Binding Config.TpConfig.MapZoomEnabled, Mode=TwoWay}" />
                 </Grid>
                 <Grid Margin="16">
@@ -810,6 +812,7 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                 Text="{Binding Config.TpConfig.MaxMouseMove, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 <Grid Margin="16">
@@ -836,6 +839,7 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
                                 Text="{Binding Config.TpConfig.MapZoomOutDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
                 <Grid Margin="16">
@@ -862,7 +866,9 @@
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
-                                Text="{Binding Config.TpConfig.MapZoomInDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                                Text="{Binding Config.TpConfig.MapZoomInDistance, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" 
+                                IsEnabled="{Binding Config.TpConfig.MapMoveStepDivisor, Converter={StaticResource InverseBooleanConverter}}"
+                                />
                 </Grid>
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
@@ -881,15 +887,64 @@
                     <ui:TextBlock Grid.Row="1"
                                   Grid.Column="0"
                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                  Text="【2-100】数字越小移动鼠标的速度越快，如果移动地图时产生卡顿，请提高这个数值"
+                                  Text="【2-100】数字越小移动鼠标越快，如果移动地图时产生卡顿，请提高这个数值"
                                   TextWrapping="Wrap" />
                     <ui:TextBox Grid.Row="0"
                                 Grid.RowSpan="2"
                                 Grid.Column="1"
                                 MinWidth="90"
                                 Margin="0,0,36,0"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
                                 Text="{Binding Config.TpConfig.StepIntervalMilliseconds, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
                 </Grid>
+                
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  Text="快速拖动模式(实验性功能，拖动地图时鼠标可能会超出游戏窗口)"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="可调整鼠标移动的时间间隔（建议2~20ms，如异常逐步调大），如果拖动时地图卡顿，感觉拖不动，调高这个数值"
+                                  TextWrapping="Wrap" />
+                    <ui:ToggleSwitch Grid.Row="0"
+                                     Grid.RowSpan="2"
+                                     Grid.Column="1"
+                                     HorizontalAlignment="Right"
+                                     Margin="0,0,38,0"
+                                     IsChecked="{Binding Config.TpConfig.MapMoveStepDivisor, Mode=TwoWay}" />
+                    
+                    <ui:TextBlock Grid.Row="2"
+                                  Grid.Column="0"
+                                  Margin="0,10,10,0"
+                                  FontTypography="Body"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="单次拖动距离等级，默认0自动适配，可调节范围0~5（默认2，可填小数），如果每次鼠标拖动太短，拖动次数过多，调高这个数值"
+                                  VerticalAlignment="Center"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding Config.TpConfig.MapMoveStepDivisor , Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <ui:TextBox Grid.Row="2"
+                                Grid.Column="1"
+                                MinWidth="100"
+                                MaxWidth="100"
+                                Margin="0,10,38,0"
+                                HorizontalContentAlignment="Center"
+                                Visibility="{Binding Config.TpConfig.MapMoveStepDivisor , Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Text="{Binding Config.TpConfig.MapZoomDistanceForce, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                </Grid>
+                
             </StackPanel>
         </ui:CardExpander>
 
@@ -1155,6 +1210,72 @@
                                      Margin="0,0,36,0"
                                      IsChecked="{Binding Config.OtherConfig.RestoreFocusOnLostEnabled, Mode=TwoWay}" />
                 </Grid>
+                
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  Text="电脑网络检测失败时，自动暂停BGI脚本"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Center"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Center"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="等待网络恢复后自动恢复，Ping地址无需HTTP前缀，检测3次失败后自动暂停脚本。"
+                                  TextWrapping="Wrap" />
+                    
+                    <ui:TextBox Grid.Row="0"
+                                Grid.Column="1"
+                                Grid.ColumnSpan="2"
+                                VerticalContentAlignment="Center"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Center"
+                                HorizontalAlignment="Center"
+                                MinWidth="210"
+                                Margin="20,0,10,0"
+                                MaxWidth="250"
+                                Text="{Binding Config.OtherConfig.NetworkDetectionUrl, Mode=TwoWay}" />
+                    
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="1"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Right"
+                                  FontTypography="Body" 
+                                  Text="网络检测间隔(秒): " 
+                                  TextWrapping="Wrap" />
+                    
+                    <ui:TextBox Grid.Row="1"
+                                Grid.Column="2"
+                                VerticalContentAlignment="Center"
+                                VerticalAlignment="Center"
+                                HorizontalContentAlignment="Center"
+                                HorizontalAlignment="Right"
+                                MinWidth="60"
+                                MaxHeight="33"
+                                Margin="10,0,10,0"
+                                Text="{Binding Config.OtherConfig.NetworkDetectionInterval, Mode=TwoWay}" />
+                   
+                    
+                    <ui:ToggleSwitch Grid.Row="0"
+                                     Grid.Column="3"
+                                     Margin="0,0,36,0"
+                                     IsChecked="{Binding Config.OtherConfig.NetworkDetectionConfig, Mode=TwoWay}" />
+                </Grid>
+                
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -1555,6 +1676,542 @@
                         </StackPanel>
                     </StackPanel>
                 </ui:CardExpander>
+                
+                 <!--  假装识别相关设置  -->
+        <ui:CardExpander Margin="0,0,0,12" ContentPadding="0">
+            <ui:CardExpander.Icon>
+                <ui:FontIcon Glyph="&#xe533;" Style="{StaticResource FaFontIconStyle}" />
+            </ui:CardExpander.Icon>
+            <ui:CardExpander.Header>
+                <Grid x:Name="MaskGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  Text="队伍角色假装识别设置"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="在新角色实装后，新BGI版本发布前，临时用于识别队伍角色的设置"
+                                  TextWrapping="Wrap" />
+                </Grid>
+            </ui:CardExpander.Header>
+            <StackPanel>
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Grid.Column="0"
+                                  FontTypography="Body"
+                                  Text="开启队伍角色假装识别功能（添加新角色角色后重启BGI）"
+                                  TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1"
+                                  Grid.Column="0"
+                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                  Text="注意本功能仅用于临时使用，请多次尝试设置，以确保识别准确"
+                                  TextWrapping="Wrap" />
+                    <ui:ToggleSwitch Grid.Row="0"
+                                     Grid.RowSpan="2"
+                                     Grid.Column="1"
+                                     Margin="0,0,36,0"
+                                     IsChecked="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatarEnabled, Mode=TwoWay}" />
+                </Grid>
+                
+                <StackPanel>
+                    <Grid Margin="16,-15,16,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      Grid.ColumnSpan="7"
+                                      Margin="0,0,10,10"
+                                      FontTypography="Body"
+                                      Text="新角色可能识别成的角色(可填3个)，填写完整角色名称 (运行自动战斗可以查看)"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="0"
+                                      Grid.ColumnSpan="7"
+                                      Margin="0,0,25,10"
+                                      FontTypography="Body"
+                                      Text="请固定新角色在队伍中的位置(建议4号位)，地图追踪时不要用作行走位，置信度可填0至1，越高越容易识别为指定角色(老角色或自定义新角色)，识别不到请逐步提高置信度。"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="2"
+                                    Grid.Column="0"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar1Name, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBox Grid.Row="2"
+                                    Grid.Column="1"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar1Name2, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBox Grid.Row="2"
+                                    Grid.Column="2"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar1Name3, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBlock Grid.Row="2"
+                                      Grid.Column="3"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,5,0"
+                                      FontTypography="Body"
+                                      Text="置信度低于："
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="2"
+                                    Grid.Column="4"
+                                    MinWidth="60"
+                                    MaxWidth="60"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar1Confidence, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBlock Grid.Row="2"
+                                      Grid.Column="5"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,5,0"
+                                      FontTypography="Body"
+                                      Text="识别为："
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="2"
+                                    Grid.Column="6"
+                                    MinWidth="90"
+                                    MaxWidth="90"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar1DisplayName, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                    </Grid> 
+                        
+                 
+                    <Grid Margin="16,0,16,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBox Grid.Row="1"
+                                    Grid.Column="0"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar2Name, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBox Grid.Row="1"
+                                    Grid.Column="1"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar2Name2, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBox Grid.Row="1"
+                                    Grid.Column="2"
+                                    MinWidth="80"
+                                    MaxWidth="80"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar2Name3, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="3"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,5,0"
+                                      FontTypography="Body"
+                                      Text="置信度低于："
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="1"
+                                    Grid.Column="4"
+                                    MinWidth="60"
+                                    MaxWidth="60"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar2Confidence, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="5"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,5,0"
+                                      FontTypography="Body"
+                                      Text="识别为："
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="1"
+                                    Grid.Column="6"
+                                    MinWidth="90"
+                                    MaxWidth="90"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,10,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatar2DisplayName, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                        
+                    </Grid>
+                    <Grid Margin="16,0,45,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,0,0,0"
+                                      FontTypography="Body"
+                                      Text="强制："
+                                      TextWrapping="Wrap" />
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.Column="1"
+                                    MinWidth="220"
+                                    MaxWidth="220"
+                                    HorizontalAlignment="Left"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,0,0"
+                                    Text="{Binding Config.OtherConfig.CustomAvatarConfigOut.CustomAvatarForceUseList, Mode=TwoWay, ValidatesOnNotifyDataErrors=True}" />
+                    <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="2"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,0,5,0"
+                                      FontTypography="Body"
+                                      Text="增减自定义角色(基础信息，临时使用)："
+                                      TextWrapping="Wrap" />
+                        
+                        <!-- 使用 Button 控制弹窗 -->
+                        <ToggleButton                                         
+                            Grid.Row="0"
+                            Grid.Column="3"
+                            Margin="5,0,5,0"
+                            FontFamily="{StaticResource TextThemeFontFamily}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            HorizontalContentAlignment="Center"
+                            Width="16"
+                            Height="16"
+                            BorderThickness="1"
+                            Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                            Background="Transparent"
+                            Padding="0"
+                            ClickMode="Press"
+                            x:Name="ToggleButton">
+                            <Viewbox>
+                                <TextBlock Text="+" TextWrapping="Wrap" />
+                            </Viewbox>
+                        </ToggleButton>
+                        
+                        <Button
+                                Grid.Row="0"
+                                Grid.Column="4"
+                                Margin="5,0,5,0"
+                                Click="RemoveButtonClick"
+                                FontFamily="{StaticResource TextThemeFontFamily}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right"
+                                HorizontalContentAlignment="Center"
+                                Width="16"
+                                Height="16"
+                                Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                Background="Transparent"
+                                Padding="0"
+                                ClickMode="Press">
+                                <Viewbox>
+                                    <TextBlock Text="-" TextWrapping="Wrap" />
+                                </Viewbox>
+                            </Button>
+                        
+                        <!-- 弹窗 -->
+                                <Popup Grid.Row="0" Grid.Column="0" x:Name="Popup"
+                                       Placement="Center"
+                                       VerticalOffset="500"
+                                       PlacementTarget="{Binding ElementName=CommonSettings}"
+                                       IsOpen="{Binding IsChecked, ElementName=ToggleButton}"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Fade"
+                                       HorizontalAlignment="Center"
+                                       Focusable="False" 
+                                       StaysOpen="False"
+                                       Margin="12">
+                                    <Border CornerRadius="12"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Background="{DynamicResource  ApplicationBackgroundBrush}"
+                                            BorderBrush="{DynamicResource SystemAccentColorPrimaryBrush}"
+                                            BorderThickness="1"
+                                            MaxWidth="300"
+                                            Margin="12">
+                                    
+                                        <StackPanel Margin="12">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBlock Grid.Row="0" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="名字:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="0"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="自定义角色一"
+                                                            x:Name="NameTextBox"/>
+                                                <ui:TextBlock Grid.Row="1" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="英文名字:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="1"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="CustomAvatar1"
+                                                            x:Name="NameEnTextBox"/>
+                                                <ui:TextBlock Grid.Row="2" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="武器类型:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <!-- <TextBox Grid.Row="2" -->
+                                                <!--          Grid.Column="1" -->
+                                                <!--          MinWidth="130" -->
+                                                <!--          MaxHeight="35" -->
+                                                <!--          HorizontalAlignment="Left" -->
+                                                <!--          HorizontalContentAlignment="Center" -->
+                                                <!--          VerticalAlignment="Top" -->
+                                                <!--          Margin="5,5,5,5" -->
+                                                <!--          Text="13" -->
+                                                <!--          x:Name="WeaponTextBox"/> -->
+                                                <TextBox Grid.Row="2" 
+                                                         Grid.Column="1"
+                                                         Margin="5,5,5,5"
+                                                         MinWidth="130"
+                                                         MaxHeight="35"
+                                                         FontSize="14"
+                                                         HorizontalAlignment="Left"
+                                                         HorizontalContentAlignment="Center"
+                                                         VerticalAlignment="Top"
+                                                         Text="13"
+                                                         Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                         x:Name="WeaponTextBox">
+                                                    <TextBox.ToolTip>
+                                                        <ToolTip Content="单手剑：1
+                                                        法器：10 
+                                                        双手剑：11
+                                                        弓箭：12
+                                                        长柄武器：13" Placement="Top" />
+                                                    </TextBox.ToolTip>
+                                                </TextBox>
+                                                
+                                                
+                                                <ui:TextBlock Grid.Row="3" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="短E战技冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="3"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="16"
+                                                            x:Name="SkillCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="4" 
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="长E战技冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="4"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="16"
+                                                            x:Name="SkillHoldCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="5"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="Q爆发冷却:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="5"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="20"
+                                                            x:Name="BurstCdTextBox"/>
+                                                <ui:TextBlock Grid.Row="6"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,5"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Left"
+                                                              VerticalAlignment="Center"
+                                                              Text="别名:"
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ui:TextBox Grid.Row="6"
+                                                            Grid.Column="1"
+                                                            MinWidth="130"
+                                                            MaxHeight="35"
+                                                            HorizontalAlignment="Left"
+                                                            HorizontalContentAlignment="Center"
+                                                            VerticalAlignment="Top"
+                                                            Margin="5,5,5,5"
+                                                            Text="Alias1"
+                                                            x:Name="AliasTextBox"/>
+                                            </Grid>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:TextBlock Grid.Row="0"  
+                                                              Grid.Column="0"
+                                                              Margin="5,5,5,0"
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Right"
+                                                              VerticalAlignment="Center"
+                                                              Text="建立新角色："
+                                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                              TextWrapping="Wrap"/>
+                                                <ToggleButton
+                                                    Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Right"
+                                                    Width="60"
+                                                    Margin="0,5,5,0"
+                                                    Content="确定" 
+                                                    Click="AddButtonClick"/>
+                                                <ToggleButton
+                                                    Grid.Row="0"
+                                                    Grid.Column="2"
+                                                    HorizontalAlignment="Right"
+                                                    Width="60"
+                                                    Margin="5,5,5,0"
+                                                    Content="取消" 
+                                                    Click="PopupCloseButtonClick"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ui:CardExpander>
+                
                 <!--  米游社相关  -->
                 <ui:CardExpander Margin="0,0,0,12"
                                  ContentPadding="0"
@@ -1747,141 +2404,7 @@
                                 </b:Interaction.Triggers>
                             </ComboBox>
                         </Grid>
-                        <Grid Margin="16">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ui:TextBlock Grid.Row="0"
-                                          Grid.Column="0"
-                                          FontTypography="Body"
-                                          Text="允许连续重复字符"
-                                          TextWrapping="Wrap" />
-                            <ui:TextBlock Grid.Row="1"
-                                          Grid.Column="0"
-                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="关闭CTC重复字符折叠，允许OCR结果中出现连续重复字符。修改后需重新加载OCR引擎才能生效。"
-                                          TextWrapping="Wrap" />
-                            <ui:ToggleSwitch Grid.Row="0"
-                                             Grid.RowSpan="2"
-                                             Grid.Column="1"
-                                             Margin="0,0,36,0"
-                                             IsChecked="{Binding Config.OtherConfig.OcrConfig.AllowDuplicateChar, Mode=TwoWay}" />
-                        </Grid>
-                        <Grid Margin="16">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ui:TextBlock Grid.Row="0"
-                                          Grid.Column="0"
-                                          FontTypography="Body"
-                                          Text="切换队伍使用OCR模糊匹配"
-                                          TextWrapping="Wrap" />
-                            <ui:TextBlock Grid.Row="1"
-                                          Grid.Column="0"
-                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="开启后使用OcrMatch模糊匹配识别队伍名称，关闭则使用正则表达式匹配。"
-                                          TextWrapping="Wrap" />
-                            <ui:ToggleSwitch Grid.Row="0"
-                                             Grid.RowSpan="2"
-                                             Grid.Column="1"
-                                             Margin="0,0,36,0"
-                                             IsChecked="{Binding Config.OtherConfig.OcrConfig.UseOcrMatchForPartySwitch, Mode=TwoWay}" />
-                        </Grid>
-                        <Grid Margin="16">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ui:TextBlock Grid.Row="0"
-                                          Grid.Column="0"
-                                          FontTypography="Body"
-                                          Text="OCR模糊匹配阈值"
-                                          TextWrapping="Wrap" />
-                            <ui:TextBlock Grid.Row="1"
-                                          Grid.Column="0"
-                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="【0~1】分数 ≥ 阈值视为匹配成功，默认值为 0.8。"
-                                          TextWrapping="Wrap" />
-                            <Slider Grid.Row="0"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="1"
-                                    Width="200"
-                                    Margin="0,0,12,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="1"
-                                    Minimum="0.01"
-                                    TickFrequency="0.01"
-                                    Value="{Binding Config.OtherConfig.OcrConfig.OcrMatchDefaultThreshold, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="0"
-                                       Grid.RowSpan="2"
-                                       Grid.Column="2"
-                                       MinWidth="40"
-                                       Margin="0,0,36,0"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Center"
-                                       FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                                       FontSize="14"
-                                       Text="{Binding Config.OtherConfig.OcrConfig.OcrMatchDefaultThreshold, StringFormat=F2}" />
-                        </Grid>
 
-                        <Grid Margin="16">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ui:TextBlock Grid.Row="0"
-                                          Grid.Column="0"
-                                          FontTypography="Body"
-                                          Text="PaddleOCR 识别置信度阈值"
-                                          TextWrapping="Wrap" />
-                            <ui:TextBlock Grid.Row="1"
-                                          Grid.Column="0"
-                                          Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                          Text="【0~1】低于此阈值的字符将被过滤，默认值为 0.5。修改后需重载OCR。"
-                                          TextWrapping="Wrap" />
-                            <Slider Grid.Row="0"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="1"
-                                    Width="200"
-                                    Margin="0,0,12,0"
-                                    VerticalAlignment="Center"
-                                    IsSnapToTickEnabled="True"
-                                    Maximum="0.99"
-                                    Minimum="0"
-                                    TickFrequency="0.01"
-                                    Value="{Binding Config.OtherConfig.OcrConfig.PaddleOcrThreshold, Mode=TwoWay}" />
-                            <TextBlock Grid.Row="0"
-                                       Grid.RowSpan="2"
-                                       Grid.Column="2"
-                                       MinWidth="40"
-                                       Margin="0,0,36,0"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Center"
-                                       FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                                       FontSize="14"
-                                       Text="{Binding Config.OtherConfig.OcrConfig.PaddleOcrThreshold, StringFormat=F2}" />
-                        </Grid>
 
                     </StackPanel>
                 </ui:CardExpander>
@@ -2064,3 +2587,4 @@
         </ui:CardControl>
     </StackPanel>
 </Page>
+
