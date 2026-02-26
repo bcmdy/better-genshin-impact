@@ -114,7 +114,7 @@ public class AutoDomainTask : ISoloTask
         this.ancientTreeString = stringLocalizer.WithCultureGet(cultureInfo, "石化古树");
         this.skipAnimationString = stringLocalizer.WithCultureGet(cultureInfo, "自动跳过领奖动画");
         this.replenishString = stringLocalizer.WithCultureGet(cultureInfo, "补充");
-        this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
+        this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全部开放");
         this.limitedFullyAllString = stringLocalizer.WithCultureGet(cultureInfo, "限时开放");
     }
     
