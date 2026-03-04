@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using System.Threading.Tasks;
@@ -13,11 +13,13 @@ public class AutoPathingScript
 {
     private object? _config = null;
     private string _rootPath;
+    private readonly LimitedFile _autoPathingFile;
 
     public AutoPathingScript(string rootPath, object? config)
     {
         _config = config;
         _rootPath = rootPath;
+        _autoPathingFile = new LimitedFile(Global.Absolute(@"User\AutoPathing"));
     }
 
     public async Task Run(string json, CancellationToken ct = default)
@@ -81,7 +83,7 @@ public class AutoPathingScript
     /// <param name="path">在 `\User\AutoPathing` 目录下获取文件</param>
     public async Task RunFileFromUser(string path,CancellationToken ct = default)
     {
-        var json = await new LimitedFile(Global.Absolute(@"User\AutoPathing")).ReadText(path);
-        await Run(json,ct);
+        var json = await AutoPathingFile.ReadText(path);
+        await Run(json);
     }
 }
