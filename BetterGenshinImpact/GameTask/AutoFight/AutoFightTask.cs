@@ -1491,7 +1491,8 @@ public class AutoFightTask : ISoloTask
                 {
                     var gray = false;
                     var redBlood = false;
-
+                    // ImageRegion? bb = null;
+                    
                     try
                     {
                         cts2.ThrowIfCancellationRequested();
@@ -1512,6 +1513,7 @@ public class AutoFightTask : ISoloTask
                                 }
 
                                 using var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
+                                // bb = bloodtRect;
                                 using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,
                                     new Scalar(250, 90, 89),
                                     new Scalar(250, 91, 89));
@@ -1593,7 +1595,15 @@ public class AutoFightTask : ISoloTask
                                             }
                                             else
                                             {
-                                                redBlood = true;
+                                                bool isSimilar = IsPixelSimilar(bloodtRect.SrcMat.At<Vec3b>(1, 1), bloodtRect.SrcMat.At<Vec3b>(2, 2), 2);
+                                                if (isSimilar)
+                                                {
+                                                    redBlood = false;
+                                                }
+                                                else
+                                                {
+                                                    redBlood = true;
+                                                }
                                             }
                                         }
                                     }
@@ -1644,6 +1654,13 @@ public class AutoFightTask : ISoloTask
                                         if (gray) RecoverCount++;
                                         TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具",
                                             redBlood ? "发现红血" : "发现角色死亡");
+                                        
+                                        // //LOG显示bloodtRect区域的颜色值
+                                        // var aa = bb.SrcMat.At<Vec3b>(1, 1);
+                                        // Logger.LogError("自动吃药：检测到红血，血量颜色值BGR1({b},{g},{r})",aa[0], aa[1], aa[2]);
+                                        // var aaa = bb.SrcMat.At<Vec3b>(2, 2);
+                                        // Logger.LogError("自动吃药：检测到红血，血量颜色值BGR2({b},{g},{r})",aaa[0], aaa[1], aaa[2]);
+                                        
                                         PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                                         redBlood = false;
                                         gray = false;
@@ -1785,6 +1802,17 @@ public class AutoFightTask : ISoloTask
         }
         
         return Task.CompletedTask;
+    }
+    
+    static bool IsPixelSimilar(Vec3b p1, Vec3b p2, int threshold)
+    {
+        // 注意：OpenCV的Vec3b[0]是B通道，[1]是G通道，[2]是R通道（不是RGB而是BGR！）
+        int diffB = Math.Abs(p1[0] - p2[0]); // 蓝色通道差值
+        int diffG = Math.Abs(p1[1] - p2[1]); // 绿色通道差值
+        int diffR = Math.Abs(p1[2] - p2[2]); // 红色通道差值
+
+        // 所有通道的差值都≤阈值才返回true
+        return diffB <= threshold && diffG <= threshold && diffR <= threshold;
     }
 
     //定义按键，用于结束吃药的切换人
