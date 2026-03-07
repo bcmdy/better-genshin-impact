@@ -63,19 +63,57 @@ public class MatchTemplateHelper
                 //内存清理
                 GC.Collect();//释放内存
                 GC.WaitForPendingFinalizers();//释放内存
+                CleanupMemory();
                 attempt++;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex.Message);
                 _logger.LogDebug(ex, ex.Message);
+                GC.Collect();//释放内存
+                GC.WaitForPendingFinalizers();//释放内存
+                CleanupMemory();
                 return default;
             }
         }
 
         // 如果达到最大重试次数仍然失败，记录最终失败信息
         _logger.LogError("MatchTemplate方法在最大重试次数后仍然失败。");
+        GC.Collect();//释放内存
+        GC.WaitForPendingFinalizers();//释放内存
+        CleanupMemory();
         return default;
+    }
+    
+    /// <summary>
+    /// 彻底清理内存（针对OpenCV非托管内存+托管内存）
+    /// </summary>
+    public static void CleanupMemory()
+    {
+        try
+        {
+            // 1. 强制回收所有代的托管内存，启用压缩和阻塞回收
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            
+            // 2. 等待所有终结器执行完毕（处理实现了Finalize的对象，包括OpenCV的非托管资源）
+            GC.WaitForPendingFinalizers();
+            
+            // 3. 再次回收，清理终结器执行后变为可回收的对象
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+
+            // 4. 针对大对象堆(LOH)的压缩（.NET Core 3.0+）
+            if (Environment.Version.Major >= 3)
+            {
+                System.Runtime.GCSettings.LargeObjectHeapCompactionMode = 
+                    System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            }
+
+            _logger.LogDebug("内存清理流程执行完成");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "内存清理流程执行失败");
+        }
     }
 
     /// <summary>

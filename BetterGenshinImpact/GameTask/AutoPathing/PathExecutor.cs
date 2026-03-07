@@ -833,7 +833,7 @@ public class PathExecutor
                                     return true;
                                 }
                             }
-                            else if (avatar.Name == "爱可菲" || avatar.Name == "闲云")
+                            else if ((avatar.Name == "爱可菲" || avatar.Name == "闲云") && qSkill.Contains(avatar.Index))
                             {
                                 if (avatar.TrySwitch())
                                 {
@@ -1427,7 +1427,7 @@ public class PathExecutor
                         if (numLabels > 3 && numLabels <40)
                         {
                             mavikaFlyCount++;
-                            if (mavikaFlyCount > 3 && avatar.IsActive(screen2))
+                            if (mavikaFlyCount > 2 && avatar.IsActive(screen2))
                             {
                                 hurryOnLogo = true;
                                 Task.Run(async () =>
@@ -1438,14 +1438,13 @@ public class PathExecutor
                                     {
                                         Simulation.SendInput.SimulateAction(GIActions.Jump);
                                         await Delay(100, ct);
-                                        var region4 = CaptureToRectArea();
+                                        using var region4 = CaptureToRectArea();
                                         var isFlying = Bv.GetMotionStatus(region4) == MotionStatus.Fly;
                                         if (isFlying)
                                         {
                                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
                                             Logger.LogInformation("自动赶路：{t} 下落攻击...","瓦蕾莎");  
                                         }
-                                        region4.Dispose();
                                     }
                                     mavikaFlyCount = 0;
                                 }, ct);

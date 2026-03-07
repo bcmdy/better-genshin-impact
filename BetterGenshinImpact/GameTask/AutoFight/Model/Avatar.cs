@@ -207,6 +207,9 @@ public class Avatar
                     Simulation.SendInput.Mouse.RightButtonUp();
                     Simulation.ReleaseAllKey();
                     cts?.Cancel();
+                    GC.Collect();//释放内存
+                    GC.WaitForPendingFinalizers();//释放内存
+                    MatchTemplateHelper.CleanupMemory();
                 }
                 
                 using var bitmap2 = CaptureToRectArea();
@@ -216,6 +219,9 @@ public class Avatar
                    return;
                 }
                 
+                GC.Collect();//释放内存
+                GC.WaitForPendingFinalizers();//释放内存
+                MatchTemplateHelper.CleanupMemory();
                 Logger.LogWarning("游泳检测：回到战斗地点失败");
             }
             
@@ -229,7 +235,8 @@ public class Avatar
     /// </summary>
     public static bool SwimmingConfirm(Region region)
     {
-        using var mask = OpenCvCommonHelper.Threshold(region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11).SrcMat, 
+        using var regionMat = region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11);
+        using var mask = OpenCvCommonHelper.Threshold(regionMat.SrcMat, 
             new Scalar(242, 223, 39),new Scalar(255, 233, 44));
         using var labels = new Mat();
         using var stats = new Mat();
