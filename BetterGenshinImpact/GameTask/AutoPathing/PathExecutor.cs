@@ -2274,10 +2274,12 @@ public class PathExecutor
             {
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {
+                    // Logger.LogWarning("6611");
                     return;
                 }
                 
                 await Delay(100, ct);
+                // Logger.LogWarning("9911");
                 return;
             }
             

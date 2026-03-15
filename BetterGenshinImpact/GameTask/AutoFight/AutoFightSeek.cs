@@ -314,6 +314,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             var adjustedX = RotaryFactorMapping[rotaryFactor];
             var adjustedDivisor = rotaryFactor<=12 ? 2 : 1.3;
             var delay = 50 + (int)(adjustedX / adjustedDivisor);
+
+            var rotationCount6 = RotationCount % 7;
             
             // Logger.LogInformation("开始寻找敌人 {Text} ...",adjustedX);
             
@@ -429,10 +431,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
 
-                if ((RotationCount == 3 || RotationCount == 1)&& retryCount == 0)
+                if ((rotationCount6 == 3 || rotationCount6 == 1)&& retryCount == 0)
                 {
                     Simulation.SendInput.Mouse.MiddleButtonClick();
-                    await Task.Delay(RotationCount == 3 ?500:200, ct);
+                    await Task.Delay(rotationCount6 == 3 ?500:200, ct);
                 }
                 
                 if (retryCount <= 2)
@@ -457,7 +459,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         };
                     }
 
-                    var offsetIndex = RotationCount < 2 ? 0 : (RotationCount == 2) ? 1 : (RotationCount >= 3) ? 2 : 3;
+                    var offsetIndex = rotationCount6 < 2 ? 0 : (rotationCount6 == 2) ? 1 : (rotationCount6 >= 3) ? 2 : 3;
                     Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
                 }
                 else

@@ -118,6 +118,10 @@ public partial class AutoFightConfig : ObservableObject
         /// </summary>
         [ObservableProperty]
         private bool _checkBeforeBurst = false;
+        
+        /// 旋转寻找敌人模式
+        [ObservableProperty]
+        private bool _rotationMode = true;
     }
     /// <summary>
     /// 战斗结束相关配置
