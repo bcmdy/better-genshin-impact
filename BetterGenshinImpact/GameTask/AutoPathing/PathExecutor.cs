@@ -294,8 +294,10 @@ public class PathExecutor
                                     AutoFightTask.FightEndFlag = true;
                                     AutoFightTask.FightWaypoint = null;
                                 }
-                                // 执行 action
-                                await AfterMoveToTarget(waypoint);
+                                // 执行 action11
+                                
+                                //如果上一节点和当前节点坐标一致，不执行action以避免卡死
+                                await AfterMoveToTarget(waypoint,nextWaypoint);
                                 
                                 if (waypoint.Action == ActionEnum.Fight.Code)
                                 {
@@ -2241,7 +2243,7 @@ public class PathExecutor
         }
     }
 
-    private async Task AfterMoveToTarget(WaypointForTrack waypoint)
+    private async Task AfterMoveToTarget(WaypointForTrack waypoint, Waypoint? nextWaypoint = null)
     {
         if (waypoint.Action == ActionEnum.NahidaCollect.Code
             || waypoint.Action == ActionEnum.PickAround.Code
@@ -2267,7 +2269,19 @@ public class PathExecutor
             {
                 SuccessFight++;
             }
-            await Delay(1000, ct);
+
+            if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code))
+            {
+                if (nextWaypoint?.Type != WaypointType.Teleport.Code)
+                {
+                    return;
+                }
+                
+                await Delay(100, ct);
+                return;
+            }
+            
+            await Delay(900, ct);
         }
     }
 
