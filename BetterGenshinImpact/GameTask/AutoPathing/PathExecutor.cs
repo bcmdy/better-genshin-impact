@@ -2267,7 +2267,15 @@ public class PathExecutor
             {
                 SuccessFight++;
             }
-            await Delay(1000, ct);
+            if (waypoint.Action == ActionEnum.Fight.Code 
+            || waypoint.Action == ActionEnum.CombatScript.Code
+            || waypoint.Action == ActionEnum.PickUpCollect.Code)
+            {
+                await Delay(100, ct);
+                Logger.LogInformation("waypoint.Action={x}",waypoint.Action);
+            }
+            else
+                await Delay(1000, ct);
         }
     }
 
