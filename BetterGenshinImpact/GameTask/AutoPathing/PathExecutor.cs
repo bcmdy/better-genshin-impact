@@ -2270,7 +2270,10 @@ public class PathExecutor
                 SuccessFight++;
             }
 
-            if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code))
+            if (PartyConfig.QuicklySkip 
+            && (_lastWaypoint?.Action == ActionEnum.Fight.Code 
+            || waypoint.Action == ActionEnum.CombatScript.Code
+            || waypoint.Action == ActionEnum.Fight.Code))
             {
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {
