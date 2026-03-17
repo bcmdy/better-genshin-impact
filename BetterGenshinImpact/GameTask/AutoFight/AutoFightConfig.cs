@@ -122,6 +122,14 @@ public partial class AutoFightConfig : ObservableObject
         /// 旋转寻找敌人模式
         [ObservableProperty]
         private bool _rotationMode = true;
+        
+        //检查结束方式
+        [ObservableProperty]
+        private bool _endModel = true;
+        
+        //快速检查方式的延时，默认为0.15秒
+        [ObservableProperty] 
+        private double _fastCheckDelay = 0.15;
     }
     /// <summary>
     /// 战斗结束相关配置

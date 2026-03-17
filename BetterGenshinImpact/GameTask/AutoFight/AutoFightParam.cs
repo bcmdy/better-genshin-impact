@@ -18,6 +18,10 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public bool RotateFindEnemyEnabled = false;
         public int GoDistance { get; set; } = 500;
         public bool RotationMode { get; set; } = true;
+        public bool EndModel { get; set; } = true;
+    
+        public double FastCheckDelay { get; set; } = 0.15;
+
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -37,6 +41,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.RotateFindEnemyEnabled = autoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled;
         FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
         FinishDetectConfig.RotationMode = autoFightConfig.FinishDetectConfig.RotationMode;
+        FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
+        FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -116,7 +122,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string UseSkillList { get; set; } = "1,2,3,4";
     
     public bool QRecoverAvatar { get; set; } = false;
-
+    
     public AutoFightParam(string? strategyName = null) : base(null, null)
     {
         SetCombatStrategyPath(strategyName);
@@ -160,6 +166,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.BeforeDetectDelay = autoFightConfig.FinishDetectConfig.BeforeDetectDelay;
         FinishDetectConfig.RotateFindEnemyEnabled = autoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled;
         FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
+        FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
+        FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;

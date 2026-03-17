@@ -84,6 +84,7 @@ public class AutoFightTask : ISoloTask
     {
         public int DelayTime = 1500;
         public int DetectDelayTime = 450;
+        public int FastCheckDelay = 150;
         public Dictionary<string, int> DelayTimes = new();
         public double CheckTime = 5;
         public List<string> CheckNames = new();
@@ -99,8 +100,8 @@ public class AutoFightTask : ISoloTask
                 ParseStringToTuple(finishDetectConfig.BattleEndProgressBarColor, (95, 235, 255));
             BattleEndProgressBarColorTolerance =
                 ParseSingleOrCommaSeparated(finishDetectConfig.BattleEndProgressBarColorTolerance, (6, 6, 6));
-            DetectDelayTime =
-                (int)((double.TryParse(finishDetectConfig.BeforeDetectDelay, out var result) ? result : 0.45) * 1000);
+            DetectDelayTime = (int)((double.TryParse(finishDetectConfig.BeforeDetectDelay, out var result) ? result : 0.45) * 1000);
+            FastCheckDelay = (int)Math.Round(finishDetectConfig.FastCheckDelay * 1000);
             RotateFindEnemyEnabled = finishDetectConfig.RotateFindEnemyEnabled;
         }
 
@@ -410,7 +411,7 @@ public class AutoFightTask : ISoloTask
         var allCanBeSkipped = commandAvatarNames.All(a => canBeSkippedAvatarNames.Contains(a));
         
         var delayTime = _finishDetectConfig.DelayTime;
-        var detectDelayTime = _finishDetectConfig.DetectDelayTime;
+        var detectDelayTime = _taskParam.FinishDetectConfig.EndModel ? _finishDetectConfig.FastCheckDelay : _finishDetectConfig.DetectDelayTime;
 
         Avatar? guardianAvatar = null;
         if (!string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar))
@@ -1265,17 +1266,24 @@ public class AutoFightTask : ISoloTask
 
     public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default,Avatar? avatar = null)
     {
+        using var captureToRectArea = CaptureToRectArea();
+        var pixelValue = captureToRectArea.SrcMat.At<Vec3b>(32, 67); 
+        var paiMon = (Math.Abs(pixelValue[0] - 143) <= 10 &&
+                      Math.Abs(pixelValue[1] - 196) <= 10 &&
+                      Math.Abs(pixelValue[2] - 233) <= 10);
+        if (!paiMon)
+        {
+            return false;
+        }
+
         if(Dispatcher.IsCustomCts) return false;
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
             bool? result = null;
             try
             {
-                
-                // result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance);
                 if (_taskParam.FinishDetectConfig.RotationMode)
                 {
-                    // Logger.LogWarning("1111");
                     Task.Run(async () =>
                     {
                         result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance); 
@@ -1297,9 +1305,6 @@ public class AutoFightTask : ISoloTask
                 return true;
             }
             
-            // AutoFightSeek.RotationCount = (result == null) ? 
-            //     AutoFightSeek.RotationCount + 1 :  0;
-            
             if (result != null)
             {
                 return result.Value;
@@ -1308,34 +1313,42 @@ public class AutoFightTask : ISoloTask
 
         if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
         
-        // Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
         Logger.LogInformation("打开编队界面检查战斗是否结束");
-        // 最终方案确认战斗结束
+
         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
         await Delay(detectDelayTime, _ct);
-        
+
+        // await Delay(80, _ct);
         using var ra = CaptureToRectArea();
-        //判断整个界面是否有红色色块，如果有，则战继续，否则战斗结束
-        // 只提取橙色
-        
-        var b3 = ra.SrcMat.At<Vec3b>(50, 790); //进度条颜色
-        var whiteTile = ra.SrcMat.At<Vec3b>(50, 768); //白块
-        ra.Dispose();
         Simulation.SendInput.SimulateAction(GIActions.Drop);
-        if (IsWhite(whiteTile.Item2, whiteTile.Item1, whiteTile.Item0) &&
-            IsYellow(b3.Item2, b3.Item1,
-                b3.Item0) /* AreDifferencesWithinBounds(_finishDetectConfig.BattleEndProgressBarColor, (b3.Item0, b3.Item1, b3.Item2), _finishDetectConfig.BattleEndProgressBarColorTolerance)*/
-           )
+
+        Vec3b pixelValue2;
+        var paiMon2 = false;
+        if (_taskParam.FinishDetectConfig.EndModel)
         {
-            TaskControl.Logger.LogInformation("识别到战斗结束-j");
+            pixelValue2 = ra.SrcMat.At<Vec3b>(32, 67); //派蒙
+            paiMon2 = (Math.Abs(pixelValue2[0] - 143) <= 10 &&
+                       Math.Abs(pixelValue2[1] - 196) <= 10 &&
+                       Math.Abs(pixelValue2[2] - 233) <= 10);
+        }
+        else
+        {
+            pixelValue2 = ra.SrcMat.At<Vec3b>(50, 790); //进度条颜色
+            var whiteTile = ra.SrcMat.At<Vec3b>(50, 768); //白块
+            paiMon2 = !(IsWhite(whiteTile.Item2, whiteTile.Item1, whiteTile.Item0) &&
+                       IsYellow(pixelValue2.Item2, pixelValue2.Item1,
+                           pixelValue2.Item0));
+        }
+        
+        if (!paiMon2 && !AutoFightSkill.MedicinalCdAsync(Logger, true, 1,ct).Result)
+        {
+            TaskControl.Logger.LogInformation("{t}：识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
             //取消正在进行的换队
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
             return true;
         }
-
-        // Logger.LogInformation($"未识别到战斗结束yellow{b3.Item0},{b3.Item1},{b3.Item2}");
-        // Logger.LogInformation($"未识别到战斗结束white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
-        Logger.LogInformation($"未识别到战斗结束: yellow{b3.Item0},{b3.Item1},{b3.Item2};white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
+        
+        Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
 
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
