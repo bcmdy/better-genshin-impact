@@ -508,6 +508,9 @@ public class AutoFightTask : ISoloTask
 
         var predefinedlist = new List<string>() { "枫原万叶" ,"希诺宁"};
         
+        //旋转次数
+        var rotationLimit = _taskParam.RotaryFactor == 1 ? 100 : _taskParam.FinishDetectConfig.RotationMode ? 20 : 6;
+        
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
@@ -849,9 +852,9 @@ public class AutoFightTask : ISoloTask
 
                         #endregion
                         
-                        if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= (_taskParam.FinishDetectConfig.RotationMode?20:6))
+                        if (timeoutStopwatch.Elapsed > fightTimeout || AutoFightSeek.RotationCount >= rotationLimit)
                         {
-                            TaskControl.Logger.LogInformation(AutoFightSeek.RotationCount >= 20 ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
+                            TaskControl.Logger.LogInformation(AutoFightSeek.RotationCount >= rotationLimit ? "旋转次数达到上限，战斗结束" : "战斗超时结束");
                             fightEndFlag = true;
                             timeOutFlag = true;
                             break;
@@ -1348,7 +1351,7 @@ public class AutoFightTask : ISoloTask
             return true;
         }
         
-        Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
+        if(_taskParam.RotaryFactor != 1) Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
 
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {
