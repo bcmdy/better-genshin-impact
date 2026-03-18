@@ -863,16 +863,6 @@ public class PathExecutor
                             Logger.LogError("尝试识别元素爆发技能失败，原因：{Ex}", ex.Message);
                         }
                     }
-                    else
-                    {
-                        if ((avatar.Name == "爱可菲" || avatar.Name == "闲云")&&avatar.TrySwitch())
-                        {
-                            Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
-                            await Delay(5000, ct);
-                            await SwitchAvatar(PartyConfig.MainAvatarIndex);
-                            return true;
-                        }
-                    }
                 }
             }
         }
