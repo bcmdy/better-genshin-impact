@@ -849,8 +849,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     var skillAra = !skills
                         ? new Rect(image2.Width * 1800 / 1920, image2.Height * 817 / 1080,
                             image2.Width * 36 / 1920, image2.Height * 17 / 1080) //药物区域
-                        : new Rect(image2.Width * 946 / 1920, image2.Height * 1007 / 1080,
-                            image2.Width * 16 / 1920, image2.Height * 5 / 1080); //血条数字
+                        : new Rect(image2.Width * 940 / 1920, image2.Height * 1007 / 1080,
+                            image2.Width * 28 / 1920, image2.Height * 5 / 1080); //血条数字
         
                     using var mask2 = OpenCvCommonHelper.Threshold(
                         image2.DeriveCrop(skillAra).SrcMat,
@@ -861,9 +861,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     using var labels2 = new Mat();
                     using var stats2 = new Mat();
                     using var centroids2 = new Mat();
+                    
+                    
         
                     int numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
-                        connectivity: PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
+                        connectivity: skills? PixelConnectivity.Connectivity4:PixelConnectivity.Connectivity8, ltype: MatType.CV_32S);
         
                     logger.LogInformation("药物状态：{Skill} 状态 {Text} ：{n}",
                          skills ? "恢复药" : "复活药", numLabels2 > 2 ? "冷却中" : "就绪", numLabels2);
