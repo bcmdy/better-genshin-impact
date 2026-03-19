@@ -2099,7 +2099,8 @@ public class PathExecutor
                 // 自动疾跑
                 if (distance > 20 && PartyConfig.AutoRunEnabled)
                 {
-                    if (Math.Abs((fastModeColdTime - DateTime.UtcNow).TotalMilliseconds) > 2500) //冷却时间2.5s，回复体力用
+                    var dushTime = nextDistance > 90 ? 3500 : 2500;
+                    if (Math.Abs((fastModeColdTime - DateTime.UtcNow).TotalMilliseconds) > dushTime) //冷却时间2.5s，回复体力用
                     {
                         fastModeColdTime = DateTime.UtcNow;
                         Simulation.SendInput.SimulateAction(GIActions.SprintMouse);
@@ -2260,7 +2261,7 @@ public class PathExecutor
                 SuccessFight++;
             }
 
-            if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code))
+            if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code || nextWaypoint?.Action == ActionEnum.Fight.Code))
             {
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {

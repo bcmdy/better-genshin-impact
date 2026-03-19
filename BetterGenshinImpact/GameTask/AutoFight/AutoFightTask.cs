@@ -1629,7 +1629,8 @@ public class AutoFightTask : ISoloTask
                                             }
                                             else
                                             {
-                                                bool isSimilar = IsPixelSimilar(bloodtRect.SrcMat.At<Vec3b>(1, 1), bloodtRect.SrcMat.At<Vec3b>(2, 2), 2);
+                                                bool isSimilar = IsPixelSimilar(bloodtRect.SrcMat.At<Vec3b>(1, 1), bloodtRect.SrcMat.At<Vec3b>(3, 3), 2);
+                                                // Logger.LogWarning("自动吃药：检测到血量颜色异常，是否与之前的血量颜色相似：{isSimilar}", isSimilar);
                                                 if (isSimilar)
                                                 {
                                                     redBlood = false;
