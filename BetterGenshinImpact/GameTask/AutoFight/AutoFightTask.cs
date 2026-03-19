@@ -68,6 +68,8 @@ public class AutoFightTask : ISoloTask
     private static volatile bool _isExperiencePickup = false;
 
     public static bool IsTpForRecover {get; set;} = false;
+    
+    public static volatile  bool FightEndTotoly = false;
 
     // 战斗点位
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
@@ -537,8 +539,9 @@ public class AutoFightTask : ISoloTask
             try
             {
                 FightStatusFlag = true;
+                FightEndTotoly = false;
                 
-                while (!cts2.Token.IsCancellationRequested)
+                while (!cts2.Token.IsCancellationRequested && !FightEndTotoly)
                 {
                    // 所有战斗角色都可以被取消
                     #region 本次战斗的跳过战斗判定
@@ -1347,6 +1350,7 @@ public class AutoFightTask : ISoloTask
         {
             TaskControl.Logger.LogInformation("{t}：识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
             //取消正在进行的换队
+            FightEndTotoly  = true;
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
             return true;
         }
