@@ -509,7 +509,7 @@ public class AutoFightTask : ISoloTask
         var predefinedlist = new List<string>() { "枫原万叶" ,"希诺宁"};
         
         //旋转次数
-        var rotationLimit = _taskParam.RotaryFactor == 1 ? 100 : _taskParam.FinishDetectConfig.RotationMode ? 20 : 6;
+        var rotationLimit = _taskParam.RotaryFactor == 1 ? 500 : _taskParam.FinishDetectConfig.RotationMode ? 50 : 6;
         
         // 战斗操作
         var fightTask = Task.Run(async () =>
@@ -964,7 +964,7 @@ public class AutoFightTask : ISoloTask
                       Math.Abs(pixelValue[1] - 196) <= 10 &&
                       Math.Abs(pixelValue[2] - 233) <= 10))
                 {
-                    await Delay(1000, ct);
+                    await Delay(_finishDetectConfig.RotateFindEnemyEnabled?2000:1000, ct);
                 }
             
                 await EndBloodCheck(ct,combatScenes);
