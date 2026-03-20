@@ -2243,7 +2243,7 @@ public class PathExecutor
             || waypoint.Action == ActionEnum.ElectroCollect.Code
             || waypoint.Action == ActionEnum.AnemoCollect.Code
             || waypoint.Action == ActionEnum.PyroCollect.Code
-            || waypoint.Action == ActionEnum.CombatScript.Code
+            || waypoint.Action == ActionEnum.CombatScript.Code && PartyConfig.QuicklySkip && _lastWaypoint?.Action == ActionEnum.Fight.Code
             || waypoint.Action == ActionEnum.Mining.Code
             || waypoint.Action == ActionEnum.Fishing.Code
             || waypoint.Action == ActionEnum.ExitAndRelogin.Code
