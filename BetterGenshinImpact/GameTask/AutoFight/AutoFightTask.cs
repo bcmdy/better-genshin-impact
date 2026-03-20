@@ -1120,7 +1120,7 @@ public class AutoFightTask : ISoloTask
                             picker.UseSkill(true);
                             await Delay(50, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            await Delay(1500, ct);
+                            await Delay(2000, ct);
                         }
                     }
                     else
