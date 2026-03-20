@@ -158,7 +158,7 @@ public partial class PathingPartyConfig : ObservableObject
     private string? _recoverAvatarIndex = null;
     
     [ObservableProperty]
-    private bool _quicklySkip = false;
+    private bool _quicklySkip = true;
     
     public static PathingPartyConfig BuildDefault()
     {
