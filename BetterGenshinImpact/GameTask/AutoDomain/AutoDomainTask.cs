@@ -440,7 +440,7 @@ public class AutoDomainTask : ISoloTask
         {
             Logger.LogWarning("单人挑战 按键未出现，请检查是否已进入秘境页面");
         }
-        
+
         using var limitedFullyStringRa = CaptureToRectArea();
         var limitedFullyStringRaocrList =
             limitedFullyStringRa.FindMulti(RecognitionObject.Ocr(0, 0, limitedFullyStringRa.Width * 0.5,

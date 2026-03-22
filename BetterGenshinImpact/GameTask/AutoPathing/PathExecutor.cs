@@ -198,6 +198,7 @@ public class PathExecutor
                     
                     Waypoint? nextWaypoint = null;
                     double? nextDdistance = null;
+                    var last2Waypoints = false;
                     foreach (var waypoint in waypoints) // 一条路径
                     {
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
@@ -207,6 +208,11 @@ public class PathExecutor
                         if (nextWaypoint != null)
                         {
                            nextDdistance = Navigation.GetDistance(waypoint, new Point2f((float)nextWaypoint.X, (float)nextWaypoint.Y));
+                           // if (nextDdistance < 20 && waypoint.MoveMode == MoveModeEnum.Dash.Code)
+                           // {
+                           //     Logger.LogWarning("测试：下一个节点距离很近，切换到行走");
+                           //     waypoint.MoveMode = MoveModeEnum.Walk.Code;
+                           // }
                         }
                         
                         TryCloseSkipOtherOperations();
@@ -270,9 +276,19 @@ public class PathExecutor
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
-                                await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
+                                // Logger.LogWarning("测试44：{t}",nextDdistance);
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20)
+                                {
+                                    last2Waypoints = true;
+                                    Logger.LogWarning("战斗后节点较近！！");
+                                }
+                                else
+                                {
+                                    last2Waypoints = false;
+                                    await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
+                                }
                             }
-
+                            
                             await BeforeMoveCloseToTarget(waypoint);
 
                             if (IsTargetPoint(waypoint))
