@@ -2234,8 +2234,14 @@ public class PathExecutor
         }
     }
 
+    /// <summary>
+    /// 在到达目的地后执行的动作
+    /// </summary>
+    /// <param name="waypoint">当前Waypoint</param>
+    /// <param name="nextWaypoint">下一个Waypoint</param>
     private async Task AfterMoveToTarget(WaypointForTrack waypoint, Waypoint? nextWaypoint = null)
     {
+        // 如果当前Waypoint需要执行后续动作
         if (waypoint.Action == ActionEnum.NahidaCollect.Code
             || waypoint.Action == ActionEnum.PickAround.Code
             || waypoint.Action == ActionEnum.Fight.Code
@@ -2254,33 +2260,55 @@ public class PathExecutor
         {
             var handler = ActionFactory.GetAfterHandler(waypoint.Action);
             await handler.RunAsync(ct, waypoint, PartyConfig);
-            
-            //统计结束战斗的次数
+
+            // 统計結束戰鬥的次數
             if (waypoint.Action == ActionEnum.Fight.Code)
             {
                 SuccessFight++;
             }
 
+            // 是否是最后一个节点
+            bool isLastNode = nextWaypoint == null;
+
+            // QuicklySkip 模式下的特殊处理：如果当前节点、上一个节点或下一个节点是战斗相关的动作，则跳过等待直接返回
             if (PartyConfig.QuicklySkip
-            && (_lastWaypoint?.Action == ActionEnum.Fight.Code
-            || waypoint.Action == ActionEnum.Fight.Code
-            || waypoint.Action == ActionEnum.CombatScript.Code
-            || nextWaypoint?.Action == ActionEnum.Fight.Code))
+                && (_lastWaypoint?.Action == ActionEnum.Fight.Code
+                    || waypoint.Action == ActionEnum.Fight.Code
+                    || waypoint.Action == ActionEnum.CombatScript.Code
+                    || nextWaypoint?.Action == ActionEnum.Fight.Code))
             {
+                // 非Teleport节点：如果是最后一个节点等待200ms，否則直接返回
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {
-                    // Logger.LogWarning("6611");
-                    Logger.LogInformation("Delay(0), waypoint.Action={x}",waypoint.Action);
+                    // 如果是最后一个节点，等待200ms
+                    if (isLastNode)
+                    {
+                        await Delay(200, ct);
+                        Logger.LogInformation("QE: 最后一个节点等待200ms, waypoint.Action={x}", waypoint.Action);
+                    }
+                    else
+                    {
+                        Logger.LogInformation("QE: 跳过等待, waypoint.Action={x}", waypoint.Action);
+                    }
                     return;
                 }
-                
+
+                // Teleport节点：先等待100毫秒
                 await Delay(100, ct);
-                // Logger.LogWarning("9911");
-                Logger.LogInformation("Delay(100), waypoint.Action={x}",waypoint.Action);
+                Logger.LogInformation("QE: 下个节点是传送, 等待100ms, waypoint.Action={x}", waypoint.Action);
+
+                // 如果是最后一个节点，額外等待200毫秒
+                if (isLastNode)
+                {
+                    await Delay(200, ct);
+                    Logger.LogInformation("QE: 最后一个节点额外等待200ms");
+                }
+
                 return;
             }
-            
+
             await Delay(900, ct);
+            Logger.LogInformation("正常等待900ms, waypoint.Action={x}, isLastNode={isLast}", waypoint.Action, isLastNode);
         }
     }
 
