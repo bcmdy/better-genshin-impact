@@ -248,9 +248,9 @@ public class PathExecutor
                             await BeforeMoveToTarget(waypoint);
                             
                             // Path不用走得很近，Target需要接近，但都需要先移动到对应位置
-                            if (waypoint.Type == WaypointType.Orientation.Code)
+                            if (waypoint.Type == WaypointType.Orientation.Code && _lastWaypoint?.Action != ActionEnum.Fight.Code)
                             {
-                                // 方位点，只需要朝向
+                                // 方位点，只需要朝向&& !(waypoint.Type == "orientation" && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
                                 await FaceTo(waypoint);
                             }
@@ -1152,7 +1152,7 @@ public class PathExecutor
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("朝向点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
         await WaitUntilRotatedTo(targetOrientation, 2);
-        await Delay(450, ct);
+        await Delay(500, ct);
     }
 
     public DateTime moveToStartTime;
@@ -2135,7 +2135,7 @@ public class PathExecutor
                 }
             }
 
-            await Delay(80, ct);
+            await Delay(100, ct);
             
         }
         
@@ -2281,12 +2281,10 @@ public class PathExecutor
             {
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {
-                    // Logger.LogWarning("6611");
                     return;
                 }
                 
                 await Delay(100, ct);
-                // Logger.LogWarning("9911");
                 return;
             }
             

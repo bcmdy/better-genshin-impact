@@ -1320,7 +1320,7 @@ public class AutoFightTask : ISoloTask
 
         if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
         
-        Logger.LogInformation("打开编队界面检查战斗是否结束");
+        // Logger.LogInformation("打开编队界面检查战斗是否结束");
 
         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
         await Delay(detectDelayTime, _ct);

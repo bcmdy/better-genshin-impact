@@ -506,6 +506,7 @@ public class TpTask
             {
                 TaskControl.Logger.LogError("传送失败，重试 {I} 次", i + 1);
                 TaskControl.Logger.LogDebug(e, "传送失败，重试 {I} 次", i + 1);
+                await Delay(1000, ct);
             }
         }
 

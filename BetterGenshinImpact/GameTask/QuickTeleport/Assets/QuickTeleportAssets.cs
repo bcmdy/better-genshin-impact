@@ -78,7 +78,8 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
                 (int)(440 * AssetScale),
                 (int)(40 * AssetScale),
                 (int)(200 * AssetScale)),
-            DrawOnWindow = false
+            DrawOnWindow = false,
+            Threshold = 0.75
         }.InitTemplate();
 
         MapCloseButtonRo = new RecognitionObject
