@@ -2261,7 +2261,7 @@ public class PathExecutor
             var handler = ActionFactory.GetAfterHandler(waypoint.Action);
             await handler.RunAsync(ct, waypoint, PartyConfig);
 
-            // 统計結束戰鬥的次數
+            //统计结束战斗的次数
             if (waypoint.Action == ActionEnum.Fight.Code)
             {
                 SuccessFight++;
@@ -2281,7 +2281,7 @@ public class PathExecutor
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
                 {
                     // 如果是最后一个节点，等待200ms
-                    if (isLastNode)
+                    if (isLastNode && waypoint.Action != ActionEnum.CombatScript.Code)
                     {
                         await Delay(200, ct);
                         Logger.LogInformation("QE: 最后一个节点等待200ms, waypoint.Action={x}", waypoint.Action);
@@ -2298,7 +2298,7 @@ public class PathExecutor
                 Logger.LogInformation("QE: 下个节点是传送, 等待100ms, waypoint.Action={x}", waypoint.Action);
 
                 // 如果是最后一个节点，額外等待200毫秒
-                if (isLastNode)
+                if (isLastNode && waypoint.Action != ActionEnum.CombatScript.Code)
                 {
                     await Delay(200, ct);
                     Logger.LogInformation("QE: 最后一个节点额外等待200ms");
