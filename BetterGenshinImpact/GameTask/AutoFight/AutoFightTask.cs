@@ -586,6 +586,7 @@ public class AutoFightTask : ISoloTask
                                 {
                                     fightEndFlag = true;
                                     timeOutFlag = true;
+                                    FightEndTotoly  = true;
                                     break;
                                 }
 
@@ -612,6 +613,7 @@ public class AutoFightTask : ISoloTask
                                     {
                                         Logger.LogError("自动EQ战斗：角色 {name} 识别异常 {ex}", h, ex.Message);
                                         fightEndFlag = true;
+                                        FightEndTotoly  = true;
                                         throw;
                                     }
                                     
@@ -707,6 +709,7 @@ public class AutoFightTask : ISoloTask
                                                 {
                                                     Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
                                                     fightEndFlag = true;
+                                                    FightEndTotoly  = true;
                                                     throw;
                                                 }
                                                 finally
@@ -748,6 +751,7 @@ public class AutoFightTask : ISoloTask
                                                 {
                                                     Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
                                                     fightEndFlag = true;
+                                                    FightEndTotoly  = true;
                                                     throw;
                                                 }
                                                 finally
@@ -796,6 +800,7 @@ public class AutoFightTask : ISoloTask
                             catch (Exception ex)
                             {
                                 fightEndFlag = true;
+                                FightEndTotoly  = true;
                                 Logger.LogError("初始寻敌异常 {ex}", ex.Message);
                                 throw;
                             }
