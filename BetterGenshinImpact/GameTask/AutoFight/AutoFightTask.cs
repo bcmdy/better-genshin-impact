@@ -1361,7 +1361,7 @@ public class AutoFightTask : ISoloTask
         
         if(_taskParam.RotaryFactor != 1) Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel? "快速模式" : "默认模式");
 
-        if (_finishDetectConfig.RotateFindEnemyEnabled)
+        if (_finishDetectConfig.RotateFindEnemyEnabled  && _taskParam.RotaryFactor != 1)
         {
             try
             {
