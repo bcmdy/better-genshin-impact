@@ -72,6 +72,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
         UseSkillList = autoFightConfig.UseSkillList;
         QRecoverAvatar = autoFightConfig.QRecoverAvatar;
+        KazuhaTime = autoFightConfig.KazuhaTime;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -122,6 +123,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string UseSkillList { get; set; } = "1,2,3,4";
     
     public bool QRecoverAvatar { get; set; } = false;
+    
+    public int KazuhaTime { get; set; } = 1500;
     
     public AutoFightParam(string? strategyName = null) : base(null, null)
     {
@@ -181,5 +184,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
         SwimmingEnabled = autoFightConfig.SwimmingEnabled;
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
+        CountryName = autoFightConfig.CountryName;
+        KazuhaTime = autoFightConfig.KazuhaTime;
     }
 }

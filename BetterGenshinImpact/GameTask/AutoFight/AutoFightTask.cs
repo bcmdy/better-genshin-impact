@@ -954,7 +954,7 @@ public class AutoFightTask : ISoloTask
         if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpKazuhaPickup && !_isExperiencePickup)
         {
             TaskControl.Logger.LogInformation("基于怪物经验判断：{text} 经验值显示","等待");
-            await Delay(1000, ct);
+            await Delay(_taskParam.FinishDetectConfig.RotationMode ? 2000:1000, ct);
         }
         FightEndFlag = true; 
 
@@ -1125,7 +1125,7 @@ public class AutoFightTask : ISoloTask
                             picker.UseSkill(true);
                             await Delay(50, ct);
                             Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                            await Delay(1500, ct);
+                            await Delay(_taskParam.KazuhaTime, ct);
                         }
                     }
                     else

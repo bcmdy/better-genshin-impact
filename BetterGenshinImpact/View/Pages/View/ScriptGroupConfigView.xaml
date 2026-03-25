@@ -1998,6 +1998,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
@@ -2043,7 +2044,7 @@
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="3"
-                                         Margin="0,0,38,0"
+                                         Margin="0,0,10,0"
                                          IsEnabled="{Binding PathingConfig.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
                                          IsChecked="{Binding PathingConfig.AutoFightConfig.QinDoublePickUp, Mode=TwoWay}" />
                         <ui:TextBlock Grid.Row="0"
@@ -2053,10 +2054,48 @@
                                       VerticalAlignment="Center"
                                       FontSize="8"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Margin="0,0,38,26"
+                                      Margin="0,0,10,26"
                                       FontTypography="Body"
                                       Text="二次拾取"
                                       TextWrapping="Wrap" />
+                        
+                        
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="4"
+                                    FontSize="8"
+                                    MaxWidth="45"
+                                    MaxHeight="30"
+                                    Margin="0,0,36,0"
+                                    IsEnabled="{Binding PathingConfig.AutoFightConfig.KazuhaPickupEnabled, Mode=TwoWay}"
+                                    Text="{Binding PathingConfig.AutoFightConfig.KazuhaTime}" />
+                        
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="4"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontSize="8"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Margin="0,0,38,26"
+                                      FontTypography="Body"
+                                      Text="停留时间"
+                                      TextWrapping="Wrap" />
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="4"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontSize="8"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Margin="0,0,38,-26"
+                                      FontTypography="Body"
+                                      Text="单位：毫秒"
+                                      TextWrapping="Wrap" />
+                        
+                        
                     </Grid>
                     
                     <Grid Margin="16">
