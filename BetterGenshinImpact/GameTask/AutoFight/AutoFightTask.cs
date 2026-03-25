@@ -1255,6 +1255,8 @@ public class AutoFightTask : ISoloTask
             }
             
             await EndBloodCheck(ct,combatScenes);
+            
+            Task.Run(async () => { Simulation.ReleaseAllKey(); }, ct);
         }
     }
 
