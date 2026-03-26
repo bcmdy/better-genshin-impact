@@ -166,12 +166,12 @@
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="战斗后减少等待"
+                                      Text="减少等待"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="战斗节点结束后，减少角色停留在原地等待的时间，锄地中可能会漏捡掉落物"
+                                      Text="减少战斗后与简易策略执行后的停留时间，可能会漏捡物品情况"
                                       TextWrapping="Wrap" />
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
