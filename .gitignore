@@ -22,6 +22,7 @@ bld/
 
 # Mine
 Tmp/
+dist/
 /packages/
 node_modules/
 github_actions_cache/

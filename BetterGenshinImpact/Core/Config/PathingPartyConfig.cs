@@ -157,9 +157,22 @@ public partial class PathingPartyConfig : ObservableObject
     [ObservableProperty]
     private string? _recoverAvatarIndex = null;
     
+    // 快速跳过
     [ObservableProperty]
-    private bool _quicklySkip = false;
+    private bool _quicklySkip = true;
+
+    // 新增：跳过等待时间（毫秒），默认 100
+    [ObservableProperty]
+    private int _skipWaitTime = 100;
     
+    // 新增：传送前等待时间（毫秒），默认 200
+    [ObservableProperty]
+    private int _teleportWaitTime = 200;
+    
+    // 新增：其他节点/无QE模式等待时间（毫秒），默认 900
+    
+    [ObservableProperty]
+    private int _otherDelayMs = 900;    
     public static PathingPartyConfig BuildDefault()
     {
         // 即便是不启用的情况下也设置默认值，减少后续使用的判断
