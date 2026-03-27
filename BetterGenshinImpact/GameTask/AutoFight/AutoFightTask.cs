@@ -661,6 +661,9 @@ public class AutoFightTask : ISoloTask
                                         var usePre = predefinedlist.Contains(avatarQ.Name);
                                         var useAContainsKey = useSkillListWithA.ContainsKey(num);
                                         var useA = (useAContainsKey && useSkillListWithA[num] > 0) || usePre;
+                                        
+                                        if(_taskParam.FinishDetectConfig.RotationMode && await CheckFightFinish(0, detectDelayTime, cts2.Token)) break;
+                                        
                                         if (avatarQ.TrySwitch(15))
                                         {
                                             lastFightName = avatarQ.Name;

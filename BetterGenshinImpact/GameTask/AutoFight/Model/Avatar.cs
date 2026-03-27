@@ -188,7 +188,7 @@ public class Avatar
                     pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000, cts.Token);
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false,null,null,null,6,false).Wait(15000, cts.Token);
                     Logger.LogInformation("游泳检测：移动结束");
                     cts?.Cancel();
                 }
