@@ -33,28 +33,32 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.Core.Recognition.OCR;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Core.Script.Dependence;
+using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.Core.Simulator.Extensions;
+using BetterGenshinImpact.GameTask.AutoFight.Config;
+using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.Helpers;
+using Microsoft.Extensions.Logging;
+using OpenCvSharp;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
 using BetterGenshinImpact.GameTask.AutoTrackPath;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
-using BetterGenshinImpact.GameTask.Common.Element.Assets;
-using BetterGenshinImpact.GameTask.Common.Job;
-using BetterGenshinImpact.Service.Notification.Model.Enum;
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
-using static Vanara.PInvoke.Kernel32;
-using static Vanara.PInvoke.User32;
-using Microsoft.Extensions.Localization;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
-using System.Collections.ObjectModel;
-using BetterGenshinImpact.Core.Script.Dependence;
-using BetterGenshinImpact.GameTask.AutoDomain.Model;
-using BetterGenshinImpact.GameTask.Common;
-using Compunet.YoloSharp;
-using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.Core.Config;
-using OpenCvSharp.Extensions;
-using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
+using BetterGenshinImpact.ViewModel.Pages;
+using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
+using BetterGenshinImpact.GameTask.AutoPathing;
+using BetterGenshinImpact.Core.Script;
+using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -229,12 +233,12 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             if (firstPixel.X < 920 && height > 6)
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
-                                logger.LogInformation("敌人在左侧，不移动");
+                                // logger.LogInformation("敌人在左侧，不移动");
                             }
                             else if (firstPixel.X > 920 && height > 6)
                             {
                                 Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
-                                logger.LogInformation("敌人在右侧，不移动");
+                                // logger.LogInformation("敌人在右侧，不移动");
                             }
                         }
                     }
@@ -243,7 +247,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         if (height > 6)
                         {
                             Simulation.SendInput.SimulateAction(GIActions.MoveBackward);
-                            logger.LogInformation("敌人在中心且高度大于6，不移动");
+                            // logger.LogInformation("敌人在中心且高度大于6，不移动");
                         }
                         else if (firstPixel.X < 1315 && firstPixel.X > 500 && firstPixel.Y < 800 && height > 2)
                         {
@@ -307,9 +311,13 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             { 7, 10 }, { 8, 5 }, { 9, 1 }, { 10, -5 }, { 11,-10 }, { 12,-50 }, { 13, -60 }
         };
         
+        private static readonly object MoveLock = new object(); 
+        
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null,int distance = 1000)
         {
             if (rotaryFactor == 1) return null;;
+            
+            var pathExecutor = new PathExecutor(ct);
             
             var bloodLower = new Scalar(255, 90, 90);
 
@@ -388,19 +396,42 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         if (height > 6 && height < 25)
                         {
                             // Logger.LogInformation("画面内有找到敌人，{t1} - {t2}",x,height);
-                            if ((x == 758 || x == 721) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
+                            if ((x == 758 || x == 721 || x == 701 || x == 970) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
                             {
-                                Task.Run(() =>
+                                Task.Run( () =>
                                 {
-                                    // Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
-                                    // Task.Delay(100, ct).Wait();
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight);
-                                    Task.Delay(100, ct).Wait();
-                                    Simulation.SendInput.Mouse.MiddleButtonClick();
-                                    Task.Delay(100, ct).Wait();
+                                    if (Monitor.TryEnter(MoveLock))
+                                    {
+                                        try
+                                        {
+                                            if (AutoFightTask.FightWaypoint is not null)
+                                            {
+                                                Logger.LogWarning("检测到固定血条的敌人，尝试回到战斗节点");
+                                                AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Walk.Code;
+                                                pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false, null, null,
+                                                    null,
+                                                    15, false).Wait(2000, ct);
+                                                Task.Delay(5000, ct).Wait();
+                                            }
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Logger.LogError(e, "战斗回到点移动异常");
+                                            throw;
+                                        }
+                                        finally
+                                        {
+                                            Monitor.Exit(MoveLock);
+                                        }
+                                    }
                                 }, ct);
+
+                                Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+                                Task.Delay(100, ct).Wait();
+                                Simulation.SendInput.Mouse.MiddleButtonClick();
+                                Task.Delay(100, ct).Wait();
                             }
-                            // logger.LogInformation("画面内有找到敌人，继续战斗...");
+                            
                             return false;
                         }
 
