@@ -22,8 +22,8 @@
         <ui:TextBlock Margin="0,0,0,8"
                       FontTypography="BodyStrong"
                       Text="软件设置" />
-
-        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
+        
+                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
             <ui:CardControl.Header>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -435,19 +435,19 @@
                             Width="200"
                             Margin="0,0,12,0"
                             VerticalAlignment="Center"
-                            IsSnapToTickEnabled="True"
-                            Maximum="1"
                             Minimum="0"
+                            Maximum="1"
                             TickFrequency="0.1"
+                            IsSnapToTickEnabled="True"
                             Value="{Binding Config.MaskWindowConfig.TextOpacity, Mode=TwoWay}" />
                     <TextBlock Grid.Row="0"
                                Grid.Column="2"
-                               MinWidth="40"
-                               Margin="0,0,36,0"
-                               HorizontalAlignment="Left"
                                VerticalAlignment="Center"
+                               HorizontalAlignment="Left"
+                               Margin="0,0,36,0"
                                FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
                                FontSize="14"
+                               MinWidth="40"
                                Text="{Binding Config.MaskWindowConfig.TextOpacity, StringFormat=F2}" />
                 </Grid>
             </StackPanel>
@@ -1092,7 +1092,7 @@
                 </Grid>
             </StackPanel>
         </ui:CardExpander>
-
+        
         <!--  新增手动导入本地脚本仓库功能  -->
         <!--<ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Folder24}">
             <ui:CardControl.Header>
@@ -1122,13 +1122,14 @@
                                Command="{Binding ImportLocalScriptsRepoZipCommand}"
                                Content="导入" />
                 </Grid>
-
+        
             </ui:CardControl.Header>
         </ui:CardControl>-->
 
 
         <!--  其他设置  -->
-        <ui:CardExpander Margin="0,0,0,12" ContentPadding="0">
+        <ui:CardExpander Margin="0,0,0,12"
+                         ContentPadding="0">
             <ui:CardExpander.Icon>
                 <ui:FontIcon Glyph="&#xf141;" Style="{StaticResource FaFontIconStyle}" />
             </ui:CardExpander.Icon>
@@ -1332,10 +1333,10 @@
                               Grid.Column="1"
                               MinWidth="100"
                               Margin="0,0,36,0"
-                              DisplayMemberPath="Item2"
                               ItemsSource="{Binding ServerTimeZones}"
                               SelectedValue="{Binding Config.OtherConfig.ServerTimeZoneOffset}"
-                              SelectedValuePath="Item1" />
+                              SelectedValuePath="Item1"
+                              DisplayMemberPath="Item2" />
                 </Grid>
                 <ui:CardExpander Margin="0,0,0,12"
                                  ContentPadding="0"
