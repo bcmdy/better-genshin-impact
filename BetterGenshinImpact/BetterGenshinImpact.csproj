@@ -15,7 +15,6 @@
 		<Platforms>x64</Platforms>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
-
 <!--	<ItemGroup>
 		<None Remove="Assets\Images\*.jpg" />
 		<None Remove="Assets\Images\*" />
@@ -241,6 +240,13 @@
 
 	<ItemGroup>
 	  <_DeploymentManifestIconFile Remove="Resources\Images\logo.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="茶包版攻略.核弹密码.必看.否则地球爆炸.20260325.txt">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+		</Content>
 	</ItemGroup>
 	
 </Project>
