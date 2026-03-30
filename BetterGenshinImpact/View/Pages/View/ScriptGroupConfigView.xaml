@@ -188,7 +188,7 @@
                                 Margin="0,12,0,0"
                                 Padding="12,8"
                                 Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
-                                BorderBrush="{ui:ThemeResource CardBorderBrush}"
+                                BorderBrush="{ui:ThemeResource ControlElevationBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="4">
                             <StackPanel>

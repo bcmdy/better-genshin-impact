@@ -2295,16 +2295,13 @@ public class PathExecutor
         {
             var handler = ActionFactory.GetAfterHandler(waypoint.Action);
             await handler.RunAsync(ct, waypoint, PartyConfig);
-    
+
             //统计结束战斗的次数
             if (waypoint.Action == ActionEnum.Fight.Code)
             {
                 SuccessFight++;
             }
-    
-            // 是否是最后一个节点
-            bool isLastNode = nextWaypoint == null;
-    
+
             // QuicklySkip 模式下的特殊处理
             if (PartyConfig.QuicklySkip
                 && (_lastWaypoint?.Action == ActionEnum.Fight.Code
@@ -2312,48 +2309,40 @@ public class PathExecutor
                     || waypoint.Action == ActionEnum.CombatScript.Code
                     || nextWaypoint?.Action == ActionEnum.Fight.Code))
             {
+                // 是否是最后一个节点
+                bool isLastNode = nextWaypoint == null;
+
                 // 检查下一个节点是否是传送点
-                if (nextWaypoint?.Type == WaypointType.Teleport.Code)
+                bool isNextTeleport = nextWaypoint?.Type == WaypointType.Teleport.Code;
+
+                // 情况1：下一个节点是传送点
+                if (isNextTeleport)
                 {
-                    // 传送节点前：等待 TeleportWaitTime 毫秒
                     await Delay(PartyConfig.TeleportWaitTime, ct);
                     Logger.LogInformation("【减少等待】下个节点是传送点，等待 {TeleportWaitTime}ms, 当前节点={CurrentAction}", 
                         PartyConfig.TeleportWaitTime, waypoint.Action);
-                    
-                    // 如果是最后一个节点，额外等待 LastNodeWaitTime 毫秒
-                    if (isLastNode)
-                    {
-                        await Delay(PartyConfig.LastNodeWaitTime, ct);
-                        Logger.LogInformation("【减少等待】最后一个节点，额外等待 {LastNodeWaitTime}ms, 当前节点={CurrentAction}", 
-                            PartyConfig.LastNodeWaitTime, waypoint.Action);
-                    }
+                    return;
                 }
-                else
+
+                // 情况2：最后一个节点（非传送）
+                if (isLastNode)
                 {
-                    // 非传送节点
-                    if (isLastNode)
-                    {
-                        // 最后一个节点：等待 LastNodeWaitTime 毫秒
-                        await Delay(PartyConfig.LastNodeWaitTime, ct);
-                        Logger.LogInformation("【减少等待】最后一个节点，等待 {LastNodeWaitTime}ms, 当前节点={CurrentAction}", 
-                            PartyConfig.LastNodeWaitTime, waypoint.Action);
-                    }
-                    else
-                    {
-                        // 普通节点：等待 SkipWaitTime 毫秒（跳过等待）
-                        await Delay(PartyConfig.SkipWaitTime, ct);
-                        Logger.LogInformation("【减少等待】跳过等待，等待 {SkipWaitTime}ms, 当前节点={CurrentAction}", 
-                            PartyConfig.SkipWaitTime, waypoint.Action);
-                    }
+                    await Delay(PartyConfig.LastNodeWaitTime, ct);
+                    Logger.LogInformation("【减少等待】最后一个节点，等待 {LastNodeWaitTime}ms, 当前节点={CurrentAction}", 
+                        PartyConfig.LastNodeWaitTime, waypoint.Action);
+                    return;
                 }
                 
+                // 情况3：普通节点（包括当前是传送点的情况）
+                await Delay(PartyConfig.SkipWaitTime, ct);
+                Logger.LogInformation("【减少等待】跳过等待，等待 {SkipWaitTime}ms, 当前节点={CurrentAction}", 
+                    PartyConfig.SkipWaitTime, waypoint.Action);
                 return;
             }
-    
+
             // 正常模式：等待 900 毫秒
             await Delay(900, ct);
-            Logger.LogInformation("【正常模式】等待 900ms, 当前节点={CurrentAction}, 是否最后一个节点={IsLastNode}", 
-                waypoint.Action, isLastNode);
+            Logger.LogInformation("【正常模式】等待 900ms, 当前节点={CurrentAction}", waypoint.Action);
         }
     }
 
