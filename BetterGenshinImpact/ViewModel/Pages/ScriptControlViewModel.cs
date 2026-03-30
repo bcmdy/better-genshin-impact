@@ -59,6 +59,8 @@ public partial class ScriptControlViewModel : ViewModel
     [ObservableProperty] private Boolean _isInsetMode = false;
     
     [ObservableProperty] private OneDragonFlowViewModel? _viewModel;
+    
+    public static OtherConfig OtherConfig { get; set; } = TaskContext.Instance().Config.OtherConfig;
 
     public static class AppPaths
     {

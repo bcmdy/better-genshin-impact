@@ -1086,7 +1086,7 @@ public class PathExecutor
         }
         
         // 最小5分钟间隔
-        if ( _combatScenes?.CurrentMultiGameStatus?.IsInMultiGame == true || (DateTime.UtcNow - _lastGetExpeditionRewardsTime).TotalMinutes < 5)
+        if (_combatScenes?.CurrentMultiGameStatus?.IsInMultiGame == true || (DateTime.UtcNow - _lastGetExpeditionRewardsTime).TotalMinutes < 5 || PartyConfig.DisableAutoFetchDispatch)
         {
             return false;
         }
@@ -2314,8 +2314,15 @@ public class PathExecutor
                 await Delay(100, ct);
                 return;
             }
-            
-            await Delay(900, ct);
+
+            if (waypoint.Action == ActionEnum.CombatScript.Code)
+            {
+                await Delay(PartyConfig.CombatScriptEndDelayMs>0 ? PartyConfig.CombatScriptEndDelayMs : 1, ct);
+            }
+            else
+            {
+                await Delay(895, ct);
+            }
         }
     }
 

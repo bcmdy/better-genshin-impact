@@ -569,6 +569,10 @@ public class TpTask
                     {
                         throw new Exception("所有脱困策略均失效，无法获取初始点", ex);
                     }
+                    finally
+                    {
+                        if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
+                    }
                 }
             }
             else

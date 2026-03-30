@@ -163,6 +163,22 @@ public partial class PathingPartyConfig : ObservableObject
     [ObservableProperty]
     private bool _quicklySkip = false;
     
+    [ObservableProperty]
+    private int _combatScriptEndDelayMs = 900;
+    
+    [ObservableProperty]
+    private bool _disableAutoFetchDispatch = false;
+    
+    public static OtherConfig OtherConfig { get; set; } = TaskContext.Instance().Config.OtherConfig;
+    
+    // 自动吃药次数记录
+    private static  bool _isDisableAutoFetchDispatch = false;
+    public static bool IsDisableAutoFetchDispatch
+    {
+        get =>  OtherConfig.AutoFetchDispatchAdventurersGuildCountry == "无" ? true : false;
+        set => _isDisableAutoFetchDispatch = value;
+    }
+    
     public static PathingPartyConfig BuildDefault()
     {
         // 即便是不启用的情况下也设置默认值，减少后续使用的判断

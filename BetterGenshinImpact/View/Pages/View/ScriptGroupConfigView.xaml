@@ -162,23 +162,80 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:TextBlock Grid.Row="0"
                                       Grid.Column="0"
                                       FontTypography="Body"
-                                      Text="战斗后减少等待"
+                                      Text="减少等待(删除战后等待/简易策略等待时间可配置)"
                                       TextWrapping="Wrap" />
                         <ui:TextBlock Grid.Row="1"
                                       Grid.Column="0"
                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="战斗节点结束后，减少角色停留在原地等待的时间，锄地中可能会漏捡掉落物"
+                                      Text="锄地和采集中可能会漏捡掉，简易策略配置时间默认900ms"
                                       TextWrapping="Wrap" />
                         <ui:ToggleSwitch Grid.Row="0"
                                          Grid.RowSpan="2"
                                          Grid.Column="3"
-                                         HorizontalAlignment="Right"
-                                         Margin="0,0,0,0"
+                                         HorizontalAlignment="Center"
+                                         Margin="0,0,10,0"
                                          IsChecked="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="3"
+                                      FontSize="9"
+                                      Margin="0,0,10,40"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="删除战后等待"
+                                      TextWrapping="Wrap" />
+                        
+                        <ui:TextBox Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="4"
+                                    FontSize="10"
+                                    Width="80"
+                                    MaxHeight="30"
+                                    HorizontalAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    HorizontalContentAlignment="Center"
+                                    Text="{Binding PathingConfig.CombatScriptEndDelayMs}" />
+                        
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.RowSpan="2"
+                                      Grid.Column="4"
+                                      FontSize="9"
+                                      Margin="0,0,0,40"
+                                      HorizontalAlignment="Center"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="简易等待时间(ms)"
+                                      TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid Margin="16" Visibility="{Binding PathingConfig.IsDisableAutoFetchDispatch, Converter={StaticResource BooleanToVisibilityRevertConverter}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Row="0"
+                                      Grid.Column="0"
+                                      FontTypography="Body"
+                                      Text="关闭地图追踪过程中的自动领取派遣奖励"
+                                      TextWrapping="Wrap" />
+                        <ui:TextBlock Grid.Row="1"
+                                      Grid.Column="0"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="在设置->其他设置->自动派遣开启总开关后，此项才生效"
+                                      TextWrapping="Wrap" />
+                        <ui:ToggleSwitch Grid.Row="0"
+                                         Grid.RowSpan="2"
+                                         Grid.Column="1"
+                                         IsEnabled="{Binding PathingConfig.IsDisableAutoFetchDispatch,Converter= {StaticResource InverseBooleanConverter}}"
+                                         IsChecked="{Binding PathingConfig.DisableAutoFetchDispatch, Mode=TwoWay}" />
                     </Grid>
                     
                     <Grid Margin="16">
