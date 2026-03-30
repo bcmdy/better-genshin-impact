@@ -160,8 +160,21 @@ public partial class PathingPartyConfig : ObservableObject
     [ObservableProperty]
     private string? _recoverAvatarIndex = null;
     
+    // 快速跳过
     [ObservableProperty]
     private bool _quicklySkip = true;
+    
+    // 新增：跳过等待时间（毫秒），默认 0
+    [ObservableProperty]
+    private int _skipWaitTime = 0;
+        
+    // 新增：传送前等待时间（毫秒），默认 100
+    [ObservableProperty]
+    private int _teleportWaitTime = 100;
+        
+    // 新增：最后节点等待时间（毫秒），默认 200
+    [ObservableProperty]
+    private int _lastNodeWaitTime = 200;
     
     public static PathingPartyConfig BuildDefault()
     {
