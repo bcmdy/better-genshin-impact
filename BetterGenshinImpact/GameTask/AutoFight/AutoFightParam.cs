@@ -20,7 +20,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public bool RotationMode { get; set; } = true;
         public bool EndModel { get; set; } = true;
     
-        public double FastCheckDelay { get; set; } = 0.15;
+        public double FastCheckDelay { get; set; } = 0.1;
 
     }
 
