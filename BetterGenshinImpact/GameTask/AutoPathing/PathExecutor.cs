@@ -2313,7 +2313,7 @@ public class PathExecutor
                     || nextWaypoint?.Action == ActionEnum.Fight.Code))
             {
                 // 检查下一个节点是否是传送点
-                if (nextWaypoint?.Type != WaypointType.Teleport.Code)
+                if (nextWaypoint?.Type == WaypointType.Teleport.Code)
                 {
                     // 传送节点前：等待 TeleportWaitTime 毫秒
                     await Delay(PartyConfig.TeleportWaitTime, ct);
