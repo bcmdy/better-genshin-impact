@@ -1,5 +1,5 @@
 # build-actions-local.ps1
-param([string]$Version = "0.59.1+lcb.21.2-QuickyEnd-DF")
+param([string]$Version = "0.59.1+lcb.21.2-QuickyEnd-DF-ff")
 
 Write-Host "=== BetterGI Actions-like Build ===" -ForegroundColor Cyan
 Write-Host "Version: $Version" -ForegroundColor Yellow

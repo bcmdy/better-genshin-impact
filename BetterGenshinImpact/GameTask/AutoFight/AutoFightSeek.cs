@@ -396,42 +396,19 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         if (height > 6 && height < 25)
                         {
                             // Logger.LogInformation("画面内有找到敌人，{t1} - {t2}",x,height);
-                            if ((x == 758 || x == 721 || x == 701 || x == 970) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
+                            if ((x == 758 || x == 721) && (height ==7 || height == 8))//固定血条的怪物，尝试旋转寻找
                             {
-                                Task.Run( () =>
+                                Task.Run(() =>
                                 {
-                                    if (Monitor.TryEnter(MoveLock))
-                                    {
-                                        try
-                                        {
-                                            if (AutoFightTask.FightWaypoint is not null)
-                                            {
-                                                Logger.LogWarning("检测到固定血条的敌人，尝试回到战斗节点");
-                                                AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Walk.Code;
-                                                pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false, null, null,
-                                                    null,
-                                                    15, false).Wait(2000, ct);
-                                                Task.Delay(5000, ct).Wait();
-                                            }
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            Logger.LogError(e, "战斗回到点移动异常");
-                                            throw;
-                                        }
-                                        finally
-                                        {
-                                            Monitor.Exit(MoveLock);
-                                        }
-                                    }
+                                    // Simulation.SendInput.Mouse.MoveMouseBy(960, 0);
+                                    // Task.Delay(100, ct).Wait();
+                                    Simulation.SendInput.SimulateAction(GIActions.MoveRight);
+                                    Task.Delay(100, ct).Wait();
+                                    Simulation.SendInput.Mouse.MiddleButtonClick();
+                                    Task.Delay(100, ct).Wait();
                                 }, ct);
-
-                                Simulation.SendInput.SimulateAction(GIActions.MoveRight);
-                                Task.Delay(100, ct).Wait();
-                                Simulation.SendInput.Mouse.MiddleButtonClick();
-                                Task.Delay(100, ct).Wait();
                             }
-                            
+                            // logger.LogInformation("画面内有找到敌人，继续战斗...");
                             return false;
                         }
 
