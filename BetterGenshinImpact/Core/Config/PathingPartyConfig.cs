@@ -160,11 +160,21 @@ public partial class PathingPartyConfig : ObservableObject
     [ObservableProperty]
     private string? _recoverAvatarIndex = null;
     
+    // 快速跳过
     [ObservableProperty]
-    private bool _quicklySkip = false;
+    private bool _quicklySkip = true;
     
+    // 新增：跳过等待时间（毫秒），默认 0
     [ObservableProperty]
-    private int _combatScriptEndDelayMs = 900;
+    private int _skipWaitTime = 0;
+    
+    // 新增：传送前等待时间（毫秒），默认 200
+    [ObservableProperty]
+    private int _teleportWaitTime = 200;
+    
+    // 新增：其他节点/无QE模式等待时间（毫秒），默认 900
+    [ObservableProperty]
+    private int _otherDelayMs = 900;
     
     [ObservableProperty]
     private bool _disableAutoFetchDispatch = false;
