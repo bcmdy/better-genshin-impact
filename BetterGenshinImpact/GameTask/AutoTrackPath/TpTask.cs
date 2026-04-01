@@ -1,4 +1,4 @@
-using BetterGenshinImpact.Core.Recognition;
+﻿using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.Core.Script.Dependence;
 using BetterGenshinImpact.Core.Simulator;
@@ -980,7 +980,15 @@ public class TpTask
             using var mapScaleButtonRa = ra.Find(QuickTeleportAssets.Instance.MapScaleButtonRo);
             if (mapScaleButtonRa.IsExist())
             {
-                rect = MapManager.GetMap(mapName, _mapMatchingMethod).GetBigMapRect(ra.CacheGreyMat);
+                try
+                {
+                    rect = MapManager.GetMap(mapName, _mapMatchingMethod).GetBigMapRect(ra.CacheGreyMat);
+                }
+                catch (Exception)
+                {
+                    rect = default; // 发生异常视为识别失败
+                }
+                
                 if (rect == default)
                 {
                     // 滚轮调整后再次识别
@@ -1018,7 +1026,16 @@ public class TpTask
         using var mapScaleButtonRa = ra.Find(QuickTeleportAssets.Instance.MapScaleButtonRo);
         if (mapScaleButtonRa.IsExist())
         {
-            var p = MapManager.GetMap(mapName, _mapMatchingMethod).GetBigMapPosition(ra.CacheGreyMat);
+            Point2f p;
+            try
+            {
+                p = MapManager.GetMap(mapName, _mapMatchingMethod).GetBigMapPosition(ra.CacheGreyMat);
+            }
+            catch (Exception ex)
+            {
+                throw new MapPositionNotRecognizedException("大地图特征点匹配引发异常：" + ex.Message, ex);
+            }
+
             if (p.IsEmpty())
             {
                 if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
@@ -1321,4 +1338,5 @@ public class TpTask
 public class MapPositionNotRecognizedException : Exception
 {
     public MapPositionNotRecognizedException(string message) : base(message) { }
+    public MapPositionNotRecognizedException(string message, Exception innerException) : base(message, innerException) { }
 }
