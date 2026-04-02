@@ -506,8 +506,10 @@ public class TpTask
             catch (Exception e)
             {
                 TaskControl.Logger.LogError("传送失败，重试 {I} 次", i + 1);
-                TaskControl.Logger.LogDebug(e, "传送失败，重试 {I} 次", i + 1);
+                // TaskControl.Logger.LogDebug(e, "传送失败，重试 {I} 次", i + 1);
                 if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
+                //回到主界面，重置状态
+                await new ReturnMainUiTask().Start(ct);
                 await Delay(1000, ct);
             }
         }
