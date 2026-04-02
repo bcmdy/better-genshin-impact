@@ -22,6 +22,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     
         public double FastCheckDelay { get; set; } = 0.1;
 
+        public int RetryDis { get; set; } = 0;
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -43,6 +44,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.RotationMode = autoFightConfig.FinishDetectConfig.RotationMode;
         FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
         FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
+        FinishDetectConfig.RetryDis = autoFightConfig.FinishDetectConfig.RetryDis;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;

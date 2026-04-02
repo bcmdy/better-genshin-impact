@@ -252,7 +252,16 @@ public class PathExecutor
                             {
                                 // 方位点，只需要朝向&& !(waypoint.Type == "orientation" && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
-                                await FaceTo(waypoint);
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null)
+                                {
+                                    last2Waypoints = true;
+                                    Logger.LogWarning("战斗后节点较近！！");
+                                }
+                                else
+                                {
+                                    last2Waypoints = false;
+                                    await FaceTo(waypoint);
+                                }
                             }
                             else if (waypoint.Type == WaypointType.ActionOnly.Code)
                             {
@@ -277,7 +286,7 @@ public class PathExecutor
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
                                 // Logger.LogWarning("测试44：{t}",nextDdistance);
-                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20)
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null)
                                 {
                                     last2Waypoints = true;
                                     Logger.LogWarning("战斗后节点较近！！");
@@ -1200,6 +1209,7 @@ public class PathExecutor
         var (position, additionalTimeInMs) = await GetPositionAndTime(screen, waypoint,isPoint);
         var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
         Logger.LogDebug("粗略接近途经点，位置({x2},{y2})", $"{waypoint.GameX:F1}", $"{waypoint.GameY:F1}");
+        // Logger.LogError("324234 {t}",targetOrientation);
         await WaitUntilRotatedTo(targetOrientation, 5);
         moveToStartTime = DateTime.UtcNow;
         var lastPositionRecord = DateTime.UtcNow;
@@ -1293,12 +1303,15 @@ public class PathExecutor
             {
                 if(retryDis > 6)
                 {
-                    if (distance < 20 || distance > 100)
+                    if (distance < retryDis || distance > 150)
                     {
                         // Logger.LogError("111{t}",distance);
                         Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                         return;
                     }
+
+                    if(num==1)Logger.LogWarning("检测到离开战斗点 {retryDis}，尝试回到战斗节点",retryDis);
+                    
                 }
             }
 
@@ -2040,7 +2053,8 @@ public class PathExecutor
                 if (consecutiveRotationCountBeyondAngle > 10)
                 {
                     // 直接站定好转向
-                    await WaitUntilRotatedTo(targetOrientation, 2);
+                    Logger.LogDebug("旋转视角超过10次仍未接近目标角度，可能卡住了，强制转向一次");
+                    await WaitUntilRotatedTo(targetOrientation, 10);
                 }
             }
 
@@ -2234,6 +2248,7 @@ public class PathExecutor
             }
 
             targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
+            // Logger.LogError("当前坐标1");
             await WaitUntilRotatedTo(targetOrientation, 2);
             // 小碎步接近
             Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
@@ -2267,6 +2282,7 @@ public class PathExecutor
             var screen = CaptureToRectArea();
             var position = await GetPosition(screen, waypoint);
             var targetOrientation = Navigation.GetTargetOrientation(waypoint, position);
+            // Logger.LogError("67858677");
             await WaitUntilRotatedTo(targetOrientation, 10);
             var handler = ActionFactory.GetBeforeHandler(waypoint.Action);
             await handler.RunAsync(ct, waypoint);
@@ -2574,6 +2590,7 @@ public class PathExecutor
 
     private async Task WaitUntilRotatedTo(int targetOrientation, int maxDiff)
     {
+        // Logger.LogError("旋转视角2");
         if (await _rotateTask.WaitUntilRotatedTo(targetOrientation, maxDiff))
         {
             return;

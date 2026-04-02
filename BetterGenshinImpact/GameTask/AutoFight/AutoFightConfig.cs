@@ -130,6 +130,9 @@ public partial class AutoFightConfig : ObservableObject
         //快速检查方式的延时，默认为0.15秒
         [ObservableProperty] 
         private double _fastCheckDelay = 0.1;
+        
+        [ObservableProperty]
+        private int _retryDis = 0;
     }
     /// <summary>
     /// 战斗结束相关配置

@@ -4,8 +4,11 @@ using BetterGenshinImpact.GameTask.Model.Area;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BetterGenshinImpact.GameTask.Common;
 using Microsoft.Extensions.Logging;
+using Serilog.Core;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using Logger = Serilog.Core.Logger;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -31,6 +34,7 @@ public class CameraRotateTask(CancellationToken ct)
 
         // 平滑的旋转视角
         // todo dpi 和分辨率都会影响转动速度
+        
         double controlRatio = 1;
         if (Math.Abs(diff) > 90)
         {
@@ -45,6 +49,7 @@ public class CameraRotateTask(CancellationToken ct)
             controlRatio = 2;
         }
 
+        // TaskControl.Logger.LogWarning("转动视角，当前角度-{cao}，目标角度-{targetOrientation}，误差-{diff}，控制比例-{controlRatio}",cao,targetOrientation,diff,controlRatio);
         Simulation.SendInput.Mouse.MoveMouseBy((int)Math.Round(-controlRatio * diff * _dpi), 0);
         return diff;
     }
@@ -63,7 +68,9 @@ public class CameraRotateTask(CancellationToken ct)
         while (!ct.IsCancellationRequested)
         {
             var screen = CaptureToRectArea();
-            if (Math.Abs(RotateToApproach(targetOrientation, screen)) < maxDiff)
+            var aa = Math.Abs(RotateToApproach(targetOrientation, screen));
+            // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}",aa);
+            if (aa < maxDiff + count/2)
             {
                 isSuccessful = true;
                 break;
@@ -71,10 +78,11 @@ public class CameraRotateTask(CancellationToken ct)
 
             if (count > maxTryTimes)
             {
-                Logger.LogWarning("视角转动到目标角度超时，停止转动");
+                Simulation.SendInput.Mouse.MoveMouseBy( (int)Math.Round(-_dpi * 500), 0);
+                TaskControl.Logger.LogWarning("视角转动到目标角度超时，停止转动-{t}",count);
                 break;
             }
-
+            
             await Delay(50, ct);
             count++;
         }
