@@ -198,7 +198,7 @@ public class PathExecutor
 
                     Waypoint? nextWaypoint = null;
                     double? nextDdistance = null;
-                    var last2Waypoints = false;
+                    // var last2Waypoints = false;
                     foreach (var waypoint in waypoints) // 一条路径
                     {
                         CurWaypoint = (waypoints.FindIndex(wps => wps == waypoint), waypoint);
@@ -277,16 +277,16 @@ public class PathExecutor
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
                                 // Logger.LogWarning("测试44：{t}",nextDdistance);
-                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20)
-                                {
-                                    last2Waypoints = true;
-                                    Logger.LogWarning("战斗后节点较近！！");
-                                }
-                                else
-                                {
-                                    last2Waypoints = false;
+                                // if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20)
+                                // {
+                                //     last2Waypoints = true;
+                                //     Logger.LogWarning("战斗后节点较近！！");
+                                // }
+                                // else
+                                // {
+                                //     last2Waypoints = false;
                                     await MoveTo(waypoint, true, task, nextWaypoint, nextDdistance);
-                                }
+                                // }
                             }
 
                             await BeforeMoveCloseToTarget(waypoint);
