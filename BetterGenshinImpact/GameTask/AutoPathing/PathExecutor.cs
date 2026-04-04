@@ -248,26 +248,27 @@ public class PathExecutor
                             await BeforeMoveToTarget(waypoint);
                             
                             // Path不用走得很近，Target需要接近，但都需要先移动到对应位置
-                            if (waypoint.Type == WaypointType.Orientation.Code && _lastWaypoint?.Action != ActionEnum.Fight.Code)
+                            if (waypoint.Type == WaypointType.Orientation.Code)
                             {
                                 // 方位点，只需要朝向&& !(waypoint.Type == "orientation" && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
-                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null)
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null && waypoint.Misidentification.HandlingMode != "mapRecognition")
                                 {
                                     last2Waypoints = true;
-                                    Logger.LogWarning("战斗后节点较近！！");
+                                    Logger.LogWarning("战斗后节点较近！！-1");
                                 }
                                 else
                                 {
                                     last2Waypoints = false;
                                     await FaceTo(waypoint);
                                 }
+                                // await FaceTo(waypoint);
                             }
                             else if (waypoint.Type == WaypointType.ActionOnly.Code)
                             {
                                 Logger.LogInformation("执行 {t}","ActionOnly");
                                 // 找到当前出战角色
-                                 var ra = CaptureToRectArea();
+                                 using var ra = CaptureToRectArea();
                                  for (int k = 1; k <= 4; k++)
                                  {
                                      var avatar = _combatScenes?.SelectAvatar(k);
@@ -281,19 +282,47 @@ public class PathExecutor
                                          break;
                                      }
                                  }
-                                 ra.Dispose();
                             }
                             else if (waypoint.Action != ActionEnum.UpDownGrabLeaf.Code)
                             {
                                 // Logger.LogWarning("测试44：{t}",nextDdistance);
-                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null)
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null&& waypoint.Misidentification.HandlingMode != "mapRecognition")
                                 {
                                     last2Waypoints = true;
-                                    Logger.LogWarning("战斗后节点较近！！");
+                                    Logger.LogWarning("战斗后节点较近！！-2");
                                 }
                                 else
                                 {
                                     last2Waypoints = false;
+                                    if (_lastWaypoint?.Action == ActionEnum.Fight.Code)
+                                    {
+                                        using var ra = CaptureToRectArea();
+                                        for (int k = 1; k <= 4; k++)
+                                        {
+                                            var avatar = _combatScenes?.SelectAvatar(k);
+                                            if (avatar != null && avatar.IsActive(ra))
+                                            {
+                                                if (avatar.Name == "玛薇卡")
+                                                {
+                                                    Logger.LogWarning("当前出战角色 {t}",avatar.Name);
+                                                    using var region2 = CaptureToRectArea();
+                                                    // 获取两个点的颜色值
+                                                    var pos = region2.SrcMat.At<Vec3b>(978, 1692);
+                                                    var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                                                    double colorDifference = Math.Sqrt(
+                                                        Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                                                        Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                                                        Math.Pow(pos.Item2 - pos2.Item2, 2) // 红通道差值的平方
+                                                    );
+
+                                                    if (colorDifference < 15)
+                                                    {
+                                                        Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
                                 }
                             }
@@ -1323,7 +1352,7 @@ public class PathExecutor
                     // Simulation.ReleaseAllKey();
                     Simulation.SendInput.Mouse.MiddleButtonClick();
                     await Delay(2000, ct);
-                    var screen23 = CaptureToRectArea();
+                    using var screen23 = CaptureToRectArea();
                     (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
                     distance = Navigation.GetDistance(waypoint, position);
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
@@ -2537,7 +2566,7 @@ public class PathExecutor
                 }
                 else
                 {
-                    // Logger.LogError("小地图位置定位失败，且当前不是主界面，无法继续执行");
+                    // Logger.LogError("小地图位置定位失败，且当前不是主界面，无法继续执行1111");
                     return (position,time);
                 }
             }
