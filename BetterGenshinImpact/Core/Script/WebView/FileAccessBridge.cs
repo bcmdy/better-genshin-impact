@@ -9,8 +9,8 @@ namespace BetterGenshinImpact.Core.Script.WebView;
 
 public class FileSystemItem
 {
-    public string Name { get; set; }
-    public string RelativePath { get; set; }
+    public string Name { get; set; } = null!;
+    public string RelativePath { get; set; } = null!;
     public bool IsDirectory { get; set; }
     public long Size { get; set; }
     public DateTime LastModified { get; set; }

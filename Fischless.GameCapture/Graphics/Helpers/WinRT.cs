@@ -58,7 +58,9 @@ internal static class WinrtModule
             {
                 var instancePtr = GetActivationFactory(MarshalString.GetAbi(m));
 
+#pragma warning disable CS0618
                 factory = ObjectReference<IActivationFactoryVftbl>.Attach(ref instancePtr);
+#pragma warning restore CS0618
                 Cache.Add(runtimeClassId, factory);
 
                 return factory;

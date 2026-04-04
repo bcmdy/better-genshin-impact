@@ -34,9 +34,9 @@ public partial class WelcomeDialog
         Close();
     }
 
-    private void HyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
+    private async void HyperlinkRequestNavigate(object sender, RequestNavigateEventArgs e)
     {
         string uri = e.Uri.AbsoluteUri;
-        Launcher.LaunchUriAsync(new Uri(uri));
+        await Launcher.LaunchUriAsync(new Uri(uri));
     }
 }

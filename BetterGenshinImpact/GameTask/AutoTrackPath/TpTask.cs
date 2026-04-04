@@ -1,3 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.Core.Script.Dependence;
@@ -22,18 +29,9 @@ using BetterGenshinImpact.Helpers.Extensions;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Vanara.PInvoke;
+using WinForms = System.Windows.Forms;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
-using System;
-using System.Windows.Forms;
 
 namespace BetterGenshinImpact.GameTask.AutoTrackPath;
 
@@ -74,7 +72,7 @@ public class TpTask
         this.stringLocalizer = param.StringLocalizer;
         // 初始化全局参数
         var gameHandle = TaskContext.Instance().GameHandle;
-        var gameScreen = Screen.FromHandle(gameHandle);
+        var gameScreen = WinForms.Screen.FromHandle(gameHandle);
         var gameScreenBounds = gameScreen.Bounds;
         if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
         if (_tpConfig.MapZoomDistanceForce == 0)

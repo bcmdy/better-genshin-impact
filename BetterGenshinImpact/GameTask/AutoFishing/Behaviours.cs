@@ -1,4 +1,10 @@
-﻿using BehaviourTree;
+﻿using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using BehaviourTree;
 using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.Core.Recognition.OCR;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
@@ -17,23 +23,9 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using OpenCvSharp;
-using System;
-using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using static Vanara.PInvoke.User32;
 using Color = System.Drawing.Color;
 using Pen = System.Drawing.Pen;
-using System.Linq;
-using Fischless.WindowsInput;
-using BetterGenshinImpact.Core.Recognition.OpenCv;
-using BetterGenshinImpact.Core.Simulator;   
-using BetterGenshinImpact.GameTask.Model;
-using System.Globalization;
-using Compunet.YoloSharp;
-using Microsoft.Extensions.Localization;
+using static Vanara.PInvoke.User32;
 
 namespace BetterGenshinImpact.GameTask.AutoFishing
 {

@@ -45,7 +45,7 @@ namespace BetterGenshinImpact.GameTask
 
         private User32.HWINEVENTHOOK _winEventHookMoveSize;
         private User32.HWINEVENTHOOK _winEventHookLocation;
-        private User32.WinEventProc _winEventProc;
+        private User32.WinEventProc _winEventProc = null!;
         private const uint EVENT_SYSTEM_MOVESIZESTART = 0x000A;
         private const uint EVENT_SYSTEM_MOVESIZEEND = 0x000B;
         private const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;

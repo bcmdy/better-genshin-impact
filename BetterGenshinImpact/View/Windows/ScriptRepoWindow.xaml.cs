@@ -42,7 +42,7 @@ public partial class ScriptRepoWindow
     }
 
     // 渠道列表
-    private ObservableCollection<RepoChannel> _repoChannels;
+    private ObservableCollection<RepoChannel> _repoChannels = null!;
     public ObservableCollection<RepoChannel> RepoChannels => _repoChannels;
 
     // 选中的渠道

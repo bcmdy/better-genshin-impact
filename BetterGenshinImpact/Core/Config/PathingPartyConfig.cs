@@ -1,16 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoEat;
 using BetterGenshinImpact.GameTask.AutoFight;
-using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-using Serilog.Core;
-using CommunityToolkit.Mvvm.ComponentModel;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 using BetterGenshinImpact.GameTask.AutoTrackPath.Model;
+using CommunityToolkit.Mvvm.ComponentModel;
+using Serilog.Core;
+using System.Text.Json.Serialization;
 
 namespace BetterGenshinImpact.Core.Config;
 

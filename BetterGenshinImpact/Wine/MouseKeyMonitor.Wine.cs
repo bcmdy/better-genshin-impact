@@ -7,7 +7,7 @@ namespace BetterGenshinImpact.Core.Monitor
 {
     public partial class MouseKeyMonitor
     {
-        private WinePlatformAddon _wineAddon;
+        private WinePlatformAddon _wineAddon = null!;
 
         /// <summary>
         /// [Wine专用] 尝试初始化轮询机制

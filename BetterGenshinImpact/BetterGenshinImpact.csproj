@@ -14,6 +14,7 @@
 		<ApplicationIcon>Resources\Images\logo.ico</ApplicationIcon>
 		<Platforms>x64</Platforms>
 		<DebugType>embedded</DebugType>
+		<NoWarn>NU1902;CS4014;CS1998;CS8618;CS8600;CS8601;CS8602;CS8603;CS8604;CS8611;CS8619;CS8620;CS8622;CS8625;CS0169;CS0414;CS0168;CS0649;CS0618;CS0612;CS0162;CS0219;CS9113;CS8321;CS8509;MVVMTK0034;MVVMTK0039</NoWarn>
 	</PropertyGroup>
 
 <!--	<ItemGroup>

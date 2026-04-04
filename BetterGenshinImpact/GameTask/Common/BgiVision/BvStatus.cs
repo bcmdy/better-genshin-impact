@@ -1,3 +1,8 @@
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.GameTask.AutoSkip.Assets;
@@ -6,19 +11,9 @@ using BetterGenshinImpact.GameTask.GameLoading.Assets;
 using BetterGenshinImpact.GameTask.Model.Area;
 using BetterGenshinImpact.GameTask.QuickTeleport.Assets;
 using BetterGenshinImpact.Helpers;
+using BetterGenshinImpact.Helpers.Extensions;
 using Microsoft.Extensions.Localization;
 using OpenCvSharp;
-using System;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using BetterGenshinImpact.Core.Recognition;
-using System.Threading;
-
-using BetterGenshinImpact.GameTask.AutoFight.Assets;
-using BetterGenshinImpact.GameTask.AutoSkip.Assets;
-using BetterGenshinImpact.GameTask.GameLoading.Assets;
-using BetterGenshinImpact.Helpers.Extensions;
 
 
 namespace BetterGenshinImpact.GameTask.Common.BgiVision;

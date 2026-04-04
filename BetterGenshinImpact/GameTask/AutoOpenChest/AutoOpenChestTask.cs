@@ -94,7 +94,7 @@ public class AutoOpenChestTask : ISoloTask
         }
     }
 
-    private async void flowerHandle()
+    private void flowerHandle()
     {
         Simulation.SendInput.SimulateAction(GIActions.OpenPaimonMenu);
     }

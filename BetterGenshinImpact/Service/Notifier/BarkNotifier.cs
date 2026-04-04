@@ -126,7 +126,7 @@ namespace BetterGenshinImpact.Service.Notifier
             string group,
             string sound,
             string icon,
-            BarkOptions options = null)
+            BarkOptions? options = null)
         {
             // 输入验证
             if (string.IsNullOrEmpty(deviceKeys))

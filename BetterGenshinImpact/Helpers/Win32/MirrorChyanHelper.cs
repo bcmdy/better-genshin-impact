@@ -93,8 +93,8 @@ public static class MirrorChyanHelper
     }
     
     
-    private static void OpenMirrorChyanWebsite()
+    private static async void OpenMirrorChyanWebsite()
     {
-        Launcher.LaunchUriAsync(new Uri($"https://mirrorchyan.com/zh/get-start?source=bgi-{Global.Version}"));
+        await Launcher.LaunchUriAsync(new Uri($"https://mirrorchyan.com/zh/get-start?source=bgi-{Global.Version}"));
     }
 }

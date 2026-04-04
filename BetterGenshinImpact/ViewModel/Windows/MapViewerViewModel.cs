@@ -36,7 +36,7 @@ public partial class MapViewerViewModel : ObservableObject
 
     private readonly string _mapName;
 
-    private Mat _mapImage;
+    private Mat _mapImage = null!;
 
     private int _scale = 1;
 

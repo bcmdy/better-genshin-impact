@@ -1,17 +1,14 @@
-﻿using BetterGenshinImpact.ViewModel.Pages;
-using BetterGenshinImpact.ViewModel.Pages;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.View.Windows;
 using Wpf.Ui.Violeta.Controls;
-using System.Windows.Input; 
-using System.Linq; 
-using System;
-using System.Collections.Generic;
-
-using System;
-using System.Threading.Tasks;
 
 namespace BetterGenshinImpact.View.Pages;
 

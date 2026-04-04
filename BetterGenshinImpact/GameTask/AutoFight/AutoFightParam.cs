@@ -1,6 +1,5 @@
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Model;
-using BetterGenshinImpact.GameTask.Model;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 

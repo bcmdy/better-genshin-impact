@@ -225,7 +225,7 @@ namespace BetterGenshinImpact.GameTask.LogParse
         /// <param name="cancellationToken"></param>
         /// <returns>返回该月所有收入记录</returns>
         public async Task<ApiResponse<ActionItem>> GetTravelsDiaryDetailAsync(GameInfo role, string cookie, int month,
-            int type, int limit = 100, CancellationToken cancellationToken = default, ActionItem lastActionItem = null)
+            int type, int limit = 100, CancellationToken cancellationToken = default, ActionItem? lastActionItem = null)
         {
             var data = await GetTravelsDiaryDetailByPageAsync(role, cookie, month, type, 1, limit, cancellationToken);
             if (lastActionItem != null)

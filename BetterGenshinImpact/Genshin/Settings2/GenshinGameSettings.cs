@@ -14,10 +14,10 @@ namespace BetterGenshinImpact.Genshin.Settings2;
 public class GenshinGameSettings
 {
     [JsonProperty("deviceUUID")]
-    public string DeviceUUID { get; set; } // 设备唯一标识符
+    public string DeviceUUID { get; set; } = null!; // 设备唯一标识符
 
     [JsonProperty("userLocalDataVersionId")]
-    public string UserLocalDataVersionId { get; set; } // 用户本地数据版本ID
+    public string UserLocalDataVersionId { get; set; } = null!; // 用户本地数据版本ID
 
     [JsonProperty("deviceLanguageType")]
     public int DeviceLanguageType { get; set; } // 设备语言类型
@@ -26,31 +26,31 @@ public class GenshinGameSettings
     public int DeviceVoiceLanguageType { get; set; } // 设备语音语言类型
 
     [JsonProperty("selectedServerName")]
-    public string SelectedServerName { get; set; } // 选择的服务器名称
+    public string SelectedServerName { get; set; } = null!; // 选择的服务器名称
 
     [JsonProperty("localLevelIndex")]
     public int LocalLevelIndex { get; set; } // 本地等级索引
 
     [JsonProperty("deviceID")]
-    public string DeviceID { get; set; } // 设备ID
+    public string DeviceID { get; set; } = null!; // 设备ID
 
     [JsonProperty("targetUID")]
-    public string TargetUID { get; set; } // 目标用户ID
+    public string TargetUID { get; set; } = null!; // 目标用户ID
 
     [JsonProperty("curAccountName")]
-    public string CurAccountName { get; set; } // 当前账户名称
+    public string CurAccountName { get; set; } = null!; // 当前账户名称
 
     [JsonProperty("uiSaveData")]
-    public string UiSaveData { get; set; } // UI保存数据
+    public string UiSaveData { get; set; } = null!; // UI保存数据
 
     [JsonProperty("inputData")]
-    public string InputData { get; set; } // 输入设置数据
+    public string InputData { get; set; } = null!; // 输入设置数据
 
     [JsonProperty("graphicsData")]
-    public string GraphicsData { get; set; } // 图形设置数据
+    public string GraphicsData { get; set; } = null!; // 图形设置数据
 
     [JsonProperty("globalPerfData")]
-    public string GlobalPerfData { get; set; } // 全局性能数据
+    public string GlobalPerfData { get; set; } = null!; // 全局性能数据
 
     [JsonProperty("miniMapConfig")]
     public int MiniMapConfig { get; set; } // 小地图锁定 0:锁定玩家视角 1:锁定方向
@@ -161,19 +161,19 @@ public class GenshinGameSettings
     /// 2.200000047683716
     /// </summary>
     [JsonProperty("gammaValue")]
-    public string GammaValue { get; set; } // 伽马值
+    public string GammaValue { get; set; } = null!; // 伽马值
 
     [JsonProperty("enableHDR")]
     public bool EnableHDR { get; set; } // 启用HDR
 
     [JsonProperty("_overrideControllerMapKeyList")]
-    public List<string> OverrideControllerMapKeyList { get; set; } // 覆盖控制器映射键列表
+    public List<string> OverrideControllerMapKeyList { get; set; } = null!; // 覆盖控制器映射键列表
 
     [JsonProperty("_overrideControllerMapValueList")]
-    public List<string> OverrideControllerMapValueList { get; set; } // 覆盖控制器映射值列表
+    public List<string> OverrideControllerMapValueList { get; set; } = null!; // 覆盖控制器映射值列表
 
     [JsonProperty("rewiredMapMigrateRecord")]
-    public List<string> RewiredMapMigrateRecord { get; set; } // 重布线映射迁移记录
+    public List<string> RewiredMapMigrateRecord { get; set; } = null!; // 重布线映射迁移记录
 
     [JsonProperty("rewiredDisableKeyboard")]
     public bool RewiredDisableKeyboard { get; set; } // 重布线禁用键盘
@@ -194,16 +194,16 @@ public class GenshinGameSettings
     public bool DisableSetJoyInfoForWebViewOnPCMobile { get; set; } // 禁用在PC和移动设备上的WebView设置Joy信息
 
     [JsonProperty("conflictKeyBindingElementId")]
-    public List<int> ConflictKeyBindingElementId { get; set; } // 冲突的按键绑定元素ID
+    public List<int> ConflictKeyBindingElementId { get; set; } = null!; // 冲突的按键绑定元素ID
 
     [JsonProperty("conflictKeyBindingActionId")]
-    public List<int> ConflictKeyBindingActionId { get; set; } // 冲突的按键绑定动作ID
+    public List<int> ConflictKeyBindingActionId { get; set; } = null!; // 冲突的按键绑定动作ID
 
     [JsonProperty("lastSeenPreDownloadTime")]
     public long LastSeenPreDownloadTime { get; set; } // 上次看到的预下载时间
 
     [JsonProperty("lastSeenSettingResourceTabScriptVersion")]
-    public string LastSeenSettingResourceTabScriptVersion { get; set; } // 上次看到的设置资源标签脚本版本
+    public string LastSeenSettingResourceTabScriptVersion { get; set; } = null!; // 上次看到的设置资源标签脚本版本
 
     [JsonProperty("enableEffectAssembleInEditor")]
     public bool EnableEffectAssembleInEditor { get; set; } // 启用在编辑器中组装效果
@@ -248,16 +248,16 @@ public class GenshinGameSettings
     public int MtrTimeInterval { get; set; } // MTR时间间隔
 
     [JsonProperty("mtrBanReasons")]
-    public List<string> MtrBanReasons { get; set; } // MTR禁止原因
+    public List<string> MtrBanReasons { get; set; } = null!; // MTR禁止原因
 
     [JsonProperty("_customDataKeyList")]
-    public List<string> CustomDataKeyList { get; set; } // 自定义数据键列表
+    public List<string> CustomDataKeyList { get; set; } = null!; // 自定义数据键列表
 
     [JsonProperty("_customDataValueList")]
-    public List<string> CustomDataValueList { get; set; } // 自定义数据值列表
+    public List<string> CustomDataValueList { get; set; } = null!; // 自定义数据值列表
 
     [JsonProperty("_serializedCodeSwitches")]
-    public List<int> SerializedCodeSwitches { get; set; } // 序列化代码开关
+    public List<int> SerializedCodeSwitches { get; set; } = null!; // 序列化代码开关
 
     [JsonProperty("urlCheckCached")]
     public bool UrlCheckCached { get; set; } // URL检查缓存
@@ -287,13 +287,13 @@ public class GenshinGameSettings
     public int UrlCheckCDEachReason { get; set; } // URL检查每个原因的冷却时间
 
     [JsonProperty("urlCheckBanReasons")]
-    public List<string> UrlCheckBanReasons { get; set; } // URL检查禁止原因
+    public List<string> UrlCheckBanReasons { get; set; } = null!; // URL检查禁止原因
 
     [JsonProperty("mtrUseOldWinVersion")]
     public bool MtrUseOldWinVersion { get; set; } // 使用旧版Windows的MTR
 
     [JsonProperty("greyTestDeviceUniqueId")]
-    public string GreyTestDeviceUniqueId { get; set; } // 灰度测试设备唯一ID
+    public string GreyTestDeviceUniqueId { get; set; } = null!; // 灰度测试设备唯一ID
 
     [JsonProperty("muteAudioOnAppMinimized")]
     public bool MuteAudioOnAppMinimized { get; set; } // 应用最小化时静音

@@ -122,7 +122,7 @@ public class GetLiveRedeemCode
         return actId;
     }
 
-    private async Task<(string codeVer, string title)> GetLiveDataAsync(string actId)
+    private async Task<(string? codeVer, string? title)> GetLiveDataAsync(string actId)
     {
         var ret = await GetDataAsync("index", new Dictionary<string, string> { { "actId", actId } });
         if (ret == null || ret["error"] != null || ret["retcode"]?.Value<int>() != 0)
@@ -131,8 +131,8 @@ public class GetLiveRedeemCode
         var liveRaw = ret["data"]?["live"];
         if (liveRaw == null) return (null, null);
 
-        string codeVer = liveRaw["code_ver"]?.Value<string>();
-        string title = liveRaw["title"]?.Value<string>();
+        string? codeVer = liveRaw["code_ver"]?.Value<string>();
+        string? title = liveRaw["title"]?.Value<string>();
         return (codeVer, title);
     }
 

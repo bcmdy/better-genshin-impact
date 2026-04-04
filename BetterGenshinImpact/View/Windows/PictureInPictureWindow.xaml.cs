@@ -20,8 +20,8 @@ namespace BetterGenshinImpact.View.Windows;
 
 public partial class PictureInPictureWindow : Window
 {
-    private const double MinWidth = 220;
-    private const double MaxWidth = 1280;
+    private static readonly new double MinWidth = 220;
+    private static readonly new double MaxWidth = 1280;
     private const double MarginSize = 16;
 
     private double _aspectRatio = 16d / 9d;

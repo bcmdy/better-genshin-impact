@@ -5,10 +5,10 @@ namespace BetterGenshinImpact.Genshin.Settings2;
 public class GenshinGameInputSettings
 {
     [JsonProperty("scriptVersion")]
-    public string ScriptVersion { get; set; } // 脚本版本
+    public string ScriptVersion { get; set; } = null!; // 脚本版本
 
     [JsonProperty("mouseSensitivity")]
-    public string MouseSensitivity { get; set; } // 鼠标灵敏度
+    public string MouseSensitivity { get; set; } = null!; // 鼠标灵敏度
 
     [JsonProperty("joypadSenseIndex")]
     public int JoypadSenseIndex { get; set; } // 手柄灵敏度索引
