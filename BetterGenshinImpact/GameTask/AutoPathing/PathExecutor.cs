@@ -1323,7 +1323,8 @@ public class PathExecutor
                     // Simulation.ReleaseAllKey();
                     Simulation.SendInput.Mouse.MiddleButtonClick();
                     await Delay(2000, ct);
-                    (position, additionalTimeInMs) = await GetPositionAndTime(screen2, waypoint,isPoint);
+                    var screen23 = CaptureToRectArea();
+                    (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
                     distance = Navigation.GetDistance(waypoint, position);
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                 }
@@ -2557,7 +2558,13 @@ public class PathExecutor
                 if (prePosition != default)
                 {
                     position = prePosition;
-                    if(isPoint)Logger.LogInformation(@$"未识别到具体路径，取上次点位");
+                    if (isPoint)
+                    {
+                        imageRegion = CaptureToRectArea();
+                        position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
+                        prePosition = position;
+                        Logger.LogInformation(@$"未识别到具体路径，取上次点位");
+                    }
                 }
             }else if (waypoint.Misidentification.HandlingMode == "mapRecognition"){
                 //大地图识别坐标
