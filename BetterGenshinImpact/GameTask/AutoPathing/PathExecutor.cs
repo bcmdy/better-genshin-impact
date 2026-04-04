@@ -248,7 +248,7 @@ public class PathExecutor
                             await BeforeMoveToTarget(waypoint);
 
                             // Path不用走得很近，Target需要接近，但都需要先移动到对应位置
-                            if (waypoint.Type == WaypointType.Orientation.Code && _lastWaypoint?.Action != ActionEnum.Fight.Code)
+                            if (waypoint.Type == WaypointType.Orientation.Code)
                             {
                                 // 方位点，只需要朝向&& !(waypoint.Type == "orientation" && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
