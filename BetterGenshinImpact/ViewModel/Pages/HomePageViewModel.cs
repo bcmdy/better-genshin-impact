@@ -335,7 +335,7 @@ public partial class HomePageViewModel : ViewModel
     [RelayCommand]
     public void OnGoToWikiUrl()
     {
-        Process.Start(new ProcessStartInfo("https://bettergi.com/doc.html") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("https://www.bettergi.com/doc.html") { UseShellExecute = true });
     }
 
     [RelayCommand]
