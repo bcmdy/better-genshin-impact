@@ -54,6 +54,7 @@ public class CameraRotateTask(CancellationToken ct)
         return diff;
     }
 
+    private static volatile object _zLock = new object(); 
     /// <summary>
     /// 转动视角到目标角度
     /// </summary>
@@ -63,14 +64,32 @@ public class CameraRotateTask(CancellationToken ct)
     /// <returns></returns>
     public async Task<bool> WaitUntilRotatedTo(int targetOrientation, int maxDiff, int maxTryTimes = 50)
     {
+        // TaskControl.Logger.LogWarning("开始转动视角到目标角度-{targetOrientation}，最大误差-{maxDiff}，最大尝试次数-{maxTryTimes}",
+            // targetOrientation, maxDiff, maxTryTimes);
         bool isSuccessful = false;
         int count = 0;
         while (!ct.IsCancellationRequested)
         {
             var screen = CaptureToRectArea();
-            var aa = Math.Abs(RotateToApproach(targetOrientation, screen));
-            // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}",aa);
-            if (aa < maxDiff + count/2)
+            float aa = 0;
+            if (Monitor.TryEnter(_zLock))
+            {
+                try
+                {
+                    aa = Math.Abs(RotateToApproach(targetOrientation, screen));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+                finally
+                {
+                    Monitor.Exit(_zLock);
+                }
+            }
+            
+            if (aa < maxDiff + count / 2)
             {
                 isSuccessful = true;
                 break;
@@ -78,14 +97,20 @@ public class CameraRotateTask(CancellationToken ct)
 
             if (count > maxTryTimes)
             {
-                Simulation.SendInput.Mouse.MoveMouseBy( (int)Math.Round(-_dpi * 500), 0);
-                TaskControl.Logger.LogWarning("视角转动到目标角度超时，停止转动-{t}",count);
+                //aa为正bb=1，aa为负数bb=-1
+                var bb = aa > 0 ? 1 : -1;
+                Simulation.SendInput.Mouse.MoveMouseBy((int)Math.Round(bb * _dpi * 1000), 0);
+                //按鼠标中键
+                Simulation.SendInput.Mouse.MiddleButtonClick();
+                TaskControl.Logger.LogWarning("视角转动到目标角度超时，停止转动- {t}", bb);
                 break;
             }
-            
+
+            // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}，尝试次数-{count}", aa, count);
             await Delay(50, ct);
             count++;
         }
-        return isSuccessful;
+
+        return isSuccessful;  
     }
 }

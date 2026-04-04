@@ -1314,6 +1314,20 @@ public class PathExecutor
                     
                 }
             }
+            else
+            {
+                if (distance > 500 && num > 2)
+                {
+                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离：{distance}", distance);
+                    // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
+                    // Simulation.ReleaseAllKey();
+                    Simulation.SendInput.Mouse.MiddleButtonClick();
+                    await Delay(2000, ct);
+                    (position, additionalTimeInMs) = await GetPositionAndTime(screen2, waypoint,isPoint);
+                    distance = Navigation.GetDistance(waypoint, position);
+                    // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                }
+            }
 
             if(runToDash == false && distance > 40 && waypoint.MoveMode == MoveModeEnum.Run.Code && avatar?.Name == "玛薇卡")
             {
