@@ -126,6 +126,7 @@ namespace BetterGenshinImpact.GameTask
         public void Start(IntPtr hWnd, CaptureModes mode, int interval = 50)
         {
             // 初始化截图器
+            ChatUiHotkeyGuard.Reset();
             GameCapture = GameCaptureFactory.Create(mode);
             // 激活窗口 保证后面能够正常获取窗口信息
             SystemControl.ActivateWindow(hWnd);
@@ -168,6 +169,7 @@ namespace BetterGenshinImpact.GameTask
         public void Stop()
         {
             _timer.Stop();
+            ChatUiHotkeyGuard.Reset();
             GameCapture?.Stop();
             _gameRect = RECT.Empty;
             _prevGameActive = false;
@@ -199,6 +201,8 @@ namespace BetterGenshinImpact.GameTask
             {
                 _timer.Stop();
             }
+
+            ChatUiHotkeyGuard.Reset();
         }
 
         public void Dispose()
@@ -222,6 +226,7 @@ namespace BetterGenshinImpact.GameTask
                 var maskWindow = MaskWindow.Instance();
                 if (GameCapture == null || !GameCapture.IsCapturing)
                 {
+                    ChatUiHotkeyGuard.Reset();
                     if (!TaskContext.Instance().SystemInfo.GameProcess.HasExited)
                     {
                         _logger.LogError("截图器未初始化!");
@@ -240,6 +245,7 @@ namespace BetterGenshinImpact.GameTask
                 // 如果是最小化状态，直接不进行截图
                 if (SystemControl.IsGenshinImpactMinimized())
                 {
+                    ChatUiHotkeyGuard.Reset();
                     PictureInPictureService.Hide();
                     return;
                 }
@@ -254,6 +260,7 @@ namespace BetterGenshinImpact.GameTask
                 var active = SystemControl.IsGenshinImpactActive();
                 if (!active)
                 {
+                    ChatUiHotkeyGuard.Reset();
                     // 检查游戏是否已结束
                     if (TaskContext.Instance().SystemInfo.GameProcess.HasExited)
                     {
@@ -330,7 +337,8 @@ namespace BetterGenshinImpact.GameTask
                     }
                 }
 
-                if (_triggers == null || !_triggers.Exists(t => t.IsEnabled))
+                var hasEnabledTriggers = _triggers != null && _triggers.Exists(t => t.IsEnabled);
+                if (!hasEnabledTriggers && !active)
                 {
                     // Debug.WriteLine("没有可用的触发器且不处于仅截屏状态, 不再进行截屏");
                     return;
@@ -360,7 +368,13 @@ namespace BetterGenshinImpact.GameTask
                 }
 
                 // 循环执行所有触发器 有独占状态的触发器的时候只执行独占触发器
-                var content = new CaptureContent(bitmap, _frameIndex, _timer.Interval);
+                using var content = new CaptureContent(bitmap, _frameIndex, _timer.Interval);
+                ChatUiHotkeyGuard.UpdateVisualState(Bv.DetectChatUi(content.CaptureRectArea));
+
+                if (!hasEnabledTriggers)
+                {
+                    return;
+                }
 
                 lock (_triggerListLocker)
                 {
@@ -406,7 +420,6 @@ namespace BetterGenshinImpact.GameTask
                 }
 
                 speedTimer.DebugPrint();
-                content.Dispose();
             }
             finally
             {
