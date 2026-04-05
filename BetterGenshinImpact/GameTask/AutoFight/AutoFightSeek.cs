@@ -61,6 +61,7 @@ using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 using BetterGenshinImpact.GameTask.Common;
 using Serilog.Core;
+using Logger = Serilog.Core.Logger;
 
 namespace BetterGenshinImpact.GameTask.AutoFight
 {
@@ -416,14 +417,15 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                     Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                                 }, ct);
                             }
-                            else
-                            {
-                                Task.Run(() =>
-                                {
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward);
-                                    Simulation.SendInput.SimulateAction(GIActions.MoveForward);
-                                }, ct);
-                            }
+                            // else
+                            // {
+                            //     Task.Run(() =>
+                            //     {
+                            //         Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                            //         Simulation.SendInput.SimulateAction(GIActions.MoveForward);
+                            //         TaskControl.Logger.LogWarning("检测到画面内有敌人，尝试移动4444...");
+                            //     }, ct);
+                            // }
 
                             if (height > 2 && height < 7)
                             {

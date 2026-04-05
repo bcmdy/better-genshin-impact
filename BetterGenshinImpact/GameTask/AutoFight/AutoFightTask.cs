@@ -923,15 +923,17 @@ public class AutoFightTask : ISoloTask
                         }
                         #endregion
 
-                        if (_taskParam.FinishDetectConfig.RotationMode &&
-                            _taskParam.FinishDetectConfig.RotateFindEnemyEnabled &&
-                            CheckFightFinish(0, detectDelayTime, cts2.Token,avatar).Result)
+                        Task.Run(() =>
                         {
-                            FightEndTotoly  = true;
-                            fightEndFlag = true;
-                            break;
-                        }
-                        
+                            if (_taskParam.FinishDetectConfig.RotationMode &&
+                                _taskParam.FinishDetectConfig.RotateFindEnemyEnabled &&
+                                CheckFightFinish(0, detectDelayTime, cts2.Token, avatar).Result)
+                            {
+                                FightEndTotoly = true;
+                                fightEndFlag = true;
+                            }
+                        });
+
                         command.Execute(combatScenes, lastCommand);
                         //统计战斗人次
                         if (i == combatCommands.Count - 1 || command.Name != combatCommands[i + 1].Name)
@@ -984,28 +986,22 @@ public class AutoFightTask : ISoloTask
                                     // Logger.LogInformation($"延时检查为{delayTime}毫秒");
                                 }
 
+                                
                                 if (_taskParam.FinishDetectConfig.RotationMode &&
                                     _taskParam.FinishDetectConfig.RotateFindEnemyEnabled)
                                 {
-                                    
+                                    if (CheckFightFinish(0, detectDelayTime, cts2.Token, avatar).Result)
+                                    {
+                                        FightEndTotoly = true;
+                                        fightEndFlag = true;
+                                        break;
+                                    }
                                 }
                                 else
                                 {
-                                    if (_taskParam.FinishDetectConfig.RotationMode &&
-                                        _taskParam.FinishDetectConfig.RotateFindEnemyEnabled)
-                                    {
-                                        if (CheckFightFinish(0, detectDelayTime, cts2.Token, avatar).Result)
-                                        {
-                                            FightEndTotoly = true;
-                                            fightEndFlag = true;
-                                            break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime,cts2.Token,avatar);
-                                    }
+                                    fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime,cts2.Token,avatar);
                                 }
+                                
                             }
                         }
 
