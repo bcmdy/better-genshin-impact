@@ -294,35 +294,6 @@ public class PathExecutor
                                 else
                                 {
                                     last2Waypoints = false;
-                                    if (_lastWaypoint?.Action == ActionEnum.Fight.Code)
-                                    {
-                                        using var ra = CaptureToRectArea();
-                                        for (int k = 1; k <= 4; k++)
-                                        {
-                                            var avatar = _combatScenes?.SelectAvatar(k);
-                                            if (avatar != null && avatar.IsActive(ra))
-                                            {
-                                                if (avatar.Name == "玛薇卡")
-                                                {
-                                                    Logger.LogWarning("当前出战角色 {t}",avatar.Name);
-                                                    using var region2 = CaptureToRectArea();
-                                                    // 获取两个点的颜色值
-                                                    var pos = region2.SrcMat.At<Vec3b>(978, 1692);
-                                                    var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
-                                                    double colorDifference = Math.Sqrt(
-                                                        Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
-                                                        Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
-                                                        Math.Pow(pos.Item2 - pos2.Item2, 2) // 红通道差值的平方
-                                                    );
-
-                                                    if (colorDifference < 15)
-                                                    {
-                                                        Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
                                     await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
                                 }
                             }
@@ -423,6 +394,21 @@ public class PathExecutor
                     PathingConditionConfig.CombatScenesGoBackUp = null;
                     GC.Collect();//释放内存
                     GC.WaitForPendingFinalizers();//释放内存
+                    
+                    // using var ra = CaptureToRectArea();
+                    // var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);
+                    // // 检查每个通道的值是否在允许的范围内
+                    // if (!(Math.Abs(pixelValue[0] - 143) <= 10 &&
+                    //       Math.Abs(pixelValue[1] - 196) <= 10 &&
+                    //       Math.Abs(pixelValue[2] - 233) <= 10))
+                    // {
+                    //     Logger.LogWarning("检测到可能的游戏卡死，尝试点击屏幕并等待1秒");
+                    //     await Delay(1000, ct);
+                    // }
+                    
+                    //回到主界面
+                    // await _returnMainUiTask.Start(ct);
+                    
                 }
             }
         }
@@ -1347,15 +1333,68 @@ public class PathExecutor
             {
                 if (distance > 500 && num > 2)
                 {
-                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离：{distance}", distance);
+                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离：{distance}- {x} - {y}", distance,position.X, position.Y);
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                     // Simulation.ReleaseAllKey();
                     Simulation.SendInput.Mouse.MiddleButtonClick();
-                    await Delay(2000, ct);
+                    await Delay(1000, ct);
                     using var screen23 = CaptureToRectArea();
                     (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
+                    if (position is not  { X: 0, Y: 0 })
+                    {
+                        prePosition = position;
+                        Logger.LogWarning("重新识别位置失败，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                    }
                     distance = Navigation.GetDistance(waypoint, position);
+                    if(distance > 500)
+                    {
+                        Logger.LogWarning("重新识别位置异常，停止移动，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                        using var screen233 = CaptureToRectArea();
+                        (position, additionalTimeInMs) = await GetPositionAndTime(screen233, waypoint,isPoint);
+                        if (position != default)
+                        {
+                            prePosition = position;
+                            Logger.LogWarning("重新识别位置失败，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                        }
+                        else
+                        {
+                            position = prePosition;
+                            Logger.LogWarning("重新识别位置失败，使用上次正常识别的位置，距离：{distance} - {x} - {y}", distance,prePosition.X, prePosition.Y);
+                        }
+                        // continue;
+                    }
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                }
+
+                if (num > 5 && distance <15 && _lastWaypoint?.Action == ActionEnum.Fight.Code)
+                {
+                    using var ra = CaptureToRectArea();
+                    for (int k = 1; k <= 4; k++)
+                    {
+                        var avatar2 = _combatScenes?.SelectAvatar(k);
+                        if (avatar2 != null && avatar2.IsActive(ra))
+                        {
+                            if (avatar2.Name == "玛薇卡")
+                            {
+                                using var region2 = CaptureToRectArea();
+                                // 获取两个点的颜色值
+                                var pos = region2.SrcMat.At<Vec3b>(978, 1692);
+                                var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
+                                double colorDifference = Math.Sqrt(
+                                    Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                                    Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                                    Math.Pow(pos.Item2 - pos2.Item2, 2) // 红通道差值的平方
+                                );
+
+                                if (colorDifference < 15)
+                                {
+                                    Logger.LogWarning("当前出战角色2 {t}",avatar2.Name);
+                                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -2591,8 +2630,12 @@ public class PathExecutor
                     {
                         imageRegion = CaptureToRectArea();
                         position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
-                        prePosition = position;
-                        Logger.LogInformation(@$"未识别到具体路径，取上次点位");
+                        
+                        if (position is not { X: 0, Y: 0 })
+                        {
+                            prePosition = position;
+                            Logger.LogInformation(@$"未识别到具体路径，取上次点位");
+                        }
                     }
                 }
             }else if (waypoint.Misidentification.HandlingMode == "mapRecognition"){
@@ -2630,7 +2673,11 @@ public class PathExecutor
         }
         else
         {
-            prePosition = position;
+            if (position is not { X: 0, Y: 0 })
+            {
+                prePosition = position;
+            }
+            
             preTime = DateTime.UtcNow;
         }
 

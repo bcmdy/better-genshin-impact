@@ -1350,7 +1350,8 @@ public class AutoFightTask : ISoloTask
         {
             // if(!Bv.IsInBigMapUi(CaptureToRectArea()))
             //防止检测战斗结束时，派蒙头冠消失
-            var pixelValue = CaptureToRectArea().SrcMat.At<Vec3b>(32, 67);
+            using var ra = CaptureToRectArea();
+            var pixelValue = ra.SrcMat.At<Vec3b>(32, 67);
             // 检查每个通道的值是否在允许的范围内
             if (!(Math.Abs(pixelValue[0] - 143) <= 10 &&
                   Math.Abs(pixelValue[1] - 196) <= 10 &&
@@ -1362,6 +1363,7 @@ public class AutoFightTask : ISoloTask
             await EndBloodCheck(ct,combatScenes);
             
             Simulation.ReleaseAllKey(); 
+            
         }
     }
 
