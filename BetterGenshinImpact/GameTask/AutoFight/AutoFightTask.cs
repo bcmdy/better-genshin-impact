@@ -627,14 +627,16 @@ public class AutoFightTask : ISoloTask
                                 
                                 if (useSkillListWithF>0 && combatScenes.SelectAvatar(useSkillListWithF).IsSkillReady()) //自定义序号首位先放E，只执行一次
                                 {
+                                    if (_taskParam.FinishDetectConfig.RotationMode &&
+                                        _taskParam.FinishDetectConfig.RotateFindEnemyEnabled &&
+                                        CheckFightFinish(0, detectDelayTime, cts2.Token).Result)
+                                    {
+                                        FightEndTotoly  = true;
+                                        fightEndFlag = true;
+                                        break;
+                                    }
                                     Logger.LogInformation("自动EQ战斗：执行序号 {name} 首E技能", useSkillListWithF);
                                     var avatarFirst = combatScenes.SelectAvatar(useSkillListWithF);
-                                    
-                                    // if (Bv.GetMotionStatus(image) == MotionStatus.Fly)
-                                    // {
-                                    //     Logger.LogWarning("自动EQ战斗：进入飞行状态，尝试下落攻击");
-                                    //     Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
-                                    // }
                                 
                                     // 先尝试切换角色，成功再单独 await 技能执行结果
                                     if (avatarFirst.TrySwitch(15))
@@ -729,7 +731,6 @@ public class AutoFightTask : ISoloTask
                                                 }
                                                 finally
                                                 {
-                                                    // 确保最终释放资源
                                                     imageAfterUseSkill.Dispose();
                                                 }
                                             }
@@ -817,7 +818,7 @@ public class AutoFightTask : ISoloTask
                             try
                             {
                                 await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime,
-                                    cts2.Token, true, _taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis);
+                                    cts2.Token, true, _taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis,_taskParam.FinishDetectConfig.EndModel);
                             }
                             catch (Exception ex)
                             {
@@ -1417,7 +1418,7 @@ public class AutoFightTask : ISoloTask
                 {
                     Task.Run(async () =>
                     {
-                        result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis); 
+                        result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis,_taskParam.FinishDetectConfig.EndModel); 
                         AutoFightSeek.RotationCount = (result == null) ? 
                             AutoFightSeek.RotationCount + 1 :  0;
                     }, ct);  
@@ -1425,7 +1426,7 @@ public class AutoFightTask : ISoloTask
                 }
                 else
                 {
-                    result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis); 
+                    result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis,_taskParam.FinishDetectConfig.EndModel); 
                     AutoFightSeek.RotationCount = (result == null) ? 
                         AutoFightSeek.RotationCount + 1 :  0;
                 }
@@ -1486,7 +1487,7 @@ public class AutoFightTask : ISoloTask
             return true;
         }
         
-        if(_taskParam.RotaryFactor != 1) Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled? "快速模式" : "默认模式");
+        if(_taskParam.RotaryFactor != 1 && !_taskParam.FinishDetectConfig.EndModel) Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled? "快速模式" : "默认模式");
 
         if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.RotaryFactor != 1)
         {
