@@ -16,6 +16,8 @@ public class CameraRotateTask(CancellationToken ct)
 {
     private readonly double _dpi = TaskContext.Instance().DpiScale;
 
+    private static volatile object _rLock = new object(); 
+    
     /// <summary>
     /// 向目标角度旋转
     /// </summary>
@@ -24,34 +26,52 @@ public class CameraRotateTask(CancellationToken ct)
     /// <returns></returns>
     public float RotateToApproach(float targetOrientation, ImageRegion imageRegion)
     {
-        var cao = CameraOrientation.Compute(imageRegion.SrcMat);
-        var diff = (cao - targetOrientation + 180) % 360 - 180;
-        diff += diff < -180 ? 360 : 0;
-        if (diff == 0)
+        if (Monitor.TryEnter(_rLock))
         {
-            return diff;
-        }
+            try
+            {
+                var cao = CameraOrientation.Compute(imageRegion.SrcMat);
+                var diff = (cao - targetOrientation + 180) % 360 - 180;
+                diff += diff < -180 ? 360 : 0;
+                if (diff == 0)
+                {
+                    return diff;
+                }
 
-        // 平滑的旋转视角
-        // todo dpi 和分辨率都会影响转动速度
-        
-        double controlRatio = 1;
-        if (Math.Abs(diff) > 90)
-        {
-            controlRatio = 4;
-        }
-        else if (Math.Abs(diff) > 30)
-        {
-            controlRatio = 3;
-        }
-        else if (Math.Abs(diff) > 5)
-        {
-            controlRatio = 2;
-        }
+                // 平滑的旋转视角
+                // todo dpi 和分辨率都会影响转动速度
 
-        // TaskControl.Logger.LogWarning("转动视角，当前角度-{cao}，目标角度-{targetOrientation}，误差-{diff}，控制比例-{controlRatio}",cao,targetOrientation,diff,controlRatio);
-        Simulation.SendInput.Mouse.MoveMouseBy((int)Math.Round(-controlRatio * diff * _dpi), 0);
-        return diff;
+                double controlRatio = 1;
+                if (Math.Abs(diff) > 90)
+                {
+                    controlRatio = 4;
+                }
+                else if (Math.Abs(diff) > 30)
+                {
+                    controlRatio = 3;
+                }
+                else if (Math.Abs(diff) > 5)
+                {
+                    controlRatio = 2;
+                }
+
+                // TaskControl.Logger.LogWarning("转动视角，当前角度-{cao}，目标角度-{targetOrientation}，误差-{diff}，控制比例-{controlRatio}",cao,targetOrientation,diff,controlRatio);
+                Simulation.SendInput.Mouse.MoveMouseBy((int)Math.Round(-controlRatio * diff * _dpi), 0);
+                return diff; 
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                TaskControl.Logger.LogWarning("转动视角发生异常，停止转动-1111 {e}", e);
+                return 0;
+            }
+            finally
+            {
+                Monitor.Exit(_rLock);
+            }
+        }
+        TaskControl.Logger.LogWarning("转动视角发生异常，停止转动-2222");
+        return 0;
     }
 
     private static volatile object _zLock = new object(); 
@@ -107,7 +127,7 @@ public class CameraRotateTask(CancellationToken ct)
             }
 
             // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}，尝试次数-{count}", aa, count);
-            await Delay(50, ct);
+            await Delay(50-count/2, ct);
             count++;
         }
 
