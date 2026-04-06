@@ -301,7 +301,7 @@ public class TpTask
                 await MoveMapTo(x, y, mapName, minZoomLevel,country);
                 if (_tpConfig.MapMoveStepDivisor)
                 {
-                    await Delay(100, ct); // 等待地图移动完成
+                    await Delay(80+_tpConfig.StepIntervalMilliseconds*10, ct); // 等待地图移动完成
                 }
                 else
                 {
@@ -545,7 +545,7 @@ public class TpTask
             if (_tpConfig.MapMoveStepDivisor)Simulation.SendInput.Mouse.LeftButtonUp();
             Logger.LogDebug("初始中心点识别失败，开启自救策略");
             // 判断当前缩放是否离最佳识别缩放(4.4)较远，如果是，则先调整到最佳视角尝试
-            if (_tpConfig.MapZoomEnabled && Math.Abs(currentZoomLevel - DisplayTpPointZoomLevel) > 0.3)
+            if ((_tpConfig.MapZoomEnabled ||_tpConfig.MapMoveStepDivisor) && Math.Abs(currentZoomLevel - DisplayTpPointZoomLevel) > 0.3) 
             {
                 await AdjustMapZoomLevel(currentZoomLevel, DisplayTpPointZoomLevel);
                 currentZoomLevel = DisplayTpPointZoomLevel;
