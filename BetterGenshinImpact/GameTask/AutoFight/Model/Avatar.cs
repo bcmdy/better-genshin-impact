@@ -732,6 +732,20 @@ public class Avatar
                     Thread.Sleep(3000);
                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyUp);
                 }
+                else if(Name == "莉奈娅")
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                    Thread.Sleep(200);
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                    Thread.Sleep(200);
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                    Thread.Sleep(200);
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                    Thread.Sleep(200);
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                    Thread.Sleep(200);
+                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.KeyPress);
+                }
                 else
                 {
                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill, KeyType.Hold);
