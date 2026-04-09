@@ -133,6 +133,10 @@ public partial class AutoFightConfig : ObservableObject
         
         [ObservableProperty]
         private int _retryDis = 0;
+
+        //开战前等待时间，默认为3秒，确保引战
+        [ObservableProperty] 
+        private int _fightWaitNotEndTime = 0;
     }
     /// <summary>
     /// 战斗结束相关配置

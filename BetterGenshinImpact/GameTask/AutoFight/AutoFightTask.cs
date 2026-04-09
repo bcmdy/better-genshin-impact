@@ -319,6 +319,10 @@ public class AutoFightTask : ISoloTask
         
         return new CombatScenes().InitializeTeamForced(Config.CustomAvatarConfigOut.CustomAvatarForceUseList);
     }
+    
+    //添加一个计时器，设定一个标志位，1000Ms内为true，超过1000Ms为false，战斗结束后重置计时器和标志位
+    private volatile bool _fightDurationExceeded = true;
+    
     // 方法1：判断是否是单个数字
 
     /*public int delayTime=1500;
@@ -545,6 +549,20 @@ public class AutoFightTask : ISoloTask
             {
                 FightStatusFlag = true;
                 FightEndTotoly = false;
+
+                // 进入战斗后，不检查战斗结束的判断
+                if (_taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.FightWaitNotEndTime > 0)
+                {
+                    Task.Run(async () => {
+                        _fightDurationExceeded = true;
+                        await Task.Delay(_taskParam.FinishDetectConfig.FightWaitNotEndTime, cts2.Token);
+                        _fightDurationExceeded = false;
+                    }, cts2.Token); 
+                }
+                else
+                {
+                    _fightDurationExceeded = false;
+                }
                 
                 while (!cts2.Token.IsCancellationRequested && !FightEndTotoly)
                 {
@@ -1390,7 +1408,7 @@ public class AutoFightTask : ISoloTask
 
     public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default,Avatar? avatar = null)
     {
-        if (_totolyFlag) return false;
+        if (_totolyFlag || _fightDurationExceeded) return false;
         _totolyFlag = true;
         
         using var captureToRectArea = CaptureToRectArea();
