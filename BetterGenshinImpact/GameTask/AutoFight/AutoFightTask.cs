@@ -735,7 +735,7 @@ public class AutoFightTask : ISoloTask
                                                 }
                                             }
                                             
-                                            fightEndFlag = await CheckFightFinish(0, detectDelayTime, cts2.Token,avatarQ);
+                                            fightEndFlag = FightEndTotoly || await CheckFightFinish(0, detectDelayTime, cts2.Token,avatarQ);
                                             if (!fightEndFlag)
                                             { 
                                                 Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
