@@ -85,7 +85,7 @@ public partial class ScriptGroupProject : ObservableObject
     /// <summary>
     /// 下一个从此执行标志
     /// </summary>
-    [JsonIgnore]
+    // [JsonIgnore]
     public bool? NextFlag
     {
         get => _nextFlag;
@@ -236,14 +236,16 @@ public partial class ScriptGroupProject : ObservableObject
             {
                 return;
             }
+
+            PathingConditionConfig.GetCountryName(task.FullPath);
+
             var pathingTask = new PathExecutor(CancellationContext.Instance.Cts.Token);
             pathingTask.PartyConfig = GroupInfo?.Config.PathingConfig;
-            if (pathingTask.PartyConfig is null || pathingTask.PartyConfig.AutoPickEnabled)
+            if ((pathingTask.PartyConfig is null || pathingTask.PartyConfig.AutoPickEnabled) || !pathingTask.PartyConfig.Enabled)
             {
                 TaskTriggerDispatcher.Instance().AddTrigger("AutoPick", null);
             }
             await pathingTask.Pathing(task);
-
             
             executionRecord.IsSuccessful = pathingTask.SuccessEnd;
             OtherConfig.AutoRestart autoRestart = TaskContext.Instance().Config.OtherConfig.AutoRestartConfig;

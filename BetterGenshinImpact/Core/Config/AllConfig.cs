@@ -18,6 +18,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BetterGenshinImpact.GameTask.AutoTrackPath;
 using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
+using System.Collections.ObjectModel;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.GetGridIcons;
 using BetterGenshinImpact.GameTask.AutoEat;
@@ -93,7 +94,53 @@ public partial class AllConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _selectedOneDragonFlowConfigName = string.Empty;
-
+    
+    // 连续执行配置单完成后操作
+    [ObservableProperty]
+    private string _continuousCompletionAction = string.Empty;
+    
+    /// <summary>
+    /// 一条龙选中使用的计划表
+    /// </summary>
+    [ObservableProperty]
+    private string _selectedOneDragonFlowPlanName = "默认计划表";
+    
+    // 计划表列表
+    [ObservableProperty]
+    private ObservableCollection<string> _scheduleList = new();
+    
+    // 计划表执行是否循环
+    [ObservableProperty]
+    private bool _scheduleLoop = false;
+    
+    // 计划表循环执行时间点
+    [ObservableProperty]
+    private string _cycleTime = "04:00";
+    
+    // 循环模式
+    [ObservableProperty]
+    private bool _cycleMode = false;
+    
+    //计划表执行超一天是否跳出循环
+    [ObservableProperty]
+    private bool _scheduleLoopSkip = false;
+    
+    // 计划表执行是否定时启动
+    [ObservableProperty]
+    private bool _scheduleStartOnTime = false;
+    
+    //计划表开始执行时间
+    [ObservableProperty]
+    private string _scheduleStartTime = "00:00";
+    
+    public AllConfig()
+    {
+        if (_scheduleList.Count == 0)
+        {
+            _scheduleList.Add("默认计划表");
+        }
+    }
+    
     /// <summary>
     ///     遮罩窗口配置
     /// </summary>
@@ -154,6 +201,8 @@ public partial class AllConfig : ObservableObject
     /// </summary>
     public AutoDomainConfig AutoDomainConfig { get; set; } = new();
     
+    //自动秘境使能
+    public bool AutoDomainEnable { get; set; } = false;
     
     /// <summary>
     ///     自动秘境配置
@@ -213,7 +262,7 @@ public partial class AllConfig : ObservableObject
     /// 地图追踪配置
     /// </summary>
     public PathingConditionConfig PathingConditionConfig { get; set; } = PathingConditionConfig.Default;
-
+    
     /// <summary>
     ///     快捷键配置
     /// </summary>
@@ -284,6 +333,7 @@ public partial class AllConfig : ObservableObject
         PathingConditionConfig.PropertyChanged += OnAnyPropertyChanged;
         DevConfig.PropertyChanged += OnAnyPropertyChanged;
         HardwareAccelerationConfig.PropertyChanged += OnAnyPropertyChanged;
+        OtherConfig.PropertyChanged += OnAnyPropertyChanged;
         SkillCdConfig.PropertyChanged += OnAnyPropertyChanged;
     }
 

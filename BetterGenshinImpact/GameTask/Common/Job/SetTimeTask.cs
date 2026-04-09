@@ -56,15 +56,16 @@ public class SetTimeTask
         await Delay(900, ct);
         await SetTime(h, m, r1, r2, r3, stepDuration, ct);
         await Delay(100, ct);
+        // GameCaptureRegion.GameRegion1080PPosClick(1500, 1000); // 确认
         GameCaptureRegion.GameRegion1080PPosMove(1500, 1000);
         await Delay(300, ct);
         Simulation.SendInput.Mouse.LeftButtonClick();
-        await Delay(7, ct);
+        await Delay(TaskContext.Instance().Config.OtherConfig.SetTime, ct);
         
         if (skipTimeAdjustmentAnimation)
         {
             // 跳过调整动画
-            await Delay(10, ct);
+            // await Delay(1, ct);
             await CancelAnimation(ct);
             await Delay(1010, ct);
             GameCaptureRegion.GameRegion1080PPosClick(45, 715);
@@ -89,7 +90,12 @@ public class SetTimeTask
     {
         GameCaptureRegion.GameRegion1080PPosMove(200, 200);
         Simulation.SendInput.Mouse.LeftButtonDown();
-        await Delay(10, ct);
+        Simulation.SendInput.Mouse.LeftButtonUp();
+        Simulation.SendInput.Mouse.LeftButtonDown();
+        Simulation.SendInput.Mouse.LeftButtonUp();
+        Simulation.SendInput.Mouse.LeftButtonDown();
+        Simulation.SendInput.Mouse.LeftButtonUp();
+        Simulation.SendInput.Mouse.LeftButtonDown();
         Simulation.SendInput.Mouse.LeftButtonUp();
     }
 

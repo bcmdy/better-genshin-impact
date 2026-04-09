@@ -7,6 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using Microsoft.Extensions.Logging;
+using Stfu.Linq;
+using ActionEnum = BetterGenshinImpact.GameTask.AutoPathing.Model.Enum.ActionEnum;
+using BetterGenshinImpact.Core.Script.Dependence;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
@@ -22,6 +25,8 @@ internal class AutoFightHandler : IActionHandler
     {
         await StartFight(ct, config,waypointForTrack);
     }
+    
+    private readonly PathingConditionConfig  _pathingConfig = TaskContext.Instance().Config.PathingConditionConfig;
 
     private async Task StartFight(CancellationToken ct, object? config = null , WaypointForTrack? waypointForTrack = null)
     {
@@ -30,9 +35,30 @@ internal class AutoFightHandler : IActionHandler
         AutoFightParam taskParams = null;
         if (config != null && config is PathingPartyConfig patyConfig && patyConfig.AutoFightEnabled)
         {
-            //替换配置为地图追踪
-
             taskParams = GetFightAutoFightParam(patyConfig.AutoFightConfig);
+            
+            var isAutoFightStrategy = patyConfig.AutoFightConfig.StrategyName == "根据队伍自动选择";
+            
+            taskParams.CountryName = isAutoFightStrategy && taskParams.CountryName.Contains("自动") 
+                ? _pathingConfig.CountryName : taskParams.CountryName;
+
+            if (isAutoFightStrategy) _logger.LogInformation("地图追踪战斗将匹配 {StrategyName} 相关策略", string.Join(", ", taskParams.CountryName));
+            if (waypointForTrack?.Action == ActionEnum.Fight.Code && !string.IsNullOrEmpty(waypointForTrack?.ActionParams))
+            {
+                int number;
+                var isNumber = int.TryParse(waypointForTrack.ActionParams, out number);
+                if (isNumber)
+                {
+                    //设置超时时间
+                    _logger.LogInformation("地图追踪设置战斗超时时间为 {Timeout} 秒", number);
+                    taskParams.Timeout = number;
+                }
+            }
+            if(Dispatcher.IsCustomCts)
+            {
+                _logger.LogWarning("异步战斗任务，关闭打开队伍的战斗结束检测");
+                taskParams.FightFinishDetectEnabled = false;
+            }
         }
         else
         {

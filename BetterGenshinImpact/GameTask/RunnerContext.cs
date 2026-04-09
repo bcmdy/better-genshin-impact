@@ -61,17 +61,50 @@ public class RunnerContext : Singleton<RunnerContext>
     /// </summary>
     private CombatScenes? _combatScenes;
 
-    public async Task<CombatScenes?> GetCombatScenes(CancellationToken ct)
+    public async Task<CombatScenes?> GetCombatScenes(CancellationToken ct,bool? forceRefresh = false)
     {
-        if (_combatScenes == null)
+        if (_combatScenes == null || forceRefresh == true)
         {
             // 返回主界面再识别
             var returnMainUiTask = new ReturnMainUiTask();
             await returnMainUiTask.Start(ct);
 
             await Delay(200, ct);
+            
+            if (forceRefresh == true)
+            {
+                var oldCombatScenes = _combatScenes;
+                for (var i = 0; i < 2; i++)
+                {
+                    var combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+                    if (!combatScenes.CheckTeamInitialized() && _combatScenes != null)
+                    {
+                        if (i == 1)
+                        {
+                            Logger.LogWarning("队伍角色识别失败，使用原有队伍信息");
+                            if (oldCombatScenes != null)
+                            {
+                                _combatScenes = oldCombatScenes;
+                            }
+                            else
+                            {
+                                Logger.LogError("原有队伍信息也为空，无法恢复");
+                            }
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        _combatScenes = combatScenes;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                _combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
+            }
 
-            _combatScenes = new CombatScenes().InitializeTeam(CaptureToRectArea());
             if (!_combatScenes.CheckTeamInitialized())
             {
                 Logger.LogError("队伍角色识别失败");

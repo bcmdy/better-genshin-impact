@@ -130,6 +130,9 @@ public partial class TpConfig : ObservableValidator
     [NotifyDataErrorInfo] 
     [Range(100, 2000)]
     private int _maxMouseMove = 300; // 单次移动最大距离
+    
+    [ObservableProperty]
+    private bool _mapMoveStepDivisor = false; // 快速拖动
 
     partial void OnMaxMouseMoveChanged(int value)
     {
@@ -145,4 +148,9 @@ public partial class TpConfig : ObservableValidator
     [ObservableProperty]
     [property: JsonIgnore]
     private double _precisionThreshold = 0.05;
+    
+    [ObservableProperty]
+    [NotifyDataErrorInfo] 
+    [Range(0, 5, ErrorMessage = "移动参数：0~5")]
+    private double _mapZoomDistanceForce = 0;  // 回血间隔
 }

@@ -100,6 +100,11 @@ public class PickUpCollectHandler : IActionHandler
 
         foreach (var commands in commandsList)
         {
+            if (ct.IsCancellationRequested)//如果取消,则退出循环
+            {
+                return;
+            }
+            
             if (CharacterNames.Contains(commands))
             {
                 picker = combatScenes.SelectAvatar(commands);
@@ -197,7 +202,7 @@ public class PickUpCollectHandler : IActionHandler
                     var selectedAvatar = combatScenes.SelectAvatar(characterName);
                     if (selectedAvatar is not null)
                     { 
-                        Sleep(200);//等待CD显示
+                        Sleep(200);
                         selectedAvatar.AfterUseSkill();
                     }
                     break;

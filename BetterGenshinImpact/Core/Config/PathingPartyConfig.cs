@@ -5,6 +5,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Serilog.Core;
+using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using BetterGenshinImpact.GameTask.AutoTrackPath.Model;
 
 namespace BetterGenshinImpact.Core.Config;
 
@@ -99,6 +105,10 @@ public partial class PathingPartyConfig : ObservableObject
     // 启用自动吃药功能
     [ObservableProperty]
     private bool _autoEatEnabled = false;
+    
+    // 地图追踪红血切人
+    [ObservableProperty]
+    private bool _redBloodSwitchOnly = false;
 
     /// <summary>
     /// 自动吃食物配置
@@ -128,6 +138,44 @@ public partial class PathingPartyConfig : ObservableObject
 
     [ObservableProperty]
     private AutoFightConfig _autoFightConfig = new();
+    
+    [ObservableProperty]
+    private int _distance = 45;
+    
+    [JsonIgnore]
+    public List<string> HurryOnAvatarList { get; } = ["","自动","玛薇卡","瓦雷莎","希诺宁"];
+    
+    [JsonIgnore]
+    public List<string> TravelModeList { get; } = ["精准靠近","连续赶路"];
+    
+    [ObservableProperty]
+    private string _hurryOnAvatar = "";
+    
+    [ObservableProperty]
+    private string _travelMode = "精准靠近";
+    
+    [ObservableProperty]
+    private bool _mwkFlyEnabled = true;
+    
+    [ObservableProperty]
+    private string? _recoverAvatarIndex = null;
+    
+    // 快速跳过
+    [ObservableProperty]
+    private bool _quicklySkip = true;
+    
+    // 新增：跳过等待时间（毫秒），默认 0
+    [ObservableProperty]
+    private int _skipWaitTime = 0;
+    
+    // 新增：传送前等待时间（毫秒），默认 200
+    [ObservableProperty]
+    private int _teleportWaitTime = 200;
+    
+    // 新增：其他节点/无QE模式等待时间（毫秒），默认 900
+    [ObservableProperty]
+    private int _otherDelayMs = 900;
+    
     public static PathingPartyConfig BuildDefault()
     {
         // 即便是不启用的情况下也设置默认值，减少后续使用的判断
@@ -136,7 +184,8 @@ public partial class PathingPartyConfig : ObservableObject
         {
             OnlyInTeleportRecover = pathingConditionConfig.OnlyInTeleportRecover,
             UseGadgetIntervalMs = pathingConditionConfig.UseGadgetIntervalMs,
-            AutoEatEnabled = pathingConditionConfig.AutoEatEnabled
+            AutoEatEnabled = pathingConditionConfig.AutoEatEnabled,
+            RedBloodSwitchOnly = pathingConditionConfig.RedBloodSwitchOnly,
         };
     }
 }

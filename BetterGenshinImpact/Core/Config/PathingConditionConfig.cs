@@ -37,7 +37,67 @@ public partial class PathingConditionConfig : ObservableObject
     // 启用自动吃药功能
     [ObservableProperty]
     private bool _autoEatEnabled = false;
-
+    
+    // 启用红血不吃药仅切人
+    [ObservableProperty]
+    private bool _redBloodSwitchOnly = false;
+    
+    // 锄地国家和类型
+    [ObservableProperty] private static string?[] _countryName = ["自动"];
+    
+    // 自动吃药次数记录
+    private static volatile int _autoEatCount = 0;
+    public static int AutoEatCount
+    {
+        get => _autoEatCount;
+        set => _autoEatCount = value;
+    }
+    // 最后吃药时间记录
+    private static DateTime _lastEatTime = DateTime.MinValue;
+    public static DateTime LastEatTime
+    {
+        get => _lastEatTime;
+        set => _lastEatTime = value;
+    }
+    
+    //装配营养袋重试次数
+    private static int _retryAssemblyNum = 3;
+    public static int RetryAssemblyNum
+    {
+        get => _retryAssemblyNum;
+        set => _retryAssemblyNum = value;
+    }
+    
+    // 行走位备份
+    private static string _initialMainAvatarIndex = string.Empty;
+    public static string InitialMainAvatarIndex
+    {
+        get => _initialMainAvatarIndex;
+        set => _initialMainAvatarIndex = value;
+    }
+    
+    // 新增的私有字段和属性
+    private static bool? _indexRectOffset60FixBackUp = null;
+    public static bool? IndexRectOffset60FixBackUp
+    {
+        get => _indexRectOffset60FixBackUp;
+        set => _indexRectOffset60FixBackUp = value;
+    }
+    
+    private static CombatScenes? _combatScenesGoBackUp = null;
+    public static CombatScenes? CombatScenesGoBackUp
+    {
+        get => _combatScenesGoBackUp;
+        set => _combatScenesGoBackUp = value;
+    }
+    
+    private static PathingPartyConfig? _partyConfigBackUp = new PathingPartyConfig();
+    public static PathingPartyConfig PartyConfigBackUp
+    {
+        get => _partyConfigBackUp?? new PathingPartyConfig();
+        set => _partyConfigBackUp = value;
+    }
+        
     public static PathingConditionConfig Default => new()
     {
         AvatarConditions =
@@ -200,4 +260,35 @@ public partial class PathingConditionConfig : ObservableObject
 
         return partyConfig;
     }
+    
+
+    private static PathingConditionConfig _partyConfig = new PathingConditionConfig();
+
+    public static PathingConditionConfig GetPartyConfig()
+    {
+        return _partyConfig;
+    }
+    
+    public static void GetCountryName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+    
+        // 替换特定字符串
+        path = path.Replace("莫酱", "小怪").Replace("汐酱", "精英");
+        
+        var config = TaskContext.Instance().Config.AutoFightConfig;
+        var countryNamesList = config.CountryNamesList;
+    
+        var foundCountries = countryNamesList.Where(material => path.Contains(material)).ToArray();
+
+        if (foundCountries.Length > 0)
+        {
+            var partyConfigInstance = GetPartyConfig();
+            partyConfigInstance.CountryName = foundCountries;            
+        }
+    }
+    
 }

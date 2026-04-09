@@ -14,6 +14,7 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
     public RecognitionObject TeleportButtonRo;
     public RecognitionObject MapScaleButtonRo;
     public RecognitionObject MapCloseButtonRo;
+    public RecognitionObject MapCloseButtonWhiteRo;
     public RecognitionObject MapSettingsButtonRo;
     public RecognitionObject MapChooseRo;
 
@@ -77,7 +78,8 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
                 (int)(440 * AssetScale),
                 (int)(40 * AssetScale),
                 (int)(200 * AssetScale)),
-            DrawOnWindow = false
+            DrawOnWindow = false,
+            Threshold = 0.75
         }.InitTemplate();
 
         MapCloseButtonRo = new RecognitionObject
@@ -90,6 +92,18 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
                 (int)(58 * AssetScale),
                 (int)(58 * AssetScale)),
             DrawOnWindow = false
+        }.InitTemplate();
+        
+        MapCloseButtonWhiteRo = new RecognitionObject
+        {
+            Name = "MapCloseButton",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage("QuickTeleport", "MapCloseButtonWhite.png"),
+            RegionOfInterest = new Rect(CaptureRect.Width - (int)(80 * AssetScale),
+                (int)(5 * AssetScale),
+                (int)(70 * AssetScale),
+                (int)(70 * AssetScale)),
+            DrawOnWindow = true
         }.InitTemplate();
 
         MapSettingsButtonRo = new RecognitionObject

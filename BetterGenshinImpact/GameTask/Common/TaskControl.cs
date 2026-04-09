@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,21 @@ using Fischless.GameCapture;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using Vanara.PInvoke;
+using System.Net.NetworkInformation;
+using BetterGenshinImpact.GameTask.Common.Job;
+using System.Threading;
+using System.Threading.Tasks;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Model.Area;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
+using System.Linq;
+using BetterGenshinImpact.Core.Recognition;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.AutoWood.Assets;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
 
 namespace BetterGenshinImpact.GameTask.Common;
 
@@ -17,13 +33,162 @@ public class TaskControl
     public static ILogger Logger { get; } = App.GetLogger<TaskControl>();
 
     public static readonly SemaphoreSlim TaskSemaphore = new(1, 1);
+    
+    private static DateTime _lastCheckTime = DateTime.MinValue;
+    private static DateTime _lastCheckTimeEnter = DateTime.MinValue;
+    private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(TaskContext.Instance().Config.OtherConfig.NetworkDetectionInterval);
+    private static readonly TimeSpan CheckIntervalWin = TimeSpan.FromSeconds(30);
+    private static readonly Ping PingSender = new Ping();
+    private static readonly bool NetworkDetectionConfig = TaskContext.Instance().Config.OtherConfig.NetworkDetectionConfig;
+    private static int _networkFailureCount = 0;
+    
+    private static RecognitionObject GetConfirmRa(bool isOcrMatch = false,params string[] targetText)
+    {
+        var screenArea = CaptureToRectArea();
+        var x = (int)(screenArea.Width * 0.3);
+        var y = (int)(screenArea.Height * 0.1);
+        var width = (int)(screenArea.Width * 0.65);
+        var height = (int)(screenArea.Height * 0.87);
+        
+        return isOcrMatch ? RecognitionObject.OcrMatch(x, y, width, height, targetText) : 
+            RecognitionObject.Ocr(x, y, width, height);
+    }
+    
+    public static bool IsSuspendedByNetwork { get; set; } = false;
+    
+    public static bool IsSuspendedByWindow { get; set; } = false;
+    
+    private static bool _isBless = false;
 
+    private static Task CheckNetworkStatusAsync()
+    {
+        if (DateTime.UtcNow - _lastCheckTime < CheckInterval)
+        {
+            if (DateTime.UtcNow - _lastCheckTimeEnter > CheckIntervalWin)
+            { 
+                _lastCheckTimeEnter = DateTime.UtcNow;
+                using var qq = CaptureToRectArea();
+                using var okRa = qq.Find(AutoFightAssets.Instance.ConfirmRaZ);
+                using var enterRa = qq.Find(AutoWoodAssets.Instance.ExitSwitchRo);
+                //如果现在是4点到4点5分内
+                if (DateTime.UtcNow.Hour == 4 && DateTime.UtcNow.Minute >= 0 && DateTime.UtcNow.Minute < 3)
+                {
+                    if ((Bv.IsInBlessingOfTheWelkinMoon(qq)) && !_isBless)   
+                    {
+                        try
+                        {
+                            Logger.LogInformation("空月任务4点检测执行");
+                            _isBless = true;
+                            new BlessingOfTheWelkinMoonTask().Start(CancellationToken.None).Wait(10000);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            Logger.LogWarning("空月任务执行取消");
+                        }
+                        catch (TimeoutException)
+                        {
+                            Logger.LogWarning("空月任务执行超时");
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "空月任务执行失败");
+                        }
+                        finally
+                        {
+                            Logger.LogDebug("空月任务4点检测执行完毕");
+                        }
+                    }
+                }
+                
+                if (okRa.IsExist()|| enterRa.IsExist())
+                {
+                    var enter = qq.FindMulti(GetConfirmRa());
+                    using var enterDone = enter.FirstOrDefault(t =>
+                        Regex.IsMatch(t.Text, "连接已断开") || Regex.IsMatch(t.Text, "点击进入"));
+                    if (enterDone != null)
+                    {
+                        IsSuspendedByWindow = true;
+                        Logger.LogWarning("点击: {enterDone.Text}",enterDone.Text);
+                        if(enterRa.IsExist())enterDone.Click();
+                    }
+                    else
+                    {
+                        return Task.CompletedTask;
+                    }
+                }
+                
+            }
+            else
+            {
+                return Task.CompletedTask;
+            }
+        }
+        
+        _lastCheckTime = DateTime.UtcNow;
+
+        var isSuspend = false; 
+        try
+        {
+            var reply = PingSender.Send(TaskContext.Instance().Config.OtherConfig.NetworkDetectionUrl);
+            isSuspend = reply.Status != IPStatus.Success;
+            if (IsSuspendedByNetwork || IsSuspendedByWindow)
+            {
+                Logger.LogWarning(IsSuspendedByWindow ? "窗口弹窗状态恢复中..." : "网络恢复中...");
+                if (NetworkRecovery.Start(CancellationToken.None).Wait(10000))
+                {
+                    isSuspend = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "网络状态检查：错误");
+            isSuspend = true;
+        }
+        finally
+        {
+            if (isSuspend)
+            {
+                _networkFailureCount++;
+                if (_networkFailureCount >= 3)
+                {
+                    try
+                    {
+                        var reply2 = PingSender.Send("www.qq.com");
+                        if (reply2.Status != IPStatus.Success)
+                        {
+                            IsSuspendedByNetwork = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "网络状态检查：错误");
+                        IsSuspendedByNetwork = true;
+                    }
+                }
+            }
+            else
+            {
+                _networkFailureCount = 0;
+                IsSuspendedByNetwork = false;
+                // var now = DateTime.UtcNow; // 声明并初始化 now 变量
+                //
+                // var targetStartTime = new DateTime(now.Year, now.Month, now.Day, 3, 59, 0); // 设置为当天的凌晨3点59分
+                // var targetEndTime = new DateTime(now.Year, now.Month, now.Day, 4, 0, 0); // 设置为当天的凌晨4点
+                //
+                // if (now - _startTime > TimeSpan.FromDays(1) || (now >= targetStartTime && now < targetEndTime))
+                // {
+                //     throw new RetryException("超过1天未启动游戏，尝试重启游戏");
+                // }
+            }
+        }
+        return Task.CompletedTask;
+    }
 
     public static void CheckAndSleep(int millisecondsTimeout)
     {
         TrySuspend();
         CheckAndActivateGameWindow();
-
         Thread.Sleep(millisecondsTimeout);
     }
 
@@ -48,12 +213,13 @@ public class TaskControl
 
     public static void TrySuspend()
     {
-        
+        if (NetworkDetectionConfig)Task.Run(CheckNetworkStatusAsync);
         var first = true;
         //此处为了记录最开始的暂停状态
-        var isSuspend = RunnerContext.Instance.IsSuspend;
-        while (RunnerContext.Instance.IsSuspend)
+        var isSuspend = RunnerContext.Instance.IsSuspend || IsSuspendedByNetwork;
+        while (RunnerContext.Instance.IsSuspend || IsSuspendedByNetwork)
         {
+            if (RunnerContext.Instance.IsSuspend) IsSuspendedByNetwork = false; NetworkRecovery.RecoveryNetworkDone = true;
             if (first)
             {
                 RunnerContext.Instance.StopAutoPick();
@@ -69,13 +235,18 @@ public class TaskControl
                     }
                 }
 
-                Logger.LogWarning("快捷键触发暂停，等待解除");
+                Logger.LogWarning(IsSuspendedByNetwork ? "网络检测失败触发暂停，等待解除" : "快捷键触发暂停，等待解除");
                 foreach (var item in RunnerContext.Instance.SuspendableDictionary)
                 {
                     item.Value.Suspend();
                 }
 
                 first = false;
+            }
+
+            if (IsSuspendedByNetwork)
+            {
+                CheckNetworkStatusAsync().Wait(1000, CancellationToken.None);
             }
 
             Thread.Sleep(1000);
@@ -95,6 +266,12 @@ public class TaskControl
 
     private static void CheckAndActivateGameWindow()
     {
+        if (IsSuspendedByNetwork)
+        {
+            Logger.LogInformation("网络恢复中，暂停尝试恢复窗口");
+            return;
+        }
+        
         if (!TaskContext.Instance().Config.OtherConfig.RestoreFocusOnLostEnabled)
         {
             if (!SystemControl.IsGenshinImpactActiveByProcess())
@@ -144,7 +321,6 @@ public class TaskControl
             {
                 throw new NormalEndException("取消自动任务");
             }
-
             TrySuspend();
             CheckAndActivateGameWindow();
         }, TimeSpan.FromSeconds(1), 100);
@@ -173,7 +349,6 @@ public class TaskControl
             {
                 throw new NormalEndException("取消自动任务");
             }
-
             TrySuspend();
             CheckAndActivateGameWindow();
         }, TimeSpan.FromSeconds(1), 100);

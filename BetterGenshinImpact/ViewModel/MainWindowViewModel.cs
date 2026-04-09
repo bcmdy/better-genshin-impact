@@ -250,7 +250,7 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
         // 预热OCR
         await OcrPreheating();
 
-        if (CommandLineOptions.Instance.HasTaskArgs)
+        if (Environment.GetCommandLineArgs().Length > 1)
         {
             return;
         }

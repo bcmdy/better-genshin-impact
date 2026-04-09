@@ -99,6 +99,15 @@ public partial class PromptDialog
         inst.ShowDialog();
         return inst.DialogResult == true ? inst.ResponseText : "";
     }
+    
+    public static string Prompt(string question, string title,  Size size, string defaultValue = "",PromptDialogConfig? config = null)
+    {
+        var inst = new PromptDialog(question, title, new TextBox(), defaultValue, config);
+        inst.Width = size.Width;
+        inst.Height = size.Height;
+        inst.ShowDialog();
+        return inst.DialogResult == true ? inst.ResponseText : defaultValue;
+    }
 
     public static string Prompt(string question, string title, UIElement uiElement, string defaultValue = "", PromptDialogConfig? config = null)
     {
@@ -106,7 +115,7 @@ public partial class PromptDialog
         inst.ShowDialog();
         return inst.DialogResult == true ? inst.ResponseText : "";
     }
-
+    
     public static string Prompt(string question, string title, UIElement uiElement, Size size, PromptDialogConfig? config = null)
     {
         var inst = new PromptDialog(question, title, uiElement, "", config)

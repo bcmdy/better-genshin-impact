@@ -18,6 +18,7 @@ using Fischless.GameCapture.Graphics;
 using BetterGenshinImpact.Service;
 using Vanara.PInvoke;
 using Rect = OpenCvSharp.Rect;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
 namespace BetterGenshinImpact.GameTask
 {
@@ -232,7 +233,7 @@ namespace BetterGenshinImpact.GameTask
                     }
                     else
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-1");
                     }
 
                     PictureInPictureService.Hide(resetManual: true);
@@ -263,7 +264,7 @@ namespace BetterGenshinImpact.GameTask
                     // 检查游戏是否已结束
                     if (TaskContext.Instance().SystemInfo.GameProcess.HasExited)
                     {
-                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器");
+                        _logger.LogInformation("游戏已退出，BetterGI 自动停止截图器-2");
                         UiTaskStopTickEvent?.Invoke(sender, e);
                         return;
                     }
@@ -516,20 +517,39 @@ namespace BetterGenshinImpact.GameTask
 
                 var name = $@"{DateTime.Now:yyyyMMddHHmmssffff}.png";
                 var savePath = Global.Absolute($@"log\screenshot\{name}");
-                if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                if (!TaskContext.Instance().Config.CommonConfig.SaveAs1080P)
                 {
-                    var assetScale = TaskContext.Instance().SystemInfo.ScaleTo1080PRatio;
-                    var rect = new Rect((int)(mat.Width - MaskWindowConfig.UidCoverRightBottomRect.X * assetScale),
-                        (int)(mat.Height - MaskWindowConfig.UidCoverRightBottomRect.Y * assetScale),
-                        (int)(MaskWindowConfig.UidCoverRightBottomRect.Width * assetScale),
-                        (int)(MaskWindowConfig.UidCoverRightBottomRect.Height * assetScale));
-                    mat.Rectangle(rect, Scalar.White, -1);
+                    if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                    {
+                        var assetScale = TaskContext.Instance().SystemInfo.ScaleTo1080PRatio;
+                        var rect = new Rect((int)(mat.Width - MaskWindowConfig.UidCoverRightBottomRect.X * assetScale),
+                            (int)(mat.Height - MaskWindowConfig.UidCoverRightBottomRect.Y * assetScale),
+                            (int)(MaskWindowConfig.UidCoverRightBottomRect.Width * assetScale),
+                            (int)(MaskWindowConfig.UidCoverRightBottomRect.Height * assetScale));
+                        mat.Rectangle(rect, Scalar.White, -1);
+                    }
                     Cv2.ImWrite(savePath, mat);
                 }
                 else
                 {
-                    Cv2.ImWrite(savePath, mat);
+                    var ra = CaptureToRectArea();
+                    
+                    // if (TaskContext.Instance().Config.CommonConfig.ScreenshotUidCoverEnabled)
+                    // {
+                    //     var rect = new Rect((int)(ra.Width - MaskWindowConfig.UidCoverRightBottomRect.X),
+                    //         (int)(ra.Height - MaskWindowConfig.UidCoverRightBottomRect.Y),
+                    //         (int)(MaskWindowConfig.UidCoverRightBottomRect.Width),
+                    //         (int)(MaskWindowConfig.UidCoverRightBottomRect.Height));
+                    //     ra.SrcMat.Rectangle(rect, Scalar.White, -1);
+                    // }
+                    
+                    using (var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write))
+                    {
+                        var encoder = new SixLabors.ImageSharp.Formats.Png.PngEncoder();
+                        ra.CacheImage.Save(fileStream,encoder); 
+                    }
                 }
+
 
                 mat.Dispose();
 

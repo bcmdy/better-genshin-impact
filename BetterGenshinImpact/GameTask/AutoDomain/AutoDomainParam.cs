@@ -18,29 +18,30 @@ public class AutoDomainParam : BaseTaskParam<AutoDomainTask>
 
     // 需要刷取的副本名称
     public string SundaySelectedValue { get; set; } = string.Empty;
+    
 
     // 结束后是否自动分解圣遗物
     public bool AutoArtifactSalvage { get; set; } = false;
+    
+    //四种树脂类型的对应数量
+    public Dictionary<string, int> ResinCount { get; set; } = new();
+    
+    //树脂刷取模式
+    public bool SpecifyResinUse { get; set; } = false;
 
     // 分解圣遗物的最大星级
     // 1~4
     public string MaxArtifactStar { get; set; } = "4";
-
-    public bool SpecifyResinUse { get; set; } = false;
-
+    
     // 使用树脂优先级
     public List<string> ResinPriorityList { get; set; } =
     [
         "浓缩树脂",
         "原粹树脂"
     ];
+
     // 使用原粹树脂刷取副本次数
     public int OriginalResinUseCount { get; set; } = 0;
-    // 使用原粹树脂(20)刷取副本次数
-    public int OriginalResin20UseCount { get; set; } = 0;
-
-    // 使用原粹树脂(40)刷取副本次数
-    public int OriginalResin40UseCount { get; set; } = 0;
 
     // 使用浓缩树脂刷取副本次数
     public int CondensedResinUseCount { get; set; } = 0;
@@ -69,6 +70,7 @@ public class AutoDomainParam : BaseTaskParam<AutoDomainTask>
         PartyName = config.PartyName;
         DomainName = config.DomainName;
         SundaySelectedValue = config.SundaySelectedValue;
+        ResinCount = config.ResinCount;
         AutoArtifactSalvage = config.AutoArtifactSalvage;
         MaxArtifactStar = TaskContext.Instance().Config.AutoArtifactSalvageConfig.MaxArtifactStar;
         ResinPriorityList = config.ResinPriorityList;
@@ -77,8 +79,6 @@ public class AutoDomainParam : BaseTaskParam<AutoDomainTask>
         TransientResinUseCount = config.TransientResinUseCount;
         FragileResinUseCount = config.FragileResinUseCount;
         SpecifyResinUse = config.SpecifyResinUse;
-        OriginalResin20UseCount = config.OriginalResin20UseCount;
-        OriginalResin40UseCount = config.OriginalResin40UseCount;
     }
 
     public AutoDomainParam(int domainRoundNum = 0) : base(null, null)

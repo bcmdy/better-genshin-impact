@@ -44,6 +44,8 @@ using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
 using StackPanel = Wpf.Ui.Controls.StackPanel;
 using TextBlock = Wpf.Ui.Controls.TextBlock;
 using TextBox = Wpf.Ui.Controls.TextBox;
+using  Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace BetterGenshinImpact.ViewModel.Pages;
 
@@ -54,6 +56,19 @@ public partial class ScriptControlViewModel : ViewModel
     private readonly ILogger<ScriptControlViewModel> _logger = App.GetLogger<ScriptControlViewModel>();
 
     private readonly IScriptService _scriptService;
+    
+    [ObservableProperty] private Boolean _isInsetMode = false;
+    
+    [ObservableProperty] private OneDragonFlowViewModel? _viewModel;
+
+    public static class AppPaths
+    {
+        public const string JsScripts = @"User\JsScript";
+        public const string MapTracks = @"User\AutoPathing";
+        public const string MouseScripts = @"User\KeyMouseScript";
+    }
+    
+    private readonly List<String> _scriptGroupsDefault = new List<string> { "领取邮件","合成树脂","自动秘境","领取每日奖励","领取尘歌壶奖励" };
 
     /// <summary>
     /// 配置组配置
@@ -81,6 +96,23 @@ public partial class ScriptControlViewModel : ViewModel
         _snackbarService = snackbarService;
         _scriptService = scriptService;
         ScriptGroups.CollectionChanged += ScriptGroupsCollectionChanged;
+    }
+    
+    public ScriptControlViewModel(ISnackbarService snackbarService, IScriptService scriptService,
+        ObservableCollection<ScriptGroup> scriptGroups,ScriptGroup? selectedScriptGroup,bool isInsetMode)
+    {
+        _snackbarService = snackbarService;
+        _scriptService = scriptService;
+        ScriptGroups = scriptGroups;
+        SelectedScriptGroup = selectedScriptGroup;
+        _isInsetMode = isInsetMode;
+        ScriptGroups.CollectionChanged += ScriptGroupsCollectionChanged;
+    }
+    
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<ISnackbarService, SnackbarService>();
+        services.AddTransient<ScriptControlViewModel>();
     }
 
     [RelayCommand]
@@ -501,6 +533,21 @@ public partial class ScriptControlViewModel : ViewModel
         TaskContext.Instance().Config.ScriptConfig.ScriptRepoHintDotVisible = false;
         ScriptRepoUpdater.Instance.OpenScriptRepoWindow();
     }
+    
+    [RelayCommand]
+    private void OnOpenScriptsFolder(string directoryType)
+    {
+        
+        string path = directoryType switch
+        {
+            "JS" => AppPaths.JsScripts,
+            "DT" => AppPaths.MapTracks,
+            "KM" => AppPaths.MouseScripts,
+            _ => AppPaths.JsScripts,
+        };
+    
+        Process.Start("explorer.exe", path);
+    }
 
     [RelayCommand]
     private void UpdateTasks()
@@ -671,6 +718,7 @@ public partial class ScriptControlViewModel : ViewModel
         {
             if (item.Name == str)
             {
+                Toast.Warning("新名称与旧名称相同");
                 return;
             }
 
@@ -687,6 +735,61 @@ public partial class ScriptControlViewModel : ViewModel
             }
             else
             {
+                var result = MessageBox.Show("所有名为 < " + item.Name + " > 的自定义秘境任务和配置单中的任务将重命名为 < " + str + " > ，是否继续？", 
+                    "重名配置组关联修改", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
+                
+                if (result != System.Windows.MessageBoxResult.Yes)
+                {
+                    return;
+                }
+                
+                var ViewModel = new OneDragonFlowViewModel();
+                ViewModel.InitConfigList();
+                var configList = ViewModel.ConfigList;
+                
+               // 读取ConfigList中所有的配置单，检查每个配置单中的TaskEnabledList，如果含有和item.Name相同的配置组，则把这个TaskEnabledList中的配置组改为str
+                foreach (var config in configList)
+                {
+                    var oldName = item.Name;
+                    
+                    if (config.CustomDomainList.Any(task => task == item.Name)) 
+                    {   
+                        for (int i = 0; i < config.CustomDomainList.Count; i++)
+                        {
+                            if (config.CustomDomainList[i] == oldName)
+                            {
+                                config.CustomDomainList[i] = str;
+                            }
+                        }
+                        ViewModel.WriteConfig(config);
+                    }
+                    
+                    // 使用反射检查和修改所有以 "DomainName" 结尾的属性
+                    var properties = config.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Where(prop => prop.Name.EndsWith("DomainName") && prop.PropertyType == typeof(string));
+                    
+                    foreach (var prop in properties)
+                    {
+                        if (prop.GetValue(config) as string == oldName)
+                        {
+                            prop.SetValue(config, str);
+                        }
+                        ViewModel.WriteConfig(config);
+                    }
+                    
+                    if (config.TaskEnabledList.Any(task => task.Value.Item2 == item.Name))
+                    {
+                        foreach (var task in config.TaskEnabledList)
+                        {
+                            if (task.Value.Item2 == oldName)
+                            {
+                                config.TaskEnabledList[task.Key] = (task.Value.Item1, str);
+                            }
+                        }
+                        ViewModel.WriteConfig(config);
+                    }
+                }
+                
                 File.Move(Path.Combine(ScriptGroupPath, $"{item.Name}.json"), Path.Combine(ScriptGroupPath, $"{str}.json"));
                 item.Name = str;
                 if (item.NextFlag)
@@ -705,9 +808,66 @@ public partial class ScriptControlViewModel : ViewModel
         {
             return;
         }
-
+        
+        //弹窗提示"配置单中的所有同名配置组将被删除，是否继续？，取消退出，确认执行删除操作"
+        var result = MessageBox.Show("所有名为 < " + item.Name + " > 的自定义秘境任务和配置单的任务将被删除？", 
+            "删除配置组关联修改", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
+        
+        if (result != System.Windows.MessageBoxResult.Yes)
+        {
+            return;
+        }
+        
         try
         {
+            var ViewModel = new OneDragonFlowViewModel();
+            ViewModel.InitConfigList();
+            var configList = ViewModel.ConfigList;
+            // 读取ConfigList中所有的配置单，检查每个配置单中的TaskEnabledList，如果含有和item.Name相同的配置组，则把这个TaskEnabledList中的配置组删除
+            foreach (var config in configList)
+            {
+                var oldName = item.Name;
+                // 删除 CustomDomainList 中的元素
+                if (config.CustomDomainList.Any(task => task == oldName))
+                {
+                    for (int i = 0; i < config.CustomDomainList.Count; i++)
+                    {
+                        if (config.CustomDomainList[i] == oldName)
+                        {
+                            config.CustomDomainList.RemoveAt(i);
+                            i--; // 调整索引以避免跳过元素
+                        }
+                    }
+                    ViewModel.WriteConfig(config);
+                }
+
+                // 使用反射检查和修改所有以 "DomainName" 结尾的属性（删除）
+                var propertiesToDelete = config.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(prop => prop.Name.EndsWith("DomainName") && prop.PropertyType == typeof(string));
+
+                // 删除 DomainName 中的属性
+                foreach (var prop in propertiesToDelete)
+                {
+                    if (prop.GetValue(config) as string == oldName)
+                    {
+                        prop.SetValue(config, string.Empty); 
+                    }
+                    ViewModel.WriteConfig(config);
+                }
+                
+                if (config.TaskEnabledList.Any(task => task.Value.Item2 == item.Name))
+                {
+                    foreach (var task in config.TaskEnabledList)
+                    {
+                        if (task.Value.Item2 == oldName)
+                        {
+                            config.TaskEnabledList.Remove(task.Key);
+                        }
+                    }
+                    ViewModel.WriteConfig(config);
+                }
+            }
+            
             ScriptGroups.Remove(item);
             File.Delete(Path.Combine(ScriptGroupPath, $"{item.Name}.json"));
             _snackbarService.Show(
@@ -728,6 +888,13 @@ public partial class ScriptControlViewModel : ViewModel
                 null,
                 TimeSpan.FromSeconds(3)
             );
+        }
+        if (ScriptGroups.Count() != 0)//如果删除的是当前选中的配置组，则清空选中项
+        {
+            SelectedScriptGroup = ScriptGroups.First();
+        }else
+        {
+            SelectedScriptGroup = null;
         }
     }
 
@@ -762,7 +929,7 @@ public partial class ScriptControlViewModel : ViewModel
         {
             Content = stackPanel,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            //Height = 435 // 固定高度
+            Height = 435 // 固定高度
         };
 
         return scrollViewer;
@@ -1776,7 +1943,7 @@ public partial class ScriptControlViewModel : ViewModel
             _snackbarService.Show("打开失败", e.Message, ControlAppearance.Danger, null, TimeSpan.FromSeconds(3));
         }
     }
-    private void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    public void ScriptGroupsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.NewItems != null)
         {

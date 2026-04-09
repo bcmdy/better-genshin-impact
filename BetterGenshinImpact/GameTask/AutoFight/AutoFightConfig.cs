@@ -1,11 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
-
-
-
-
 
 /// <summary>
 /// 自动战斗配置
@@ -14,11 +11,25 @@ namespace BetterGenshinImpact.GameTask.AutoFight;
 public partial class AutoFightConfig : ObservableObject
 {
     [ObservableProperty] private string _strategyName = "";
+    
+    /// <summary>
+    /// 战斗策略国家列表（策略文件名检测）
+    /// </summary>
+    [ObservableProperty]
+    private string[] _countryNamesList = { "自动", "挪德卡莱","纳塔", "枫丹", "须弥", "稻妻", "璃月", "蒙德", "精英", "小怪" };
+    
+    /// <summary>
+    /// 自动战斗策略所属国家
+    /// </summary>
+    [ObservableProperty] private string?[] _countryName = ["自动"];
 
     /// <summary>
     /// 英文逗号分割 强制指定队伍角色
     /// </summary>
     [ObservableProperty] private string _teamNames = "";
+    
+    /// <summary> 战斗策略自动EQ </summary>
+    [ObservableProperty] private bool _autoCombatEq = false;
 
     /// <summary>
     /// 检测战斗结束
@@ -97,10 +108,28 @@ public partial class AutoFightConfig : ObservableObject
         private bool _isFirstCheck = false;
         
         /// <summary>
+        /// GoDistance 寻敌移动距离
+        /// </summary>
+        [ObservableProperty]
+        private int _goDistance = 500;
+        
+        /// <summary>
         /// 是有元素爆发前检查战斗结束
         /// </summary>
         [ObservableProperty]
         private bool _checkBeforeBurst = false;
+        
+        /// 旋转寻找敌人模式
+        [ObservableProperty]
+        private bool _rotationMode = true;
+        
+        //检查结束方式
+        [ObservableProperty]
+        private bool _endModel = true;
+        
+        //快速检查方式的延时，默认为0.15秒
+        [ObservableProperty] 
+        private double _fastCheckDelay = 0.15;
     }
     /// <summary>
     /// 战斗结束相关配置
@@ -131,31 +160,27 @@ public partial class AutoFightConfig : ObservableObject
     private bool _kazuhaPickupEnabled = true;
     
     [ObservableProperty]
-    private bool _qinDoublePickUp = false;
-    
-    [ObservableProperty]
     private string _guardianAvatar = string.Empty;
     
     [ObservableProperty]
     private bool _guardianCombatSkip = false;
     
     [ObservableProperty]
-    private bool _skipModel = false;
-    
-    [ObservableProperty]
     private bool _guardianAvatarHold = false;
+     [ObservableProperty]
+     private bool _burstEnabled = false;
+     
+     [ObservableProperty]
+     private bool _expKazuhaPickup = false;
     
-    [ObservableProperty]
-    private bool _burstEnabled = false;
-    
+     [ObservableProperty]
+     private bool _qinDoublePickUp = false;
+     
     /// <summary>
     /// 战斗结束后，如果不存在万叶，则切换至存在万叶的队伍（基于开启万叶拾取情况下）
     /// </summary>
     [ObservableProperty]
     private string _kazuhaPartyName = "";
-    
-    [ObservableProperty]
-    private bool _swimmingEnabled = false;
 
     /// <summary>
     /// 战斗超时，单位秒
@@ -163,5 +188,33 @@ public partial class AutoFightConfig : ObservableObject
     [ObservableProperty]
     private int _timeout = 120;
 
-
+    [ObservableProperty]
+    private bool _swimmingEnabled = false;
+    
+    [ObservableProperty]
+    private bool _takeMedicineEnabled = false;
+    
+    [ObservableProperty]
+    private int _medicineInterval = 1500;
+    
+    [ObservableProperty]
+    private int _checkInterval = 200;
+    
+    [ObservableProperty]
+    private int _recoverMaxCount = 5;
+    
+    [ObservableProperty]
+    private bool _endBloodCheackEnabled = false;
+    
+    [ObservableProperty]
+    private bool _qRecoverAvatar = false;
+    
+    [ObservableProperty]
+    private string _useEqList = "1,2,3,4";
+    
+    [ObservableProperty]
+    private string _useSkillList = "1,2,3,4";
+    
+    [ObservableProperty]
+    private int _kazuhaTime = 1500;
 }
