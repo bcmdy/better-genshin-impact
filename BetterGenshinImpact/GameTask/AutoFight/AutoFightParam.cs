@@ -23,6 +23,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public double FastCheckDelay { get; set; } = 0.1;
 
         public int RetryDis { get; set; } = 0;
+        
+        public int FightWaitNotEndTime { get; set; } = 3000;
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -45,6 +47,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
         FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
         FinishDetectConfig.RetryDis = autoFightConfig.FinishDetectConfig.RetryDis;
+        FinishDetectConfig.FightWaitNotEndTime = autoFightConfig.FinishDetectConfig.FightWaitNotEndTime;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -173,6 +176,8 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
         FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
         FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
+        FinishDetectConfig.RetryDis = autoFightConfig.FinishDetectConfig.RetryDis;
+        FinishDetectConfig.FightWaitNotEndTime = autoFightConfig.FinishDetectConfig.FightWaitNotEndTime;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;

@@ -774,7 +774,7 @@
                                     
                                 </Grid>
 
-                            <Grid Margin="16">
+                            <Grid Margin="16" Visibility="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Converter={StaticResource BooleanToVisibilityRevertConverter} }">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
@@ -797,8 +797,41 @@
                                             Grid.RowSpan="2"
                                             Grid.Column="1"
                                             MinWidth="120"
+                                            VerticalContentAlignment="Center"
+                                            HorizontalContentAlignment="Center"
                                             Text="{Binding Config.AutoFightConfig.FinishDetectConfig.CheckEndDelay}" />
                             </Grid>
+                            
+                            <Grid Margin="16" Visibility="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Converter={StaticResource BooleanToVisibilityConverter} }">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:TextBlock Grid.Row="0"
+                                                  Grid.Column="0"
+                                                  FontTypography="Body"
+                                                  Text="开启快速检测模式下，战斗前不检测结束的时间！！！！"
+                                                  TextWrapping="Wrap" />
+                                    <ui:TextBlock Grid.Row="1"
+                                                  Grid.Column="0"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="战斗开始计算，一定时间内将不会执行检查战斗结束的操作，默认为3000ms，过短可能会导致漏怪，单位：毫秒。"
+                                                  TextWrapping="Wrap" />
+                                    <ui:TextBox Grid.Row="0"
+                                                Grid.RowSpan="2"
+                                                Grid.Column="1"
+                                                MinWidth="120"
+                                                Margin="15,0,0,0"
+                                                VerticalContentAlignment="Center"
+                                                HorizontalContentAlignment="Center"
+                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.FightWaitNotEndTime}" />
+                                </Grid>
+                            
+                            
                             
                                 <Grid Margin="16">
                                     <Grid.RowDefinitions>
@@ -814,21 +847,21 @@
                                                   Grid.Column="0"
                                                   FontTypography="Body"
                                                   VerticalAlignment="Center"
-                                                  Text="按键触发后检查延时(快速模式建议配合“不等待旋转结束”使用)"
+                                                  Text="按键触发后检查延时(建议配合“不等待旋转结束”使用)"
                                                   TextWrapping="Wrap" />
                                     <ui:ToggleSwitch Grid.Row="0"
                                                      Grid.Column="0"
-                                                     Margin="400,0,0,0"
+                                                     Margin="350,0,0,0"
                                                      VerticalAlignment="Center"
                                                      IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
                                                      IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay}" />
                                     <ui:TextBlock Grid.Row="0"
                                                   Grid.Column="0"
                                                   FontSize="8"
-                                                  Margin="445,10,0,0"
+                                                  Margin="400,10,0,0"
                                                   VerticalAlignment="Center"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="开启快速检查模式"
+                                                  Text="快速检查模式"
                                                   TextWrapping="Wrap" />
                                     
                                     <ui:TextBlock Grid.Row="1"
