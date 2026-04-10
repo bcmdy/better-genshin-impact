@@ -133,9 +133,8 @@ public partial class HomePageViewModel : ViewModel
 
         _autoRun = false;
 
-        // 只对纯 "start" 参数自动启动截图器
-        // startOneDragon、--startGroups 等由各自流程中的 StartGameTask 处理
-        if (CommandLineOptions.Instance.Action == CommandLineAction.Start)
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length > 1 && args[1].Contains("start"))
         {
             _ = OnStartTriggerAsync();
         }

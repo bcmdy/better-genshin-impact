@@ -30,7 +30,56 @@ public partial class OtherConfig : ObservableObject
     [ObservableProperty]
     private Ocr _ocrConfig = new();
     
+    //网络检测
+    [ObservableProperty]
+    private bool _networkDetectionConfig = false;
+    
+    //网络检测网址
+    [ObservableProperty]
+    private string _networkDetectionUrl = "www.baidu.com";
+    
+    //网络检测间隔时间
+    [ObservableProperty]
+    private int _networkDetectionInterval = 5;
 
+    // 自定义角色配置
+    [ObservableProperty]
+    private CustomAvatarConfig _customAvatarConfigOut = new CustomAvatarConfig();
+    
+    [ObservableProperty]
+    private int _setTime = 7;
+    
+    public partial class CustomAvatarConfig : ObservableObject
+    {
+        //自定义角色开关
+        public  bool CustomAvatarEnabled { set; get; } = false;
+        
+        // 自定义角色1名称,初始化用于举例
+        public string CustomAvatar1Name { get; set; } = "申鹤";
+        public string CustomAvatar1Name2 { get; set; } = string.Empty;
+        public string CustomAvatar1Name3 { get; set; } = string.Empty;
+    
+        // 自定义角色1假装名称
+        public string CustomAvatar1DisplayName { get; set; } = "哥伦比娅";
+    
+        // 自定义角色2名称
+        public string CustomAvatar2Name { get; set; } = "申鹤";
+        public string CustomAvatar2Name2 { get; set; } = "甘雨";
+        public string CustomAvatar2Name3 { get; set; } = "琴";
+    
+        // 自定义角色2假装名称
+        public string CustomAvatar2DisplayName { get; set; } = "琴";
+    
+        // 自定义置信度1
+        public double CustomAvatar1Confidence { get; set; } = 0.8;
+    
+        // 自定义置信度2
+        public double CustomAvatar2Confidence { get; set; } = 0.8;
+        
+        //识别错误后强制使用角色
+        public string CustomAvatarForceUseList { get; set; } = "钟离, 纳西妲, 雷电将军, 芙宁娜";
+    }
+    
     public partial class AutoRestart : ObservableObject
     {
         [ObservableProperty]

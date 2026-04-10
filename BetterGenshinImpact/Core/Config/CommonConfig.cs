@@ -36,7 +36,13 @@ public partial class CommonConfig : ObservableObject
     ///     UID遮盖是否启用
     /// </summary>
     [ObservableProperty]
-    private bool _screenshotUidCoverEnabled = true;
+    private bool _screenshotUidCoverEnabled;
+    
+    /// <summary>
+    ///  是否保存为1080P
+    /// </summary>
+    [ObservableProperty]
+    private bool _saveAs1080P;
 
     /// <summary>
     ///     退出时最小化至托盘
@@ -48,7 +54,7 @@ public partial class CommonConfig : ObservableObject
     /// 当前主题类型（新版主题）
     /// </summary>
     [ObservableProperty]
-    private ThemeType _currentThemeType = OsVersionHelper.IsWindows11_22523_OrGreater ? ThemeType.DarkMica : ThemeType.DarkNone;
+    private ThemeType _currentThemeType = OsVersionHelper.IsWindows11_22523_OrGreater? ThemeType.DarkMica : ThemeType.DarkNone;
 
     /// <summary>
     /// 主题（旧版主题，兼容性保留）

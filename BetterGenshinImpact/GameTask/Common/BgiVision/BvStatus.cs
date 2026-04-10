@@ -11,8 +11,14 @@ using OpenCvSharp;
 using System;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using BetterGenshinImpact.Core.Recognition;
+using System.Threading;
+
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
+using BetterGenshinImpact.GameTask.AutoSkip.Assets;
+using BetterGenshinImpact.GameTask.GameLoading.Assets;
+using BetterGenshinImpact.Helpers.Extensions;
 
 
 namespace BetterGenshinImpact.GameTask.Common.BgiVision;

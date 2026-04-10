@@ -7,6 +7,7 @@ using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Exception;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using Microsoft.Extensions.Logging;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using BetterGenshinImpact.GameTask.AutoFight.Model;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing.Handler;
 
@@ -27,7 +28,6 @@ public class CombatScriptHandler : IActionHandler
 
             // 设置取消令牌到 CombatScenes 和 Avatar 对象
             combatScenes.BeforeTask(ct);
-
 
             // 提前校验是否存在策略要求的角色
             if (!combatScript.AvatarNames.Contains(CombatScriptParser.CurrentAvatarName))

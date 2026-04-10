@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Common;
 using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace BetterGenshinImpact.Core.Script.Dependence;
 
@@ -21,12 +22,22 @@ public class AutoPathingScript
         _autoPathingFile = new LimitedFile(Global.Absolute(@"User\AutoPathing"));
     }
 
-    public async Task Run(string json)
+    public async Task Run(string json, CancellationToken ct = default)
     {
         try
         {
+            if (ct == default)
+            {
+                ct = CancellationContext.Instance.Cts.Token;
+            }
+            else
+            {
+                TaskControl.Logger.LogWarning("执行地图追踪传入Cts");
+                ct = CancellationContext.Instance.Register(ct);
+            }
+
             var task = PathingTask.BuildFromJson(json);
-            var pathExecutor = new PathExecutor(CancellationContext.Instance.Cts.Token);
+            var pathExecutor = new PathExecutor(ct);
             if (_config != null && _config is PathingPartyConfig patyConfig)
             {
                 pathExecutor.PartyConfig = patyConfig;
@@ -34,19 +45,30 @@ public class AutoPathingScript
 
             await pathExecutor.Pathing(task);
         }
+        catch (OperationCanceledException)
+        {
+            TaskControl.Logger.LogInformation("路径追踪任务被取消");
+        }
+        catch (ObjectDisposedException e)
+        {
+            TaskControl.Logger.LogError("访问已释放的对象: {Msg}", e.Message);
+        }
         catch (Exception e)
         {
-            TaskControl.Logger.LogDebug(e,"执行地图追踪时候发生错误");
-            TaskControl.Logger.LogError("执行地图追踪时候发生错误: {Msg}",e.Message);
+            TaskControl.Logger.LogDebug(e, "执行地图追踪时候发生错误");
+            TaskControl.Logger.LogError("执行地图追踪时候发生错误: {Msg}", e.Message);
         }
     }
 
-    public async Task RunFile(string path)
+    public async Task RunFile(string path,CancellationToken ct = default)
     {
         try
         {
             var json = await new LimitedFile(_rootPath).ReadText(path);
-            await Run(json);
+            
+            PathingConditionConfig.GetCountryName(path);
+            
+            await Run(json,ct);
         }
         catch (Exception e)
         {
@@ -59,7 +81,7 @@ public class AutoPathingScript
     /// 从已订阅的内容中获取文件
     /// </summary>
     /// <param name="path">在 `\User\AutoPathing` 目录下获取文件</param>
-    public async Task RunFileFromUser(string path)
+    public async Task RunFileFromUser(string path,CancellationToken ct = default)
     {
         var json = await AutoPathingFile.ReadText(path);
         await Run(json);

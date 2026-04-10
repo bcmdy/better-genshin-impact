@@ -22,7 +22,7 @@ using BetterGenshinImpact.GameTask.AutoFight.Assets;
 using BetterGenshinImpact.ViewModel.Pages;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation.Model;
 using BetterGenshinImpact.GameTask.AutoPathing;
-using BetterGenshinImpact.GameTask.AutoPathing.Model;
+using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.GameTask.AutoPathing.Model.Enum;
 
 namespace BetterGenshinImpact.GameTask.AutoFight.Model;
@@ -61,6 +61,11 @@ public class Avatar
     /// 最近一次使用元素战技的时间
     /// </summary>
     public DateTime LastSkillTime { get; set; }
+    
+    /// <summary>
+    /// 元素战技检测锁
+    /// </summary>
+    private static readonly object SkillCheckLock = new object();
 
     /// <summary>
     /// 元素爆发是否就绪
@@ -86,7 +91,17 @@ public class Avatar
     /// 战斗场景
     /// </summary>
     public CombatScenes CombatScenes { get; set; }
+
+    public static string? LastActiveAvatar { get; internal set; } = null;
     
+    private static PathingPartyConfig? _partyConfig;
+    public static PathingPartyConfig PartyConfig
+    {
+        get => _partyConfig ?? PathingPartyConfig.BuildDefault();
+        set => _partyConfig = value;
+    }
+    
+    private static PathingConditionConfig PathingConditionConfig { get; set; } = TaskContext.Instance().Config.PathingConditionConfig;
 
     public Avatar(CombatScenes combatScenes, string name, int index, Rect nameRect, double manualSkillCd = -1)
     {
@@ -107,51 +122,94 @@ public class Avatar
     /// <param name="region"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
+    private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        if (Bv.IsInRevivePrompt(region))
+        // Logger.LogInformation("检测到123 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
+        if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            Logger.LogWarning("检测到复苏界面，存在角色被击败，前往七天神像复活");
-            // 先打开地图
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE); // NOTE: 此处按下Esc是为了关闭复苏界面，无需改键
-            Sleep(600, ct);
-            TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
+            if (PathingConditionConfig.AutoEatCount < 2)
+            {
+                if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
+                {
+                    PathingConditionConfig.LastEatTime = DateTime.UtcNow;
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n {t}",PathingConditionConfig.AutoEatCount);
+                    var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (!confirmRectArea.IsEmpty())
+                    {
+                        if(PathingConditionConfig.AutoEatCount <2)PathingConditionConfig.AutoEatCount++;
+                        Simulation.ReleaseAllKey();
+                        confirmRectArea.Click();
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                    }
+                    
+                }
+                else
+                {
+                    //等待
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    Sleep(300, ct);
+                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试-l");
+                }
+                return;
+            }
+            
+            Logger.LogWarning("检测到复苏界面，-o {t}",PathingConditionConfig.AutoEatCount);
+            if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
+
+            using (var bitmap = CaptureToRectArea())
+            {
+                if (Bv.IsInRevivePrompt(bitmap))
+                {
+                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                    Sleep(300, ct);
+                }
+            }
+            
+            TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活-i"));
         }
-        else if(AutoFightParam.SwimmingEnabled && AutoFightTask.FightStatusFlag && SwimmingConfirm(region))
+        else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
             if (AutoFightTask.FightWaypoint is not null)
             {
-                using var ra = CaptureToRectArea();
-                if (!SwimmingConfirm(ra)) //二次确认
+                Sleep(1000, ct);
+                using var bitmap = CaptureToRectArea();
+                if (!SwimmingConfirm(bitmap)) //二次确认
                 {
                     return;
                 }
                 
                 Logger.LogInformation("游泳检测：尝试回到战斗地点");
-                var cts = new CancellationTokenSource();
-                var pathExecutor = new PathExecutor(cts.Token);
-                
+                // 使用using语句确保CancellationTokenSource被正确释放
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
                 try
                 {
-                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000,cts.Token);
+                    var pathExecutor = new PathExecutor(cts.Token);
+                    pathExecutor.FaceTo(AutoFightTask.FightWaypoint).Wait(2000, cts.Token);
                     AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Fly.Code; // 改为跳飞
                     Simulation.SendInput.Mouse.RightButtonDown();
-                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint).Wait(15000,cts.Token);
-                    cts.Cancel();
-                    AutoFightTask.FightWaypoint = null;
-                    Simulation.SendInput.Mouse.RightButtonUp();
+                    pathExecutor.MoveTo(AutoFightTask.FightWaypoint, false).Wait(15000, cts.Token);
+                    Logger.LogInformation("游泳检测：移动结束");
+                    cts?.Cancel();
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
-                    Logger.LogError("游泳检测：回到战斗地点任务被取消");
+                    Logger.LogInformation("操作被取消");
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "游泳检测：回到战斗地点异常");
+                    Logger.LogError(ex, "执行过程中发生异常");
                 }
                 finally
                 {
+                    // 确保在任何情况下都能释放鼠标右键
+                    AutoFightTask.FightWaypoint = null;
+                    Simulation.SendInput.Mouse.RightButtonUp();
                     Simulation.ReleaseAllKey();
+                    cts?.Cancel();
+                    GC.Collect();//释放内存
+                    GC.WaitForPendingFinalizers();//释放内存
+                    MatchTemplateHelper.CleanupMemory();
                 }
                 
                 using var bitmap2 = CaptureToRectArea();
@@ -161,6 +219,9 @@ public class Avatar
                    return;
                 }
                 
+                GC.Collect();//释放内存
+                GC.WaitForPendingFinalizers();//释放内存
+                MatchTemplateHelper.CleanupMemory();
                 Logger.LogWarning("游泳检测：回到战斗地点失败");
             }
             
@@ -171,20 +232,19 @@ public class Avatar
     
     /// <summary>
     /// 游泳检测（色块连通性检测）
-    /// 游泳时右下角会出现鼠标图标，带有黄色色块，不受改按键影响
     /// </summary>
-    private static bool SwimmingConfirm(Region region)
+    public static bool SwimmingConfirm(Region region)
     {
-        using var imageRegion = region.ToImageRegion();
-        using var cropped = imageRegion.DeriveCrop(1819, 1025, 9, 11);
-        using var mask = OpenCvCommonHelper.Threshold(cropped.SrcMat, new Scalar(242, 223, 39), new Scalar(255, 233, 44));
+        using var regionMat = region.ToImageRegion().DeriveCrop(1819, 1025, 9, 11);
+        using var mask = OpenCvCommonHelper.Threshold(regionMat.SrcMat, 
+            new Scalar(242, 223, 39),new Scalar(255, 233, 44));
         using var labels = new Mat();
         using var stats = new Mat();
         using var centroids = new Mat();
 
         var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
             connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-        
+
         return numLabels > 1;
     }
 
@@ -196,10 +256,19 @@ public class Avatar
     /// <exception cref="RetryException"></exception>
     public static void TpForRecover(CancellationToken ct, Exception ex)
     {
+        using (var bitmap = CaptureToRectArea())
+        {
+            if (Bv.IsInRevivePrompt(bitmap))
+            {
+                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                Sleep(300, ct);
+            }
+        }
+        
         // tp 到七天神像复活
         var tpTask = new TpTask(ct);
         tpTask.TpToStatueOfTheSeven().Wait(ct);
-        Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。");
+        Logger.LogInformation("血量恢复完成。【设置】-【七天神像设置】可以修改回血相关配置。-p");
         throw ex;
     }
 
@@ -229,7 +298,15 @@ public class Avatar
             SimulateSwitchAction(Index);
             // Debug.WriteLine($"切换到{Index}号位");
             // Cv2.ImWrite($"log/切换.png", region.SrcMat);
-            Sleep(250, Ct);
+            
+            Offset60Fix(i);
+            
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                return;
+            }
+            
+            Sleep(240, Ct);
         }
     }
 
@@ -239,7 +316,7 @@ public class Avatar
     /// <param name="tryTimes"></param>
     /// <param name="needLog"></param>
     /// <returns></returns>
-    public bool TrySwitch(int tryTimes = 4)
+    public bool TrySwitch(int tryTimes = 4, bool needLog = true)
     {
         var context = new AvatarActiveCheckContext();
         for (var i = 0; i < tryTimes; i++)
@@ -253,23 +330,121 @@ public class Avatar
             ThrowWhenDefeated(region, Ct);
 
             // 切换成功
-            if (CombatScenes.GetActiveAvatarIndex(region, context) == Index)
+            if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
             {
+                if (needLog && i > 0)
+                {
+                    Logger.LogInformation("成功切换角色:{Name}", Name);
+                }
+                AutoFightTask.SwitchTryCount = 0;
+                
                 return true;
             }
-            else
-            {
-                if (i == tryTimes - 1)
-                {
-                    Logger.LogWarning("切换角色失败，最后一次尝试，当前角色编号:{CurrentIndex}，期望角色编号:{ExpectedIndex}", CombatScenes.GetActiveAvatarIndex(region, context), Index);
-                    region.SrcMat.SaveImage($"log/{Name}_切换失败.png");
-                }
-            }
-
 
             SimulateSwitchAction(Index);
+            
+            Offset60Fix(i);
+            
+            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (resultRa.IsExist())
+            {
+                if (i == 9)
+                {
+                    resultRa.Click();
+                    resultRa.ClickTo(-100,0);
+                }
+                
+                using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
+                {
+                    var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                    if (confirmRa.IsExist())
+                    {
+                        confirmRa.Click();
+                        Task.Delay(500, Ct).Wait(500);
+                        using var bitmap2 = CaptureToRectArea();
+                        var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
+                        {
+                            if (okRa.IsExist())
+                            {
+                                Logger.LogInformation("自动吃药：{text} 复活界面-2", "退出");
+                                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                                Task.Delay(500, Ct).Wait(1000);
+                                try
+                                {
 
-            Sleep(250, Ct);
+                                    if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, Ct).Result)
+                                    {
+                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
+                                        Simulation.ReleaseAllKey();
+                                    }
+                                }
+                                catch (OperationCanceledException ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药123：{ex.Message}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"自动结束吃药发生异常123: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Logger.LogInformation("切换识别失败1:{Name} 索引:{Index}", Name,Index);
+                return false;
+            }
+
+            Sleep(240, Ct);
+        }
+        Logger.LogInformation("切换识别失败2:{Name} 索引:{Index}", Name,Index);
+        return false;
+    }
+    
+    /// <summary>
+    /// 尝试切换到本角色
+    /// </summary>
+    /// <param name="tryTimes"></param>
+    /// <param name="needLog"></param>
+    /// <returns></returns>
+    public bool TrySwitch2(int tryTimes = 4, bool needLog = true)
+    {
+        var context = new AvatarActiveCheckContext();
+        for (var i = 0; i < tryTimes; i++)
+        {
+            if (Ct is { IsCancellationRequested: true })
+            {
+                return false;
+            }
+
+            using var region = CaptureToRectArea();
+            // ThrowWhenDefeated(region, Ct);
+            
+            var resultRa = region.Find(AutoFightAssets.Instance.ConfirmRa);
+            if (resultRa.IsExist())
+            {
+                Logger.LogError("复活窗口出现，尝试点击确认");
+                resultRa.Click();
+                resultRa.ClickTo(-100,0);
+                return false;
+            }
+
+            // 切换成功
+            if (CombatScenes.GetActiveAvatarIndex(region, context,true) == Index)
+            {
+                // if (needLog && i > 0)
+                // {
+                //     Logger.LogInformation("成功切换角色:{Name}", Name);
+                // }
+                AutoFightTask.SwitchTryCount = 0;
+                return true;
+            }
+
+            SimulateSwitchAction(Index);
+            
+            Offset60Fix(i);
+
+            Sleep(240, Ct);
         }
         
         Logger.LogWarning("切换角色失败:{Name}", Name);
@@ -283,18 +458,23 @@ public class Avatar
         switch (index)
         {
             case 1:
+                Logger.LogDebug("切换到第1号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
                 break;
             case 2:
+                Logger.LogDebug("切换到第2号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
                 break;
             case 3:
+                Logger.LogDebug("切换到第3号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
                 break;
             case 4:
+                Logger.LogDebug("切换到第4号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
                 break;
             case 5:
+                Logger.LogDebug("切换到第5号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
                 break;
             default:
@@ -320,8 +500,77 @@ public class Avatar
             }
 
             SimulateSwitchAction(Index);
+            
+            if (region.Find(AutoFightAssets.Instance.ConfirmRa).IsExist())
+            {
+                return;
+            }
 
-            Sleep(250);
+            Sleep(240);
+        }
+    }
+
+    private static readonly Random Random = new Random();
+    private void Offset60Fix(int i)
+    {
+        // 3次失败考虑是否偏移出现问题，修改偏移位置
+        if (i <= 2 || AutoFightTask.FightStatusFlag)
+        {
+            // Logger.LogInformation("切换角色1111111 {t}",i);
+            if (i == 13 && AutoFightTask.FightStatusFlag)
+            {
+                AutoFightTask.SwitchTryCount += 1;
+                //战斗中防卡死
+
+                Simulation.SendInput.SimulateAction(GIActions.Jump);
+                
+                var direction = Random.Next(4); // 返回一个 0 到 3 之间的随机整数
+                Logger.LogWarning("战斗中切换角色失败，尝试移动 {direction} ", direction);
+                Simulation.ReleaseAllKey();
+                
+                switch (direction)
+                {
+                    case 0:
+                        Simulation.SendInput.SimulateAction(GIActions.MoveBackward, KeyType.KeyDown);
+                        SimulateSwitchAction(Index);
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动后退 {direction}", direction);
+                        break;
+                    case 1:
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动前进 {direction}", direction);
+                        SimulateSwitchAction(Index);
+                        Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
+                        break;
+                    case 2:
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动右移 {direction}", direction);
+                        SimulateSwitchAction(Index);
+                        Simulation.SendInput.SimulateAction(GIActions.MoveRight, KeyType.KeyDown);
+                        break;
+                    case 3:
+                        SimulateSwitchAction(Index);
+                        Logger.LogWarning("战斗中切换角色失败，尝试移动左移 {direction}", direction);
+                        Simulation.SendInput.SimulateAction(GIActions.MoveLeft, KeyType.KeyDown);
+                        break;
+                }
+                Thread.Sleep(1000);
+                Simulation.SendInput.SimulateAction(GIActions.NormalAttack);
+                //释放所有按键
+                Simulation.ReleaseAllKey();
+                
+                if (AutoFightTask.SwitchTryCount > 15)
+                {
+                    using var bitmap = CaptureToRectArea();
+                    if (Bv.IsInRevivePrompt(bitmap))
+                    {
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                        Sleep(300, Ct);
+                    }
+        
+                    TpForRecover(Ct, new RetryException("战斗中切换角色连续失败，前往七天神像后重试"));
+                    AutoFightTask.SwitchTryCount = 0;
+                }
+            }
+            
+            Simulation.SendInput.SimulateAction(GIActions.Drop);
         }
     }
 
@@ -345,7 +594,7 @@ public class Avatar
     private bool IsIndexRectWhite(ImageRegion region, Rect rect)
     {
         // 剪裁出IndexRect区域
-        using var indexRa = region.DeriveCrop(rect);
+        var indexRa = region.DeriveCrop(rect);
         using var mat = indexRa.CacheGreyMat;
         var count = OpenCvCommonHelper.CountGrayMatColor(mat, 251, 255);
         if (count * 1.0 / (mat.Width * mat.Height) > 0.5)
@@ -373,7 +622,7 @@ public class Avatar
             var block = teamRa.DeriveCrop(new Rect(blockX, NameRect.Y, teamRa.Width - blockX, NameRect.Height * 2));
             // Cv2.ImWrite($"block_{Name}.png", block.SrcMat);
             // 取白色区域
-            var bMat = OpenCvCommonHelper.Threshold(block.SrcMat, new Scalar(255, 255, 255), new Scalar(255, 255, 255));
+            using var bMat = OpenCvCommonHelper.Threshold(block.SrcMat, new Scalar(255, 255, 255), new Scalar(255, 255, 255));
             // Cv2.ImWrite($"block_b_{Name}.png", bMat);
             // 矩形识别
             Cv2.FindContours(bMat, out var contours, out _, RetrievalModes.External,
@@ -431,13 +680,32 @@ public class Avatar
     /// <summary>
     /// 使用元素战技 E
     /// </summary>
-    public void UseSkill(bool hold = false)
+    public void UseSkill(bool hold = false,int retryTimes = 1)
     {
-        for (var i = 0; i < 1; i++)
+        for (var i = 0; i < retryTimes; i++)
         {
             if (Ct is { IsCancellationRequested: true })
             {
                 return;
+            }
+            
+            var mwk = false;
+            if (Name == "玛薇卡")
+            {
+                using var region2 = CaptureToRectArea();
+                // 获取两个点的颜色值
+                var pos = region2.SrcMat.At<Vec3b>(991, 1678);
+                var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
+                double colorDifference = Math.Sqrt(
+                    Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                    Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                    Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                );
+                // Logger.LogInformation("玛薇卡技能颜色差值:{ColorDifference}", Math.Round(colorDifference, 2));
+                if (colorDifference < 15)
+                {
+                    mwk = true;
+                }
             }
 
             if (hold)
@@ -470,17 +738,59 @@ public class Avatar
             {
                 Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
             }
-
-            Sleep(200, Ct);
-
-            using var region = CaptureToRectArea();
-            ThrowWhenDefeated(region, Ct); // 检测是不是要跑神像
-            var cd = AfterUseSkill(region);
-            if (cd > 0)
+            
+            if (Name == "玛薇卡")
             {
-                // Logger.LogInformation(hold ? "{Name} 长按元素战技，cd:{Cd} 秒" : "{Name} 点按元素战技，cd:{Cd} 秒", Name,
-                //     Math.Round(cd, 2));
-                return;
+                if (mwk)
+                {
+                    Sleep(300, Ct);
+                    using var region2 = CaptureToRectArea();
+                    // 获取两个点的颜色值
+                    var pos = region2.SrcMat.At<Vec3b>(991, 1678);
+                    var pos2 = region2.SrcMat.At<Vec3b>(991, 1728);
+                    double colorDifference = Math.Sqrt(
+                        Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
+                        Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
+                        Math.Pow(pos.Item2 - pos2.Item2, 2)   // 红通道差值的平方
+                    );
+                    // Logger.LogInformation("玛薇卡技能颜色差值-2:{ColorDifference}", Math.Round(colorDifference, 2));
+                    if (colorDifference >=15)
+                    { 
+                        ManualSkillCd = 15.6;
+                        LastSkillTime = DateTime.UtcNow;
+                        Logger.LogInformation("{Name} 元素战技，技能Cd:{Cd} 秒",Name, Math.Round(GetSkillCdSeconds(), 2));
+                    } 
+                }
+                else
+                {
+                    ManualSkillCd = -1;
+                    var cdRounded = Math.Round(DateTime.UtcNow.Subtract(LastSkillTime).TotalSeconds, 2);
+                    Logger.LogInformation("{Name} 元素战技，技能cd:{Cd} 秒", Name, cdRounded > 0 && cdRounded <= 16 ? cdRounded : "未更新");
+                }
+                Sleep(150, Ct);
+            }
+            else
+            {
+                Sleep(200, Ct);
+                var region = CaptureToRectArea();
+                ThrowWhenDefeated(region, Ct);
+            
+                double cd = 0;
+                for (var attempt = 0; attempt < 2; attempt++)
+                {
+                    if (attempt > 0) region = CaptureToRectArea(); // 非首次尝试时重新截图
+                    cd = AfterUseSkill(region);
+                    if (cd > 0) break;
+                    Thread.Sleep(Name == "茜特菈莉"? 200:100);
+                }
+                region.Dispose();
+            
+                if (cd > 0)
+                {
+                    Logger.LogInformation(hold ? "{Name} 长按元素战技，cd:{Cd} 秒" : "{Name} 点按元素战技，cd:{Cd} 秒", Name,
+                        Math.Round(cd, 2));
+                    return;
+                } 
             }
         }
     }
@@ -498,7 +808,7 @@ public class Avatar
             return GetSkillCdSeconds();
         }
 
-        using var region = givenRegion ?? CaptureToRectArea();
+        var region = givenRegion ?? CaptureToRectArea();
         return GetSkillCurrentCd(region);
     }
 
@@ -509,8 +819,8 @@ public class Avatar
     /// </summary>
     private double GetSkillCurrentCd(ImageRegion imageRegion)
     {
-        using var eRa = imageRegion.DeriveCrop(AutoFightAssets.Instance.ECooldownRect);
-        using var eRaWhite = OpenCvCommonHelper.InRangeHsv(eRa.SrcMat, new Scalar(0, 0, 235), new Scalar(0, 25, 255));
+        var eRa = imageRegion.DeriveCrop(AutoFightAssets.Instance.ECooldownRect);
+        var eRaWhite = OpenCvCommonHelper.InRangeHsv(eRa.SrcMat, new Scalar(0, 0, 235), new Scalar(0, 25, 255));
         var text = OcrFactory.Paddle.OcrWithoutDetector(eRaWhite);
         var cd = StringUtils.TryParseDouble(text);
         if (cd > 0 && cd <= CombatAvatar.SkillCd)
@@ -951,6 +1261,57 @@ public class Avatar
                 break;
             default:
                 Simulation.SendInput.Keyboard.KeyUp(vk);
+                if (vk == User32.VK.VK_E)
+                {
+                    if (Monitor.TryEnter(SkillCheckLock))
+                    {
+                        try
+                        {
+                            Task.Run(() =>
+                            {
+                                Thread.Sleep(200);
+                                double cd = 0;
+                                var cooldownDetected = false;
+
+                                for (var attempt = 0; attempt < 4; attempt++)
+                                {
+                                    using var region = CaptureToRectArea();
+                                    cd = AfterUseSkill(region);
+                                    region.Dispose();
+
+                                    if (cd > 0)
+                                    {
+                                        cooldownDetected = true;
+                                        break;
+                                    }
+
+                                    if (attempt < 3)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
+                                }
+
+                                if (cooldownDetected)
+                                {
+                                    Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
+                                        Name, Math.Round(cd, 2));
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("{Name} 战技cd未更新", Name);
+                                }
+                            },Ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "元素战技检测异常");
+                        }
+                        finally
+                        {
+                            Monitor.Exit(SkillCheckLock);
+                        }
+                    }
+                }
                 break;
         }
     }
@@ -977,6 +1338,57 @@ public class Avatar
                 break;
             default:
                 Simulation.SendInput.Keyboard.KeyPress(vk);
+                if (vk == User32.VK.VK_E)
+                {
+                    if (Monitor.TryEnter(SkillCheckLock))
+                    {
+                        try
+                        {
+                            Task.Run(() =>
+                            {
+                                Thread.Sleep(200);
+                                double cd = 0;
+                                var cooldownDetected = false;
+
+                                for (var attempt = 0; attempt < 4; attempt++)
+                                {
+                                    using var region = CaptureToRectArea();
+                                    cd = AfterUseSkill(region);
+                                    region.Dispose();
+
+                                    if (cd > 0)
+                                    {
+                                        cooldownDetected = true;
+                                        break;
+                                    }
+
+                                    if (attempt < 3)
+                                    {
+                                        Thread.Sleep(100);
+                                    }
+                                }
+
+                                if (cooldownDetected)
+                                {
+                                    Logger.LogInformation("{Name} 元素战技，cd:{Cooldown} 秒",
+                                        Name, Math.Round(cd, 2));
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("{Name} 战技cd未更新", Name);
+                                }
+                            },Ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError(ex, "元素战技检测异常");
+                        }
+                        finally
+                        {
+                            Monitor.Exit(SkillCheckLock);
+                        }
+                    }
+                }
                 break;
         }
     }

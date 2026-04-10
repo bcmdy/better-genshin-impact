@@ -24,6 +24,7 @@ using BetterGenshinImpact.Service.Notification;
 using BetterGenshinImpact.Service.Notification.Model.Enum;
 using BetterGenshinImpact.ViewModel.Pages;
 using Microsoft.Extensions.Logging;
+using BetterGenshinImpact.Core.Config;
 
 namespace BetterGenshinImpact.Service;
 
@@ -148,7 +149,6 @@ public partial class ScriptService : IScriptService
             // {
             //     _logger.LogInformation("配置组 {Name} 包含实时任务操作调用", groupName);
             // }
-
             _logger.LogInformation("配置组 {Name} 加载完成，共{Cnt}个脚本，开始执行", groupName, list.Count);
         }
 
@@ -176,6 +176,14 @@ public partial class ScriptService : IScriptService
                     //正常情况下，只有一个真正执行的project，存在其他优先执行配置组情况下，会有多个任务。
                     List<ScriptGroupProject> exeProjects = [project];
                     RunnerContext.Instance.IsPreExecution = false;
+                    
+                    //配置初始化
+                    PathingConditionConfig.RetryAssemblyNum = 3;
+                    if (!string.IsNullOrEmpty(project.GroupInfo?.Config.PathingConfig.MainAvatarIndex)) 
+                    {
+                      PathingConditionConfig.InitialMainAvatarIndex =  project.GroupInfo.Config.PathingConfig.MainAvatarIndex;
+                    }
+                    
                     //优先执行配置组逻辑
                     if (!RunnerContext.Instance.IsPreExecution &&
                         (project.GroupInfo?.Config.PathingConfig.Enabled ?? false) &&
@@ -620,14 +628,6 @@ public partial class ScriptService : IScriptService
                     }
                 });
             }
-        }
-
-        // 等待命令行启动时并行执行的自动更新完成（如果有）
-        var pendingUpdate = ScriptRepoUpdater.Instance.CommandLineAutoUpdateTask;
-        if (pendingUpdate != null)
-        {
-            await pendingUpdate;
-            ScriptRepoUpdater.Instance.CommandLineAutoUpdateTask = null;
         }
     }
 }

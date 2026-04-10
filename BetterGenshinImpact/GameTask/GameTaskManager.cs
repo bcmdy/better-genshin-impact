@@ -21,9 +21,29 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using BetterGenshinImpact.GameTask.AutoDomain.Assets;
 using BetterGenshinImpact.GameTask.AutoSkip;
 using BetterGenshinImpact.GameTask.MapMask;
+using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.Helpers;
+using BetterGenshinImpact.View;
+using Fischless.GameCapture;
+using Microsoft.Extensions.Logging;
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Windows;
+using BetterGenshinImpact.GameTask.Common.BgiVision;
+using BetterGenshinImpact.GameTask.GameLoading;
+using Fischless.GameCapture.Graphics;
+using BetterGenshinImpact.Service;
+using Vanara.PInvoke;
+using Rect = OpenCvSharp.Rect;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
 using BetterGenshinImpact.GameTask.SkillCd;
 
 namespace BetterGenshinImpact.GameTask;
@@ -31,6 +51,7 @@ namespace BetterGenshinImpact.GameTask;
 internal class GameTaskManager
 {
     public static ConcurrentDictionary<string, ITaskTrigger>? TriggerDictionary { get; set; }
+    private static ILogger<TaskTriggerDispatcher> _logger = App.GetLogger<TaskTriggerDispatcher>();
 
     /// <summary>
     /// 一定要在任务上下文初始化完毕后使用
@@ -146,7 +167,6 @@ internal class GameTaskManager
         GameLoadingAssets.DestroyInstance();
         MapLazyAssets.DestroyInstance();
         AutoEatAssets.DestroyInstance();
-        AutoDomainAssets.DestroyInstance();
     }
 
     /// <summary>

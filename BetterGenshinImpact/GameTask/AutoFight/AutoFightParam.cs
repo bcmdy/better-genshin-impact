@@ -1,12 +1,8 @@
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.Model;
+using BetterGenshinImpact.GameTask.Model;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
-
-
-
-
-
 
 public class AutoFightParam : BaseTaskParam<AutoFightTask>
 {
@@ -20,6 +16,12 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public string CheckEndDelay = "";
         public string BeforeDetectDelay = "";
         public bool RotateFindEnemyEnabled = false;
+        public int GoDistance { get; set; } = 500;
+        public bool RotationMode { get; set; } = true;
+        public bool EndModel { get; set; } = true;
+    
+        public double FastCheckDelay { get; set; } = 0.15;
+
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -37,7 +39,10 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.CheckEndDelay = autoFightConfig.FinishDetectConfig.CheckEndDelay;
         FinishDetectConfig.BeforeDetectDelay = autoFightConfig.FinishDetectConfig.BeforeDetectDelay;
         FinishDetectConfig.RotateFindEnemyEnabled = autoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled;
-
+        FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
+        FinishDetectConfig.RotationMode = autoFightConfig.FinishDetectConfig.RotationMode;
+        FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
+        FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -49,13 +54,25 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         GuardianAvatar = autoFightConfig.GuardianAvatar;
         GuardianCombatSkip = autoFightConfig.GuardianCombatSkip;
         GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
-        BurstEnabled = autoFightConfig.BurstEnabled;
+        CountryName = autoFightConfig.CountryName;
         
-        CheckBeforeBurst = autoFightConfig.FinishDetectConfig.CheckBeforeBurst;
+        BurstEnabled = autoFightConfig.BurstEnabled;
+        ExpKazuhaPickup = autoFightConfig.ExpKazuhaPickup;
         IsFirstCheck = autoFightConfig.FinishDetectConfig.IsFirstCheck;
         RotaryFactor = autoFightConfig.FinishDetectConfig.RotaryFactor;
-        QinDoublePickUp = autoFightConfig.QinDoublePickUp;
         SwimmingEnabled = autoFightConfig.SwimmingEnabled;
+        TakeMedicineEnabled = autoFightConfig.TakeMedicineEnabled;
+        MedicineInterval = autoFightConfig.MedicineInterval;
+        CheckInterval = autoFightConfig.CheckInterval;
+        RecoverMaxCount = autoFightConfig.RecoverMaxCount;
+        EndBloodCheackEnabled = autoFightConfig.EndBloodCheackEnabled;
+        CheckBeforeBurst = autoFightConfig.FinishDetectConfig.CheckBeforeBurst;
+        AutoCombatEq = autoFightConfig.AutoCombatEq;
+        UseEqList = autoFightConfig.UseEqList;
+        QinDoublePickUp = autoFightConfig.QinDoublePickUp;
+        UseSkillList = autoFightConfig.UseSkillList;
+        QRecoverAvatar = autoFightConfig.QRecoverAvatar;
+        KazuhaTime = autoFightConfig.KazuhaTime;
     }
 
     public FightFinishDetectConfig FinishDetectConfig { get; set; } = new();
@@ -75,15 +92,40 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
     public string GuardianAvatar { get; set; } = string.Empty;
     public bool GuardianCombatSkip { get; set; } = false;
     public bool GuardianAvatarHold = false;
-    
-    public bool CheckBeforeBurst { get; set; } = false;
-    public bool IsFirstCheck { get; set; } = true;    
-    public int RotaryFactor { get; set; } = 10;
+    public string?[] CountryName = ["自动"];
     public bool BurstEnabled { get; set; } = false;
+    public bool ExpKazuhaPickup  { get; set; } = false;
     
     public bool QinDoublePickUp { get; set; } = false;
+    
+    public bool IsFirstCheck { get; set; } = true;
+    
+    public int RotaryFactor { get; set; } = 10;
+    
     public static bool SwimmingEnabled  { get; set; } = false;
-
+    
+    public bool TakeMedicineEnabled { get; set; } = false;
+    
+    public int MedicineInterval { get; set; } = 1500;
+    
+    public int CheckInterval { get; set; } =  100;
+    
+    public int RecoverMaxCount { get; set; } =  5;
+    
+    public bool EndBloodCheackEnabled { get; set; } = false;
+    
+    public bool CheckBeforeBurst { get; set; } = false;
+    
+    public bool AutoCombatEq { get; set; } = false;
+    
+    public string UseEqList { get; set; } = "1,2,3,4";
+    
+    public string UseSkillList { get; set; } = "1,2,3,4";
+    
+    public bool QRecoverAvatar { get; set; } = false;
+    
+    public int KazuhaTime { get; set; } = 1500;
+    
     public AutoFightParam(string? strategyName = null) : base(null, null)
     {
         SetCombatStrategyPath(strategyName);
@@ -126,7 +168,9 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.CheckEndDelay = autoFightConfig.FinishDetectConfig.CheckEndDelay;
         FinishDetectConfig.BeforeDetectDelay = autoFightConfig.FinishDetectConfig.BeforeDetectDelay;
         FinishDetectConfig.RotateFindEnemyEnabled = autoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled;
-
+        FinishDetectConfig.GoDistance = autoFightConfig.FinishDetectConfig.GoDistance;
+        FinishDetectConfig.EndModel = autoFightConfig.FinishDetectConfig.EndModel;
+        FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -140,5 +184,7 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         GuardianAvatarHold = autoFightConfig.GuardianAvatarHold;
         SwimmingEnabled = autoFightConfig.SwimmingEnabled;
         QinDoublePickUp = autoFightConfig.QinDoublePickUp;
+        CountryName = autoFightConfig.CountryName;
+        KazuhaTime = autoFightConfig.KazuhaTime;
     }
 }

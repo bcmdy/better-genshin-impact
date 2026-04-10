@@ -91,6 +91,8 @@ public class ElementAssets : BaseAssets<ElementAssets>
     public RecognitionObject FingerIconRo;
 
     public RecognitionObject LeylineDisorderIconRo;
+    
+    public RecognitionObject MiMenuRo;
 
     public RecognitionObject EscDown;
     public RecognitionObject EscWonderlandHome;
@@ -720,6 +722,15 @@ public class ElementAssets : BaseAssets<ElementAssets>
             RecognitionType = RecognitionTypes.TemplateMatch,
             TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "leyline_disorder_icon.png", systemInfo),
             RegionOfInterest = new Rect(0, 0, (int)(200 * AssetScale), (int)(200 * AssetScale)),
+            DrawOnWindow = false
+        }.InitTemplate();
+        
+        MiMenuRo = new RecognitionObject
+        {   
+            Name = "MiMenu",
+            RecognitionType = RecognitionTypes.TemplateMatch,
+            TemplateImageMat = GameTaskManager.LoadAssetImage(@"Common\Element", "mi_menu.png"),
+            RegionOfInterest = new Rect(CaptureRect.Width *8/10, CaptureRect.Height *8/10, CaptureRect.Width *2/10, CaptureRect.Height *2/10),
             DrawOnWindow = false
         }.InitTemplate();
         

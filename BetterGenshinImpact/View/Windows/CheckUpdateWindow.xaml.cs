@@ -217,6 +217,7 @@ public partial class CheckUpdateWindow : FluentWindow
     /// </summary>
     private async Task RunUpdaterAsync(string parameters)
     {
+        return;
         // 唤起更新程序
         string updaterExePath = Global.Absolute("BetterGI.update.exe");
         if (!File.Exists(updaterExePath))

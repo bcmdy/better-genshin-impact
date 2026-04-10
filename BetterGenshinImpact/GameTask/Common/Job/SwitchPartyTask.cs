@@ -13,8 +13,10 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using BetterGenshinImpact.GameTask.Common.Exceptions;
 using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
+using System.Text.RegularExpressions;
 
 namespace BetterGenshinImpact.GameTask.Common.Job;
 

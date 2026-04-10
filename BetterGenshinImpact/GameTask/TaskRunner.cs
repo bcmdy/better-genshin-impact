@@ -54,13 +54,11 @@ public class TaskRunner
         try
         {
             _logger.LogInformation("→ {Text}", _name + "任务启动！");
-
+            
             // 初始化
             Init();
-            
             CancellationContext.Instance.Set();
             RunnerContext.Instance.Clear();
-
             await action();
         }
         catch (NormalEndException e)
@@ -130,7 +128,6 @@ public class TaskRunner
             UIDispatcherHelper.Invoke(() => { Toast.Warning("请先在启动页，启动截图器再使用本功能"); });
             throw new NormalEndException("请先在启动页，启动截图器再使用本功能");
         }
-
         // 清空实时任务触发器
         TaskTriggerDispatcher.Instance().ClearTriggers();
         
