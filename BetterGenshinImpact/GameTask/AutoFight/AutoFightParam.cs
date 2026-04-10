@@ -25,6 +25,12 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         public int RetryDis { get; set; } = 0;
         
         public int FightWaitNotEndTime { get; set; } = 0;
+        
+        public bool PaimonEndModel { get; set; } = false;
+        
+        public bool DoubleEndEnbled { get; set; } = false;
+        
+        public int DoubleEndDelay { get; set; } = 750;
     }
 
     public AutoFightParam(string path, AutoFightConfig autoFightConfig) : base(null, null)
@@ -48,6 +54,9 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
         FinishDetectConfig.RetryDis = autoFightConfig.FinishDetectConfig.RetryDis;
         FinishDetectConfig.FightWaitNotEndTime = autoFightConfig.FinishDetectConfig.FightWaitNotEndTime;
+        FinishDetectConfig.PaimonEndModel = autoFightConfig.FinishDetectConfig.PaimonEndModel;
+        FinishDetectConfig.DoubleEndEnbled = autoFightConfig.FinishDetectConfig.DoubleEndEnbled;
+        FinishDetectConfig.DoubleEndDelay = autoFightConfig.FinishDetectConfig.DoubleEndDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;
@@ -178,6 +187,9 @@ public class AutoFightParam : BaseTaskParam<AutoFightTask>
         FinishDetectConfig.FastCheckDelay = autoFightConfig.FinishDetectConfig.FastCheckDelay;
         FinishDetectConfig.RetryDis = autoFightConfig.FinishDetectConfig.RetryDis;
         FinishDetectConfig.FightWaitNotEndTime = autoFightConfig.FinishDetectConfig.FightWaitNotEndTime;
+        FinishDetectConfig.PaimonEndModel = autoFightConfig.FinishDetectConfig.PaimonEndModel;
+        FinishDetectConfig.DoubleEndEnbled = autoFightConfig.FinishDetectConfig.DoubleEndEnbled;
+        FinishDetectConfig.DoubleEndDelay = autoFightConfig.FinishDetectConfig.DoubleEndDelay;
 
         KazuhaPartyName = autoFightConfig.KazuhaPartyName;
         OnlyPickEliteDropsMode = autoFightConfig.OnlyPickEliteDropsMode;

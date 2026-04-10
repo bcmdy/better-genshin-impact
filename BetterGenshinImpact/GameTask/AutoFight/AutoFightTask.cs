@@ -323,6 +323,9 @@ public class AutoFightTask : ISoloTask
     //添加一个计时器，设定一个标志位，1000Ms内为true，超过1000Ms为false，战斗结束后重置计时器和标志位
     private volatile bool _fightDurationExceeded = true;
     
+    //战斗跳过标记位
+    private volatile bool _skipFlag = false;
+    
     // 方法1：判断是否是单个数字
 
     /*public int delayTime=1500;
@@ -417,7 +420,7 @@ public class AutoFightTask : ISoloTask
         var allCanBeSkipped = commandAvatarNames.All(a => canBeSkippedAvatarNames.Contains(a));
         
         var delayTime = _finishDetectConfig.DelayTime;
-        var detectDelayTime = _taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled ? _finishDetectConfig.FastCheckDelay : _finishDetectConfig.DetectDelayTime;
+        var detectDelayTime = (_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled) || _taskParam.FinishDetectConfig.PaimonEndModel ? _finishDetectConfig.FastCheckDelay : _finishDetectConfig.DetectDelayTime;
 
         Avatar? guardianAvatar = null;
         if (!string.IsNullOrWhiteSpace(_taskParam.GuardianAvatar))
@@ -549,6 +552,7 @@ public class AutoFightTask : ISoloTask
             {
                 FightStatusFlag = true;
                 FightEndTotoly = false;
+                _totolyEndCount = 0;
 
                 // 进入战斗后，不检查战斗结束的判断
                 if (_taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.FightWaitNotEndTime > 0)
@@ -566,7 +570,12 @@ public class AutoFightTask : ISoloTask
                 
                 while (!cts2.Token.IsCancellationRequested && !FightEndTotoly)
                 {
-                   // 所有战斗角色都可以被取消
+                    if (_skipFlag)
+                    {
+                        await Task.Delay(100, cts2.Token);
+                       continue; 
+                    }
+                    // 所有战斗角色都可以被取消
                     #region 本次战斗的跳过战斗判定
 
                     //如果所有角色都可以被跳过，且没有任何一个cd大于0的(技能都还没好)
@@ -679,6 +688,12 @@ public class AutoFightTask : ISoloTask
                                 {
                                     foreach (var num in useEq) 
                                     {
+                                        if (_skipFlag)
+                                        {
+                                            await Task.Delay(100, cts2.Token);
+                                            continue; 
+                                        }
+                                        
                                         Logger.LogInformation("自动EQ战斗：使用序号 {name} 角色技能", num);
                                         var avatarQ = combatScenes.SelectAvatar(num);
                                         var useE = useSkillList.Contains(num);
@@ -751,6 +766,12 @@ public class AutoFightTask : ISoloTask
                                                 {
                                                     imageAfterUseSkill.Dispose();
                                                 }
+                                            }
+                                            
+                                            if (_skipFlag)
+                                            {
+                                                await Task.Delay(100, cts2.Token);
+                                                continue; 
                                             }
                                             
                                             fightEndFlag = FightEndTotoly || await CheckFightFinish(0, detectDelayTime, cts2.Token,avatarQ);
@@ -944,7 +965,13 @@ public class AutoFightTask : ISoloTask
                             }
                         }
                         #endregion
-
+                        
+                        if (_skipFlag)
+                        {
+                            await Task.Delay(100, cts2.Token);
+                            continue; 
+                        }
+                        
                         Task.Run(() =>
                         {
                             if (_taskParam.FinishDetectConfig.RotationMode &&
@@ -966,8 +993,8 @@ public class AutoFightTask : ISoloTask
                         #region check动作触发战斗结束检测
                         if (command.Method == Method.Check)
                         {
-                            if (_taskParam.FinishDetectConfig.RotationMode &&
-                             _taskParam.FinishDetectConfig.RotateFindEnemyEnabled)
+                            if ((_taskParam.FinishDetectConfig.RotationMode &&
+                             _taskParam.FinishDetectConfig.RotateFindEnemyEnabled) || _taskParam.FinishDetectConfig.PaimonEndModel)
                             {
                                 Task.Run(() =>
                                 {
@@ -1405,12 +1432,26 @@ public class AutoFightTask : ISoloTask
     }
     
     private volatile bool _totolyFlag = false;
+    
+    private volatile int _totolyEndCount = 0;
 
     public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default,Avatar? avatar = null)
     {
-        if (_totolyFlag || _fightDurationExceeded) return false;
-        _totolyFlag = true;
+        if (_totolyFlag || _fightDurationExceeded)
+        {
+            return false;
+        }
         
+        if(_totolyEndCount >= 1)
+        {
+            FightEndTotoly = true;
+            _totolyFlag = false;
+            return true;
+        }
+        
+        _totolyFlag = true;
+
+        var doubleEndLogo = true;
         using var captureToRectArea = CaptureToRectArea();
         var pixelValue = captureToRectArea.SrcMat.At<Vec3b>(32, 67); 
         var paiMon = (Math.Abs(pixelValue[0] - 143) <= 10 &&
@@ -1444,7 +1485,7 @@ public class AutoFightTask : ISoloTask
                 }
                 else
                 {
-                    result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime, delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis,_taskParam.FinishDetectConfig.EndModel); 
+                    result = await AutoFightSeek.SeekAndFightAsync(TaskControl.Logger, detectDelayTime,  delayTime, ct,false,_taskParam.RotaryFactor,avatar,_taskParam.FinishDetectConfig.GoDistance,_taskParam.FinishDetectConfig.RetryDis,_taskParam.FinishDetectConfig.PaimonEndModel? _taskParam.FinishDetectConfig.PaimonEndModel:_taskParam.FinishDetectConfig.EndModel); 
                     AutoFightSeek.RotationCount = (result == null) ? 
                         AutoFightSeek.RotationCount + 1 :  0;
                 }
@@ -1463,68 +1504,94 @@ public class AutoFightTask : ISoloTask
             }
         }
 
-        if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
+        if (_finishDetectConfig.RotateFindEnemyEnabled && !_taskParam.FinishDetectConfig.EndModel)await Delay(delayTime, _ct);
         
-        // Logger.LogInformation("打开编队界面检查战斗是否结束");
+        // Logger.LogInformation("打开编队界面检查战斗是否结束{detectDelayTime} {delayTime}",detectDelayTime,delayTime);
 
-        Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
-        await Delay(detectDelayTime, _ct);
-
-        // await Delay(80, _ct);
-        using var ra = CaptureToRectArea();
-        Simulation.SendInput.SimulateAction(GIActions.Drop);
-
-        Vec3b pixelValue2;
-        var paiMon2 = false;
-        if (_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled)
+        for (int i = 0; i < 2; i++)
         {
-            pixelValue2 = ra.SrcMat.At<Vec3b>(32, 67); //派蒙
-            paiMon2 = (Math.Abs(pixelValue2[0] - 143) <= 10 &&
-                       Math.Abs(pixelValue2[1] - 196) <= 10 &&
-                       Math.Abs(pixelValue2[2] - 233) <= 10);
-        }
-        else
-        {
-            pixelValue2 = ra.SrcMat.At<Vec3b>(50, 790); //进度条颜色
-            var whiteTile = ra.SrcMat.At<Vec3b>(50, 768); //白块
-            paiMon2 = !(IsWhite(whiteTile.Item2, whiteTile.Item1, whiteTile.Item0) &&
-                       IsYellow(pixelValue2.Item2, pixelValue2.Item1,
-                           pixelValue2.Item0));
-        }
-
-        var aa = AutoFightSkill.MedicinalCdAsync(Logger, true, 1, ct).Result;
-        
-        if (!paiMon2 && !aa)
-        {
-            // Logger.LogWarning("测试3：{t},{t2}",paiMon2,aa);
-            TaskControl.Logger.LogInformation("{t}：识别到战斗结束",_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled? "快速模式" : "默认模式");
-            //取消正在进行的换队
-            FightEndTotoly  = true;
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
-            _totolyFlag = false;
-            return true;
-        }
-        
-        if(_taskParam.RotaryFactor != 1 && !_taskParam.FinishDetectConfig.EndModel) Logger.LogInformation("{t}：未识别到战斗结束",_taskParam.FinishDetectConfig.EndModel&& _taskParam.FinishDetectConfig.RotateFindEnemyEnabled? "快速模式" : "默认模式");
+            await Delay(detectDelayTime, _ct);
 
-        if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.RotaryFactor != 1)
-        {
-            try
+            // await Delay(80, _ct);
+            using var ra = CaptureToRectArea();
+            Simulation.SendInput.SimulateAction(GIActions.Drop);
+
+            Vec3b pixelValue2;
+            var paiMon2 = false;
+            if ((_taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.RotateFindEnemyEnabled) ||
+                _taskParam.FinishDetectConfig.PaimonEndModel)
             {
-                Task.Run(() =>
+                pixelValue2 = ra.SrcMat.At<Vec3b>(32, 67); //派蒙
+                paiMon2 = (Math.Abs(pixelValue2[0] - 143) <= 10 &&
+                           Math.Abs(pixelValue2[1] - 196) <= 10 &&
+                           Math.Abs(pixelValue2[2] - 233) <= 10);
+            }
+            else
+            {
+                pixelValue2 = ra.SrcMat.At<Vec3b>(50, 790); //进度条颜色
+                var whiteTile = ra.SrcMat.At<Vec3b>(50, 768); //白块
+                paiMon2 = !(IsWhite(whiteTile.Item2, whiteTile.Item1, whiteTile.Item0) &&
+                            IsYellow(pixelValue2.Item2, pixelValue2.Item1,
+                                pixelValue2.Item0));
+            }
+
+            var aa = AutoFightSkill.MedicinalCdAsync(Logger, true, 1, ct).Result;
+            
+            if (!paiMon2 && !aa)
+            {
+                if (_taskParam.FinishDetectConfig.PaimonEndModel && _taskParam.FinishDetectConfig.DoubleEndEnbled && doubleEndLogo)
                 {
-                    Scalar bloodLower = new Scalar(255, 90, 90);
-                    MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct,_taskParam.FinishDetectConfig.GoDistance);
-                }, _ct);
+                    _skipFlag = true;
+                    FightEndTotoly = false;
+                    Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
+                    Logger.LogInformation("快速模式：进行二次检测，延时 {doubleEndDelay} ms", _taskParam.FinishDetectConfig.DoubleEndDelay);
+                    doubleEndLogo = false;
+                    _totolyEndCount = _totolyEndCount + 1;
+                    await Delay(_taskParam.FinishDetectConfig.DoubleEndDelay, _ct);
+                    _skipFlag = false;
+                    continue;
+                }
+
+                TaskControl.Logger.LogInformation("{t}：识别到战斗结束",
+                    _taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.RotateFindEnemyEnabled
+                        ? "快速模式"
+                        : "默认模式");
+                //取消正在进行的换队
+                FightEndTotoly = true;
+                _totolyEndCount = _totolyEndCount + 1;
+                Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
+                _totolyFlag = false;
+                return true;
             }
-            catch (Exception ex)
+
+            if ((_taskParam.RotaryFactor != 1 && !_taskParam.FinishDetectConfig.EndModel))
+                Logger.LogInformation("{t}：未识别到战斗结束",
+                    _taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.RotateFindEnemyEnabled
+                        ? "快速模式"
+                        : "默认模式");
+
+            if (_finishDetectConfig.RotateFindEnemyEnabled && _taskParam.RotaryFactor != 1)
             {
-                TaskControl.Logger.LogError($"任务运行时发生异常: {ex.Message}");
+                try
+                {
+                    Task.Run(() =>
+                    {
+                        Scalar bloodLower = new Scalar(255, 90, 90);
+                        MoveForwardTask.MoveForwardAsync(bloodLower, bloodLower, TaskControl.Logger, _ct,
+                            _taskParam.FinishDetectConfig.GoDistance);
+                    }, _ct);
+                }
+                catch (Exception ex)
+                {
+                    TaskControl.Logger.LogError($"任务运行时发生异常: {ex.Message}");
+                }
             }
+
+            _lastFightFlagTime = DateTime.UtcNow;
+            _totolyFlag = false;
+            return false;
         }
-        
-        _lastFightFlagTime = DateTime.UtcNow;
-        _totolyFlag = false;
         return false;
     }
 

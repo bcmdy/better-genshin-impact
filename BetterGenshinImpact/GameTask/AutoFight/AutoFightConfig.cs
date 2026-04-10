@@ -137,6 +137,18 @@ public partial class AutoFightConfig : ObservableObject
         //开战前等待时间，默认为3秒，确保引战
         [ObservableProperty] 
         private int _fightWaitNotEndTime = 0;
+
+        //派蒙结束检查模式
+        [ObservableProperty] 
+        private bool _paimonEndModel = false;
+        
+        //派蒙模式下的二次检查
+        [ObservableProperty]
+        private bool _doubleEndEnbled = false;
+        
+        //二次检查的延时，默认为750毫秒
+        [ObservableProperty]
+        private int _doubleEndDelay = 750;
     }
     /// <summary>
     /// 战斗结束相关配置

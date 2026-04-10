@@ -775,34 +775,6 @@
                                 </Grid>
 
                             <Grid Margin="16" Visibility="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Converter={StaticResource BooleanToVisibilityRevertConverter} }">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ui:TextBlock Grid.Row="0"
-                                              Grid.Column="0"
-                                              FontTypography="Body"
-                                              Text="检查战斗结束的延时"
-                                              TextWrapping="Wrap" />
-                                <ui:TextBlock Grid.Row="1"
-                                              Grid.Column="0"
-                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                              Text="检查战斗结束的延时，不同角色招式结束后的延时不一定相同，默认为1.5秒。也可以指定特定角色之后延时多少秒检查，未指定角色名，则默认为该值。格式如：2.5;白术,1.5;钟离,1.0;"
-                                              TextWrapping="Wrap" />
-                                <ui:TextBox Grid.Row="0"
-                                            Grid.RowSpan="2"
-                                            Grid.Column="1"
-                                            MinWidth="120"
-                                            VerticalContentAlignment="Center"
-                                            HorizontalContentAlignment="Center"
-                                            Text="{Binding Config.AutoFightConfig.FinishDetectConfig.CheckEndDelay}" />
-                            </Grid>
-                            
-                            <Grid Margin="16" Visibility="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Converter={StaticResource BooleanToVisibilityConverter} }">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
@@ -814,21 +786,92 @@
                                     <ui:TextBlock Grid.Row="0"
                                                   Grid.Column="0"
                                                   FontTypography="Body"
-                                                  Text="开启快速检测模式下，战斗前不检测结束的时间！！！！"
+                                                  Text="检查战斗结束的延时"
                                                   TextWrapping="Wrap" />
                                     <ui:TextBlock Grid.Row="1"
                                                   Grid.Column="0"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="战斗开始计算，一定时间内将不会执行检查战斗结束的操作，默认为0ms，过短可能会导致漏怪，单位：毫秒。"
+                                                  Text="检查战斗结束的延时，不同角色招式结束后的延时不一定相同，默认为1.5秒。也可以指定特定角色之后延时多少秒检查，未指定角色名，则默认为该值。格式如：2.5;白术,1.5;钟离,1.0;"
                                                   TextWrapping="Wrap" />
-                                    <ui:TextBox Grid.Row="0"
-                                                Grid.RowSpan="2"
+                                    <ui:TextBox Grid.Row="1"
                                                 Grid.Column="1"
-                                                MinWidth="120"
-                                                Margin="15,0,0,0"
+                                                Width="120"
+                                                MaxHeight="40"
+                                                Margin="30,0,0,0"
                                                 VerticalContentAlignment="Center"
                                                 HorizontalContentAlignment="Center"
+                                                VerticalAlignment="Bottom"
+                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.CheckEndDelay}" />
+                                    
+                                    <ui:ToggleSwitch Grid.Row="1"
+                                                     Grid.Column="1"
+                                                     Margin="30,0,0,40"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Center"
+                                                     VerticalAlignment="Bottom"
+                                                     Checked="OnToggleChanged"
+                                                     Unchecked="OnToggleChanged"
+                                                     IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
+                                                     IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay}" />
+                                    <ui:TextBlock Grid.Row="1"
+                                                  Grid.Column="1"
+                                                  FontSize="8"
+                                                  Margin="80,0,0,35"
+                                                  VerticalAlignment="Bottom"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="开启快速连续检查模式"
+                                                  TextWrapping="Wrap" />
+                                    
+                                </Grid>
+                                
+                                <Grid Margin="16" Visibility="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Converter={StaticResource BooleanToVisibilityConverter} }">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:TextBlock Grid.Row="0"
+                                                  Grid.Column="0"
+                                                  FontTypography="Body"
+                                                  Text="开启快速连续检测模式下，战斗前不检测结束的时间！！！！"
+                                                  TextWrapping="Wrap" />
+                                    <ui:TextBlock Grid.Row="1"
+                                                  Grid.Column="0"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="快速连续检测模式下，会持续不断检查结束战斗，战斗开始计算，一定时间内将不会执行检查战斗结束的操作，默认为0ms，过短可能会导致漏怪，单位：毫秒。"
+                                                  TextWrapping="Wrap" />
+                                    <ui:TextBox Grid.Row="1"
+                                                Grid.Column="1"
+                                                Width="120"
+                                                MaxHeight="40"
+                                                Margin="30,0,0,0"
+                                                VerticalContentAlignment="Center"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalAlignment="Bottom"
                                                 Text="{Binding Config.AutoFightConfig.FinishDetectConfig.FightWaitNotEndTime}" />
+                                    
+                                    <ui:ToggleSwitch Grid.Row="1"
+                                                     Grid.Column="1"
+                                                     Margin="30,0,0,40"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Center"
+                                                     VerticalAlignment="Bottom"
+                                                     Checked="OnToggleChanged"
+                                                     Unchecked="OnToggleChanged"
+                                                     IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
+                                                     IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay}" />
+                                    <ui:TextBlock Grid.Row="1"
+                                                  Grid.Column="1"
+                                                  FontSize="8"
+                                                  Margin="80,0,0,35"
+                                                  VerticalAlignment="Bottom"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="开启快速连续检查模式"
+                                                  TextWrapping="Wrap" />
+                                    
                                 </Grid>
                             
                             
@@ -838,6 +881,7 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -847,27 +891,28 @@
                                                   Grid.Column="0"
                                                   FontTypography="Body"
                                                   VerticalAlignment="Center"
-                                                  Text="按键触发后检查延时(建议配合“不等待旋转结束”使用)"
+                                                  Text="按键触发后检查延时&#x0A;(派蒙模式建议配合“不等待旋转结束”使用)"
                                                   TextWrapping="Wrap" />
                                     <ui:ToggleSwitch Grid.Row="0"
                                                      Grid.Column="0"
                                                      Margin="350,0,0,0"
                                                      VerticalAlignment="Center"
                                                      IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.RotateFindEnemyEnabled, Mode=TwoWay}"
-                                                     IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay}" />
+                                                     IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay}" />
                                     <ui:TextBlock Grid.Row="0"
                                                   Grid.Column="0"
                                                   FontSize="8"
                                                   Margin="400,10,0,0"
                                                   VerticalAlignment="Center"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="快速检查模式"
+                                                  Text="派蒙检查模式"
                                                   TextWrapping="Wrap" />
                                     
                                     <ui:TextBlock Grid.Row="1"
                                                   Grid.Column="0"
                                                   Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                  Text="快速模式：按下切换队伍后去检查派蒙头像是否存在，默认为0.15秒(上方参数)。 默认模式：按下切换队伍后去检查屏幕色块的延时，默认为0.45秒(下方参数)。"
+                                                  Text="默认模式：按L后去检查屏幕色块的延时，单位：秒，默认为0.45秒"
+                                                  Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityRevertConverter}}"
                                                   TextWrapping="Wrap" />
                                     <ui:TextBox Grid.Row="0"
                                                 Grid.Column="1"
@@ -875,18 +920,79 @@
                                                 VerticalContentAlignment="Center"
                                                 HorizontalAlignment="Right"
                                                 Margin="10,0,0,0"
-                                                IsEnabled ="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay}"
-                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.FastCheckDelay}" />
-                                    <ui:TextBox Grid.Row="1"
+                                                Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityRevertConverter}}"
+                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.BeforeDetectDelay}" />
+                                    
+                                    <ui:TextBlock Grid.Row="1"
+                                                  Grid.Column="0"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="派蒙模式：按L后去检查派蒙头像是否存在，单位：秒，默认为0.15秒"
+                                                  Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                  TextWrapping="Wrap" />
+                                    <ui:TextBox Grid.Row="0"
                                                 Grid.Column="1"
                                                 MinWidth="60"
                                                 MaxHeight="40"
                                                 VerticalContentAlignment="Center"
                                                 HorizontalAlignment="Right"
-                                                Margin="20,5,0,0"
-                                                IsEnabled ="{Binding Config.AutoFightConfig.FinishDetectConfig.EndModel, Mode=TwoWay,Converter={StaticResource InverseBooleanConverter}}"
-                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.BeforeDetectDelay}" />
-                                   
+                                                Margin="10,0,0,0"
+                                                Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.FastCheckDelay}" />
+                                    
+                                    
+                                    
+                                    <ui:TextBlock Grid.Row="2"
+                                                  Grid.Column="0"
+                                                  Margin="0,7,0,0"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left"
+                                                  FontSize="10"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                  Text="派蒙检查模式下的二次检查："
+                                                  TextWrapping="Wrap" />
+                                    
+                                    <ui:ToggleSwitch Grid.Row="2"
+                                                     Grid.Column="0"
+                                                     Margin="130,0,0,0"
+                                                     VerticalAlignment="Center"
+                                                     HorizontalAlignment="Left"
+                                                     Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                     IsChecked="{Binding  Config.AutoFightConfig.FinishDetectConfig.DoubleEndEnbled, Mode=TwoWay}" />
+                                    
+                                    <ui:TextBlock Grid.Row="2"
+                                                  Grid.Column="0"
+                                                  Margin="185,7,0,0"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left"
+                                                  FontSize="10"
+                                                  Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Text="二次检查间隔，单位：毫秒，默认750ms"
+                                                  TextWrapping="Wrap" />
+                                    
+                                    <ui:TextBox Grid.Row="2"
+                                                Grid.Column="1"
+                                                MinWidth="60"
+                                                MaxHeight="40"
+                                                VerticalContentAlignment="Center"
+                                                HorizontalAlignment="Left"
+                                                Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                IsEnabled="{Binding Config.AutoFightConfig.FinishDetectConfig.DoubleEndEnbled, Mode=TwoWay}"
+                                                Margin="10,-10,0,0"
+                                                Text="{Binding Config.AutoFightConfig.FinishDetectConfig.DoubleEndDelay}" />
+                                    
+                                    <ui:TextBlock Grid.Row="2"
+                                                  Grid.Column="0"
+                                                  Margin="0,0,0,-50"
+                                                  FontSize="7"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left"
+                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                  Visibility ="{Binding Config.AutoFightConfig.FinishDetectConfig.PaimonEndModel, Mode=TwoWay,Converter= {StaticResource BooleanToVisibilityConverter}}"
+                                                  Text="默认600ms，过短可能无法二次检查，出现两次读条即为成功二次检查，自己摸索适合的时间，建议600ms左右"
+                                                  TextWrapping="Wrap" />
+                                    
                                 </Grid>
                             <!--<Grid Margin="16">
                                 <Grid.RowDefinitions>
