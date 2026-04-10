@@ -1366,7 +1366,7 @@ public class PathExecutor
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                 }
 
-                if (num > 5 && distance <15 && _lastWaypoint?.Action == ActionEnum.Fight.Code)
+                if (num > 1 && distance < 20 && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                 {
                     using var ra = CaptureToRectArea();
                     for (int k = 1; k <= 4; k++)
@@ -1388,7 +1388,7 @@ public class PathExecutor
 
                                 if (colorDifference < 15)
                                 {
-                                    Logger.LogWarning("当前出战角色2 {t}",avatar2.Name);
+                                    // Logger.LogWarning("当前出战角色2 {t} -{distance}",avatar2.Name,distance);
                                     Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
                                     break;
                                 }
