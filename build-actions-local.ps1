@@ -1,4 +1,4 @@
-﻿param([string]$Version = "0.60.1+lcb.21.3-QuickyEnd-DF2")
+﻿param([string]$Version = "0.60.1+lcb.21.3-QuickyEnd-DF3")
 
 Write-Host "=== BetterGI 本地构建脚本 ===" -ForegroundColor Cyan
 Write-Host "版本: $Version" -ForegroundColor Yellow

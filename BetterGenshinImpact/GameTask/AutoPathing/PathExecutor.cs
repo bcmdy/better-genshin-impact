@@ -2427,6 +2427,11 @@ public class PathExecutor
                 {
                     skipType = "简易策略";
                 }
+                // 采矿相关
+                else if (waypoint.Action == ActionEnum.Mining.Code)
+                {
+                    skipType = "采矿相关";
+                }
 
                 if (skipType != null)
                 {
