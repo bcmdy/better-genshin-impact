@@ -152,114 +152,121 @@
                         
                     </Grid>
 
-                        <!-- 减少等待时间 -->
-                        <Grid Margin="16">
-                            <ui:CardExpander Margin="0,0,36,12"
-                                             ContentPadding="0"
-                                             IsExpanded="False">
-                                <ui:CardExpander.Header>
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <ui:TextBlock Grid.Row="0"
-                                                      Grid.Column="0"
-                                                      FontTypography="Body"
+                    <!-- 减少等待时间 -->
+                        <ui:CardExpander Margin="16,8,16,12"
+                                         ContentPadding="0"
+                                         IsExpanded="True">
+                            <ui:CardExpander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <ui:TextBlock FontTypography="BodyStrong"
                                                       Text="减少等待时间"
                                                       TextWrapping="Wrap"/>
-                                        <ui:TextBlock Grid.Row="1"
-                                                      Grid.Column="0"
+                                        <ui:TextBlock FontSize="12"
                                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                      Text="减少战斗后与简易策略执行后的停留时间，可能会漏捡掉物品或导致摩拉丢失"
-                                                      TextWrapping="Wrap"/>
-                                        <ui:ToggleSwitch Grid.Row="0"
-                                                         Grid.RowSpan="2"
-                                                         Grid.Column="1"
-                                                         Margin="0,0,24,0"
-                                                         IsChecked="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
-                                    </Grid>
-                                </ui:CardExpander.Header>
+                                                      Text="减少节点执行后的停留时间，可能导致物品或摩拉丢失"
+                                                      TextWrapping="Wrap"
+                                                      Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <ui:ToggleSwitch Grid.Column="1"
+                                                     VerticalAlignment="Center"
+                                                     IsChecked="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
+                                </Grid>
+                            </ui:CardExpander.Header>
 
-                                <StackPanel>
-                                    <Border Margin="12,8,12,12"
-                                            Padding="12,8"
-                                            Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
-                                            BorderBrush="{ui:ThemeResource ControlElevationBorderBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="4">
-                                        <WrapPanel Orientation="Horizontal"
-                                                   HorizontalAlignment="Left"
-                                                   VerticalAlignment="Center">
+                            <StackPanel Margin="16,8,16,12">
+                                <!-- 传送前等待时间 -->
+                                <Grid Margin="0,0,0,8" IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="传送前/尾节点等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(战斗/挖矿/简易策略)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.TeleportWaitTime, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
 
-                                            <!-- 传送前等待时间 -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        Margin="0,0,16,8"
-                                                        VerticalAlignment="Center">
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                              Text="传送前/尾节点等待(仅战斗/简易策略生效)："
-                                                              VerticalAlignment="Center"
-                                                              Margin="0,0,4,0"/>
-                                                <ui:TextBox Width="70"
-                                                            Height="32"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Text="{Binding PathingConfig.TeleportWaitTime, Mode=TwoWay}"
-                                                            IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                              Text="毫秒"
-                                                              VerticalAlignment="Center"
-                                                              Margin="4,0,0,0"/>
-                                            </StackPanel>
+                                <!-- 跳过等待时间 -->
+                                <Grid Margin="0,0,0,8" IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="其他节点跳过等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(战斗/挖矿/简易策略)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.SkipWaitTime, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
 
-                                            <!-- 跳过等待时间 -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        Margin="0,0,16,8"
-                                                        VerticalAlignment="Center">
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                              Text="跳过等待(非传送前/尾节点，仅战斗/简易策略生效)："
-                                                              VerticalAlignment="Center"
-                                                              Margin="0,0,4,0"/>
-                                                <ui:TextBox Width="70"
-                                                            Height="32"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Text="{Binding PathingConfig.SkipWaitTime, Mode=TwoWay}"
-                                                            IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                              Text="毫秒"
-                                                              VerticalAlignment="Center"
-                                                              Margin="4,0,0,0"/>
-                                            </StackPanel>
-
-                                            <!-- 正常模式/其他节点等待 -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        Margin="0,0,0,8"
-                                                        VerticalAlignment="Center">
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
-                                                              Text="正常模式/其他节点等待(不受减少等待时间影响)："
-                                                              VerticalAlignment="Center"
-                                                              Margin="0,0,4,0"/>
-                                                <ui:TextBox Width="70"
-                                                            Height="32"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalContentAlignment="Center"
-                                                            Text="{Binding PathingConfig.OtherDelayMs, Mode=TwoWay}"/>
-                                                <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                                              Text="毫秒"
-                                                              VerticalAlignment="Center"
-                                                              Margin="4,0,0,0"/>
-                                            </StackPanel>
-
-                                        </WrapPanel>
-                                    </Border>
-                                </StackPanel>
-                            </ui:CardExpander>
-                        </Grid>
+                                <!-- 正常模式等待 (不受开关影响) -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="正常模式/其他节点等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(不受开关影响)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.OtherDelayMs, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ui:CardExpander>
 
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
