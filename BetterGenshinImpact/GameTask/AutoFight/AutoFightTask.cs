@@ -648,7 +648,7 @@ public class AutoFightTask : ISoloTask
                                         Logger.LogError("自动EQ战斗：角色 {name} 识别异常 {ex}", h, ex.Message);
                                         fightEndFlag = true;
                                         FightEndTotoly  = true;
-                                        throw;
+                                        // throw;
                                     }
                                     
                                     break;
@@ -761,7 +761,7 @@ public class AutoFightTask : ISoloTask
                                                     Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
                                                     fightEndFlag = true;
                                                     FightEndTotoly  = true;
-                                                    throw;
+                                                    // throw;
                                                 }
                                                 finally
                                                 {
@@ -807,7 +807,7 @@ public class AutoFightTask : ISoloTask
                                                     Logger.LogError("自动EQ战斗：角色 {name} 释放技能异常 {ex}", avatarQ.Name, ex.Message);
                                                     fightEndFlag = true;
                                                     FightEndTotoly  = true;
-                                                    throw;
+                                                    // throw;
                                                 }
                                                 finally
                                                 {
@@ -864,7 +864,7 @@ public class AutoFightTask : ISoloTask
                                 fightEndFlag = true;
                                 FightEndTotoly  = true;
                                 Logger.LogError("初始寻敌异常 {ex}", ex.Message);
-                                throw;
+                                // throw;
                             }
                         }
                         
@@ -1078,7 +1078,7 @@ public class AutoFightTask : ISoloTask
             {
                 Debug.WriteLine(e.Message);
                 Debug.WriteLine(e.StackTrace);
-                throw;
+                // throw;
             }
             finally
             {
@@ -1254,6 +1254,15 @@ public class AutoFightTask : ISoloTask
             
             if (picker != null)
             {
+
+                // var ms = 2000;
+                // while (!_totolyFlag && ms > 0)
+                // {
+                //     Logger.LogWarning("等待万叶/琴技能CD");
+                //     ms -= 100;
+                //     await Delay(100, ct);
+                // }
+                
                 if (picker.Name == "枫原万叶")
                 {
                     var time = TimeSpan.FromSeconds(picker.GetSkillCdSeconds());
@@ -1265,7 +1274,7 @@ public class AutoFightTask : ISoloTask
                     {
                         TaskControl.Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
                         await Delay(200, ct);
-                        if (picker.TrySwitch(10))
+                        if (picker.TrySwitch(20))
                         {
                             await Delay(50, ct);
                             if (await AutoFightSkill.AvatarSkillAsync(Logger, picker, false, 1, ct))
@@ -1331,7 +1340,7 @@ public class AutoFightTask : ISoloTask
                                             {
                                                 Logger.LogError(e, "琴拾取物品异常");
                                                 find = false;
-                                                throw;
+                                                // throw;
                                             }
                                             finally
                                             {
@@ -1796,7 +1805,7 @@ public class AutoFightTask : ISoloTask
                                 //死亡检查
                                 for (int h = 0; h < 4; h++)
                                 {
-                                    using var croppedImage = ra.DeriveCrop(1797, 249 + 96 * h, 8, 1).SrcMat;
+                                    using var croppedImage = ra.DeriveCrop(1797, 249 + 96 * h, 8, 3).SrcMat;
 
                                     var isGrayscale = true;
                                     for (int i = 0; i < croppedImage.Rows; i++)
