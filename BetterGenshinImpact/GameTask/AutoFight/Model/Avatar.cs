@@ -461,23 +461,23 @@ public class Avatar
         switch (index)
         {
             case 1:
-                Logger.LogDebug("切换到第1号角色");
+                // Logger.LogDebug("切换到第1号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember1);
                 break;
             case 2:
-                Logger.LogDebug("切换到第2号角色");
+                // Logger.LogDebug("切换到第2号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember2);
                 break;
             case 3:
-                Logger.LogDebug("切换到第3号角色");
+                // Logger.LogDebug("切换到第3号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember3);
                 break;
             case 4:
-                Logger.LogDebug("切换到第4号角色");
+                // Logger.LogDebug("切换到第4号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember4);
                 break;
             case 5:
-                Logger.LogDebug("切换到第5号角色");
+                // Logger.LogDebug("切换到第5号角色");
                 Simulation.SendInput.SimulateAction(GIActions.SwitchMember5);
                 break;
             default:

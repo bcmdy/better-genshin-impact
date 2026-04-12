@@ -6,6 +6,7 @@ using BetterGenshinImpact.GameTask.Model.Area;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using OpenCvSharp;
+using System.Threading;
 
 namespace BetterGenshinImpact.GameTask.AutoPathing;
 
@@ -24,19 +25,40 @@ public class NavigationInstance
         (_prevX, _prevY) = (x, y);
     }
 
+    private static readonly object GetPositionLock = new object(); 
     public Point2f GetPosition(ImageRegion imageRegion, string mapName, string mapMatchMethod)
     {
-        var colorMat = new Mat(imageRegion.SrcMat, MapAssets.Instance.MimiMapRect);
-        var captureTime = DateTime.UtcNow;
-        var p = MapManager.GetMap(mapName, mapMatchMethod).GetMiniMapPosition(colorMat, _prevX, _prevY);
-        if (p != default && captureTime > _captureTime)
+        if (Monitor.TryEnter(GetPositionLock))
         {
-            (_prevX, _prevY) = (p.X, p.Y);
-            _captureTime = captureTime;
+            try
+            {
+                var colorMat = new Mat(imageRegion.SrcMat, MapAssets.Instance.MimiMapRect);
+                var captureTime = DateTime.UtcNow;
+                var p = MapManager.GetMap(mapName, mapMatchMethod).GetMiniMapPosition(colorMat, _prevX, _prevY);
+                if (p != default && captureTime > _captureTime)
+                {
+                    (_prevX, _prevY) = (p.X, p.Y);
+                    _captureTime = captureTime;
+                }
+
+                WeakReferenceMessenger.Default.Send(new PropertyChangedMessage<object>(typeof(Navigation),
+                    "SendCurrentPosition", new object(), p));
+                return p;
+            }
+            catch
+            {
+                // 获取位置失败，返回上次的位置
+                return new Point2f(_prevX, _prevY);
+            }
+            finally
+            {
+                Monitor.Exit(GetPositionLock);
+            }
         }
-        WeakReferenceMessenger.Default.Send(new PropertyChangedMessage<object>(typeof(Navigation),
-            "SendCurrentPosition", new object(), p));
-        return p;
+        
+        // 如果无法获取锁，说明正在获取位置，直接返回上次的位置
+        return new Point2f(_prevX, _prevY);
+        
     }
 
     /// <summary>

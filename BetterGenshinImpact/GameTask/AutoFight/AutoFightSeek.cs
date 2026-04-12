@@ -485,7 +485,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     {
                         await Delay(delayTime, ct);
                         // Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
-                        TaskControl.Logger.LogInformation("打开编队界面检查战斗是否结束");
+                        TaskControl.Logger.LogInformation("打开编队界面检查战斗是否结束-2");
                         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
                         await Delay(detectDelayTime, ct);
                         var ra3 = CaptureToRectArea();
@@ -623,6 +623,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                     }
                 }
 
+                return null;
+            }
+            catch (Exception ex)
+            {
+                TaskControl.Logger.LogError(ex, "寻找敌人异常-2");
                 return null;
             }
             finally
@@ -899,6 +904,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    TaskControl.Logger.LogError(ex, "角色 {GuardianAvatar} 技能状态检测异常", guardianAvatar.Name);
+                    return false;
+                }
                 finally
                 {
                     if (model && image2 != null)
@@ -973,6 +983,11 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         
                     attempt++;
                     
+                }
+                catch (Exception ex)
+                {
+                    TaskControl.Logger.LogError(ex, "药物状态检测异常");
+                    return Task.FromResult(false);
                 }
                 finally
                 {
