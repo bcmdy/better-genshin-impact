@@ -571,10 +571,12 @@ public class AutoFightTask : ISoloTask
                 while (!cts2.Token.IsCancellationRequested && !FightEndTotoly)
                 {
                     if (_skipFlag)
-                    {
+                    { 
                         await Task.Delay(100, cts2.Token);
-                       continue; 
+                        continue; 
                     }
+                    
+                    if(FightEndTotoly) break;
                     // 所有战斗角色都可以被取消
                     #region 本次战斗的跳过战斗判定
 
@@ -690,7 +692,6 @@ public class AutoFightTask : ISoloTask
                                     {
                                         if (_skipFlag)
                                         {
-                                            await Task.Delay(100, cts2.Token);
                                             continue; 
                                         }
                                         
@@ -770,7 +771,6 @@ public class AutoFightTask : ISoloTask
                                             
                                             if (_skipFlag)
                                             {
-                                                await Task.Delay(100, cts2.Token);
                                                 continue; 
                                             }
                                             
@@ -968,7 +968,6 @@ public class AutoFightTask : ISoloTask
                         
                         if (_skipFlag)
                         {
-                            await Task.Delay(100, cts2.Token);
                             continue; 
                         }
                         
@@ -1510,6 +1509,20 @@ public class AutoFightTask : ISoloTask
 
         for (int i = 0; i < 2; i++)
         {
+            if (i == 1)
+            {
+                using var captureToRectArea2 = CaptureToRectArea();
+                var pixelValue22 = captureToRectArea.SrcMat.At<Vec3b>(32, 67); 
+                var paiMon22 = (Math.Abs(pixelValue22[0] - 143) <= 10 &&
+                              Math.Abs(pixelValue22[1] - 196) <= 10 &&
+                              Math.Abs(pixelValue22[2] - 233) <= 10);
+                if (!paiMon22)
+                {
+                    _totolyFlag = false;
+                    return false;
+                }
+            }
+            
             Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
             await Delay(detectDelayTime, _ct);
 

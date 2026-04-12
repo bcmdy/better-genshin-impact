@@ -1354,6 +1354,10 @@ public class PathExecutor
                         if (position != default)
                         {
                             prePosition = position;
+                            
+                            using var screen2334 = CaptureToRectArea();
+                            (position, additionalTimeInMs) = await GetPositionAndTime(screen2334, waypoint,isPoint);
+                            
                             Logger.LogWarning("重新识别位置失败，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
                         }
                         else
@@ -2712,7 +2716,8 @@ public class PathExecutor
         var closeRa = imageRegion.Find(AutoSkipAssets.Instance.PageCloseMainRo);
         var closeRa2 = imageRegion.Find(ElementAssets.Instance.PageCloseWhiteRo);
         var closeRa3 = imageRegion.Find(AutoSkipAssets.Instance.PageCloseRo);
-        if (cookRa.IsExist() || closeRa.IsExist() || closeRa2.IsExist() || closeRa3.IsExist())
+        var closeRa4 = imageRegion.Find(AutoFightAssets.Instance.ConfirmRa);
+        if (cookRa.IsExist() || closeRa.IsExist() || closeRa2.IsExist() || closeRa3.IsExist()|| closeRa4.IsExist())
         {
             // 排除大地图
             if (Bv.IsInBigMapUi(imageRegion))
