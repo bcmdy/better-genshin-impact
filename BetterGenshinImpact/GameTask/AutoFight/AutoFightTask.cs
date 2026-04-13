@@ -573,6 +573,7 @@ public class AutoFightTask : ISoloTask
                     if (_skipFlag)
                     { 
                         await Task.Delay(100, cts2.Token);
+                        Logger.LogWarning("战斗跳过中，等待100ms后继续检测...");
                         continue; 
                     }
                     
@@ -1255,13 +1256,13 @@ public class AutoFightTask : ISoloTask
             if (picker != null)
             {
 
-                // var ms = 2000;
-                // while (!_totolyFlag && ms > 0)
-                // {
-                //     Logger.LogWarning("等待万叶/琴技能CD");
-                //     ms -= 100;
-                //     await Delay(100, ct);
-                // }
+                var ms = 3000;
+                while (!_2ndEndFlag && ms > 0)
+                {
+                    Logger.LogWarning("等待万叶/琴技能CD-999999999，剩余等待时间{ms}ms", ms);
+                    ms -= 100;
+                    await Delay(100, ct);
+                }
                 
                 if (picker.Name == "枫原万叶")
                 {
@@ -1442,6 +1443,8 @@ public class AutoFightTask : ISoloTask
     private volatile bool _totolyFlag = false;
     
     private volatile int _totolyEndCount = 0;
+    
+    private volatile bool _2ndEndFlag = false;
 
     public async Task<bool> CheckFightFinish(int delayTime = 1500, int detectDelayTime = 450,CancellationToken ct = default,Avatar? avatar = null)
     {
@@ -1452,6 +1455,7 @@ public class AutoFightTask : ISoloTask
         
         if(_totolyEndCount >= 1)
         {
+            _2ndEndFlag = true;
             FightEndTotoly = true;
             _totolyFlag = false;
             return true;
@@ -1580,6 +1584,7 @@ public class AutoFightTask : ISoloTask
                         ? "派蒙模式"
                         : "默认模式");
                 //取消正在进行的换队
+                if (doubleEndLogo)_2ndEndFlag = true;
                 FightEndTotoly = true;
                 _totolyEndCount = _totolyEndCount + 1;
                 Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
