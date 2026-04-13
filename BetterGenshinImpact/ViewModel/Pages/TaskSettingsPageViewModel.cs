@@ -6,6 +6,7 @@ using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
 using BetterGenshinImpact.GameTask.AutoCook;
 using BetterGenshinImpact.GameTask.AutoDomain;
 using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.GameTask.AutoHoeing;
 using BetterGenshinImpact.GameTask.AutoFishing;
 using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
 using BetterGenshinImpact.GameTask.AutoGeniusInvokation;
@@ -213,6 +214,12 @@ public partial class TaskSettingsPageViewModel : ViewModel
 
     [ObservableProperty]
     private string _switchAutoRedeemCodeButtonText = "启动";
+
+    [ObservableProperty]
+    private bool _switchAutoHoeingEnabled;
+
+    [ObservableProperty]
+    private string _switchAutoHoeingButtonText = "启动";
 
     public TaskSettingsPageViewModel(IConfigService configService, INavigationService navigationService, TaskTriggerDispatcher taskTriggerDispatcher)
     {
@@ -477,6 +484,15 @@ public partial class TaskSettingsPageViewModel : ViewModel
     public async Task OnGoToAutoDomainUrlAsync()
     {
         await Launcher.LaunchUriAsync(new Uri("https://www.bettergi.com/feats/task/domain.html"));
+    }
+
+    [RelayCommand]
+    public async Task OnSwitchAutoHoeing()
+    {
+        SwitchAutoHoeingEnabled = true;
+        await new TaskRunner()
+            .RunSoloTaskAsync(new AutoHoeingTask());
+        SwitchAutoHoeingEnabled = false;
     }
 
     [RelayCommand]

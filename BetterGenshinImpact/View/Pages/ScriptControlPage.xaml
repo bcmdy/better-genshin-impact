@@ -304,6 +304,7 @@
                                 <MenuItem Header="地图追踪任务" Command="{Binding AddPathingCommand}" />
                                 <MenuItem Header="键鼠脚本" Command="{Binding AddKmScriptCommand}" />
                                 <MenuItem Header="Shell" Command="{Binding AddShellCommand}" />
+                                <MenuItem Header="独立任务" Command="{Binding AddSoloTaskCommand}" />
                             </ContextMenu>
                         </ui:DropDownButton.Flyout>
                     </ui:DropDownButton>
@@ -472,6 +473,7 @@
                             <MenuItem Command="{Binding AddPathingCommand}" Header="添加地图追踪任务" />
                             <MenuItem Command="{Binding AddKmScriptCommand}" Header="添加键鼠脚本" />
                             <MenuItem Command="{Binding AddShellCommand}" Header="添加Shell" />
+                            <MenuItem Command="{Binding AddSoloTaskCommand}" Header="添加独立任务" />
                             <MenuItem Command="{Binding AddNextFlagCommand}" Header="下一次任务从此处执行"
                                       CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItem}"/>
                             
@@ -488,6 +490,22 @@
                                             <DataTrigger
                                                 Binding="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItem.Type}"
                                                 Value="Javascript">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </MenuItem.Style>
+                            </MenuItem>
+                            <MenuItem Command="{Binding EditSoloTaskSettingsCommand}"
+                                      CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItem}"
+                                      Header="修改独立任务配置">
+                                <MenuItem.Style>
+                                    <Style TargetType="MenuItem">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger
+                                                Binding="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItem.Type}"
+                                                Value="SoloTask">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                         </Style.Triggers>

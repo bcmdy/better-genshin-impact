@@ -4187,5 +4187,337 @@
                 Content="绑定快捷键"
                 Command="{Binding GoToHotKeyPageCommand}" />
         </ui:CardControl>-->
+
+        <!-- ==================== 锄地一条龙 ==================== -->
+        <ui:CardExpander Margin="0,0,0,12" ContentPadding="0">
+            <ui:CardExpander.Icon>
+                <ui:FontIcon Glyph="&#xf1bb;" Style="{StaticResource FaFontIconStyle}" />
+            </ui:CardExpander.Icon>
+            <ui:CardExpander.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Row="0" Grid.Column="0" FontTypography="Body" Text="锄地一条龙" TextWrapping="Wrap" />
+                    <ui:TextBlock Grid.Row="1" Grid.Column="0" Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" TextWrapping="Wrap">
+                        一站式自动化锄地，支持路线智能选择与分组执行
+                    </ui:TextBlock>
+                    <controls:TwoStateButton Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Margin="0,0,24,0"
+                                             DisableCommand="{Binding StopSoloTaskCommand}" DisableContent="停止"
+                                             EnableCommand="{Binding SwitchAutoHoeingCommand}" EnableContent="{Binding SwitchAutoHoeingButtonText}"
+                                             IsChecked="{Binding SwitchAutoHoeingEnabled}" />
+                </Grid>
+            </ui:CardExpander.Header>
+            <StackPanel>
+                <!-- 第一部分：执行配置 -->
+                <ui:TextBlock Margin="16,12,16,4" FontTypography="BodyStrong" Text="第一部分：执行配置" />
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="执行模式" />
+                    <ComboBox Grid.Column="1" Width="220" Margin="0,0,36,0" SelectedItem="{Binding Config.AutoHoeingConfig.OperationMode, Mode=TwoWay}">
+                        <sys:String>运行锄地路线</sys:String>
+                        <sys:String>调试路线分配</sys:String>
+                        <sys:String>强制刷新所有运行记录</sys:String>
+                        <sys:String>启用仅指定怪物模式</sys:String>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="选择执行路径组" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="分组运行时选择对应的路径组编号" />
+                    </StackPanel>
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="1" Maximum="10" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.GroupIndex, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="配队名称" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="填写游戏内自定义的队伍名称" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="180" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.PartyName, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="组内路线排序模式" />
+                    <ComboBox Grid.Column="1" Width="180" Margin="0,0,36,0" SelectedItem="{Binding Config.AutoHoeingConfig.SortMode, Mode=TwoWay}">
+                        <sys:String>原文件顺序</sys:String>
+                        <sys:String>效率降序</sys:String>
+                        <sys:String>高收益优先</sys:String>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="拾取模式" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="推荐使用模板匹配拾取" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="1" Width="260" Margin="0,0,36,0" SelectedItem="{Binding Config.AutoHoeingConfig.PickupMode, Mode=TwoWay}">
+                        <sys:String>模板匹配拾取狗粮和怪物材料</sys:String>
+                        <sys:String>模板匹配仅拾取狗粮</sys:String>
+                        <sys:String>BGI原版拾取</sys:String>
+                        <sys:String>不拾取任何物品</sys:String>
+                    </ComboBox>
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="仅使用路线相关怪物材料识别" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.UseRouteRelatedMaterialsOnly, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="禁用二次校验（可能增加误捡）" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.DisableSecondaryValidation, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="泥头车角色编号" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="多个角色用中文逗号分隔，如 1，3" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="120" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.DumperCharacters, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="使用料理名称" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="多个料理用中文逗号分隔，间隔300秒" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="180" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.CookingNames, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="不运行时段" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="如 8，23:11-23:55，用中文逗号分隔" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="180" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.NoRunPeriod, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="识别间隔(ms)" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="10" Maximum="200" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.FindFInterval, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="拾取后延时(ms)" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="16" Maximum="500" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.PickupDelay, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="滚动后延时(ms)" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="16" Maximum="200" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.RollingDelay, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="单次滚动周期(ms)" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="500" Maximum="3000" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.ScrollCycle, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="输出怪物数量日志" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.LogMonsterCount, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="禁用异步操作" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.DisableAsync, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路线结尾坐标检查" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.EnableCoordinateCheck, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="跳过校验阶段" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.SkipValidation, Mode=TwoWay}" />
+                </Grid>
+
+                <!-- 第二部分：路线选择与分组配置 -->
+                <ui:TextBlock Margin="16,16,16,4" FontTypography="BodyStrong" Text="第二部分：路线选择与分组配置（仅路径组一生效）" />
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="账户名称" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="多账户时填写不同名称区分记录" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="150" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.AccountName, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="路径组一排除标签" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="中文逗号分隔，如 蕈兽，传奇，狭窄地形" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup1, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组二选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup2, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组三选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup3, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组四选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup4, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="禁用自我优化" />
+                    <ui:ToggleSwitch Grid.Column="1" Margin="0,0,36,0" IsChecked="{Binding Config.AutoHoeingConfig.DisableSelfOptimization, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="摩拉/耗时权衡因数" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="越大越倾向花时间提高收益，默认0.25" />
+                    </StackPanel>
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="0" Maximum="10" SmallChange="0.05" LargeChange="0.1"
+                                  SpinButtonPlacementMode="Inline" Value="{Binding Config.AutoHoeingConfig.EfficiencyIndex, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="好奇系数" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="0-1，越大越多尝试未知路线" />
+                    </StackPanel>
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="0" Maximum="1" SmallChange="0.1"
+                                  SpinButtonPlacementMode="Inline" Value="{Binding Config.AutoHoeingConfig.CuriosityFactor, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="小怪/精英忽略比例" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="比值大于此值的路线忽略精英" />
+                    </StackPanel>
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="1" Maximum="1000" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.IgnoreRate, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="目标精英数量" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="0" Maximum="2000" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.TargetEliteNum, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="目标小怪数量" />
+                    <ui:NumberBox Grid.Column="1" Width="120" Margin="0,0,36,0" Minimum="0" Maximum="5000" SpinButtonPlacementMode="Inline"
+                                  Value="{Binding Config.AutoHoeingConfig.TargetMonsterNum, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="优先关键词" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="中文逗号分隔，含关键词的路线优先选择" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.PriorityTags, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="排除关键词" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="中文逗号分隔，含关键词的路线完全排除" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.ExcludeTags, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组五选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup5, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组六选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup6, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组七选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup7, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组八选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup8, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组九选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup9, Mode=TwoWay}" />
+                </Grid>
+
+                <Grid Margin="16,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ui:TextBlock Grid.Column="0" Text="路径组十选择标签" />
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TagsForGroup10, Mode=TwoWay}" />
+                </Grid>
+
+                <!-- 第三部分：仅指定怪物模式 -->
+                <ui:TextBlock Margin="16,16,16,4" FontTypography="BodyStrong" Text="第三部分：仅指定怪物模式" />
+
+                <Grid Margin="16,8,16,16">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <ui:TextBlock Text="目标怪物" />
+                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Text="中文逗号分隔，按怪物图鉴名称填写" />
+                    </StackPanel>
+                    <ui:TextBox Grid.Column="1" MinWidth="220" Margin="0,0,36,0" Text="{Binding Config.AutoHoeingConfig.TargetMonsters, Mode=TwoWay}" />
+                </Grid>
+            </StackPanel>
+        </ui:CardExpander>
+
     </StackPanel>
 </Page>

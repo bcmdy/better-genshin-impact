@@ -74,6 +74,11 @@ public partial class ScriptGroupProject : ObservableObject
     public ExpandoObject? JsScriptSettingsObject { get; set; }
 
     /// <summary>
+    /// 独立任务的配置覆盖（每个配置组实例独立存储）
+    /// </summary>
+    public Dictionary<string, object?>? SoloTaskSettingsObject { get; set; }
+
+    /// <summary>
     /// 所属配置组
     /// </summary>
     [JsonIgnore]
@@ -165,6 +170,11 @@ public partial class ScriptGroupProject : ObservableObject
     public static ScriptGroupProject BuildPathingProject(string name, string folder)
     {
         return new ScriptGroupProject(name, folder, "Pathing");
+    }
+
+    public static ScriptGroupProject BuildSoloTaskProject(string name)
+    {
+        return new ScriptGroupProject(name, "", "SoloTask");
     }
 
     /// <summary>
@@ -313,6 +323,18 @@ public partial class ScriptGroupProject : ObservableObject
             var task = new ShellTask(ShellTaskParam.BuildFromConfig(Name, shellConfig ?? new ShellConfig()));
             await task.Start(CancellationContext.Instance.Cts.Token);
         }
+        else if (Type == "SoloTask")
+        {
+            var soloTask = SoloTaskRegistry.CreateTask(Name, GroupInfo?.Config.PathingConfig, SoloTaskSettingsObject);
+            if (soloTask != null)
+            {
+                await soloTask.Start(CancellationContext.Instance.Cts.Token);
+            }
+            else
+            {
+                TaskControl.Logger.LogError("未找到独立任务: {Name}", Name);
+            }
+        }
 
         if (Type != "Pathing")
         {
@@ -411,7 +433,8 @@ public class ScriptGroupProjectExtensions
         { "Javascript", "JS脚本" },
         { "KeyMouse", "键鼠脚本" },
         { "Pathing", "地图追踪" },
-        { "Shell", "Shell" }
+        { "Shell", "Shell" },
+        { "SoloTask", "独立任务" }
     };
 
     public static readonly Dictionary<string, string> StatusDescriptions = new()

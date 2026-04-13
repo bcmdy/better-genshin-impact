@@ -1,0 +1,135 @@
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.Core.Simulator;
+using Microsoft.Extensions.Logging;
+using OpenCvSharp;
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Vanara.PInvoke;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
+
+namespace BetterGenshinImpact.GameTask.AutoHoeing.Services;
+
+/// <summary>
+/// 异常状态检测器：冻结、白芙、复苏、烹饪界面
+/// </summary>
+public class AnomalyDetector
+{
+    private static readonly ILogger Logger = App.GetLogger<AnomalyDetector>();
+
+    private RecognitionObject? _frozenRo;
+    private RecognitionObject? _whiteFurinaRo;
+    private RecognitionObject? _revivalRo;
+    private RecognitionObject? _cookingRo;
+
+    public bool ShouldSwitchFurina { get; set; }
+
+    public void LoadTemplates(string assetsDir)
+    {
+        _frozenRo = LoadRo(assetsDir, "解除冰冻.png", 1379, 574, 84, 39);
+
+        _revivalRo = LoadRo(assetsDir, "复苏.png", 755, 915, 362, 122, 0.95);
+
+        _cookingRo = LoadRo(assetsDir, "烹饪界面.png", 1547, 965, 268, 94, 0.95);
+
+        _whiteFurinaRo = LoadRo(assetsDir, "白芙图标.png", 1634, 967, 116, 103, 0.97);
+    }
+
+    private static RecognitionObject? LoadRo(string dir, string fileName,
+        int x, int y, int w, int h, double threshold = 0.8)
+    {
+        var path = Path.Combine(dir, fileName);
+        if (!File.Exists(path)) return null;
+
+        var mat = Cv2.ImRead(path, ImreadModes.Color);
+        var ro = RecognitionObject.TemplateMatch(mat, x, y, w, h);
+        ro.Threshold = threshold;
+        ro.InitTemplate();
+        return ro;
+    }
+
+    /// <summary>
+    /// 异常检测主循环
+    /// </summary>
+    public async Task RunDetectionLoop(Func<bool> isRunning, CancellationToken ct)
+    {
+        int loopCount = 0;
+
+        while (isRunning() && !ct.IsCancellationRequested)
+        {
+            try
+            {
+                // 每约250ms检测一次（5次循环 × 50ms）
+                if (loopCount % 5 == 0)
+                {
+                    using var region = CaptureToRectArea();
+
+                    // 冻结检测
+                    if (_frozenRo != null)
+                    {
+                        using var result = region.Find(_frozenRo);
+                        if (result.IsExist())
+                        {
+                            Logger.LogInformation("检测到冻结，尝试挣脱");
+                            for (int i = 0; i < 3; i++)
+                            {
+                                Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_SPACE);
+                                await Task.Delay(30, ct);
+                            }
+                            continue;
+                        }
+                    }
+
+                    // 白芙检测
+                    if (!ShouldSwitchFurina && _whiteFurinaRo != null)
+                    {
+                        using var result = region.Find(_whiteFurinaRo);
+                        if (result.IsExist())
+                        {
+                            Logger.LogInformation("检测到白芙，路线结束后切换形态");
+                            ShouldSwitchFurina = true;
+                            continue;
+                        }
+                    }
+
+                    // 复苏检测
+                    if (_revivalRo != null)
+                    {
+                        using var result = region.Find(_revivalRo);
+                        if (result.IsExist())
+                        {
+                            Logger.LogInformation("识别到复苏按钮，点击");
+                            result.Click();
+                            await Task.Delay(500, ct);
+                            continue;
+                        }
+                    }
+                }
+
+                // 每约5000ms检测烹饪界面（100次循环 × 50ms）
+                if (loopCount % 100 == 0 && _cookingRo != null)
+                {
+                    using var region = CaptureToRectArea();
+                    using var result = region.Find(_cookingRo);
+                    if (result.IsExist())
+                    {
+                        Logger.LogInformation("检测到烹饪界面，尝试脱离");
+                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
+                        await Task.Delay(500, ct);
+                        continue;
+                    }
+                }
+
+                loopCount++;
+                await Task.Delay(50, ct);
+            }
+            catch (OperationCanceledException) { break; }
+            catch (Exception ex)
+            {
+                Logger.LogDebug("异常检测循环异常: {Msg}", ex.Message);
+                await Task.Delay(50, ct);
+            }
+        }
+    }
+}

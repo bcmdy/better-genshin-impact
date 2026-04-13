@@ -160,6 +160,12 @@ public partial class OneDragonTaskItem : ObservableObject
                     await new GoToSereniteaPotTask().Start(CancellationContext.Instance.Cts.Token);
                 };
                 break;
+            case "锄地一条龙":
+                Action = async () =>
+                {
+                    await new GameTask.AutoHoeing.AutoHoeingTask().Start(CancellationContext.Instance.Cts.Token);
+                };
+                break;
             case "自动地脉花":
                 Action = async () =>
                 {

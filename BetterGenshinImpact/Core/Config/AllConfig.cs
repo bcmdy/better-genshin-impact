@@ -20,6 +20,7 @@ using BetterGenshinImpact.GameTask.AutoTrackPath;
 using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
 using System.Collections.ObjectModel;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
+using BetterGenshinImpact.GameTask.AutoHoeing;
 using BetterGenshinImpact.GameTask.GetGridIcons;
 using BetterGenshinImpact.GameTask.AutoEat;
 using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
@@ -232,6 +233,11 @@ public partial class AllConfig : ObservableObject
     public MapMaskConfig MapMaskConfig { get; set; } = new();
 
     /// <summary>
+    /// 锄地一条龙配置
+    /// </summary>
+    public AutoHoeingConfig AutoHoeingConfig { get; set; } = new();
+
+    /// <summary>
     /// 技能 CD 提示
     /// </summary>
     public SkillCdConfig SkillCdConfig { get; set; } = new();
@@ -334,6 +340,7 @@ public partial class AllConfig : ObservableObject
         DevConfig.PropertyChanged += OnAnyPropertyChanged;
         HardwareAccelerationConfig.PropertyChanged += OnAnyPropertyChanged;
         OtherConfig.PropertyChanged += OnAnyPropertyChanged;
+        AutoHoeingConfig.PropertyChanged += OnAnyPropertyChanged;
         SkillCdConfig.PropertyChanged += OnAnyPropertyChanged;
     }
 

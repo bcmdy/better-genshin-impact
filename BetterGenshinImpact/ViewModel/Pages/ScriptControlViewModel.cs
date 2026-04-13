@@ -1043,6 +1043,22 @@ public partial class ScriptControlViewModel : ViewModel
     }
 
     [RelayCommand]
+    private void OnAddSoloTask()
+    {
+        var tasks = GameTask.SoloTaskRegistry.AvailableTasks;
+        var combobox = new System.Windows.Controls.ComboBox
+        {
+            ItemsSource = tasks,
+            SelectedIndex = 0
+        };
+        var str = PromptDialog.Prompt("请选择需要添加的独立任务", "请选择需要添加的独立任务", combobox);
+        if (!string.IsNullOrEmpty(str))
+        {
+            SelectedScriptGroup?.AddProject(ScriptGroupProject.BuildSoloTaskProject(str));
+        }
+    }
+
+    [RelayCommand]
     private async Task OnAddPathing()
     {
         try
@@ -1857,6 +1873,118 @@ public partial class ScriptControlViewModel : ViewModel
         {
             Toast.Warning("只有JS脚本才有自定义配置");
         }
+    }
+
+    [RelayCommand]
+    public void OnEditSoloTaskSettings(ScriptGroupProject? item)
+    {
+        if (item == null || item.Type != "SoloTask") return;
+
+        var settingItems = GameTask.SoloTaskRegistry.GetSettingItems(item.Name);
+        if (settingItems.Count == 0)
+        {
+            Toast.Warning("此独立任务没有可配置的参数");
+            return;
+        }
+
+        item.SoloTaskSettingsObject ??= new Dictionary<string, object?>();
+
+        var stackPanel = new StackPanel { Margin = new Thickness(10) };
+
+        var controls = new Dictionary<string, FrameworkElement>();
+        foreach (var setting in settingItems)
+        {
+            var label = new TextBlock
+            {
+                Text = setting.Label,
+                Margin = new Thickness(0, 8, 0, 2),
+                FontSize = 14
+            };
+            stackPanel.Children.Add(label);
+
+            // 获取当前值：优先用覆盖值，否则用默认值
+            object? currentValue = item.SoloTaskSettingsObject.TryGetValue(setting.Name, out var ov)
+                ? ov : setting.DefaultValue;
+
+            if (setting.Type == "select" && setting.Options != null)
+            {
+                var combo = new System.Windows.Controls.ComboBox
+                {
+                    ItemsSource = setting.Options,
+                    SelectedItem = currentValue?.ToString() ?? "",
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                stackPanel.Children.Add(combo);
+                controls[setting.Name] = combo;
+            }
+            else if (setting.Type == "bool")
+            {
+                var check = new System.Windows.Controls.CheckBox
+                {
+                    IsChecked = currentValue is true or "True" or "true",
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                stackPanel.Children.Add(check);
+                controls[setting.Name] = check;
+            }
+            else
+            {
+                var textBox = new TextBox
+                {
+                    Text = currentValue?.ToString() ?? "",
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                stackPanel.Children.Add(textBox);
+                controls[setting.Name] = textBox;
+            }
+        }
+
+        var dialog = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = $"修改独立任务配置 - {item.Name}",
+            Content = new ScrollViewer
+            {
+                Content = stackPanel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MaxHeight = 500
+            },
+            PrimaryButtonText = "保存",
+            CloseButtonText = "取消",
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+
+        dialog.ShowDialogAsync().ContinueWith(t =>
+        {
+            if (t.Result == MessageBoxResult.Primary)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    foreach (var setting in settingItems)
+                    {
+                        if (!controls.TryGetValue(setting.Name, out var ctrl)) continue;
+
+                        object? value = ctrl switch
+                        {
+                            System.Windows.Controls.ComboBox combo => combo.SelectedItem?.ToString(),
+                            System.Windows.Controls.CheckBox check => check.IsChecked ?? false,
+                            TextBox tb => setting.Type == "number"
+                                ? double.TryParse(tb.Text, out var n) ? (object)n : tb.Text
+                                : tb.Text,
+                            _ => null
+                        };
+
+                        item.SoloTaskSettingsObject[setting.Name] = value;
+                    }
+
+                    foreach (var group in ScriptGroups)
+                    {
+                        WriteScriptGroup(group);
+                    }
+                    Toast.Success("独立任务配置已保存");
+                });
+            }
+        });
     }
 
     [RelayCommand]

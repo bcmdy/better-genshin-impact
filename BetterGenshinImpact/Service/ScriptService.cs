@@ -52,6 +52,11 @@ public partial class ScriptService : IScriptService
     }
     public bool ShouldSkipTask(ScriptGroupProject project)
     {
+        // 独立任务不参与路径相关的跳过检查
+        if (project.Type == "SoloTask")
+        {
+            return false;
+        }
 
         if (project.GroupInfo is { Config.PathingConfig.Enabled: true } )
         {
@@ -479,7 +484,12 @@ public partial class ScriptService : IScriptService
                 var newProject = ScriptGroupProject.BuildShellProject(project.Name);
                 CopyProjectProperties(project, newProject);
                 list.Add(newProject);
-                // hasTimer = true;
+            }
+            else if (project.Type == "SoloTask")
+            {
+                var newProject = ScriptGroupProject.BuildSoloTaskProject(project.Name);
+                CopyProjectProperties(project, newProject);
+                list.Add(newProject);
             }
         }
 
@@ -492,6 +502,7 @@ public partial class ScriptService : IScriptService
         target.Schedule = source.Schedule;
         target.RunNum = source.RunNum;
         target.JsScriptSettingsObject = source.JsScriptSettingsObject;
+        target.SoloTaskSettingsObject = source.SoloTaskSettingsObject;
         target.GroupInfo = source.GroupInfo;
         target.AllowJsNotification = source.AllowJsNotification;
         target.AllowJsHTTPHash = source.AllowJsHTTPHash;
@@ -541,6 +552,12 @@ public partial class ScriptService : IScriptService
         else if (project.Type == "Shell")
         {
             _logger.LogInformation("→ 开始执行shell: {Name}", project.Name);
+            if (RunnerContext.Instance.IsPreExecution) _logger.LogInformation("此任务为优先执行任务！");
+            await project.Run();
+        }
+        else if (project.Type == "SoloTask")
+        {
+            _logger.LogInformation("→ 开始执行独立任务: {Name}", project.Name);
             if (RunnerContext.Instance.IsPreExecution) _logger.LogInformation("此任务为优先执行任务！");
             await project.Run();
         }
