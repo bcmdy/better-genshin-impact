@@ -693,7 +693,7 @@ public class AutoFightTask : ISoloTask
                                     {
                                         if (_skipFlag)
                                         {
-                                            continue; 
+                                            break; 
                                         }
                                         
                                         Logger.LogInformation("自动EQ战斗：使用序号 {name} 角色技能", num);
@@ -772,7 +772,7 @@ public class AutoFightTask : ISoloTask
                                             
                                             if (_skipFlag)
                                             {
-                                                continue; 
+                                                break; 
                                             }
                                             
                                             fightEndFlag = FightEndTotoly || await CheckFightFinish(0, detectDelayTime, cts2.Token,avatarQ);
@@ -794,6 +794,10 @@ public class AutoFightTask : ISoloTask
                                                         }
 
                                                         // 原逻辑：触发一次大招并等待，再更新截图重试
+                                                        if (_skipFlag)
+                                                        {
+                                                            break; 
+                                                        }
                                                         Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                                                         await Task.Delay(50, cts2.Token);
 
@@ -834,6 +838,7 @@ public class AutoFightTask : ISoloTask
                                             }
                                         }
                                     }
+                                    if (_skipFlag) continue;
                                 }
                                 useEq.Clear(); 
                                 if (guardianAvatar.IsSkillReady() && !cts2.Token.IsCancellationRequested)
