@@ -77,6 +77,21 @@ public class AutoHoeingTask : ISoloTask
             AppContext.BaseDirectory,
             "User", "JsScript", "AutoHoeingOneDragon");
 
+        // 检查JS脚本资源是否存在
+        if (!Directory.Exists(_dataDir) || !Directory.Exists(Path.Combine(_dataDir, "pathing")))
+        {
+            _logger.LogError("锄地一条龙资源目录不存在: {Dir}", _dataDir);
+            _logger.LogError("请先在「脚本仓库」中订阅并下载「AutoHoeingOneDragon」JS脚本，独立任务依赖该脚本的路线和资源文件");
+
+            // 在UI线程弹窗提示
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Wpf.Ui.Violeta.Controls.Toast.Warning(
+                    "锄地一条龙资源未找到，请先在「脚本仓库」中订阅并下载「AutoHoeingOneDragon」脚本");
+            });
+            return;
+        }
+
         _logger.LogInformation("锄地一条龙任务启动，数据目录: {Dir}", _dataDir);
 
         try
@@ -178,6 +193,12 @@ public class AutoHoeingTask : ISoloTask
             {
                 _logger.LogInformation("强制刷新所有运行记录");
                 _cdManager.ClearAll();
+                // 同时清除内存中路线对象上的CD和运行记录
+                foreach (var route in routes)
+                {
+                    route.CdTime = DateTime.MinValue;
+                    route.Records.Clear();
+                }
                 _cdManager.UpdateAllRecords(routes);
             }
         }
