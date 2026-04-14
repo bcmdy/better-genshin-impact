@@ -338,7 +338,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
         private  static volatile  bool _moveAroadLock = false;
         
         public static async Task<bool?> SeekAndFightAsync(ILogger logger, int detectDelayTime,int delayTime,CancellationToken ct,
-            bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null,int distance = 1000,int retryDis = 0,bool isQuickyEnd = false)
+            bool isEndCheck = false,int rotaryFactor = 6,Avatar? avatar = null,int distance = 1000,int retryDis = 0,bool isQuickyEnd = false,bool isRotationSeek = false)
         {
             if (rotaryFactor == 1 || _moveAroadLock) return null;
             _moveAroadLock = true;
@@ -392,6 +392,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
 
                 while ((retryCount < 25 + (int)(adjustedX / 5) + RetryCountReset)&& !ct.IsCancellationRequested)
                 {
+                    if (AutoFightTask.FightEndTotoly)break;
+                    
                     using var image = CaptureToRectArea();
 
                     if (retryCount == 1)
@@ -503,10 +505,10 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         }
                     }
 
-                    if ((rotationCount6 == 3 || rotationCount6 == 1) && retryCount == 0)
+                    if (((RotationCount == (isRotationSeek? 50:3)) || RotationCount == (isRotationSeek? 50:1)) && retryCount == 0)
                     {
-                        Simulation.SendInput.Mouse.MiddleButtonClick();
-                        await Task.Delay(rotationCount6 == 3 ? 500 : 200, ct);
+                        if (!AutoFightTask.FightEndTotoly)Simulation.SendInput.Mouse.MiddleButtonClick();
+                        await Task.Delay(300, ct);
                     }
 
                     if (retryCount <= 2)
@@ -536,11 +538,18 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         var offsetIndex = rotationCount6 < 2 ? 0 :
                             (rotationCount6 == 2) ? 1 :
                             (rotationCount6 >= 3) ? 2 : 3;
-                        Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
+                        
+                        if (!AutoFightTask.FightEndTotoly)
+                        {
+                            Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
+                        }
                     }
                     else
                     {
-                        Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
+                        if (!AutoFightTask.FightEndTotoly)
+                        {
+                            Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
+                        }
                     }
 
                     await Task.Delay(Math.Max(delay, 1), ct);

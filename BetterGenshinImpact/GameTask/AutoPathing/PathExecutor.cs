@@ -252,14 +252,15 @@ public class PathExecutor
                             {
                                 // 方位点，只需要朝向&& !(waypoint.Type == "orientation" && _lastWaypoint?.Action == ActionEnum.Fight.Code)
                                 // 考虑到方位点大概率是作为执行action的最后一个点，所以放在此处处理，不和传送点一样单独处理
-                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null && waypoint.Misidentification.HandlingMode != "mapRecognition")
+                                if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20  && waypoint.Misidentification.HandlingMode != "mapRecognition")//&& nextWaypoint == null
                                 {
                                     last2Waypoints = true;
-                                    Logger.LogWarning("战斗后节点较近！！-1");
+                                    // Logger.LogWarning("战斗后节点较近！！-1");
                                 }
                                 else
                                 {
                                     last2Waypoints = false;
+                                    // Logger.LogWarning("战斗后节点较近！！-1222");
                                     await FaceTo(waypoint);
                                 }
                                 // await FaceTo(waypoint);
@@ -289,10 +290,11 @@ public class PathExecutor
                                 if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null&& waypoint.Misidentification.HandlingMode != "mapRecognition")
                                 {
                                     last2Waypoints = true;
-                                    Logger.LogWarning("战斗后节点较近！！-2");
+                                    // Logger.LogWarning("战斗后节点较近！！-2");
                                 }
                                 else
                                 {
+                                    // Logger.LogWarning("战斗后节点较近333！！-2");
                                     last2Waypoints = false;
                                     await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
                                 }
@@ -1190,6 +1192,7 @@ public class PathExecutor
 
     public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null, Waypoint? nextWaypoint = null,double? nextDistance = null,int retryDis = 4, bool isPoint = true)
     {
+        Logger.LogWarning("999");
         // 切人
         Task.Run(async () =>
         {
@@ -1333,37 +1336,44 @@ public class PathExecutor
             {
                 if (distance > 500 && num > 2)
                 {
-                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离：{distance}- {x} - {y}", distance,position.X, position.Y);
+                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离1：{distance}- {x} - {y}", distance,position.X, position.Y);
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
                     // Simulation.ReleaseAllKey();
-                    Simulation.SendInput.Mouse.MiddleButtonClick();
+                    // Simulation.SendInput.Mouse.MiddleButtonClick();
                     await Delay(1000, ct);
                     using var screen23 = CaptureToRectArea();
                     (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
                     if (position is not  { X: 0, Y: 0 })
                     {
                         prePosition = position;
-                        Logger.LogWarning("重新识别位置失败，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                        Logger.LogWarning("重新识别位置成功，距离2：{distance} - {x} - {y}", distance,position.X, position.Y);
                     }
-                    distance = Navigation.GetDistance(waypoint, position);
+                    else
+                    {
+                        distance = Navigation.GetDistance(waypoint, position);
+                    }
+                    
                     if(distance > 500)
                     {
-                        Logger.LogWarning("重新识别位置异常，停止移动，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                        Logger.LogWarning("重新识别位置异常，停止移动，距离3：{distance} - {x} - {y}", distance,position.X, position.Y);
                         using var screen233 = CaptureToRectArea();
                         (position, additionalTimeInMs) = await GetPositionAndTime(screen233, waypoint,isPoint);
-                        if (position != default)
+                        if (position is not  { X: 0, Y: 0 })
                         {
                             prePosition = position;
-                            
-                            using var screen2334 = CaptureToRectArea();
-                            (position, additionalTimeInMs) = await GetPositionAndTime(screen2334, waypoint,isPoint);
-                            
-                            Logger.LogWarning("重新识别位置失败，距离：{distance} - {x} - {y}", distance,position.X, position.Y);
+                            Logger.LogWarning("重新识别位置成功，距离4：{distance} - {x} - {y}", distance,position.X, position.Y);
                         }
                         else
                         {
-                            position = prePosition;
-                            Logger.LogWarning("重新识别位置失败，使用上次正常识别的位置，距离：{distance} - {x} - {y}", distance,prePosition.X, prePosition.Y);
+                            using var screen2334 = CaptureToRectArea();
+                            (position, additionalTimeInMs) = await GetPositionAndTime(screen2334, waypoint,isPoint);
+
+                            if (position is  { X: 0, Y: 0 })
+                            {
+                                position = prePosition;
+                            }
+                            
+                            Logger.LogWarning("重新识别位置失败，使用上次正常识别的位置，距离5：{distance} - {x} - {y}", distance,prePosition.X, prePosition.Y);
                         }
                         // continue;
                     }
