@@ -1192,7 +1192,7 @@ public class PathExecutor
 
     public async Task MoveTo(WaypointForTrack waypoint,bool isGetOut = true, PathingTask? task = null, Waypoint? nextWaypoint = null,double? nextDistance = null,int retryDis = 4, bool isPoint = true)
     {
-        Logger.LogWarning("999");
+        // Logger.LogWarning("999");
         // 切人
         Task.Run(async () =>
         {
