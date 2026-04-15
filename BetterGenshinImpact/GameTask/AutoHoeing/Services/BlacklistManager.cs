@@ -1,4 +1,5 @@
 using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using System;
@@ -64,7 +65,8 @@ public class BlacklistManager
         var path = Path.Combine(assetsDir, "itemFull.png");
         if (!File.Exists(path)) return;
         var mat = Cv2.ImRead(path, ImreadModes.Color);
-        _itemFullRo = RecognitionObject.TemplateMatch(mat, 0, 0, 1920, 1080);
+        // 不设ROI，全图搜索（避免缩放问题）
+        _itemFullRo = RecognitionObject.TemplateMatch(mat);
         _itemFullRo.InitTemplate();
     }
 
@@ -92,7 +94,10 @@ public class BlacklistManager
                 if (!result.IsExist()) continue;
 
                 // 检测到背包已满，OCR识别物品名
-                var ocrRo = RecognitionObject.Ocr(560, 450, 800, 170);
+                var scale = TaskContext.Instance().SystemInfo.AssetScale;
+                var ocrRo = RecognitionObject.Ocr(
+                    (int)(560 * scale), (int)(450 * scale),
+                    (int)(800 * scale), (int)(170 * scale));
                 var ocrResults = region.FindMulti(ocrRo);
 
                 if (ocrResults.Count == 0) continue;

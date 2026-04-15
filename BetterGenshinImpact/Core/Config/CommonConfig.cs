@@ -86,4 +86,10 @@ public partial class CommonConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _redeemCodeFeedsUpdateVersion = "20251013";
+
+    /// <summary>
+    /// 锄地一条龙功能是否已解锁
+    /// </summary>
+    [ObservableProperty]
+    private bool _autoHoeingUnlocked;
 }

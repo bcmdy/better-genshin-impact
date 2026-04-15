@@ -24,7 +24,11 @@
     <StackPanel Margin="42,16,42,12">
         <ui:TextBlock Margin="0,0,0,8"
                       FontTypography="BodyStrong"
-                      Text="独立任务设置" />
+                      Text="独立任务设置">
+            <ui:TextBlock.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding SoloTaskTitleClickCommand}" />
+            </ui:TextBlock.InputBindings>
+        </ui:TextBlock>
         <!--  ~1~  停止任务  @1@  -->
         <!-- <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon DismissCircle24}"> -->
         <!--     <ui:CardControl.Header> -->
@@ -4189,7 +4193,8 @@
         </ui:CardControl>-->
 
         <!-- ==================== 锄地一条龙 ==================== -->
-        <ui:CardExpander Margin="0,0,0,12" ContentPadding="0">
+        <ui:CardExpander Margin="0,0,0,12" ContentPadding="0"
+                         Visibility="{Binding AutoHoeingVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <ui:CardExpander.Icon>
                 <ui:FontIcon Glyph="&#xf1bb;" Style="{StaticResource FaFontIconStyle}" />
             </ui:CardExpander.Icon>

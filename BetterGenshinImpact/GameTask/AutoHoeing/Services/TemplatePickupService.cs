@@ -27,6 +27,11 @@ public class TemplatePickupService
     private readonly List<TargetItem> _targetItems = new();
 
     /// <summary>
+    /// 获取已加载的物品模板列表（供黑名单检测使用）
+    /// </summary>
+    public IReadOnlyList<TargetItem> TargetItems => _targetItems;
+
+    /// <summary>
     /// 加载拾取模板图片
     /// </summary>
     public void LoadTemplates(string assetsDir, string pickupMode)

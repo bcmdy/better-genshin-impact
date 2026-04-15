@@ -177,7 +177,7 @@ public class AutoHoeingTask : ISoloTask
 
             if (operationMode == "调试路线分配")
             {
-                RouteGroupAssigner.PrintGroupSummary(routes);
+                RouteGroupAssigner.PrintGroupSummary(routes, _config, _dataDir);
                 _cdManager.UpdateAllRecords(routes);
             }
             else if (operationMode == "运行锄地路线")

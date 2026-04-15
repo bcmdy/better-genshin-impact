@@ -1045,6 +1045,11 @@ public partial class ScriptControlViewModel : ViewModel
     [RelayCommand]
     private void OnAddSoloTask()
     {
+        if (!TaskSettingsPageViewModel.AutoHoeingUnlocked)
+        {
+            Toast.Warning("独立任务未解锁，请先在独立任务设置页面解锁");
+            return;
+        }
         var tasks = GameTask.SoloTaskRegistry.AvailableTasks;
         var combobox = new System.Windows.Controls.ComboBox
         {

@@ -221,6 +221,37 @@ public partial class TaskSettingsPageViewModel : ViewModel
     [ObservableProperty]
     private string _switchAutoHoeingButtonText = "启动";
 
+    /// <summary>
+    /// 锄地一条龙是否可见（隐藏功能，点击独立任务标题10次解锁/锁定）
+    /// </summary>
+    [ObservableProperty]
+    private bool _autoHoeingVisible;
+
+    /// <summary>
+    /// 全局解锁状态，供配置组等其他地方查询
+    /// </summary>
+    public static bool AutoHoeingUnlocked { get; private set; }
+
+    private int _autoHoeingUnlockClickCount;
+
+    /// <summary>
+    /// 独立任务标题点击计数，达到10次切换锄地一条龙的显示/隐藏状态
+    /// </summary>
+    [RelayCommand]
+    private void OnSoloTaskTitleClick()
+    {
+        _autoHoeingUnlockClickCount++;
+        if (_autoHoeingUnlockClickCount >= 10)
+        {
+            _autoHoeingUnlockClickCount = 0;
+            var newState = !AutoHoeingVisible;
+            AutoHoeingVisible = newState;
+            AutoHoeingUnlocked = newState;
+            Config.CommonConfig.AutoHoeingUnlocked = newState;
+            Wpf.Ui.Violeta.Controls.Toast.Success(newState ? "锄地一条龙已解锁" : "锄地一条龙已锁定");
+        }
+    }
+
     public TaskSettingsPageViewModel(IConfigService configService, INavigationService navigationService, TaskTriggerDispatcher taskTriggerDispatcher)
     {
         Config = configService.Get();
@@ -228,6 +259,10 @@ public partial class TaskSettingsPageViewModel : ViewModel
         _taskDispatcher = taskTriggerDispatcher;
         NormalizeLeyLineOutcropType();
         _scanDropsAfterRewardEnabledUi = Config.AutoLeyLineOutcropConfig.ScanDropsAfterRewardEnabled;
+
+        // 从持久化配置恢复锄地一条龙解锁状态
+        _autoHoeingVisible = Config.CommonConfig.AutoHoeingUnlocked;
+        AutoHoeingUnlocked = Config.CommonConfig.AutoHoeingUnlocked;
 
         //_strategyList = LoadCustomScript(Global.Absolute(@"User\AutoGeniusInvokation"));
 

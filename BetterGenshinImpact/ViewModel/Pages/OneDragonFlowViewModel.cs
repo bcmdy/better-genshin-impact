@@ -104,7 +104,6 @@ public partial class OneDragonFlowViewModel : ViewModel
         new ("自动地脉花"),
         new("领取每日奖励"),
         new ("领取尘歌壶奖励"),
-        new ("锄地一条龙"),
         // new ("自动七圣召唤"),
     ];
     
@@ -161,7 +160,6 @@ public partial class OneDragonFlowViewModel : ViewModel
             new() { Name = "自动地脉花" },
             new() { Name = "领取每日奖励" },
             new() { Name = "领取尘歌壶奖励" },
-            new() { Name = "锄地一条龙" },
         };
 
     private readonly string _scriptGroupPath = Global.Absolute(@"User\ScriptGroup");

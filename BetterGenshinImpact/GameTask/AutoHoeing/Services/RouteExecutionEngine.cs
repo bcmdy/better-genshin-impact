@@ -114,7 +114,7 @@ public class RouteExecutionEngine
         if (_config.PickupMode.Contains("模板匹配"))
         {
             tasks.Add(Task.Run(() => _blacklistManager.RunDetectionLoop(
-                IsRunning, new List<TargetItem>(), linkedCt), linkedCt));
+                IsRunning, _pickupService.TargetItems.ToList(), linkedCt), linkedCt));
         }
 
         // 泥头车
