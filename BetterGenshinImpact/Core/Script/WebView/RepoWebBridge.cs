@@ -9,6 +9,7 @@ using BetterGenshinImpact.ViewModel.Message;
 using CommunityToolkit.Mvvm.Messaging;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using BetterGenshinImpact.GameTask;
 
 namespace BetterGenshinImpact.Core.Script.WebView;
 
@@ -31,7 +32,7 @@ public sealed class RepoWebBridge
     {
         ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".ico"
     };
-
+    
     public async Task<string> GetRepoJson()
     {
         try
@@ -77,7 +78,29 @@ public sealed class RepoWebBridge
         return await File.ReadAllTextAsync(userConfigPath);
     }
 
-    public async Task<string> GetFile(string relPath)
+    /// <summary>
+    /// 获取当前仓库的已订阅脚本路径列表（JSON 数组）。
+    /// 相比 GetUserConfigJson() 更轻量，仅返回当前仓库的订阅路径。
+    /// </summary>
+    public string GetSubscribedScriptPaths()
+    {
+        try
+        {
+            var paths = ScriptRepoUpdater.GetSubscribedPathsForCurrentRepo();
+            if (paths.Count > 0)
+            {
+                return Newtonsoft.Json.JsonConvert.SerializeObject(paths);
+            }
+
+            return "[]";
+        }
+        catch
+        {
+            return "[]";
+        }
+    }
+
+    public Task<string> GetFile(string relPath)
     {
         try
         {
@@ -92,34 +115,53 @@ public sealed class RepoWebBridge
             string normalizedFilePath = Path.GetFullPath(filePath);
             if (!normalizedFilePath.StartsWith(normalizedBasePath, StringComparison.OrdinalIgnoreCase))
             {
-                   return "404";
-            }
-
-            if (!File.Exists(filePath))
-            {
-                return "404";
+                return Task.FromResult("404");
             }
 
             string extension = Path.GetExtension(filePath).ToLower();
     
             if (AllowedTextExtensions.Contains(extension)) 
             {
-                return await File.ReadAllTextAsync(filePath);
+                // 读取文本文件
+                string? content = ScriptRepoUpdater.Instance.ReadFileFromCenterRepo(relPath);
+                return Task.FromResult(string.IsNullOrEmpty(content) ? "404" : content);
             }
             else if (AllowedImageExtensions.Contains(extension))
             {
-                byte[] bytes = await File.ReadAllBytesAsync(filePath);
-                return Convert.ToBase64String(bytes);
+                // 读取图片文件，返回 Base64 编码
+                byte[]? bytes = ScriptRepoUpdater.Instance.ReadBinaryFileFromCenterRepo(relPath);
+                if (bytes == null || bytes.Length == 0)
+                {
+                    return Task.FromResult("404");
+                }
+
+                string base64 = Convert.ToBase64String(bytes);
+                return Task.FromResult(base64);
             }
 
-            return "404";
+            return Task.FromResult("404");
         }
         catch
         {
-            return "404";
+            return Task.FromResult("404");
         }
     }
-    
+
+    private static string GetMimeType(string extension)
+    {
+        return extension.ToLower() switch
+        {
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".webp" => "image/webp",
+            ".svg" => "image/svg+xml",
+            ".ico" => "image/x-icon",
+            _ => "application/octet-stream"
+        };
+    }
+
     public async Task<bool> UpdateSubscribed(string path)
     {
         try
@@ -163,7 +205,7 @@ public sealed class RepoWebBridge
                 throw new FileNotFoundException("找不到原始 repo.json 文件");
             }
 
-            string targetPath = Path.Combine(ScriptRepoUpdater.ReposPath, "repo_updated.json");
+            string targetPath = ScriptRepoUpdater.RepoUpdatedJsonPath;
 
             File.Copy(repoJsonPath, targetPath, overwrite: true);
 
@@ -176,12 +218,39 @@ public sealed class RepoWebBridge
         }
     }
 
+    // 设置新手引导标志位
+    public bool SetGuideStatus(bool status)
+    {
+        try
+        {
+            var scriptConfig = TaskContext.Instance().Config.ScriptConfig;
+            scriptConfig.GuideStatus = status;
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+    
+    // 获取新手引导标志位
+    public bool GetGuideStatus()
+    {
+        try
+        {
+            return TaskContext.Instance().Config.ScriptConfig.GuideStatus;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return false;
+        }
+    }
+
     private static string GetRepoJsonPath()
     {
-        string updatedRepoJsonPath = Path.Combine(
-            Path.GetDirectoryName(Path.Combine(ScriptRepoUpdater.ReposPath, "bettergi-scripts-list-git"))!,
-            "repo_updated.json"
-        );
+        string updatedRepoJsonPath = ScriptRepoUpdater.RepoUpdatedJsonPath;
 
         if (File.Exists(updatedRepoJsonPath))
         {
@@ -195,7 +264,7 @@ public sealed class RepoWebBridge
         return repoJson ?? throw new FileNotFoundException("repo.json 仓库索引文件不存在，请至少成功更新一次仓库！");
     }
 
-    private static void ProcessPathRecursively(JArray array, string[] pathParts, int currentIndex)
+    internal static void ProcessPathRecursively(JArray array, string[] pathParts, int currentIndex)
     {
         foreach (JObject item in array.OfType<JObject>())
         {
@@ -213,7 +282,7 @@ public sealed class RepoWebBridge
         }
     }
 
-    private static void ResetHasUpdateFlag(JObject node)
+    internal static void ResetHasUpdateFlag(JObject node)
     {
         if (node["hasUpdate"] is { Type: JTokenType.Boolean } hasUpdate && 
             (bool)hasUpdate)

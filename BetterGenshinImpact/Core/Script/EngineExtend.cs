@@ -5,6 +5,7 @@ using BetterGenshinImpact.Core.Script.Dependence.Model;
 using Microsoft.ClearScript;
 using System.Threading;
 using System.Threading.Tasks;
+using BetterGenshinImpact.Core.BgiVision;
 using OpenCvSharp;
 using BetterGenshinImpact.Core.Recognition;
 using BetterGenshinImpact.GameTask.Model.Area;
@@ -12,6 +13,9 @@ using BetterGenshinImpact.Core.Script.Utils;
 using BetterGenshinImpact.GameTask.AutoDomain;
 using BetterGenshinImpact.GameTask.AutoFight;
 using BetterGenshinImpact.GameTask.AutoFight.Model;
+using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
+using BetterGenshinImpact.GameTask.AutoSkip;
+using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 
 namespace BetterGenshinImpact.Core.Script;
 
@@ -35,11 +39,12 @@ public class EngineExtend
         engine.AddHostObject("file", new LimitedFile(workDir)); // 限制文件访问
         engine.AddHostObject("http", new Http()); // 限制文件访问
         engine.AddHostObject("notification", new Notification());
-
+        
         // 任务调度器
         engine.AddHostObject("dispatcher", new Dispatcher(config));
         engine.AddHostType("RealtimeTimer", typeof(RealtimeTimer));
         engine.AddHostType("SoloTask", typeof(SoloTask));
+        engine.AddHostType("AutoSkipConfig", typeof(AutoSkipConfig));
         
         // 添加取消令牌相关类型
         engine.AddHostType("CancellationTokenSource", typeof(CancellationTokenSource));
@@ -70,11 +75,19 @@ public class EngineExtend
         
         engine.AddHostType("AutoDomainParam", typeof(AutoDomainParam));  
         engine.AddHostType("AutoFightParam", typeof(AutoFightParam)); 
-        
-
-
+        engine.AddHostType("AutoLeyLineOutcropParam", typeof(AutoLeyLineOutcropParam));
+        engine.AddHostType("AutoStygianOnslaughtParam", typeof(AutoStygianOnslaughtParam));
+        //鼠标回调
+        engine.AddHostType("KeyMouseHook", typeof(KeyMouseHook)); 
         // 添加C#的类型
         engine.AddHostType(typeof(Task));
+        
+        // 新的BvPage类
+        engine.AddHostType("BvPage", typeof(BvPage));
+        engine.AddHostType("BvLocator", typeof(BvLocator));
+        engine.AddHostType("BvImage", typeof(BvImage));
+
+        engine.AddHostObject("host", new CustomHostFunctions());
 
         // 导入 JavaScript 模块
         // https://microsoft.github.io/ClearScript/2023/01/24/module-interop.html
@@ -117,6 +130,7 @@ public class EngineExtend
 
 #pragma warning disable CS8974 // Converting method group to non-delegate type
         engine.AddHostObject("sleep", GlobalMethod.Sleep);
+        engine.AddHostObject("getVersion", GlobalMethod.GetVersion);
         engine.AddHostObject("keyDown", GlobalMethod.KeyDown);
         engine.AddHostObject("keyUp", GlobalMethod.KeyUp);
         engine.AddHostObject("keyPress", GlobalMethod.KeyPress);

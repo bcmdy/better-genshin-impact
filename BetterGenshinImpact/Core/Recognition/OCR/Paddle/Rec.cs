@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using BetterGenshinImpact.Core.Recognition.OCR.Engine;
 using BetterGenshinImpact.Core.Recognition.OCR.Engine.data;
@@ -95,21 +94,33 @@ public class Rec(
                 // .AsParallel()
                 .Select(src =>
                 {
-                    using var channel3 = src.Channels() switch
+                    Mat? channel3 = default;
+                    try
                     {
-                        4 => src.CvtColor(ColorConversionCodes.BGRA2BGR),
-                        1 => src.CvtColor(ColorConversionCodes.GRAY2BGR),
-                        3 => src,
-                        var x => throw new Exception($"Unexpect src channel: {x}, allow: (1/3/4)")
-                    };
-                    var result = OcrUtils.ResizeNormImg(channel3, new OcrShape(3, maxWidth, modelHeight),
-                        out var owner);
-                    lock (owners)
-                    {
-                        owners.Add(owner);
-                    }
+                        channel3 = src.Channels() switch
+                        {
+                            4 => src.CvtColor(ColorConversionCodes.BGRA2BGR),
+                            1 => src.CvtColor(ColorConversionCodes.GRAY2BGR),
+                            3 => src,
+                            var x => throw new Exception($"Unexpect src channel: {x}, allow: (1/3/4)")
+                        };
+                        var result = OcrUtils.ResizeNormImg(channel3, new OcrShape(3, maxWidth, modelHeight),
+                            out var owner);
+                        lock (owners)
+                        {
+                            owners.Add(owner);
+                        }
 
-                    return result;
+                        return result;
+                    }
+                    finally
+                    {
+                        // Only dispose Mats created in this scope
+                        if (channel3 != null && !ReferenceEquals(channel3, src))
+                        {
+                            channel3.Dispose();
+                        }
+                    }
                 })
                 .Select(inputTensor =>
                     {
@@ -141,44 +152,44 @@ public class Rec(
         {
             var resultArray = resultTensor.Item2;
             var resultShape = resultTensor.Item1;
-            GCHandle dataHandle = default;
-            try
-            {
-                dataHandle = GCHandle.Alloc(resultArray, GCHandleType.Pinned);
-                var dataPtr = dataHandle.AddrOfPinnedObject();
-                var labelCount = resultShape[2];
-                var charCount = resultShape[1];
+            var labelCount = resultShape[2];
+            var charCount = resultShape[1];
 
-                return Enumerable.Range(0, resultShape[0])
-                    .Select(i =>
+            return Enumerable.Range(0, resultShape[0])
+                .Select(i =>
+                {
+                    StringBuilder sb = new();
+                    var lastIndex = 0;
+                    float score = 0;
+                    var batchOffset = i * charCount * labelCount;
+                    for (var n = 0; n < charCount; ++n)
                     {
-                        StringBuilder sb = new();
-                        var lastIndex = 0;
-                        float score = 0;
-                        for (var n = 0; n < charCount; ++n)
+                        var rowOffset = batchOffset + n * labelCount;
+                        var maxVal = float.MinValue;
+                        var maxIndex = 0;
+                        for (var c = 0; c < labelCount; c++)
                         {
-                            using var mat = Mat.FromPixelData(1, labelCount, MatType.CV_32FC1,
-                                dataPtr + (n + i * charCount) * labelCount * sizeof(float));
-                            var maxIdx = new int[2];
-                            mat.MinMaxIdx(out _, out var maxVal, [], maxIdx);
-
-                            if (maxIdx[1] > 0 && !(n > 0 && maxIdx[1] == lastIndex))
+                            var value = resultArray[rowOffset + c];
+                            if (value > maxVal)
                             {
-                                score += (float)maxVal;
-                                sb.Append(OcrUtils.GetLabelByIndex(maxIdx[1], labels));
+                                maxVal = value;
+                                maxIndex = c;
                             }
-
-                            lastIndex = maxIdx[1];
                         }
 
-                        return new OcrRecognizerResult(sb.ToString(), score / sb.Length);
-                    })
-                    .ToArray();
-            }
-            finally
-            {
-                dataHandle.Free();
-            }
+                        if (maxIndex > 0 && !(n > 0 && maxIndex == lastIndex))
+                        {
+                            score += maxVal;
+                            sb.Append(OcrUtils.GetLabelByIndex(maxIndex, labels));
+                        }
+
+                        lastIndex = maxIndex;
+                    }
+
+                    var text = sb.ToString();
+                    return new OcrRecognizerResult(text, text.Length > 0 ? score / text.Length : 0);
+                })
+                .ToArray();
         }).ToArray();
     }
 

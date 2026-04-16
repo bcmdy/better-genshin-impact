@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using BetterGenshinImpact.Model;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -52,7 +52,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         // new ("每日委托"),
         new("自动秘境"),
         new ("自动幽境危战"),
-        // new ("自动刷地脉花"),
+        new ("自动地脉花"),
         new("领取每日奖励"),
         new ("领取尘歌壶奖励"),
         // new ("自动七圣召唤"),
@@ -85,6 +85,7 @@ public partial class OneDragonFlowViewModel : ViewModel
             new() { Name = "合成树脂" },
             new() { Name = "自动秘境" },
             new() { Name = "自动幽境危战" },
+            new() { Name = "自动地脉花" },
             new() { Name = "领取每日奖励" },
             new() {Name = "领取尘歌壶奖励" },
         };
@@ -282,7 +283,7 @@ public partial class OneDragonFlowViewModel : ViewModel
 
     [ObservableProperty] private List<string> _craftingBenchCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
 
-    [ObservableProperty] private List<string> _adventurersGuildCountry = ["枫丹", "稻妻", "璃月", "蒙德"];
+    [ObservableProperty] private List<string> _adventurersGuildCountry = ["挪德卡莱", "枫丹", "稻妻", "璃月", "蒙德"];
 
     [ObservableProperty] private List<string> _domainNameList = ["", ..MapLazyAssets.Instance.DomainNameList];
 
@@ -544,15 +545,16 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
         _autoRun = false;
         //
-        var args = Environment.GetCommandLineArgs();
-        if (args.Length > 1 && args[1].Contains("startOneDragon"))
+        var cmdOptions = CommandLineOptions.Instance;
+        if (cmdOptions.Action == CommandLineAction.StartOneDragon)
         {
             // 通过命令行参数启动一条龙。
-            if (args.Length > 2)
+            if (cmdOptions.OneDragonConfigName != null)
             {
                 // 从命令行参数中提取一条龙配置名称。
-                _logger.LogInformation($"参数指定的一条龙配置：{args[2]}");
-                var argsOneDragonConfig = ConfigList.FirstOrDefault(x => x.Name == args[2], null);
+                _logger.LogInformation($"参数指定的一条龙配置：{cmdOptions.OneDragonConfigName}");
+                var argsOneDragonConfig = ConfigList.FirstOrDefault(x =>
+                    string.Equals(x.Name, cmdOptions.OneDragonConfigName, StringComparison.Ordinal));
                 if (argsOneDragonConfig != null)
                 {
                     // 设定配置，配置下拉框会选定。
@@ -585,9 +587,7 @@ public partial class OneDragonFlowViewModel : ViewModel
         int finishTaskcount = 1;
         int enabledTaskCountall = SelectedConfig.TaskEnabledList.Count(t => t.Value);
         _logger.LogInformation($"启用任务总数量: {enabledTaskCountall}");
-
-        await ScriptService.StartGameTask();
-
+        
         ReadScriptGroup();
         foreach (var task in ScriptGroupsdefault)
         {
@@ -737,5 +737,132 @@ public partial class OneDragonFlowViewModel : ViewModel
         }
 
         SaveConfig();
+    }
+
+    [RelayCommand]
+    private async Task DeleteConfig()
+    {
+        if (SelectedConfig == null)
+        {
+            Toast.Warning("请先选择要删除的配置");
+            return;
+        }
+
+        var displayName = SelectedConfig.Name.Length > 14 
+            ? $"{SelectedConfig.Name[..4]}...{SelectedConfig.Name[^4..]}" 
+            : SelectedConfig.Name;
+        var result = await ThemedMessageBox.ShowAsync(
+            $"确定要删除配置「{displayName}」吗？", 
+            "删除配置", 
+            System.Windows.MessageBoxButton.YesNo, 
+            ThemedMessageBox.MessageBoxIcon.Question);
+        if (result != System.Windows.MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            // 删除对应的JSON文件
+            var configFile = Path.Combine(OneDragonFlowConfigFolder, $"{SelectedConfig.Name}.json");
+            if (File.Exists(configFile))
+            {
+                File.Delete(configFile);
+            }
+
+            // 从列表中移除
+            ConfigList.Remove(SelectedConfig);
+
+            // 如果列表为空，创建默认配置
+            if (ConfigList.Count == 0)
+            {
+                var defaultConfig = new OneDragonFlowConfig
+                {
+                    Name = "默认配置"
+                };
+                ConfigList.Add(defaultConfig);
+                SelectedConfig = defaultConfig;
+                WriteConfig(defaultConfig);
+            }
+            else
+            {
+                // 如果还有其他配置，选中第一个
+                SelectedConfig = ConfigList[0];
+            }
+
+            // 更新全局配置名称
+            TaskContext.Instance().Config.SelectedOneDragonFlowConfigName = SelectedConfig.Name;
+            
+            // 刷新任务列表
+            LoadDisplayTaskListFromConfig();
+            SelectedTask = null!;
+            InputScriptGroupName = string.Empty;
+            
+            // 保存配置
+            SaveConfig();
+
+            Toast.Success("配置删除成功");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "删除配置时失败");
+            Toast.Error("删除配置时失败");
+        }
+    }
+
+    [RelayCommand]
+    private void RenameConfig()
+    {
+        if (SelectedConfig == null)
+        {
+            Toast.Warning("请先选择要重命名的配置");
+            return;
+        }
+
+        var newName = PromptDialog.Prompt("请输入新的配置名称", "重命名配置", SelectedConfig.Name);
+        if (string.IsNullOrEmpty(newName))
+        {
+            return;
+        }
+
+        if (newName == SelectedConfig.Name)
+        {
+            return;
+        }
+
+        if (ConfigList.Any(x => x.Name == newName))
+        {
+            Toast.Warning($"配置名称「{newName}」已存在，请使用其他名称");
+            return;
+        }
+
+        try
+        {
+            // 保存旧名称
+            var oldName = SelectedConfig.Name;
+            
+            // 更新配置名称
+            SelectedConfig.Name = newName;
+
+            // 先写入新文件
+            WriteConfig(SelectedConfig);
+
+            // 写入成功后再删除旧文件
+            var oldConfigFile = Path.Combine(OneDragonFlowConfigFolder, $"{oldName}.json");
+            if (File.Exists(oldConfigFile))
+            {
+                File.Delete(oldConfigFile);
+            }
+
+            // 更新全局配置名称
+            TaskContext.Instance().Config.SelectedOneDragonFlowConfigName = newName;
+
+            Toast.Success("配置重命名成功");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "重命名配置时失败");
+            Toast.Error("重命名配置时失败");
+        }
     }
 }

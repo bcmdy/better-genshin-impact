@@ -41,6 +41,7 @@ using BetterGenshinImpact.GameTask.Common;
 using Compunet.YoloSharp;
 using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoFight;
+using BetterGenshinImpact.GameTask.AutoDomain.Assets;
 
 namespace BetterGenshinImpact.GameTask.AutoDomain;
 
@@ -94,7 +95,7 @@ public class AutoDomainTask : ISoloTask
         this.clickanywheretocloseLocalizedString = stringLocalizer.WithCultureGet(cultureInfo, "点击任意位置关闭");
         this.matchingChallengeString = stringLocalizer.WithCultureGet(cultureInfo, "匹配挑战");
         this.rapidformationString = stringLocalizer.WithCultureGet(cultureInfo, "快速编队");
-        this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全开");
+        this.limitedFullyString = stringLocalizer.WithCultureGet(cultureInfo, "限时全部开放");
         this.limitedFullyAllString = stringLocalizer.WithCultureGet(cultureInfo, "限时开放");
     }
 
@@ -207,8 +208,6 @@ public class AutoDomainTask : ISoloTask
                 Logger.LogInformation("体力耗尽或者设置轮次已达标，结束自动秘境");
                 break;
             }
-
-            Notify.Event(NotificationEvent.DomainReward).Success("自动秘境奖励领取");
         }
     }
 
@@ -381,7 +380,7 @@ public class AutoDomainTask : ISoloTask
         using var limitedFullyStringRa = CaptureToRectArea();
         var limitedFullyStringRaocrList =
             limitedFullyStringRa.FindMulti(RecognitionObject.Ocr(0, 0, limitedFullyStringRa.Width * 0.5,
-                limitedFullyStringRa.Height));
+                limitedFullyStringRa.Height * 0.5));
         var limitedFullyStringRaocrListdone = limitedFullyStringRaocrList.LastOrDefault(t =>
             Regex.IsMatch(t.Text, this.limitedFullyString) || Regex.IsMatch(t.Text, this.limitedFullyAllString));
         // 检测是否为限时全开秘境
@@ -456,7 +455,7 @@ public class AutoDomainTask : ISoloTask
         // 点击单人挑战确认并等待队伍界面--使用图像模版匹配的方法，也可以使用文字OCR的方法识别“单人挑战”直到消失
         await NewRetry.WaitForElementAppear(
             ElementAssets.Instance.PartyBtnChooseView,
-            async void () =>
+            () =>
             {
                 using var ra = CaptureToRectArea();
                 var ra2 = ra.Find(fightAssets.ConfirmRa);
@@ -1151,6 +1150,26 @@ public class AutoDomainTask : ISoloTask
                 {
                     if (record.RemainCount > 0)
                     {
+                        if (record.Name == "原粹树脂20" || record.Name == "原粹树脂40")
+                        {
+                            int expectedNum = record.Name == "原粹树脂20" ? 20 : 40;
+                            bool switched;
+                            try
+                            {
+                                switched = SwitchOriginalResinType(expectedNum, _ct);
+                            }
+                            catch (RetryException)
+                            {
+                                Logger.LogWarning("自动秘境：切换原粹树脂类型重试超时，跳过 {Name}", record.Name);
+                                switched = false;
+                            }
+
+                            if (!switched)
+                            {
+                                continue;
+                            }
+                        }
+
                         var (success, _) = PressUseResin(textListInPrompt2, record.Name);
                         if (success)
                         {
@@ -1183,6 +1202,8 @@ public class AutoDomainTask : ISoloTask
             // 如果没有选择树脂的提示，说明只有原粹树脂
             // 继续向下执行
         }
+        
+        Notify.Event(NotificationEvent.DomainReward).Success("自动秘境奖励领取");
 
         Sleep(1000, _ct);
 
@@ -1258,6 +1279,11 @@ public class AutoDomainTask : ISoloTask
 
     public static (bool, int) PressUseResin(List<Region> regionList, string resinName)
     {
+        if (resinName == "原粹树脂20" || resinName == "原粹树脂40")
+        {
+            resinName = "原粹树脂";
+        }
+
         var resinKey = regionList.FirstOrDefault(t => t.Text.Contains(resinName));
         if (resinKey != null)
         {
@@ -1291,6 +1317,46 @@ public class AutoDomainTask : ISoloTask
         }
 
         return (false, 0);
+    }
+
+    private bool SwitchOriginalResinType(int expectedNum, CancellationToken ct)
+    {
+        return NewRetry.Do(() =>
+        {
+            using var ra0 = CaptureToRectArea();
+            var regionList = ra0.FindMulti(RecognitionObject.Ocr(ra0.Width * 0.25, ra0.Height * 0.2, ra0.Width * 0.5, ra0.Height * 0.6));
+            var has20 = regionList.Any(t => t.Text.Contains("20"));
+            var has40 = regionList.Any(t => t.Text.Contains("40"));
+            if (expectedNum == 20 && has20)
+            {
+                Logger.LogInformation("自动秘境：已切换到使用20原粹树脂");
+                return true;
+            }
+
+            if (expectedNum == 40 && has40)
+            {
+                Logger.LogInformation("自动秘境：已切换到使用40原粹树脂");
+                return true;
+            }
+
+            //切换20/40原粹树脂的按钮是亮的
+            var clickable = ra0.Find(AutoDomainAssets.Instance.ResinSwitchBtnRo);
+            if (clickable.IsExist())
+            {
+                Logger.LogDebug("自动秘境：切换原粹树脂使用数量");
+                clickable.Click();
+            }
+
+            //切换20/40原粹树脂的按钮是暗的
+            var disabled = ra0.Find(AutoDomainAssets.Instance.ResinSwitchBtnNoActiveRo);
+            if (disabled.IsExist())
+            {
+                Logger.LogWarning("自动秘境：切换原粹树脂的使用数量失败，可能是体力不足，当前目标：{Num}", expectedNum);
+                return false; // 不可点击  
+            }
+
+            throw new RetryException("未检测到按钮"); // 继续重试  
+        }, TimeSpan.FromMilliseconds(500), 10);
     }
 
     private static int GetResinNum(Region region, string resinName)
@@ -1335,7 +1401,7 @@ public class AutoDomainTask : ISoloTask
         return (region1Top <= region2Bottom && region1Bottom >= region2Top);
     }
 
-    private  async Task ArtifactSalvage()
+    private async Task ArtifactSalvage()
     {
         if (!_taskParam.AutoArtifactSalvage)
         {

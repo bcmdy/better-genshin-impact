@@ -320,7 +320,8 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                 if (retryCount == 0)
                 {
                     await Delay(delayTime,ct);
-                    Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
+                    // Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
+                    Logger.LogInformation("打开编队界面检查战斗是否结束");
                     Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
                     await Delay(detectDelayTime, ct);
                     var ra3 = CaptureToRectArea();
@@ -460,7 +461,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
             {
                 while (attempt < retryCount)
                 {
-                    if (guardianAvatar.TrySwitch(10, false))
+                    if (guardianAvatar.TrySwitch(10))
                     {
                         guardianAvatar.ManualSkillCd = -1;
                         if (await AvatarSkillAsync(Logger, guardianAvatar, false, 1, ct))
@@ -549,7 +550,7 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                         Logger.LogInformation("优先第 {text} 盾奶位 {GuardianAvatar} 元素爆发状态：{attempt}，尝试释放",
                             guardianAvatarName, guardianAvatar.Name, "就绪");
                         
-                        if (guardianAvatar.TrySwitch(8, false))
+                        if (guardianAvatar.TrySwitch(8))
                         {
                             Simulation.SendInput.SimulateAction(GIActions.ElementalBurst);
                             Sleep(500, ct);

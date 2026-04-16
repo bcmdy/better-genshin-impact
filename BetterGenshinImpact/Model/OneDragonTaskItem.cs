@@ -7,6 +7,7 @@ using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.Core.Script;
 using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoDomain;
+using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.Common;
 using BetterGenshinImpact.GameTask.Common.Job;
@@ -126,7 +127,9 @@ public partial class OneDragonTaskItem : ObservableObject
                         return;
                     }
 
-                    await new AutoStygianOnslaughtTask(TaskContext.Instance().Config.AutoStygianOnslaughtConfig, path).Start(CancellationContext.Instance.Cts.Token);
+                    AutoStygianOnslaughtParam param = new AutoStygianOnslaughtParam();
+                    param.SetAutoStygianOnslaughtConfig(TaskContext.Instance().Config.AutoStygianOnslaughtConfig);
+                    await new AutoStygianOnslaughtTask(param, path).Start(CancellationContext.Instance.Cts.Token);
                 };
                 break;
             case "领取每日奖励":
@@ -141,6 +144,49 @@ public partial class OneDragonTaskItem : ObservableObject
                 Action = async () =>
                 {
                     await new GoToSereniteaPotTask().Start(CancellationContext.Instance.Cts.Token);
+                };
+                break;
+            case "自动地脉花":
+                Action = async () =>
+                {
+                    if (!config.ShouldRunLeyLineToday())
+                    {
+                        TaskControl.Logger.LogInformation("自动地脉花未在运行日期内，跳过");
+                        return;
+                    }
+
+                    var taskConfig = TaskContext.Instance().Config.AutoLeyLineOutcropConfig;
+                    var originalType = taskConfig.LeyLineOutcropType;
+                    var originalCountry = taskConfig.Country;
+                    var originalCount = taskConfig.Count;
+                    var originalExhaustionMode = taskConfig.IsResinExhaustionMode;
+                    var originalOpenModeCountMin = taskConfig.OpenModeCountMin;
+                    var (type, country) = config.GetLeyLineConfigForToday(taskConfig);
+
+                    try
+                    {
+                        taskConfig.LeyLineOutcropType = type;
+                        taskConfig.Country = country;
+                        taskConfig.IsResinExhaustionMode = config.LeyLineResinExhaustionMode;
+                        taskConfig.OpenModeCountMin = config.LeyLineOpenModeCountMin;
+                        if (config.LeyLineRunCount > 0)
+                        {
+                            taskConfig.Count = config.LeyLineRunCount;
+                        }
+
+                        AutoLeyLineOutcropParam param = new AutoLeyLineOutcropParam();
+                        param.SetAutoLeyLineOutcropConfig(taskConfig);
+                        await new AutoLeyLineOutcropTask(param, config.LeyLineOneDragonMode)
+                            .Start(CancellationContext.Instance.Cts.Token);
+                    }
+                    finally
+                    {
+                        taskConfig.LeyLineOutcropType = originalType;
+                        taskConfig.Country = originalCountry;
+                        taskConfig.Count = originalCount;
+                        taskConfig.IsResinExhaustionMode = originalExhaustionMode;
+                        taskConfig.OpenModeCountMin = originalOpenModeCountMin;
+                    }
                 };
                 break;
             default:

@@ -1,4 +1,4 @@
-﻿using BetterGenshinImpact.View.Windows;
+using BetterGenshinImpact.View.Windows;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +13,8 @@ public class SystemControl
 {
     public static nint FindGenshinImpactHandle()
     {
-        return FindHandleByProcessName("YuanShen", "GenshinImpact", "Genshin Impact Cloud Game", "Genshin Impact Cloud");
+        var processNames = TaskContext.Instance().GetGenshinGameProcessNameList();
+        return FindHandleByProcessName(processNames.ToArray());
     }
 
     public static async Task<nint> StartFromLocalAsync(string path)
@@ -24,13 +25,30 @@ public class SystemControl
             return IntPtr.Zero;
         }
 
-        // 直接exe启动
-        Process.Start(new ProcessStartInfo(path)
+        var cfg = TaskContext.Instance().Config.GenshinStartConfig;
+        var workdir = Path.GetDirectoryName(path) ?? "";
+        var arg = cfg.GenshinStartArgs;
+
+        if (cfg.StartGameWithCmd)
         {
-            UseShellExecute = true,
-            Arguments = TaskContext.Instance().Config.GenshinStartConfig.GenshinStartArgs,
-            WorkingDirectory = Path.GetDirectoryName(path)
-        });
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" /d \"{workdir}\" \"{path}\" {arg}",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            Process.Start(psi);
+        }
+        else
+        {
+            Process.Start(new ProcessStartInfo(path)
+            {
+                UseShellExecute = true,
+                Arguments = arg,
+                WorkingDirectory = workdir
+            });
+        }
 
         for (var i = 0; i < 5; i++)
         {
@@ -52,13 +70,29 @@ public class SystemControl
     public static bool IsGenshinImpactActiveByProcess()
     {
         var name = GetActiveProcessName();
-        return name is "YuanShen" or "GenshinImpact" or "Genshin Impact Cloud Game";
+        if (string.IsNullOrEmpty(name))
+        {
+            return false;
+        }
+
+        var processNames = TaskContext.Instance().GetGenshinGameProcessNameList();
+        return processNames.Any(p => string.Equals(p, name, StringComparison.OrdinalIgnoreCase));
+    }
+    
+    public static string GetActiveByProcess()
+    {
+        return GetActiveProcessName() ?? "Unknown";
     }
 
     public static bool IsGenshinImpactActive()
     {
         var hWnd = User32.GetForegroundWindow();
         return hWnd == TaskContext.Instance().GameHandle;
+    }
+
+    public static bool IsGenshinImpactMinimized()
+    {
+        return User32.IsIconic(TaskContext.Instance().GameHandle);
     }
 
     public static nint GetForegroundWindowHandle()
@@ -290,10 +324,11 @@ public class SystemControl
     {
         try
         {
-            // 尝试通过进程名称查找原神进程
-            var processes = Process.GetProcessesByName("YuanShen")
-                .Concat(Process.GetProcessesByName("GenshinImpact"))
-                .Concat(Process.GetProcessesByName("Genshin Impact Cloud Game"))
+            var processNames = TaskContext.Instance().GetGenshinGameProcessNameList();
+            var processes = processNames
+                .SelectMany(Process.GetProcessesByName)
+                .GroupBy(p => p.Id)
+                .Select(g => g.First())
                 .ToArray();
 
             if (processes.Length > 0)

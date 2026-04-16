@@ -18,10 +18,11 @@ public class MiningHandler : IActionHandler
 {
     private readonly string[] _miningActions =
     [
+        "莉奈娅 moveby(0,2000),wait(0.5),charge(0.6),wait(0.5),click(middle),wait(0.1)",
         "爱诺 attack(0.8)",
         "诺艾尔 attack(1.25)",
         "玛薇卡 attack(0.20),j,wait(0.5),attack(0.6)",
-        "迪希雅 attack(0.22),j,wait(0.5),attack(0.22),j,wait(0.5),attack(0.45)",
+        "迪希雅 attack(0.6),mousedown,wait(2.1),mouseup,j",
         "娜维娅 attack(1.25)",
         "辛焱 attack(0.28),jump,wait(0.8),attack(0.28),jump,wait(0.8),attack(0.28),jump,wait(0.8)",
         "重云 attack(0.28),jump,wait(0.8),attack(0.28),jump,wait(0.8),attack(0.28),jump,wait(0.8)",

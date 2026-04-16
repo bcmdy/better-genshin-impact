@@ -22,6 +22,10 @@ using Microsoft.Extensions.DependencyInjection;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using BetterGenshinImpact.GameTask.AutoPathing.Handler;
 using BetterGenshinImpact.GameTask.AutoPick.Assets;
+using BetterGenshinImpact.Core.Recognition;
+using BetterGenshinImpact.GameTask.Common.Element.Assets;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.AutoFight.Assets;
 
 namespace BetterGenshinImpact.GameTask.AutoFight;
 
@@ -44,6 +48,10 @@ public class AutoFightTask : ISoloTask
     public static bool FightStatusFlag { get; set; } = false;
     
     private static readonly object PickLock = new object(); 
+    
+    private readonly double _assetScale = TaskContext.Instance().SystemInfo.AssetScale;
+    
+    private readonly ReturnMainUiTask _returnMainUiTask = new();
 
     // 战斗点位
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
@@ -292,6 +300,16 @@ public class AutoFightTask : ISoloTask
         
         AutoFightSeek.RotationCount= 0; // 重置旋转次数
         
+        // 基于经验值的战后拾取检测：在战斗过程中异步检测精英怪经验值图标
+        // 仅在万叶拾取总开关开启时才启动经验值检测
+        ExperienceDetector? expDetector = null;
+        if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpBasedPickupEnabled)
+        {
+            var expRos = AutoFightAssets.Instance.ExperienceRecognitionObjects;
+            expDetector = new ExperienceDetector(expRos, cts2.Token);
+            expDetector.Start();
+        }
+
         // 战斗操作
         var fightTask = Task.Run(async () =>
         {
@@ -411,13 +429,20 @@ public class AutoFightTask : ISoloTask
                             fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
                         }
                         #endregion
-                        
+
                         command.Execute(combatScenes, lastCommand);
                         //统计战斗人次
                         if (i == combatCommands.Count - 1 || command.Name != combatCommands[i + 1].Name)
                         {
                             countFight++;
                         }
+
+                        #region check动作触发战斗结束检测
+                        if (command.Method == Method.Check)
+                        {
+                            fightEndFlag = await CheckFightFinish(delayTime, detectDelayTime);
+                        }
+                        #endregion
 
                         lastFightName = command.Name;
                         if (!fightEndFlag && _taskParam is { FightFinishDetectEnabled: true })
@@ -437,7 +462,7 @@ public class AutoFightTask : ISoloTask
                                 if (_finishDetectConfig.DelayTimes.TryGetValue(command.Name, out var time))
                                 {
                                     delayTime = time;
-                                    Logger.LogInformation($"{command.Name}结束后，延时检查为{delayTime}毫秒");
+                                    // Logger.LogInformation($"{command.Name}结束后，延时检查为{delayTime}毫秒");
                                 }
                                 else
                                 {
@@ -475,6 +500,50 @@ public class AutoFightTask : ISoloTask
         }, cts2.Token);
 
         await fightTask;
+
+        try
+        {
+            // 基于经验值检测结果的拾取判断
+            if (_taskParam.KazuhaPickupEnabled && _taskParam.ExpBasedPickupEnabled && expDetector != null)
+            {
+                // 战斗结束与怪物死亡可能几乎同时发生，检测器可能还没来得及捕获经验值图标
+                // 保持检测器运行，每 100ms 轮询一次结果，最多等待 1.1 秒
+                if (!expDetector.HasDetectedExperience)
+                {
+                    Logger.LogInformation("基于经验值判断：等待经验值检测结果");
+                    var waitMs = 1100;
+                    while (!expDetector.HasDetectedExperience && waitMs > 0)
+                    {
+                        await Delay(100, ct);
+                        waitMs -= 100;
+                    }
+                }
+
+                await expDetector.StopAsync();
+                var shouldPickup = expDetector.HasDetectedExperience;
+                Logger.LogInformation("基于经验值判断：{Result} 战后拾取", shouldPickup ? "执行" : "不执行");
+
+                if (!shouldPickup)
+                {
+                    // 经验值检测未通过，跳过拾取（但仍执行扫描拾取逻辑）
+                    if (_taskParam is { PickDropsAfterFightEnabled: true })
+                    {
+                        await new ScanPickTask().Start(ct);
+                    }
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            // 确保检测器在任何路径（异常/取消/正常）都被停止和释放
+            if (expDetector != null)
+            {
+                await expDetector.StopAsync();
+                expDetector.Dispose();
+            }
+        }
+
         if (_taskParam.BattleThresholdForLoot>=2 && countFight < _taskParam.BattleThresholdForLoot)
         {
             Logger.LogInformation($"战斗人次（{countFight}）低于配置人次（{_taskParam.BattleThresholdForLoot}），跳过此次拾取！");
@@ -486,7 +555,91 @@ public class AutoFightTask : ISoloTask
             // 队伍中存在万叶的时候使用一次长E
             var picker = combatScenes.SelectAvatar("枫原万叶") ?? combatScenes.SelectAvatar("琴");
             
-            var oldPartyName = RunnerContext.Instance.PartyName;
+            string? oldPartyName = null;
+            if (RunnerContext.Instance.PartyName is not null)
+            {
+                oldPartyName = RunnerContext.Instance.PartyName;
+            }
+            else if(picker is null && !string.IsNullOrEmpty(_taskParam.KazuhaPartyName))
+            {
+                Logger.LogWarning("换队拾取：当前队伍名称为空，尝试读取！");
+                await Delay(1000, ct);
+                await _returnMainUiTask.Start(ct);
+
+                for (int attempt = 0; attempt < 6; attempt++)
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
+                    var enterGameAppear = await NewRetry.WaitForElementAppear(
+                        ElementAssets.Instance.PartyBtnChooseView,
+                        () => { },
+                        ct,
+                        15,
+                        500
+                    );
+                    if(attempt == 5 && !enterGameAppear)
+                    {
+                        Logger.LogWarning("换队拾取：读取队伍名称失败，跳过换队拾取步骤");
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(_taskParam.KazuhaPartyName)){
+                await Delay(1000, ct);
+                    
+                //等待寻找2秒队伍按钮出现
+                var timeWaitStart = 0;
+                while(timeWaitStart < 6000)
+                {
+                    using var ra = CaptureToRectArea();
+                    var partyViewBtn = ra.Find(ElementAssets.Instance.PartyBtnChooseView);
+                    if (partyViewBtn.IsExist())
+                    {
+                        // OCR 当前队伍名称（无法单字，中间禁止空格）
+                    // 读取OCR原始识别文本
+                    var rawPartyName = ra.Find(new RecognitionObject
+                    {
+                        RecognitionType = RecognitionTypes.Ocr,
+                        RegionOfInterest = new Rect(partyViewBtn.Right, partyViewBtn.Top, (int)(350 * _assetScale),
+                            partyViewBtn.Height)
+                    }).Text;
+                    
+                    // 核心处理逻辑：1.空值兜底 2.去首尾空白 3.移除末尾的“口”字（仅最后一个是口才删）
+                    if (string.IsNullOrWhiteSpace(rawPartyName))
+                    {
+                        oldPartyName = string.Empty;
+                    }
+                    else
+                    {
+                        //有概率把编辑图标识别为字符，并且含有空格或换行符，需要过滤
+                        var tempName = rawPartyName
+                            .Replace("\"", "")        // 移除所有双引号（核心新增，解决日志里的""问题）
+                            .Replace("\r\n", "")      // 清理Windows换行符
+                            .Replace("\r", "");   // 先清理所有双引号，避免引号干扰后续处理
+                            
+                            // 核心逻辑：找到第一个换行符(\n)的位置，截断并删除换行+后面所有字符
+                            int firstNewLineIndex = tempName.IndexOf('\n');
+                            if (firstNewLineIndex != -1) // 存在换行符，截取到换行符前
+                            {
+                                tempName = tempName.Substring(0, firstNewLineIndex);
+                            }
+                        
+                            // 最后统一去首尾所有空白（空格、制表符、回车符\r等），得到纯净队伍名
+                            oldPartyName = tempName.Trim();
+                    }
+                    
+                    // 后续原有逻辑不变
+                    Logger.LogInformation("换队拾取：当前队伍名称读取为：{oldPartyName}", oldPartyName);
+                    // 加在rawPartyName赋值后，打印原始文本的“原始形态”（转义符会显示）
+                    Logger.LogDebug("OCR原始识别文本（含转义）：{rawPartyName}", rawPartyName);
+                    RunnerContext.Instance.PartyName = oldPartyName;
+                        // await _returnMainUiTask.Start(ct);
+                        break;
+                    }
+                    await Delay(200, ct);
+                    timeWaitStart += 200;
+                }
+            }
+
             var switchPartyFlag = false;
             if (picker == null && !timeOutFlag &&!string.IsNullOrEmpty(_taskParam.KazuhaPartyName) && oldPartyName != _taskParam.KazuhaPartyName)
             {
@@ -516,7 +669,12 @@ public class AutoFightTask : ISoloTask
                 if (picker.Name == "枫原万叶")
                 {
                     var time = TimeSpan.FromSeconds(picker.GetSkillCdSeconds());
-                    if (!(lastFightName == picker.Name && time.TotalSeconds > 3))
+
+                    // 如果配置了二次拾取，或者不满足跳过条件（上次是万叶且冷却时间>3秒），则执行拾取
+                    bool shouldSkip = lastFightName == picker.Name && time.TotalSeconds > 3;
+                    bool forcePickup = _taskParam.QinDoublePickUp;
+                    
+                    if (forcePickup || !shouldSkip)
                     {
                         Logger.LogInformation("使用 枫原万叶-长E 拾取掉落物");
                         await Delay(200, ct);
@@ -633,7 +791,7 @@ public class AutoFightTask : ISoloTask
 
         if (_taskParam is { PickDropsAfterFightEnabled: true } )
         {
-            // 执行自动拾取掉落物的功能
+            // 执行扫描掉落物光柱并靠近的功能
             await new ScanPickTask().Start(ct);
         }
     }
@@ -677,7 +835,8 @@ public class AutoFightTask : ISoloTask
 
         if (!_finishDetectConfig.RotateFindEnemyEnabled)await Delay(delayTime, _ct);
         
-        Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
+        // Logger.LogInformation("打开编队界面检查战斗是否结束，延时{detectDelayTime}毫秒检查", detectDelayTime);
+        Logger.LogInformation("打开编队界面检查战斗是否结束");
         // 最终方案确认战斗结束
         Simulation.SendInput.SimulateAction(GIActions.OpenPartySetupScreen);
         await Delay(detectDelayTime, _ct);
@@ -700,8 +859,9 @@ public class AutoFightTask : ISoloTask
             return true;
         }
 
-        Logger.LogInformation($"未识别到战斗结束yellow{b3.Item0},{b3.Item1},{b3.Item2}");
-        Logger.LogInformation($"未识别到战斗结束white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
+        // Logger.LogInformation($"未识别到战斗结束yellow{b3.Item0},{b3.Item1},{b3.Item2}");
+        // Logger.LogInformation($"未识别到战斗结束white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
+        Logger.LogInformation($"未识别到战斗结束: yellow{b3.Item0},{b3.Item1},{b3.Item2};white{whiteTile.Item0},{whiteTile.Item1},{whiteTile.Item2}");
 
         if (_finishDetectConfig.RotateFindEnemyEnabled)
         {

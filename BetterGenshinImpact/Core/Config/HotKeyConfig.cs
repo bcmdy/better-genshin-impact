@@ -1,4 +1,4 @@
-﻿using BetterGenshinImpact.Model;
+using BetterGenshinImpact.Model;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 
@@ -100,6 +100,13 @@ public partial class HotKeyConfig : ObservableObject
 
     [ObservableProperty]
     private string _quickTeleportTickHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
+    
+    // 技能CD提示开关
+    [ObservableProperty]
+    private string _skillCdEnabledHotkey = "";
+
+    [ObservableProperty]
+    private string _skillCdEnabledHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
 
     // 截图
     [ObservableProperty]
@@ -155,6 +162,13 @@ public partial class HotKeyConfig : ObservableObject
 
     [ObservableProperty]
     private string _autoFishingGameHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
+
+    // 自动烹饪开始/停止
+    [ObservableProperty]
+    private string _autoCookGameHotkey = "";
+
+    [ObservableProperty]
+    private string _autoCookGameHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
 
     // 自动寻路
     [ObservableProperty]
@@ -237,4 +251,11 @@ public partial class HotKeyConfig : ObservableObject
 
     [ObservableProperty]
     private string _onedragonHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
+
+    // 地图遮罩开关
+    [ObservableProperty]
+    private string _mapMaskEnabledHotkey = "";
+
+    [ObservableProperty]
+    private string _mapMaskEnabledHotkeyType = HotKeyTypeEnum.KeyboardMonitor.ToString();
 }

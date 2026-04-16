@@ -186,6 +186,22 @@ public class PathExecutor
 
                         if (waypoint.Type == WaypointType.Teleport.Code)
                         {
+                            if (CurWaypoints.Item1 > 0)
+                            {
+                                var prevWaypoints = waypointsList[CurWaypoints.Item1 - 1];
+                                var prevWaypoint = prevWaypoints[prevWaypoints.Count - 1];
+                                if (prevWaypoint.Type == WaypointType.Teleport.Code
+                                    || prevWaypoint.Action == ActionEnum.Fight.Code
+                                    || prevWaypoint.Action == ActionEnum.NahidaCollect.Code
+                                    || prevWaypoint.Action == ActionEnum.PickAround.Code)
+                                {
+                                    // No delay
+                                }
+                                else
+                                {
+                                    await Delay(1000, ct);
+                                }
+                            }
                             await HandleTeleportWaypoint(waypoint);
                         }
                         else
@@ -312,6 +328,11 @@ public class PathExecutor
             await Delay(4000, ct);
             // 血量肯定不满，直接去七天神像回血
             await TpStatueOfTheSeven();
+        }
+
+        if (PartyConfig.SkipPartySwitch)
+        {
+            return true;
         }
 
         var pRaList = ra.FindMulti(AutoFightAssets.Instance.PRa); // 判断是否联机
@@ -444,9 +465,11 @@ public class PathExecutor
         // 没有强制配置的情况下，使用地图追踪内的条件配置
         // 必须放在这里，因为要通过队伍识别来得到最终结果
         var pathingConditionConfig = TaskContext.Instance().Config.PathingConditionConfig;
+        var skipPartySwitch = PartyConfig.SkipPartySwitch;
         if (PartyConfig is { Enabled: false })
         {
             PartyConfig = pathingConditionConfig.BuildPartyConfigByCondition(_combatScenes);
+            PartyConfig.SkipPartySwitch = skipPartySwitch;
         }
 
         // 校验角色是否存在
@@ -649,7 +672,7 @@ public class PathExecutor
         bool changeBigMap = false;
         string adventurersGuildCountry =
             TaskContext.Instance().Config.OtherConfig.AutoFetchDispatchAdventurersGuildCountry;
-        if (!RunnerContext.Instance.isAutoFetchDispatch && adventurersGuildCountry != "无")
+        if (!RunnerContext.Instance.isAutoFetchDispatch && adventurersGuildCountry != "无" && !string.IsNullOrEmpty(adventurersGuildCountry))
         {
             var ra1 = CaptureToRectArea();
             var textRect = new Rect(60, 20, 160, 260);
@@ -689,7 +712,7 @@ public class PathExecutor
         await TryGetExpeditionRewardsDispatch(tpTask);
         var (tpX, tpY) = await tpTask.Tp(waypoint.GameX, waypoint.GameY, waypoint.MapName, forceTp);
         var (tprX, tprY) = MapManager.GetMap(waypoint.MapName, waypoint.MapMatchMethod)
-            .ConvertGenshinMapCoordinatesToImageCoordinates((float)tpX, (float)tpY);
+            .ConvertGenshinMapCoordinatesToImageCoordinates(new Point2f((float)tpX, (float)tpY));
         Navigation.SetPrevPosition(tprX, tprY); // 通过上一个位置直接进行局部特征匹配
         await Delay(500, ct); // 多等一会
     }
@@ -721,6 +744,7 @@ public class PathExecutor
         var fastMode = false;
         var prevPositions = new List<Point2f>();
         var fastModeColdTime = DateTime.MinValue;
+        var prevNotTooFarPosition = position;
         int num = 0, distanceTooFarRetryCount = 0, consecutiveRotationCountBeyondAngle = 0;
 
         // 按下w，一直走
@@ -790,10 +814,22 @@ public class PathExecutor
                         {
                             Logger.LogWarning($"距离过远（{position.X},{position.Y}）->（{waypoint.X},{waypoint.Y}）={distance}，重试");
                         }
+                        // 取余减少判断频率
+                        if (distanceTooFarRetryCount % 10 == 0)
+                        {
+                            await ResolveAnomalies(screen);
+                            Logger.LogInformation($"重置到上次正确识别的坐标 ({prevNotTooFarPosition.X},{prevNotTooFarPosition.Y})");
+                            Navigation.SetPrevPosition(prevNotTooFarPosition.X, prevNotTooFarPosition.Y);
+                            // 淡入淡出特效
+                            await Delay(500, ct);
+                        }
                         await Delay(50, ct);
                         continue;
                     }
                 }
+            } else
+            {
+                prevNotTooFarPosition = position;
             }
 
             // 非攀爬状态下，检测是否卡死（脱困触发器）
@@ -1074,6 +1110,7 @@ public class PathExecutor
             || waypoint.Action == ActionEnum.Mining.Code
             || waypoint.Action == ActionEnum.Fishing.Code
             || waypoint.Action == ActionEnum.ExitAndRelogin.Code
+            || waypoint.Action == ActionEnum.EnterAndExitWonderland.Code
             || waypoint.Action == ActionEnum.SetTime.Code
             || waypoint.Action == ActionEnum.UseGadget.Code
             || waypoint.Action == ActionEnum.PickUpCollect.Code)
@@ -1332,6 +1369,7 @@ public class PathExecutor
                 if (disabledUiButtonRa.IsExist())
                 {
                     _autoSkipTrigger.OnCapture(new CaptureContent(ra));
+                    noDisabledUiButtonTimes = 0;
                 }
                 else
                 {

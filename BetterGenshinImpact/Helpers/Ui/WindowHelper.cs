@@ -1,17 +1,38 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Windows.Media;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask;
 using Wpf.Ui.Controls;
+using BetterGenshinImpact.Platform.Wine;
 
 namespace BetterGenshinImpact.Helpers.Ui;
 
 public class WindowHelper
 {
+    private const uint DesktopCompositionDisabledHResult = 0x80263001;
+
     public static void TryApplySystemBackdrop(System.Windows.Window window)
     {
         var themeType = TaskContext.Instance().Config.CommonConfig.CurrentThemeType;
-        ApplyThemeToWindow(window, themeType);
+
+        // Wine 平台适配
+        if (WinePlatformAddon.IsRunningOnWine)
+        {
+            try
+            {
+                ApplyThemeToWindow(window, themeType);
+            }
+            catch
+            {
+                Debug.WriteLine($"Failed to apply theme in Wine");
+            }
+        }
+        else
+        {
+            ApplyThemeToWindow(window, themeType);
+        }
     }
 
     /// <summary>
@@ -20,6 +41,22 @@ public class WindowHelper
     /// <param name="window">要应用主题的窗口</param>
     /// <param name="themeType">主题类型</param>
     public static void ApplyThemeToWindow(System.Windows.Window window, ThemeType themeType)
+    {
+        try
+        {
+            ApplyThemeCore(window, themeType);
+        }
+        catch (COMException ex) when ((uint)ex.HResult == DesktopCompositionDisabledHResult)
+        {
+            ApplyFallbackTheme(window, themeType);
+        }
+        catch
+        {
+            ApplyFallbackTheme(window, themeType);
+        }
+    }
+
+    private static void ApplyThemeCore(System.Windows.Window window, ThemeType themeType)
     {
         switch (themeType)
         {
@@ -58,5 +95,22 @@ public class WindowHelper
                 WindowBackdrop.ApplyBackdrop(window, WindowBackdropType.Mica);
                 break;
         }
+    }
+
+    private static void ApplyFallbackTheme(System.Windows.Window window, ThemeType themeType)
+    {
+        window.Background = new SolidColorBrush(GetFallbackBackgroundColor(themeType));
+        WindowBackdrop.ApplyBackdrop(window, WindowBackdropType.None);
+    }
+
+    private static Color GetFallbackBackgroundColor(ThemeType themeType)
+    {
+        return themeType switch
+        {
+            ThemeType.LightNone => Color.FromArgb(255, 243, 243, 243),
+            ThemeType.LightMica => Color.FromArgb(255, 243, 243, 243),
+            ThemeType.LightAcrylic => Color.FromArgb(255, 243, 243, 243),
+            _ => Color.FromArgb(255, 32, 32, 32)
+        };
     }
 }

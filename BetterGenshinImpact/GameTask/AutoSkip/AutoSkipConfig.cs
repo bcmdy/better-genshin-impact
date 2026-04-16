@@ -69,6 +69,12 @@ public partial class AutoSkipConfig : ObservableObject
     [ObservableProperty]
     private string _clickChatOption = "优先选择第一个选项";
     
+    /// <summary>
+    /// 自定义优先选项启用
+    /// </summary>
+    [ObservableProperty]
+    private bool _customPriorityOptionsEnabled = false;
+
     /// <summary>  
     /// 自定义优先选项文本，每行一个或用分号分隔  
     /// </summary>  
@@ -108,10 +114,6 @@ public partial class AutoSkipConfig : ObservableObject
     {
         return ClickChatOption == "随机选择选项";
     }
-    public bool IsClickCustomPriorityOption()  
-    {  
-        return ClickChatOption == "自定义优先选项";  
-    }
     public bool IsClickNoneChatOption()
     {
         return ClickChatOption == "不选择选项";
@@ -122,6 +124,12 @@ public partial class AutoSkipConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _runBackgroundEnabled = false;
+    
+    /// <summary>
+    /// 后台剧情结束后切回游戏前台
+    /// </summary>
+    [ObservableProperty]
+    private bool _bringGameToFrontAfterBackgroundDialogEnabled = false;
 
     /// <summary>
     /// 提交物品
@@ -148,6 +156,12 @@ public partial class AutoSkipConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _closePopupPagedEnabled = true;
+
+    /// <summary>
+    /// JS调用时跳过内置默认点击选项
+    /// </summary>
+    [ObservableProperty]
+    private bool _skipBuiltInClickOptions = false;
 
     // /// <summary>
     // /// 使用交互键

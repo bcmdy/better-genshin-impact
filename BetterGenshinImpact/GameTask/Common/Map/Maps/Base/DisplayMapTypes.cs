@@ -16,4 +16,10 @@ public enum DisplayMapTypes
 
     [Description("旧日之海")]
     SeaOfBygoneEras,
+
+    [Description("远古圣山")]
+    AncientSacredMountain,
+
+    [Description("空之神殿")]
+    TempleOfSpace,
 }

@@ -1,4 +1,5 @@
-﻿using BetterGenshinImpact.Core.Config;
+using System;
+using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.AutoPick;
 using BetterGenshinImpact.GameTask.AutoSkip.Assets;
 using BetterGenshinImpact.GameTask.AutoSkip.Model;
@@ -11,10 +12,13 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using BetterGenshinImpact.GameTask;
+using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.SkillCd;
+using Microsoft.Extensions.Logging;
 using Wpf.Ui;
 using TextBox = Wpf.Ui.Controls.TextBox;
 
@@ -22,7 +26,7 @@ namespace BetterGenshinImpact.ViewModel.Pages;
 
 public partial class TriggerSettingsPageViewModel : ViewModel
 {
-    [ObservableProperty] private string[] _clickChatOptionNames = ["优先选择第一个选项", "随机选择选项","自定义优先选项", "优先选择最后一个选项", "不选择选项"];
+    [ObservableProperty] private string[] _clickChatOptionNames = ["优先选择第一个选项", "随机选择选项", "优先选择最后一个选项", "不选择选项"];
 
     [ObservableProperty] private string[] _selectChatOptionTypeNames = [SelectChatOptionTypes.UseMouse, SelectChatOptionTypes.UseInteractionKey];
 
@@ -64,92 +68,44 @@ public partial class TriggerSettingsPageViewModel : ViewModel
     {
         // 读取精确匹配黑名单
         var exactPath = @"User\pick_black_lists.txt";
-        var exactText = Global.ReadAllTextIfExist(exactPath);
+        var exactText = Global.ReadAllTextIfExist(exactPath) ?? string.Empty;
 
         // 读取模糊匹配黑名单
         var fuzzyPath = @"User\pick_fuzzy_black_lists.txt";
-        var fuzzyText = Global.ReadAllTextIfExist(fuzzyPath);
+        var fuzzyText = Global.ReadAllTextIfExist(fuzzyPath) ?? string.Empty;
 
         // 创建精确匹配黑名单输入框
-        var exactRichTextBox = new System.Windows.Controls.RichTextBox
+        var exactTextBox = new TextBox
         {
             Height = 150,
             Width = 400,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            TextWrapping = TextWrapping.Wrap,
             AcceptsReturn = true,
-            AcceptsTab = true
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            PlaceholderText = "每行一条记录",
+            Text = exactText
         };
-        
-        // 创建 FlowDocument 并设置紧凑的行间距
-        var exactFlowDocument = new FlowDocument();
-        exactFlowDocument.LineHeight = 1.0; // 设置行高为1倍
-        exactFlowDocument.PagePadding = new Thickness(2); // 减小页面内边距
-        
-        // 设置 RichTextBox 的文本内容
-        if (!string.IsNullOrEmpty(exactText))
-        {
-            var paragraph = new Paragraph(new Run(exactText));
-            paragraph.Margin = new Thickness(0); // 移除段落边距
-            paragraph.LineHeight = 1.0; // 设置段落行高
-            exactFlowDocument.Blocks.Add(paragraph);
-        }
-        else
-        {
-            // 即使没有文本也要设置默认段落样式
-            var paragraph = new Paragraph();
-            paragraph.Margin = new Thickness(0);
-            paragraph.LineHeight = 1.0;
-            exactFlowDocument.Blocks.Add(paragraph);
-        }
-        
-        exactRichTextBox.Document = exactFlowDocument;
 
-        // 创建模糊匹配黑名单输入框
-        var fuzzyRichTextBox = new System.Windows.Controls.RichTextBox
+        var fuzzyTextBox = new TextBox
         {
             Height = 150,
             Width = 400,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            TextWrapping = TextWrapping.Wrap,
             AcceptsReturn = true,
-            AcceptsTab = true
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            PlaceholderText = "每行一条记录",
+            Text = fuzzyText
         };
-        
-        // 创建 FlowDocument 并设置紧凑的行间距
-        var fuzzyFlowDocument = new FlowDocument();
-        fuzzyFlowDocument.LineHeight = 1.0; // 设置行高为1倍
-        fuzzyFlowDocument.PagePadding = new Thickness(2); // 减小页面内边距
-        
-        // 设置 RichTextBox 的文本内容
-        if (!string.IsNullOrEmpty(fuzzyText))
-        {
-            var paragraph = new Paragraph(new Run(fuzzyText));
-            paragraph.Margin = new Thickness(0); // 移除段落边距
-            paragraph.LineHeight = 1.0; // 设置段落行高
-            fuzzyFlowDocument.Blocks.Add(paragraph);
-        }
-        else
-        {
-            // 即使没有文本也要设置默认段落样式
-            var paragraph = new Paragraph();
-            paragraph.Margin = new Thickness(0);
-            paragraph.LineHeight = 1.0;
-            fuzzyFlowDocument.Blocks.Add(paragraph);
-        }
-        
-        fuzzyRichTextBox.Document = fuzzyFlowDocument;
 
-        // 创建包含两个输入框的容器
         var stackPanel = new StackPanel();
-        
+
         var exactLabel = new Wpf.Ui.Controls.TextBlock
         {
             Text = "精确匹配黑名单：",
             FontWeight = FontWeights.Bold,
             Margin = new Thickness(0, 0, 0, 5)
         };
-        
+
         var fuzzyLabel = new Wpf.Ui.Controls.TextBlock
         {
             Text = "模糊匹配黑名单：",
@@ -158,9 +114,9 @@ public partial class TriggerSettingsPageViewModel : ViewModel
         };
 
         stackPanel.Children.Add(exactLabel);
-        stackPanel.Children.Add(exactRichTextBox);
+        stackPanel.Children.Add(exactTextBox);
         stackPanel.Children.Add(fuzzyLabel);
-        stackPanel.Children.Add(fuzzyRichTextBox);
+        stackPanel.Children.Add(fuzzyTextBox);
 
         var p = new PromptDialog(
             "黑名单配置\n" +
@@ -175,15 +131,11 @@ public partial class TriggerSettingsPageViewModel : ViewModel
         p.Height = 600;
         p.Width = 500;
         p.ShowDialog();
-        
+
         if (p.DialogResult == true)
         {
-            // 从 RichTextBox 获取纯文本内容
-            var exactTextRange = new TextRange(exactRichTextBox.Document.ContentStart, exactRichTextBox.Document.ContentEnd);
-            var fuzzyTextRange = new TextRange(fuzzyRichTextBox.Document.ContentStart, fuzzyRichTextBox.Document.ContentEnd);
-            
-            File.WriteAllText(Global.Absolute(exactPath), exactTextRange.Text);
-            File.WriteAllText(Global.Absolute(fuzzyPath), fuzzyTextRange.Text);
+            Global.WriteAllText(exactPath, exactTextBox.Text);
+            Global.WriteAllText(fuzzyPath, fuzzyTextBox.Text);
             GameTaskManager.RefreshTriggerConfigs();
         }
     }
@@ -236,6 +188,37 @@ public partial class TriggerSettingsPageViewModel : ViewModel
     //         "派遣角色优先级配置", Config.AutoSkipConfig.AutoReExploreCharacter);
     //     Config.AutoSkipConfig.AutoReExploreCharacter = str.Replace("，", ",").Replace(" ", "");
     // }
+
+    [RelayCommand]
+    private void OnRemoveSkillCdRule(SkillCdRule rule)
+    {
+        if (TemporarySkillCdCollection != null && rule != null)
+        {
+            TemporarySkillCdCollection.Remove(rule);
+        }
+    }
+
+    [ObservableProperty]
+    private System.Collections.ObjectModel.ObservableCollection<SkillCdRule> _temporarySkillCdCollection;
+
+    [RelayCommand]
+    private void OnEditSkillCdConfig()
+    {
+        var configList = Config.SkillCdConfig.CustomCdList;
+        
+        var window = new SkillCdConfigWindow(configList)
+        {
+            Owner = Application.Current.MainWindow
+        };
+        
+        window.Closed += (s, e) => 
+        {
+            Config.SkillCdConfig.CustomCdList = window.GetValidRules();
+            GameTaskManager.RefreshTriggerConfigs();
+        };
+
+        window.ShowDialog();
+    }
 
     [RelayCommand]
     public void OnGoToHotKeyPage()

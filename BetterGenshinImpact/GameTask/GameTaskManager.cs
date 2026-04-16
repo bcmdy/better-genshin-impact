@@ -1,4 +1,4 @@
-﻿using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.Core.Recognition.OpenCv;
 using BetterGenshinImpact.Core.Script.Dependence.Model.TimerConfig;
 using BetterGenshinImpact.GameTask.AutoFight.Assets;
@@ -16,13 +16,15 @@ using BetterGenshinImpact.GameTask.Placeholder;
 using BetterGenshinImpact.GameTask.QuickSereniteaPot.Assets;
 using BetterGenshinImpact.GameTask.QuickTeleport.Assets;
 using BetterGenshinImpact.View.Drawable;
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
 using OpenCvSharp;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using BetterGenshinImpact.GameTask.AutoDomain.Assets;
+using BetterGenshinImpact.GameTask.AutoSkip;
+using BetterGenshinImpact.GameTask.MapMask;
+using BetterGenshinImpact.GameTask.SkillCd;
 
 namespace BetterGenshinImpact.GameTask;
 
@@ -45,8 +47,9 @@ internal class GameTaskManager
         TriggerDictionary.TryAdd("QuickTeleport", new QuickTeleport.QuickTeleportTrigger());
         TriggerDictionary.TryAdd("AutoSkip", new AutoSkip.AutoSkipTrigger());
         TriggerDictionary.TryAdd("AutoFish", new AutoFishing.AutoFishingTrigger());
-        TriggerDictionary.TryAdd("AutoCook", new AutoCook.AutoCookTrigger());
         TriggerDictionary.TryAdd("AutoEat", new AutoEat.AutoEatTrigger());
+        TriggerDictionary.TryAdd("MapMask", new MapMaskTrigger());
+        TriggerDictionary.TryAdd("SkillCd", new SkillCdTrigger());
 
         return ConvertToTriggerList();
     }
@@ -94,7 +97,7 @@ internal class GameTaskManager
                 break;
             case "AutoSkip":
                 triggerName = "AutoSkip";
-                trigger = new AutoSkip.AutoSkipTrigger();
+                trigger = externalConfig is null ? new AutoSkip.AutoSkipTrigger() : new AutoSkip.AutoSkipTrigger(externalConfig as AutoSkipConfig);
                 break;
             case "AutoEat":
                 triggerName = "AutoEat";
@@ -119,8 +122,9 @@ internal class GameTaskManager
             TriggerDictionary.GetValueOrDefault("AutoFish")?.Init();
             TriggerDictionary.GetValueOrDefault("QuickTeleport")?.Init();
             // TriggerDictionary.GetValueOrDefault("GameLoading")?.Init();
-            TriggerDictionary.GetValueOrDefault("AutoCook")?.Init();
             TriggerDictionary.GetValueOrDefault("AutoEat")?.Init();
+            TriggerDictionary.GetValueOrDefault("MapMask")?.Init();
+            TriggerDictionary.GetValueOrDefault("SkillCd")?.Init();
             // 清理画布
             VisionContext.Instance().DrawContent.ClearAll();
         }
@@ -142,6 +146,7 @@ internal class GameTaskManager
         GameLoadingAssets.DestroyInstance();
         MapLazyAssets.DestroyInstance();
         AutoEatAssets.DestroyInstance();
+        AutoDomainAssets.DestroyInstance();
     }
 
     /// <summary>

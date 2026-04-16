@@ -2021,5 +2021,59 @@
     "nameEn": "Columbina",
     "skillCD": 17,
     "weapon": "10"
+  },
+  {
+    "alias": [
+      "兹白",
+      "Zibai",
+      "白马仙人",
+      "白马"
+    ],
+    "burstCD": 15,
+    "id": "10000126",
+    "name": "兹白",
+    "nameEn": "Zibai",
+    "skillCD": 18,
+    "weapon": "10"
+  },
+  {
+    "alias": [
+      "叶洛亚",
+      "Illuga",
+      "少爷",
+      "小少爷"
+    ],
+    "burstCD": 15,
+    "id": "10000127",
+    "name": "叶洛亚",
+    "nameEn": "Illuga",
+    "skillCD": 15,
+    "weapon": "10"
+  },
+  {
+    "alias": [
+      "法尔伽",
+      "Varka",
+      "团长",
+      "法尔加"
+    ],
+    "burstCD": 16,
+    "id": "10000128",
+    "name": "法尔伽",
+    "nameEn": "Varka",
+    "skillCD": 16,
+    "weapon": "10"
+  },
+  {
+    "alias": [
+      "莉奈娅",
+      "Linnea"
+    ],
+    "burstCD": 15,
+    "id": "10000130",
+    "name": "莉奈娅",
+    "nameEn": "Linnea",
+    "skillCD": 18,
+    "weapon": "10"
   }
 ]

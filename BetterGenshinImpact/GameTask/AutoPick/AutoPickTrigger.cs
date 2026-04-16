@@ -25,7 +25,6 @@ namespace BetterGenshinImpact.GameTask.AutoPick;
 public partial class AutoPickTrigger : ITaskTrigger
 {
     private readonly ILogger<AutoPickTrigger> _logger = App.GetLogger<AutoPickTrigger>();
-    private readonly ITextInference _pickTextInference = TextInferenceFactory.Pick;
 
     public string Name => "自动拾取";
     public bool IsEnabled { get; set; }
@@ -79,7 +78,7 @@ public partial class AutoPickTrigger : ITaskTrigger
                 _blackList.UnionWith(userBlackList);
             }
 
-            _fuzzyBlackList = ReadTextList(@"User\pick_black_lists.txt");
+            _fuzzyBlackList = ReadTextList(@"User\pick_fuzzy_black_lists.txt");
         }
 
         if (config.WhiteListEnabled)
@@ -276,7 +275,7 @@ public partial class AutoPickTrigger : ITaskTrigger
         if (config.OcrEngine == nameof(PickOcrEngineEnum.Yap))
         {
             var textMat = new Mat(content.CaptureRectArea.CacheGreyMat, textRect);
-            text = _pickTextInference.Inference(textMat);
+            text = TextInferenceFactory.Pick.Value.Inference(textMat);
         }
         else
         {
@@ -403,6 +402,11 @@ public partial class AutoPickTrigger : ITaskTrigger
         }
 
         if (text.Contains("西风成垒") || text.Contains("望崖营壁") || text.Contains("魔女的花园"))
+        {
+            return true;
+        }
+        
+        if (text.Contains("月谕圣牌"))
         {
             return true;
         }

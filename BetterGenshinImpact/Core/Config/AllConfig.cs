@@ -1,5 +1,4 @@
-﻿using BetterGenshinImpact.GameTask;
-using BetterGenshinImpact.GameTask.AutoCook;
+using BetterGenshinImpact.GameTask;
 using BetterGenshinImpact.GameTask.AutoDomain;
 using BetterGenshinImpact.GameTask.AutoFight;
 using BetterGenshinImpact.GameTask.AutoFishing;
@@ -22,6 +21,10 @@ using BetterGenshinImpact.GameTask.AutoArtifactSalvage;
 using BetterGenshinImpact.GameTask.AutoStygianOnslaught;
 using BetterGenshinImpact.GameTask.GetGridIcons;
 using BetterGenshinImpact.GameTask.AutoEat;
+using BetterGenshinImpact.GameTask.AutoLeyLineOutcrop;
+using BetterGenshinImpact.GameTask.AutoCook;
+using BetterGenshinImpact.GameTask.MapMask;
+using BetterGenshinImpact.GameTask.SkillCd;
 using BetterGenshinImpact.GameTask.UseRedeemCode;
 
 namespace BetterGenshinImpact.Core.Config;
@@ -127,11 +130,6 @@ public partial class AllConfig : ObservableObject
     public QuickTeleportConfig QuickTeleportConfig { get; set; } = new();
 
     /// <summary>
-    ///     自动烹饪配置
-    /// </summary>
-    public AutoCookConfig AutoCookConfig { get; set; } = new();
-
-    /// <summary>
     ///     自动打牌配置
     /// </summary>
     public AutoGeniusInvokationConfig AutoGeniusInvokationConfig { get; set; } = new();
@@ -171,7 +169,24 @@ public partial class AllConfig : ObservableObject
     ///     自动吃药配置
     /// </summary>
     public AutoEatConfig AutoEatConfig { get; set; } = new();
+
+    /// <summary>
+    ///     自动地脉花配置
+    /// </summary>
+    public AutoLeyLineOutcropConfig AutoLeyLineOutcropConfig { get; set; } = new();
+
+    public AutoCookConfig AutoCookConfig { get; set; } = new();
     
+    /// <summary>
+    ///   地图遮罩
+    /// </summary>
+    public MapMaskConfig MapMaskConfig { get; set; } = new();
+
+    /// <summary>
+    /// 技能 CD 提示
+    /// </summary>
+    public SkillCdConfig SkillCdConfig { get; set; } = new();
+
     /// <summary>
     /// 自动使用
     /// </summary>
@@ -251,7 +266,6 @@ public partial class AllConfig : ObservableObject
         AutoSkipConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoFishingConfig.PropertyChanged += OnAnyPropertyChanged;
         QuickTeleportConfig.PropertyChanged += OnAnyPropertyChanged;
-        AutoCookConfig.PropertyChanged += OnAnyPropertyChanged;
         MacroConfig.PropertyChanged += OnAnyPropertyChanged;
         HotKeyConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoWoodConfig.PropertyChanged += OnAnyPropertyChanged;
@@ -261,12 +275,16 @@ public partial class AllConfig : ObservableObject
         AutoArtifactSalvageConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoRedeemCodeConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoEatConfig.PropertyChanged += OnAnyPropertyChanged;
+        AutoLeyLineOutcropConfig.PropertyChanged += OnAnyPropertyChanged;
+        AutoCookConfig.PropertyChanged += OnAnyPropertyChanged;
+        MapMaskConfig.PropertyChanged += OnAnyPropertyChanged;
         AutoMusicGameConfig.PropertyChanged += OnAnyPropertyChanged;
         TpConfig.PropertyChanged += OnAnyPropertyChanged;
         ScriptConfig.PropertyChanged += OnAnyPropertyChanged;
         PathingConditionConfig.PropertyChanged += OnAnyPropertyChanged;
         DevConfig.PropertyChanged += OnAnyPropertyChanged;
         HardwareAccelerationConfig.PropertyChanged += OnAnyPropertyChanged;
+        SkillCdConfig.PropertyChanged += OnAnyPropertyChanged;
     }
 
     public void OnAnyPropertyChanged(object? sender, EventArgs args)
