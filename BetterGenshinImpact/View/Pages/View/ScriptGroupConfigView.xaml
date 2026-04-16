@@ -151,67 +151,124 @@
                                        TextWrapping="Wrap"/>
                         
                     </Grid>
-                    
-                    <Grid Margin="16">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <ui:TextBlock Grid.Row="0"
-                                      Grid.Column="0"
-                                      FontTypography="Body"
-                                      Text="减少等待(删除战后等待/简易策略等待时间可配置)"
-                                      TextWrapping="Wrap" />
-                        <ui:TextBlock Grid.Row="1"
-                                      Grid.Column="0"
-                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="锄地和采集中可能会漏捡掉，简易策略配置时间默认900ms"
-                                      TextWrapping="Wrap" />
-                        <ui:ToggleSwitch Grid.Row="0"
-                                         Grid.RowSpan="2"
-                                         Grid.Column="3"
-                                         HorizontalAlignment="Center"
-                                         Margin="0,0,10,0"
-                                         IsChecked="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
-                        
-                        <ui:TextBlock Grid.Row="0"
-                                      Grid.RowSpan="2"
-                                      Grid.Column="3"
-                                      FontSize="9"
-                                      Margin="0,0,10,40"
-                                      HorizontalAlignment="Center"
-                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="删除战后等待"
-                                      TextWrapping="Wrap" />
-                        
-                        <ui:TextBox Grid.Row="0"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="4"
-                                    FontSize="10"
-                                    Width="80"
-                                    MaxHeight="30"
-                                    HorizontalAlignment="Center"
-                                    VerticalContentAlignment="Center"
-                                    HorizontalContentAlignment="Center"
-                                    Text="{Binding PathingConfig.CombatScriptEndDelayMs}" />
-                        
-                        <ui:TextBlock Grid.Row="0"
-                                      Grid.RowSpan="2"
-                                      Grid.Column="4"
-                                      FontSize="9"
-                                      Margin="0,0,0,40"
-                                      HorizontalAlignment="Center"
-                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
-                                      Text="简易等待时间(ms)"
-                                      TextWrapping="Wrap" />
-                    </Grid>
+
+                    <!-- 减少等待时间 -->
+                        <ui:CardExpander Margin="16,8,16,12"
+                                         ContentPadding="0"
+                                         IsExpanded="False">
+                            <ui:CardExpander.Header>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <ui:TextBlock FontTypography="BodyStrong"
+                                                      Text="减少等待时间"
+                                                      TextWrapping="Wrap"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="减少节点执行后的停留时间，可能导致物品或摩拉丢失"
+                                                      TextWrapping="Wrap"
+                                                      Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                    <ui:ToggleSwitch Grid.Column="1"
+                                                     VerticalAlignment="Center"
+                                                     IsChecked="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}"/>
+                                </Grid>
+                            </ui:CardExpander.Header>
+
+                            <StackPanel Margin="16,8,16,12">
+                                <!-- 传送前等待时间 -->
+                                <Grid Margin="0,0,0,8" IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="传送前/尾节点等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(战斗/挖矿/简易策略)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.TeleportWaitTime, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 跳过等待时间 -->
+                                <Grid Margin="0,0,0,8" IsEnabled="{Binding PathingConfig.QuicklySkip, Mode=TwoWay}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="其他节点跳过等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(战斗/挖矿/简易策略)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.SkipWaitTime, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 正常模式等待 (不受开关影响) -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"
+                                                      Text="正常模式/其他节点等待"
+                                                      VerticalAlignment="Center"/>
+                                        <ui:TextBlock FontSize="12"
+                                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="(不受开关影响)"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:TextBox Width="70"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalContentAlignment="Center"
+                                                    Text="{Binding PathingConfig.OtherDelayMs, Mode=TwoWay}"/>
+                                        <ui:TextBlock Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                                      Text="毫秒"
+                                                      VerticalAlignment="Center"
+                                                      Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </ui:CardExpander>
+
+                    <!-- 关闭自动领取派遣奖励 -->
                     <Grid Margin="16" Visibility="{Binding PathingConfig.IsDisableAutoFetchDispatch, Converter={StaticResource BooleanToVisibilityRevertConverter}}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -237,7 +294,7 @@
                                          IsEnabled="{Binding PathingConfig.IsDisableAutoFetchDispatch,Converter= {StaticResource InverseBooleanConverter}}"
                                          IsChecked="{Binding PathingConfig.DisableAutoFetchDispatch, Mode=TwoWay}" />
                     </Grid>
-                    
+
                     <Grid Margin="16">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
