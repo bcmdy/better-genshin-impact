@@ -15,40 +15,76 @@ public class NavigationInstance
     private float _prevX = -1;
     private float _prevY = -1;
     private DateTime _captureTime = DateTime.MinValue;
+    private int _consecutiveFailCount = 0;
+    private const int GlobalMatchFallbackThreshold = 2; // 连续失败2次后触发全局匹配
+    
     public void Reset()
     {
         (_prevX, _prevY) = (-1, -1);
+        _consecutiveFailCount = 0;
     }
     
     public void SetPrevPosition(float x, float y)
     {
         (_prevX, _prevY) = (x, y);
+        // 不重置 _consecutiveFailCount，因为 SetPrevPosition 是外部设置参考点，不代表匹配成功
     }
 
     private static readonly object GetPositionLock = new object(); 
     public Point2f GetPosition(ImageRegion imageRegion, string mapName, string mapMatchMethod)
     {
-        if (Monitor.TryEnter(GetPositionLock))
+        if (Monitor.TryEnter(GetPositionLock, 100))
         {
             try
             {
                 var colorMat = new Mat(imageRegion.SrcMat, MapAssets.Instance.MimiMapRect);
                 var captureTime = DateTime.UtcNow;
                 var p = MapManager.GetMap(mapName, mapMatchMethod).GetMiniMapPosition(colorMat, _prevX, _prevY);
+                
+                // 局部匹配失败且有prevPos时，尝试全局匹配回退
+                if (p == default && _prevX > 0 && _prevY > 0)
+                {
+                    _consecutiveFailCount++;
+                    if (_consecutiveFailCount >= GlobalMatchFallbackThreshold)
+                    {
+                        var savedPrevX = _prevX;
+                        var savedPrevY = _prevY;
+                        (_prevX, _prevY) = (-1, -1); // 临时重置触发全局匹配
+                        p = MapManager.GetMap(mapName, mapMatchMethod).GetMiniMapPosition(colorMat, _prevX, _prevY);
+                        if (p == default)
+                        {
+                            (_prevX, _prevY) = (savedPrevX, savedPrevY);
+                        }
+                        else
+                        {
+                            _consecutiveFailCount = 0;
+                        }
+                    }
+                    else
+                    {
+                        // 局部匹配失败，等待累积到阈值后触发全局匹配
+                    }
+                }
+                
                 if (p != default && captureTime > _captureTime)
                 {
                     (_prevX, _prevY) = (p.X, p.Y);
                     _captureTime = captureTime;
+                    _consecutiveFailCount = 0;
                 }
 
                 WeakReferenceMessenger.Default.Send(new PropertyChangedMessage<object>(typeof(Navigation),
                     "SendCurrentPosition", new object(), p));
                 return p;
             }
-            catch
+            catch (Exception ex)
             {
-                // 获取位置失败，返回上次的位置
-                return new Point2f(_prevX, _prevY);
+                // 获取位置失败，返回上次的位置（仅当上次位置有效时）
+                if (_prevX > 0 && _prevY > 0)
+                {
+                    return new Point2f(_prevX, _prevY);
+                }
+                return default;
             }
             finally
             {
@@ -56,8 +92,12 @@ public class NavigationInstance
             }
         }
         
-        // 如果无法获取锁，说明正在获取位置，直接返回上次的位置
-        return new Point2f(_prevX, _prevY);
+        // 锁获取超时，返回上次的位置（仅当上次位置有效时）
+        if (_prevX > 0 && _prevY > 0)
+        {
+            return new Point2f(_prevX, _prevY);
+        }
+        return default;
         
     }
 

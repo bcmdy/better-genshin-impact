@@ -1214,6 +1214,29 @@ public class PathExecutor
                 // 其它值：不按按键
             }
         }, ct);
+        // 战斗结束后小地图可能短暂消失，等待派蒙头像出现（小地图可见的标志）
+        {
+            using var checkScreen = CaptureToRectArea();
+            if (!Bv.IsInMainUi(checkScreen))
+            {
+                var waitStart = DateTime.UtcNow;
+                var recovered = false;
+                while ((DateTime.UtcNow - waitStart).TotalMilliseconds < 1500)
+                {
+                    await Delay(100, ct);
+                    using var retryScreen = CaptureToRectArea();
+                    if (Bv.IsInMainUi(retryScreen))
+                    {
+                        recovered = true;
+                        break;
+                    }
+                }
+                if (!recovered)
+                {
+                    Logger.LogWarning("等待主界面恢复超时(1500ms)，继续执行");
+                }
+            }
+        }
         using var screen = CaptureToRectArea();
         var pixelYellowValue = screen.SrcMat.At<Vec3b>(1010, 814);
         var yellowBlood = (Math.Abs(pixelYellowValue[0] - 50) <= 10 &&
@@ -1337,15 +1360,14 @@ public class PathExecutor
                 if (distance > 500 && num > 2)
                 {
                     Logger.LogWarning("检测到离开目标点异常，停止移动，距离1：{distance}- {x} - {y}", distance,position.X, position.Y);
-                    // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyUp);
-                    // Simulation.ReleaseAllKey();
-                    // Simulation.SendInput.Mouse.MiddleButtonClick();
                     await Delay(1000, ct);
                     using var screen23 = CaptureToRectArea();
                     (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
                     if (position is not  { X: 0, Y: 0 })
                     {
                         prePosition = position;
+                        _prePositionUpdateTime = DateTime.UtcNow;
+                        distance = Navigation.GetDistance(waypoint, position);
                         Logger.LogWarning("重新识别位置成功，距离2：{distance} - {x} - {y}", distance,position.X, position.Y);
                     }
                     else
@@ -1361,6 +1383,8 @@ public class PathExecutor
                         if (position is not  { X: 0, Y: 0 })
                         {
                             prePosition = position;
+                            _prePositionUpdateTime = DateTime.UtcNow;
+                            distance = Navigation.GetDistance(waypoint, position);
                             Logger.LogWarning("重新识别位置成功，距离4：{distance} - {x} - {y}", distance,position.X, position.Y);
                         }
                         else
@@ -1370,12 +1394,21 @@ public class PathExecutor
 
                             if (position is  { X: 0, Y: 0 })
                             {
-                                position = prePosition;
+                                if ((DateTime.UtcNow - _prePositionUpdateTime).TotalSeconds <= 5)
+                                {
+                                    position = prePosition;
+                                }
+                                else
+                                {
+                                    Logger.LogWarning("prePosition 已过时，触发全局匹配");
+                                    Navigation.Reset();
+                                    prePosition = default;
+                                }
                             }
                             
+                            distance = Navigation.GetDistance(waypoint, position);
                             Logger.LogWarning("重新识别位置失败，使用上次正常识别的位置，距离5：{distance} - {x} - {y}", distance,prePosition.X, prePosition.Y);
                         }
-                        // continue;
                     }
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
                 }
@@ -2017,47 +2050,89 @@ public class PathExecutor
                 else
                 {
                     distanceTooFarRetryCount++;
-                    if (distanceTooFarRetryCount > 50)
+                    
+                    if (position is not { X: 0, Y: 0 })
                     {
-                        if (isPoint)
+                        // 坐标不是(0,0)但距离>500
+                        var distToPrev = prevNotTooFarPosition is not { X: 0, Y: 0 } 
+                            ? Math.Sqrt(Math.Pow(position.X - prevNotTooFarPosition.X, 2) + Math.Pow(position.Y - prevNotTooFarPosition.Y, 2))
+                            : double.MaxValue;
+                        
+                        // 判断是否为误识别：需要同时满足两个条件
+                        // 1. 有上次有效坐标（prevNotTooFarPosition不是初始值）
+                        // 2. 当前坐标和上次有效坐标差距很大（>200），说明坐标跳变了
+                        // 如果当前坐标和上次有效坐标很近，说明识别一致，角色确实离目标远，不是误识别
+                        var isMisidentification = prevNotTooFarPosition is not { X: 0, Y: 0 } && distToPrev > 200;
+                        
+                        if (!isMisidentification)
                         {
-                            if (position == new Point2f())
+                            // 信任当前坐标：要么没有历史参考，要么和历史坐标一致
+                            Logger.LogInformation($"距离较远，信任当前识别({position.X},{position.Y})，距目标={Math.Round(distance)}，正常移动");
+                            prevNotTooFarPosition = position;
+                            distanceTooFarRetryCount = 0;
+                        }
+                        else
+                        {
+                            // 坐标跳变了，可能是误识别
+                            Logger.LogWarning($"距离异常，识别坐标({position.X},{position.Y})距目标={Math.Round(distance)}，疑似误识别(第{distanceTooFarRetryCount}次)");
+                            position = prevNotTooFarPosition;
+                            Navigation.SetPrevPosition(prevNotTooFarPosition.X, prevNotTooFarPosition.Y);
+                            
+                            if (distanceTooFarRetryCount > 20)
+                            {
+                                if (isPoint)
+                                {
+                                    Logger.LogWarning($"连续{distanceTooFarRetryCount}次距离异常，放弃此路径点");
+                                    throw new HandledException("目标距离持续过远，可能是坐标识别异常，放弃此路径！");
+                                }
+                                else
+                                {
+                                    return;
+                                }
+                            }
+                            
+                            // 每5次尝试一次ResolveAnomalies检查是否有界面遮挡
+                            if (distanceTooFarRetryCount % 5 == 0)
+                            {
+                                await ResolveAnomalies(screen2);
+                            }
+                            await Delay(100, ct);
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // 坐标是(0,0)，完全识别失败，主动恢复
+                        if (distanceTooFarRetryCount > 8)
+                        {
+                            if (isPoint)
                             {
                                 throw new HandledException("重试多次后，当前点位无法被识别，放弃此路径！");
                             }
                             else
                             {
-                                Logger.LogWarning($"距离过远（{position.X},{position.Y}）->（{waypoint.X},{waypoint.Y}）={distance}，重试多次后仍然失败，放弃此路径点！");
-                                throw new HandledException("目标距离过远，可能是当前点位无法识别，放弃此路径！");
+                                return; 
                             }
                         }
-                        else
+                        
+                        if (isPoint)
                         {
-                            return; 
+                            Logger.LogWarning($"坐标识别失败(0,0)，目标({waypoint.X},{waypoint.Y})，第{distanceTooFarRetryCount}次主动恢复");
                         }
-                    }
-                    else
-                    {
-                        // 取余减少日志输出频率
-                        if (distanceTooFarRetryCount % 5 == 0 && isPoint)
+                        await ResolveAnomalies(screen2);
+                        Navigation.Reset();
+                        if (prevNotTooFarPosition is not { X: 0, Y: 0 })
                         {
-                            Logger.LogWarning($"距离过远（{position.X},{position.Y}）->（{waypoint.X},{waypoint.Y}）={distance}，重试");
-                        }
-                        // 取余减少判断频率
-                        if (distanceTooFarRetryCount % 10 == 0)
-                        {
-                            await ResolveAnomalies(screen);
-                            if (isPoint)Logger.LogInformation($"重置到上次正确识别的坐标 ({prevNotTooFarPosition.X},{prevNotTooFarPosition.Y})");
+                            if (isPoint) Logger.LogInformation($"重置到上次正确识别的坐标 ({prevNotTooFarPosition.X},{prevNotTooFarPosition.Y})");
                             Navigation.SetPrevPosition(prevNotTooFarPosition.X, prevNotTooFarPosition.Y);
-                            // 淡入淡出特效
-                            await Delay(500, ct);
                         }
-                        await Delay(50, ct);
+                        await Delay(500, ct);
                         continue;
                     }
                 }
             } else
             {
+                distanceTooFarRetryCount = 0; // 正常距离时重置计数器
                 prevNotTooFarPosition = position;
             }
 
@@ -2580,6 +2655,7 @@ public class PathExecutor
     
     private  Point2f prePosition;
     private  DateTime preTime;
+    private DateTime _prePositionUpdateTime = DateTime.UtcNow;
     //自动构造点位的最大时间
     private int maxAutoPositionTime=10000; 
     private async Task WaitForCloseMap(int maxAttempts, int delayMs)
@@ -2616,10 +2692,20 @@ public class PathExecutor
                 {
                     Logger.LogDebug("小地图位置定位失败，且当前不是主界面，进入异常处理");
                     await ResolveAnomalies(imageRegion);
+                    // 异常处理后重新截图并重试获取坐标
+                    imageRegion = CaptureToRectArea();
+                    position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
+                    if (position == new Point2f())
+                    {
+                        Logger.LogDebug("异常处理后重试获取坐标仍然失败");
+                    }
+                    else
+                    {
+                        Logger.LogInformation("异常处理后重试获取坐标成功: ({x},{y})", position.X, position.Y);
+                    }
                 }
                 else
                 {
-                    // Logger.LogError("小地图位置定位失败，且当前不是主界面，无法继续执行1111");
                     return (position,time);
                 }
             }
@@ -2637,20 +2723,34 @@ public class PathExecutor
         {
             if (waypoint.Misidentification.HandlingMode == "previousDetectedPoint")
             {
-                if (prePosition != default)
+                if (prePosition != default && (DateTime.UtcNow - _prePositionUpdateTime).TotalSeconds <= 5)
                 {
                     position = prePosition;
                     if (isPoint)
                     {
                         imageRegion = CaptureToRectArea();
-                        position = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
+                        var retryPos = Navigation.GetPosition(imageRegion, waypoint.MapName, waypoint.MapMatchMethod);
                         
-                        if (position is not { X: 0, Y: 0 })
+                        if (retryPos is not { X: 0, Y: 0 })
                         {
-                            prePosition = position;
-                            Logger.LogInformation(@$"未识别到具体路径，取上次点位");
+                            position = retryPos;
+                            prePosition = retryPos;
+                            _prePositionUpdateTime = DateTime.UtcNow;
+                            Logger.LogInformation(@$"未识别到具体路径，重试成功");
+                        }
+                        else
+                        {
+                            // 重试失败，保持使用 prePosition
+                            Logger.LogDebug("重试失败，使用prePosition=({px},{py})", prePosition.X, prePosition.Y);
                         }
                     }
+                }
+                else if (prePosition != default)
+                {
+                    // prePosition 已过时，重置导航触发全局匹配
+                    Logger.LogWarning("prePosition 已超过5秒未更新，触发全局匹配重新定位");
+                    Navigation.Reset();
+                    prePosition = default;
                 }
             }else if (waypoint.Misidentification.HandlingMode == "mapRecognition"){
                 //大地图识别坐标
@@ -2690,6 +2790,7 @@ public class PathExecutor
             if (position is not { X: 0, Y: 0 })
             {
                 prePosition = position;
+                _prePositionUpdateTime = DateTime.UtcNow;
             }
             
             preTime = DateTime.UtcNow;
@@ -2727,7 +2828,8 @@ public class PathExecutor
         var closeRa2 = imageRegion.Find(ElementAssets.Instance.PageCloseWhiteRo);
         var closeRa3 = imageRegion.Find(AutoSkipAssets.Instance.PageCloseRo);
         var closeRa4 = imageRegion.Find(AutoFightAssets.Instance.ConfirmRa);
-        if (cookRa.IsExist() || closeRa.IsExist() || closeRa2.IsExist() || closeRa3.IsExist()|| closeRa4.IsExist())
+        var anyFound = cookRa.IsExist() || closeRa.IsExist() || closeRa2.IsExist() || closeRa3.IsExist() || closeRa4.IsExist();
+        if (anyFound)
         {
             // 排除大地图
             if (Bv.IsInBigMapUi(imageRegion))
