@@ -1,4 +1,4 @@
-using BetterGenshinImpact.Core.Simulator;
+using BetterGenshinImpact.GameTask.AutoFight.Model;
 using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using BetterGenshinImpact.GameTask.Common.BgiVision;
@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Vanara.PInvoke;
 using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
 namespace BetterGenshinImpact.GameTask.AutoHoeing.Services;
@@ -30,6 +29,7 @@ public class DumperService
         List<Waypoint> waypoints,
         List<int> dumperCharacters,
         string mapName,
+        CombatScenes combatScenes,
         Func<bool> isRunning,
         CancellationToken ct)
     {
@@ -54,6 +54,8 @@ public class DumperService
         // 6.3版本强制使用sift的地图不开启泥头车（通过路线info判断）
 
         var lastDumperTime = DateTime.MinValue;
+
+        combatScenes.BeforeTask(ct);
 
         while (isRunning() && !ct.IsCancellationRequested)
         {
@@ -107,7 +109,7 @@ public class DumperService
                 if (shouldPress)
                 {
                     Logger.LogInformation("距离下个战斗地点{Dist:F1}，启用泥头车", dumperDistance);
-                    await ExecuteDumper(dumperCharacters, ct);
+                    await ExecuteDumper(dumperCharacters, combatScenes, ct);
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -121,22 +123,32 @@ public class DumperService
     /// <summary>
     /// 执行泥头车操作：按角色编号切人放E
     /// </summary>
-    public static async Task ExecuteDumper(List<int> characters, CancellationToken ct)
+    public async Task ExecuteDumper(List<int> characters, CombatScenes combatScenes, CancellationToken ct)
     {
         foreach (var key in characters)
         {
-            if (key < 1 || key > 4) continue;
+            if (key < 1 || key > combatScenes.AvatarCount) continue;
+            
+            var avatar = combatScenes.SelectAvatar(key);
 
-            Logger.LogInformation("[泥头车] 切换{Key}号角色施放E技能", key);
-            var vk = (User32.VK)((int)User32.VK.VK_0 + key);
-            Simulation.SendInput.Keyboard.KeyPress(vk);
-            await Task.Delay(400, ct);
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_E);
-            await Task.Delay(400, ct);
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_E);
-            await Task.Delay(400, ct);
-            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_E);
-            await Task.Delay(400, ct);
+            if (avatar.IsSkillReady())
+            {
+                Logger.LogInformation("[泥头车] 切换{Key}号角色({Name})施放E技能", key, avatar.Name);
+
+                //检测avatar的E的CD
+            
+                if (!avatar.TrySwitch())
+                {
+                    Logger.LogWarning("[泥头车] 切换{Key}号角色失败，跳过", key);
+                    continue;
+                }
+
+                avatar.UseSkill(); 
+            }
+            else
+            {
+                Logger.LogInformation("[泥头车] {Name}的E技能未准备好，跳过", avatar.Name);
+            }
         }
     }
 

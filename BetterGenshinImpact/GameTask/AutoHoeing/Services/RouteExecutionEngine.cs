@@ -1,4 +1,5 @@
 using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.GameTask.AutoFight.Model;
 using BetterGenshinImpact.GameTask.AutoHoeing.Models;
 using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
@@ -9,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static BetterGenshinImpact.GameTask.Common.TaskControl;
 
 namespace BetterGenshinImpact.GameTask.AutoHoeing.Services;
 
@@ -124,9 +126,42 @@ public class RouteExecutionEngine
             var pathingData = PathingTask.BuildFromFilePath(route.FullPath);
             if (pathingData != null)
             {
-                tasks.Add(Task.Run(() => _dumperService.RunDumperLoop(
-                    pathingData.Positions, dumperChars, route.MapName,
-                    IsRunning, linkedCt), linkedCt));
+                CombatScenes? combatScenes = null;
+                try
+                {
+                    using var region = CaptureToRectArea();
+                    combatScenes = new CombatScenes().InitializeTeam(region);
+                    if (!combatScenes.CheckTeamInitialized())
+                    {
+                        Logger.LogWarning("泥头车队伍识别失败，跳过泥头车功能");
+                        combatScenes.Dispose();
+                        combatScenes = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning("泥头车CombatScenes初始化异常: {Msg}", ex.Message);
+                    combatScenes?.Dispose();
+                    combatScenes = null;
+                }
+
+                if (combatScenes != null)
+                {
+                    var cs = combatScenes;
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _dumperService.RunDumperLoop(
+                                pathingData.Positions, dumperChars, route.MapName,
+                                cs, IsRunning, linkedCt);
+                        }
+                        finally
+                        {
+                            cs.Dispose();
+                        }
+                    }, linkedCt));
+                }
             }
         }
 
