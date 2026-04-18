@@ -624,6 +624,23 @@ public partial class ScriptService : IScriptService
                         await Task.Delay(500);
                         if (sw.Elapsed.TotalSeconds >= 30)
                         {
+                            //每30秒尝试一次进入主界面
+                            var retryCount = (int)((sw.Elapsed.TotalSeconds - 30) / 30);
+                            if (retryCount == 1 || retryCount % 10 == 0)
+                            {
+                                TaskControl.Logger.LogInformation($"尝试进入主界面（第{retryCount}次）...");
+                                //调用ReturnMainUiTask尝试返回主界面
+                                var returnTask = new ReturnMainUiTask();
+                                try
+                                {
+                                    returnTask.Start(CancellationToken.None).Wait(5000);
+                                }
+                                catch (Exception ex)
+                                {
+                                    TaskControl.Logger.LogWarning($"返回主界面失败: {ex.Message}");
+                                }
+                            }
+
                             //防止自启动游戏后因为一些原因失焦，导致一直卡住
                             if (!SystemControl.IsGenshinImpactActiveByProcess())
                             {
