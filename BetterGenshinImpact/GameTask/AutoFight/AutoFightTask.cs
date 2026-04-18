@@ -1468,6 +1468,7 @@ public class AutoFightTask : ISoloTask
         
         if(_totolyEndCount >= 1)
         {
+            Logger.LogWarning("二次检查：战斗结束。");
             _2ndEndFlag = true;
             FightEndTotoly = true;
             _totolyFlag = false;
@@ -1544,6 +1545,7 @@ public class AutoFightTask : ISoloTask
                               Math.Abs(pixelValue22[2] - 233) <= 10);
                 if (!paiMon22)
                 {
+                    _totolyEndCount = 0;
                     _totolyFlag = false;
                     return false;
                 }
@@ -1597,6 +1599,7 @@ public class AutoFightTask : ISoloTask
                 if (confirmRa.IsExist())
                 {
                     TaskControl.Logger.LogInformation("识别到确认界面，可能是误判，继续战斗");
+                    _totolyEndCount = 0;
                     return false;
                 }
 
@@ -1637,9 +1640,11 @@ public class AutoFightTask : ISoloTask
             }
 
             _lastFightFlagTime = DateTime.UtcNow;
+            _totolyEndCount = 0;
             _totolyFlag = false;
             return false;
         }
+        _totolyEndCount = 0;
         return false;
     }
 
