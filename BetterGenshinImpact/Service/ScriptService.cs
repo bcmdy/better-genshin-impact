@@ -600,6 +600,8 @@ public partial class ScriptService : IScriptService
                     var first = true;
                     var sw = Stopwatch.StartNew();
                     var loseFocusCount = 0;
+                    double lastAttemptSeconds = 0;
+
                     while (true)
                     {
                         if (!homePageViewModel.TaskDispatcherEnabled || !TaskContext.Instance().IsInitialized)
@@ -624,12 +626,13 @@ public partial class ScriptService : IScriptService
                         await Task.Delay(500);
                         if (sw.Elapsed.TotalSeconds >= 30)
                         {
-                            //每30秒尝试一次进入主界面
-                            var retryCount = (int)((sw.Elapsed.TotalSeconds - 30) / 30);
-                            if (retryCount == 1 || retryCount % 10 == 0)
+                            var totalSeconds = sw.Elapsed.TotalSeconds;
+                            if (totalSeconds - lastAttemptSeconds >= 30)
                             {
+                                lastAttemptSeconds = totalSeconds;
+                                var retryCount = (int)(totalSeconds / 30);
                                 TaskControl.Logger.LogInformation($"尝试进入主界面（第{retryCount}次）...");
-                                //调用ReturnMainUiTask尝试返回主界面
+
                                 var returnTask = new ReturnMainUiTask();
                                 try
                                 {
