@@ -539,7 +539,7 @@ public class AutoFightTask : ISoloTask
             if (_taskParam.TakeMedicineEnabled)
             {
                 IsTpForRecover = true;
-                TakeMedicine(cts2.Token);
+                _ = TakeMedicineAsync(cts2.Token);
             }
             else
             {
@@ -1592,6 +1592,14 @@ public class AutoFightTask : ISoloTask
                     continue;
                 }
 
+                using var bitmap = CaptureToRectArea();
+                var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                if (confirmRa.IsExist())
+                {
+                    TaskControl.Logger.LogInformation("识别到确认界面，可能是误判，继续战斗");
+                    return false;
+                }
+
                 TaskControl.Logger.LogInformation("{t}：识别到战斗结束",
                     _taskParam.FinishDetectConfig.EndModel && _taskParam.FinishDetectConfig.RotateFindEnemyEnabled
                         ? "派蒙模式"
@@ -1735,381 +1743,287 @@ public class AutoFightTask : ISoloTask
         return Task.CompletedTask;
     }
     
-    public static int RecoverCount = 0; // 吃复活药次数
+    private static readonly MedicineState _medicineState = new();
     
-    private Task TakeMedicine(CancellationToken cts2,bool endBloodCheck = false)
+    /// <summary>
+    /// 向后兼容：外部模块通过此属性访问复活次数
+    /// </summary>
+    public static int RecoverCount
     {
-        RecoverCount = 0; // 吃复活药次数
-        IsTpForRecover = true; //检查复活关闭
-        var resurrectionCount = 0; // 吃复活药次数
-        var tolerance = 10;// 定义容错范围
-        var greenBlood = 0; // 绿血标记
-        int finalCheckInterval = Math.Max(_taskParam.CheckInterval - 150, 1);
-        //吃药间隔时间
-        var medicineInterval = 20;
-        DateTime lastMedicineTime = DateTime.MinValue;
+        get => _medicineState.ReviveCount;
+        set
+        {
+            // 外部设置时重置整个状态
+            if (value == 0) _medicineState.Reset();
+            else if (value >= 3) _medicineState.Reset(); // 外部设置为3表示禁用
+        }
+    }
+
+    /// <summary>
+    /// 战斗中自动吃药（异步方法，可正确 await）
+    /// </summary>
+    private async Task TakeMedicineAsync(CancellationToken ct, bool endBloodCheck = false)
+    {
+        _medicineState.Reset();
+        _medicineState.EnterMedicineScope();
+        var greenBloodCount = 0;
+        var reviveCooldownTime = DateTime.MinValue;
+        const int reviveCooldownSeconds = 20;
+        var cdRetryCount = 0; // CD重试计数器
+        const int maxCdRetries = 5; // CD最多重试5次（约2.5秒），超过后计为失败
 
         try
         {
-            Task.Run(() =>
+            // 检测营养袋
+            using (var ra = CaptureToRectArea())
             {
-                using (var ra = CaptureToRectArea())
+                if (!CombatHealthDetector.HasNutritionBag(ra))
                 {
-                    using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                    using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat, new Scalar(192, 233, 102),
-                        new Scalar(193, 233, 103));
-                    using var labels = new Mat();
-                    using var stats = new Mat();
-                    using var centroids = new Mat();
-
-                    var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                        connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                    // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
-
-                    if (!(numLabels > 1)) //判断是否带营养袋，连通性检测药品上方的绿色块
-                    {
-                        IsTpForRecover = true;
-                        TaskControl.Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
-                        return;
-                    }
-                    else
-                    {
-                        if (!endBloodCheck)
-                            TaskControl.Logger.LogInformation(
-                                "自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}，结束吃药{endBloodCheck}",
-                                _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount,
-                                _taskParam.EndBloodCheackEnabled ? "开" : "关");
-                    }
+                    Logger.LogInformation("自动吃药：未发现营养袋，自动吃药关闭");
+                    return;
                 }
 
-                while (!FightEndFlag && !cts2.IsCancellationRequested)
+                if (!endBloodCheck)
                 {
-                    var gray = false;
-                    var redBlood = false;
-                    // ImageRegion? bb = null;
-                    
-                    try
+                    Logger.LogInformation("自动吃药：检测间隔{checkInterval}，吃药间隔{medicineInterval}，吃药上限{recoverMaxCount}",
+                        _taskParam.CheckInterval, _taskParam.MedicineInterval, _taskParam.RecoverMaxCount);
+                }
+            }
+
+            // 主检测循环
+            while (!FightEndFlag && !ct.IsCancellationRequested)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                try
+                {
+                    var needHeal = false;
+                    var needRevive = false;
+
+                    using (var ra = CaptureToRectArea())
                     {
-                        cts2.ThrowIfCancellationRequested();
-
-                        var cheack = NewRetry.WaitForAction(() =>
+                        // 先检测复活界面（优先级最高，因为复活界面弹出时派蒙不可见）
+                        var confirmRa = ra.Find(AutoFightAssets.Instance.ConfirmRa);
+                        if (confirmRa.IsExist())
                         {
-                            using (var ra = CaptureToRectArea())
+                            // 先点确认（尝试使用复活药）
+                            confirmRa.Click();
+                            _medicineState.IncrementRevive();
+                            Logger.LogInformation("自动吃药：检测到复活界面，点击确认（第{count}次）", _medicineState.ReviveCount);
+                            await Task.Delay(300, ct);
+                            // 无论确认是否关闭了弹窗，都点一次取消位置（复活药CD时确认无效，需要取消关闭弹窗）
+                            using var ra2 = CaptureToRectArea();
+                            var exitRa = ra2.Find(AutoFightAssets.Instance.ExitRa);
+                            if (exitRa.IsExist())
                             {
-                                var pixelValue = ra.SrcMat.At<Vec3b>(32, 67); //派蒙头冠颜色，比模板匹配快，在开大或其他页面不进行检查
-                                var paiMon = (Math.Abs(pixelValue[0] - 143) <= tolerance &&
-                                              Math.Abs(pixelValue[1] - 196) <= tolerance &&
-                                              Math.Abs(pixelValue[2] - 233) <= tolerance);
-                                if (!paiMon)
+                                exitRa.Click();
+                                Logger.LogDebug("自动吃药：点击取消关闭复活弹窗");
+                                await Task.Delay(200, ct);
+                            }
+
+                            if (_medicineState.IsReviveOverLimit())
+                            {
+                                Logger.LogInformation("自动吃药：复活次数达到上限({count}次)，退出吃药，启用外部复活检测",
+                                    _medicineState.ReviveCount);
+                                _medicineState.ExitMedicineScope(shouldEnableReviveCheck: true);
+                                return;
+                            }
+                            continue;
+                        }
+
+                        // 派蒙不可见时跳过血量检测（可能在放大招或其他界面）
+                        if (!CombatHealthDetector.IsPaimonVisible(ra))
+                        {
+                            await Task.Delay(Math.Max(_taskParam.CheckInterval - 150, 100), ct);
+                            continue;
+                        }
+
+                        // 检测是否为复活药（白色图标）
+                        var isResurrectionDrug = CombatHealthDetector.IsResurrectionDrug(ra);
+
+                        // 死亡检测
+                        var deadSlots = CombatHealthDetector.GetDeadCharacterSlots(ra);
+                        if (deadSlots.Count > 0)
+                        {
+                            needRevive = true;
+                        }
+
+                        // 红血检测
+                        if (!needRevive)
+                        {
+                            var isRed = CombatHealthDetector.IsRedBlood(ra);
+                            var isGreen = CombatHealthDetector.IsGreenBlood(ra);
+                            
+                            // 输出实际像素值用于调试
+                            var bloodPixel = ra.SrcMat.At<Vec3b>(1009, 808);
+                            var greenPixel = ra.SrcMat.At<Vec3b>(1010, 814);
+                            Logger.LogDebug("[吃药检测] isRed={isRed}, isGreen={isGreen}, bloodBGR=({b},{g},{r}), greenBGR=({gb},{gg},{gr}), greenCount={gc}",
+                                isRed, isGreen, bloodPixel[0], bloodPixel[1], bloodPixel[2],
+                                greenPixel[0], greenPixel[1], greenPixel[2], greenBloodCount);
+                            
+                            if (isRed)
+                            {
+                                if (isResurrectionDrug)
                                 {
-                                    //延时_taskParam.CheckInterval毫秒再次检查
-                                    Sleep(finalCheckInterval, _ct);
-                                    return true;
-                                }
-
-                                using var bloodtRect = ra.DeriveCrop(808, 1009, 3, 3);
-                                // bb = bloodtRect;
-                                using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat,
-                                    new Scalar(250, 90, 89),
-                                    new Scalar(250, 91, 89));
-                                using var labels = new Mat();
-                                using var stats = new Mat();
-                                using var centroids = new Mat();
-
-                                var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                                    connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                                //死亡检查
-                                for (int h = 0; h < 4; h++)
-                                {
-                                    using var croppedImage = ra.DeriveCrop(1797, 249 + 96 * h, 8, 3).SrcMat;
-
-                                    var isGrayscale = true;
-                                    for (int i = 0; i < croppedImage.Rows; i++)
-                                    {
-                                        for (int j = 0; j < croppedImage.Cols; j++)
-                                        {
-                                            Vec3b pixel = croppedImage.At<Vec3b>(i, j);
-                                            if (pixel[0] != pixel[1] || pixel[1] != pixel[2]) //转为灰度后，是否和现在的灰度一样，即可判断死亡
-                                            {
-                                                isGrayscale = false;
-                                                break;
-                                            }
-                                        }
-
-                                        if (!isGrayscale)
-                                        {
-                                            break;
-                                        }
-                                    }
-
-                                    if (isGrayscale)
-                                    {
-                                        gray = true;
-                                    }
-                                }
-
-                                if (numLabels > 1) //红血检查
-                                {
-                                    pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
-                                    if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
-                                    {
-                                        if (resurrectionCount >= 0)
-                                        {
-                                            Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
-                                            resurrectionCount = -1;
-                                        }
-
-                                        redBlood = false;
-                                    }
-                                    else
-                                    {
-                                        redBlood = true;
-                                    }
+                                    needHeal = false;
                                 }
                                 else
                                 {
-                                    pixelValue = ra.SrcMat.At<Vec3b>(1010, 814); //在丝血时，连通性和颜色判断都检测不到，直接检测是否为绿色累计3次
-                                    if (!(Math.Abs(pixelValue[0] - 34) <= tolerance &&
-                                          Math.Abs(pixelValue[1] - 215) <= tolerance &&
-                                          Math.Abs(pixelValue[2] - 150) <= tolerance))
-                                    {
-                                        greenBlood++;
-                                        if (greenBlood > 3 || endBloodCheck && greenBlood > 0)
-                                        {
-                                            pixelValue = ra.SrcMat.At<Vec3b>(785, 1818);
-                                            if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
-                                            {
-                                                if (resurrectionCount >= 0)
-                                                {
-                                                    Logger.LogInformation("自动吃药：检测到复活药，{text} 吃回复药", "不执行");
-                                                    resurrectionCount = -1;
-                                                }
-
-                                                redBlood = false;
-                                            }
-                                            else
-                                            {
-                                                bool isSimilar = IsPixelSimilar(bloodtRect.SrcMat.At<Vec3b>(1, 1), bloodtRect.SrcMat.At<Vec3b>(2, 2), 3);
-                                                // Logger.LogWarning("自动吃药：检测到血量颜色异常，是否与之前的血量颜色相似：{isSimilar}", isSimilar);
-                                                if (isSimilar)
-                                                {
-                                                    redBlood = false;
-                                                }
-                                                else
-                                                {
-                                                    redBlood = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        greenBlood = 0;
-                                    }
-
+                                    needHeal = true;
+                                    Logger.LogDebug("[吃药检测] 判定：红血");
                                 }
-
-                                return redBlood || gray;
                             }
-                        }, cts2, 1, _taskParam.CheckInterval - 150).Result;
-
-                        if ((redBlood || gray) &&
-                            (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds >
-                            Math.Max(_taskParam.MedicineInterval, 1500))
-                        {
-                            var shouldRecover = (redBlood && resurrectionCount < _taskParam.RecoverMaxCount) ||
-                                                (gray && RecoverCount < 3); //判断吃药上限
-
-                            if (Monitor.TryEnter(ZLock))
+                            else if (!isGreen)
                             {
-                                try
+                                // 非绿血也非红血，可能是丝血或其他状态
+                                greenBloodCount++;
+                                Logger.LogDebug("[吃药检测] 非红非绿，greenCount累积到{gc}", greenBloodCount);
+                                if (greenBloodCount > 5 || (endBloodCheck && greenBloodCount > 1))
                                 {
-                                    if (shouldRecover)
+                                    if (isResurrectionDrug)
                                     {
-                                        try
-                                        {
-
-                                            if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
-                                            {
-                                                Simulation.SendInput.SimulateAction(GIActions
-                                                    .QuickUseGadget); //1800,816 1838,835
-                                                Simulation.ReleaseAllKey();
-                                            }
-                                        }
-                                        catch (OperationCanceledException ex)
-                                        {
-                                            Console.WriteLine($"自动结束吃药12：{ex.Message}");
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            Console.WriteLine($"自动结束吃药发生异常12: {ex.Message}");
-                                        }
-
-                                        if (redBlood) resurrectionCount++;
-                                        if (gray) RecoverCount++;
-                                        TaskControl.Logger.LogInformation("自动吃药：{text} " + "使用小道具",
-                                            redBlood ? "发现红血" : "发现角色死亡");
-                                        
-                                        // //LOG显示bloodtRect区域的颜色值
-                                        // var aa = bb.SrcMat.At<Vec3b>(1, 1);
-                                        // Logger.LogError("自动吃药：检测到红血，血量颜色值BGR1({b},{g},{r})",aa[0], aa[1], aa[2]);
-                                        // var aaa = bb.SrcMat.At<Vec3b>(2, 2);
-                                        // Logger.LogError("自动吃药：检测到红血，血量颜色值BGR2({b},{g},{r})",aaa[0], aaa[1], aaa[2]);
-                                        
-                                        PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                                        redBlood = false;
-                                        gray = false;
-                                        if (endBloodCheck && (resurrectionCount >= 1 || RecoverCount >= 1))
-                                            return; //单次检测复用
+                                        needHeal = false;
                                     }
                                     else
                                     {
-                                        resurrectionCount = 0;
-                                        RecoverCount = 0;
-                                        TaskControl.Logger.LogInformation("自动吃药：{text}", "吃药数量超额退出！");
-                                        IsTpForRecover = false; // 吃完药品后，打开复活检测
-                                        return;
+                                        using var bloodRect = ra.DeriveCrop(808, 1009, 3, 3);
+                                        if (!CombatHealthDetector.IsPixelSimilar(
+                                                bloodRect.SrcMat.At<Vec3b>(1, 1),
+                                                bloodRect.SrcMat.At<Vec3b>(2, 2)))
+                                        {
+                                            needHeal = true;
+                                            Logger.LogDebug("[吃药检测] 判定：丝血（非红非绿累积超阈值）");
+                                        }
+                                        else
+                                        {
+                                            Logger.LogDebug("[吃药检测] 血条像素一致，跳过");
+                                        }
                                     }
                                 }
-                                catch (Exception ex)
-                                {
-                                    TaskControl.Logger.LogError($"自动吃药异常: {ex.Message}");
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(ZLock);
-                                }
+                            }
+                            else
+                            {
+                                greenBloodCount = 0;
                             }
                         }
 
-                        using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
+                        // 复活药自动使用（角色死亡时）
+                        if (isResurrectionDrug && !needRevive &&
+                            (DateTime.UtcNow - reviveCooldownTime).TotalSeconds > reviveCooldownSeconds)
                         {
-                            var pixelValue =
-                                bitmap.SrcMat.At<Vec3b>(785, 1818); //
-                            if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255 && (DateTime.Now - lastMedicineTime).TotalSeconds > medicineInterval)
+                            if (!await AutoFightSkill.MedicinalCdAsync(Logger, false, 1, ct))
                             {
-                                try
+                                reviveCooldownTime = DateTime.UtcNow;
+                                Logger.LogInformation("自动吃药：发现复活药，使用小道具");
+                                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                                Simulation.ReleaseAllKey();
+                            }
+                        }
+                    }
+
+                    // 执行吃药/复活
+                    if ((needHeal || needRevive) &&
+                        (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds >
+                        Math.Max(_taskParam.MedicineInterval, 1500))
+                    {
+                        var canHeal = needHeal && !_medicineState.IsHealOverLimit(_taskParam.RecoverMaxCount);
+                        var canRevive = needRevive && !_medicineState.IsReviveOverLimit();
+
+                        if (canHeal || canRevive)
+                        {
+                            var isMedicineOnCd = await AutoFightSkill.MedicinalCdAsync(Logger, false, 1, ct);
+                            if (isMedicineOnCd)
+                            {
+                                cdRetryCount++;
+                                if (cdRetryCount >= maxCdRetries)
                                 {
-                                    if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
-                                    {
-                                        lastMedicineTime = DateTime.Now;
-                                        Logger.LogInformation("自动吃药：{text} " + "使用小道具", "发现复活药");
-                                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
-                                        Simulation.ReleaseAllKey();
-                                    }
+                                    // CD等待超限，计为一次失败的吃药尝试
+                                    if (needRevive) _medicineState.IncrementRevive();
+                                    if (needHeal) _medicineState.IncrementHeal();
+                                    Logger.LogWarning("自动吃药：药物冷却等待超限({count}次)，计为失败尝试，{reason}", cdRetryCount, needRevive ? "复活" : "回复");
+                                    cdRetryCount = 0;
+                                    PathingConditionConfig.LastEatTime = DateTime.UtcNow;
                                 }
-                                catch (OperationCanceledException ex)
+                                else
                                 {
-                                    Console.WriteLine($"自动结束吃药12：{ex.Message}");
+                                    Logger.LogDebug("自动吃药：药物冷却中({count}/{max})，等待下一轮重试", cdRetryCount, maxCdRetries);
                                 }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"自动结束吃药发生异常12: {ex.Message}");
-                                }
+                                await Task.Delay(500, ct);
+                                continue;
                             }
                             
-                            var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                            if (confirmRa.IsExist())
-                            {
-                                confirmRa.Click();
-                                RecoverCount++;
-                                Task.Delay(500, cts2).Wait(500);
-                                using var bitmap2 = CaptureToRectArea();
-                                var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
-                                {
-                                    if (okRa.IsExist())
-                                    {
-                                        Logger.LogInformation("自动吃药：{text} 退出复活界面", "点击");
-                                        Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                                        Task.Delay(500, cts2).Wait(500);
-                                    }
-                                }
-                            }
+                            cdRetryCount = 0;
+                            Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                            Simulation.ReleaseAllKey();
 
-                            if (RecoverCount > 2)
-                            {
-                                TaskControl.Logger.LogInformation("自动吃药：{text}", "吃复活药数量超额退出！-2");
-                                resurrectionCount = 0;
-                                RecoverCount = 0;
-                                IsTpForRecover = false; // 吃完药品后，打开复活检测
-                                return; // 吃完药品后，退出
-                            }
+                            // 直接计数，不验证（战斗中角色切换导致验证不可靠）
+                            if (needRevive) _medicineState.IncrementRevive();
+                            if (needHeal) _medicineState.IncrementHeal();
+                            Logger.LogInformation("自动吃药：{reason}，使用小道具", needHeal ? "发现红血" : "发现角色死亡");
+                            PathingConditionConfig.LastEatTime = DateTime.UtcNow;
+
+                            if (endBloodCheck && _medicineState.TotalCount >= 1)
+                                return; // 单次检测复用
                         }
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        Console.WriteLine($"自动吃药发生异常: {ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        // Console.WriteLine($"自动吃药发生异常: {ex.Message}");
-                    }
-                }
-
-            }, cts2);
-        }
-        catch (OperationCanceledException ex)
-        {
-            Console.WriteLine($"自动吃药发生异常: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"自动吃药发生异常: {ex.Message}");
-        }
-        finally
-        {
-            using (var bitmap = CaptureToRectArea()) //复活界面检测，自动战斗期间，不进行BGI的复活检测，超出吃药上限后才会检测
-            {
-                var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
-                if (confirmRa.IsExist())
-                {
-                    confirmRa.Click();
-                    Task.Delay(500, cts2).Wait(500);
-                    using var bitmap2 = CaptureToRectArea();
-                    var okRa = bitmap2.Find(AutoFightAssets.Instance.ConfirmRa);
-                    {
-                        if (okRa.IsExist())
+                        else
                         {
-                            Logger.LogInformation("自动吃药：{text} 复活界面", "退出");
-                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                            Task.Delay(500, cts2).Wait(1000);
-                            try
-                            {
-
-                                if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, cts2).Result)
-                                {
-                                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
-                                    Simulation.ReleaseAllKey();
-                                }
-                            }
-                            catch (OperationCanceledException ex)
-                            {
-                                Console.WriteLine($"自动结束吃药123：{ex.Message}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"自动结束吃药发生异常123: {ex.Message}");
-                            }
+                            Logger.LogInformation("自动吃药：吃药数量超额退出");
+                            _medicineState.ExitMedicineScope(shouldEnableReviveCheck: true);
+                            return;
                         }
                     }
+
+                    await Task.Delay(Math.Max(_taskParam.CheckInterval - 150, 100), ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning(ex, "自动吃药检测异常");
                 }
             }
         }
-        
-        return Task.CompletedTask;
-    }
-    
-    static bool IsPixelSimilar(Vec3b p1, Vec3b p2, int threshold)
-    {
-        // 注意：OpenCV的Vec3b[0]是B通道，[1]是G通道，[2]是R通道（不是RGB而是BGR！）
-        int diffB = Math.Abs(p1[0] - p2[0]); // 蓝色通道差值
-        int diffG = Math.Abs(p1[1] - p2[1]); // 绿色通道差值
-        int diffR = Math.Abs(p1[2] - p2[2]); // 红色通道差值
-
-        // 所有通道的差值都≤阈值才返回true
-        return diffB <= threshold && diffG <= threshold && diffR <= threshold;
+        catch (OperationCanceledException)
+        {
+            // 正常取消
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "自动吃药异常");
+        }
+        finally
+        {
+            // 退出时检查复活界面
+            try
+            {
+                using var bitmap = CaptureToRectArea();
+                var confirmRa = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                if (confirmRa.IsExist())
+                {
+                    // 先点确认尝试复活，再点取消关闭弹窗
+                    confirmRa.Click();
+                    await Task.Delay(300, ct);
+                    using var bitmap2 = CaptureToRectArea();
+                    var exitRa = bitmap2.Find(AutoFightAssets.Instance.ExitRa);
+                    if (exitRa.IsExist())
+                    {
+                        exitRa.Click();
+                        await Task.Delay(200, ct);
+                    }
+                    if (!await AutoFightSkill.MedicinalCdAsync(Logger, false, 1, ct))
+                    {
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                        Simulation.ReleaseAllKey();
+                    }
+                }
+            }
+            catch
+            {
+                // 退出清理不应抛异常
+            }
+        }
     }
 
     //定义按键，用于结束吃药的切换人
@@ -2123,88 +2037,58 @@ public class AutoFightTask : ISoloTask
 
     private async Task EndBloodCheck(CancellationToken ct, CombatScenes? combatScenes = null)
     {
-        IsTpForRecover = true; // 复活检测关闭
-        var ms = 2500;  //检测区域是否有红血，没有发现红血，则退出
+        _medicineState.Reset(); // 战斗结束吃药独立计算
+        _medicineState.EnterMedicineScope();
+        var ms = 2500;
         var useMedicine = new List<int> { 1, 2, 3, 4 };
-        var endBloodCheck = false;//血量复检标志位
+        var hasRechecked = false;
 
         try
         {
-            await TakeMedicine(ct, true); //尝试吃药和复活角色
+            await TakeMedicineAsync(ct, true); // 尝试吃药和复活角色
 
             while (ms > 0)
             {
                 using (var ra = CaptureToRectArea())
                 {
-                    var pixelValue =
-                        ra.SrcMat.At<Vec3b>(785, 1818); //TakeMedicine后，不会有死亡角色，如出现死亡角色导致变复活药，说明死超过2位角色，也不用执行了
-                    if (pixelValue[0] == 255 && pixelValue[1] == 255 && pixelValue[2] == 255)
+                    // 检测是否为复活药
+                    if (CombatHealthDetector.IsResurrectionDrug(ra))
                     {
-                        if(!_taskParam.QRecoverAvatar) return;
-                        Logger.LogInformation("自动结束吃药：检测到复活药，{text} 结束吃恢复药", "不执行");
-                        Logger.LogInformation("自动结束吃药：{text} 执行技能恢复", "尝试执行");
+                        if (!_taskParam.QRecoverAvatar) return;
+                        Logger.LogInformation("自动结束吃药：检测到复活药，不执行结束吃恢复药");
+                        Logger.LogInformation("自动结束吃药：尝试执行技能恢复");
                     }
                     else
                     {
-                        // 非复活药前提下再识别营养袋，优化效率
-                        using var mRect = ra.DeriveCrop(1817, 781, 4, 14);
-                        using var mask = OpenCvCommonHelper.Threshold(mRect.SrcMat, new Scalar(192, 233, 102),
-                            new Scalar(193, 233, 103));
-                        using var labels = new Mat();
-                        using var stats = new Mat();
-                        using var centroids = new Mat();
-
-                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
-
-                        // Logger.LogInformation("自动吃药：检测到{numLabels}", numLabels);
-
-                        if (!(numLabels > 1)) //判断是否带营养袋，连通性检测药品上方的绿色块
+                        // 非复活药前提下检测营养袋
+                        if (!CombatHealthDetector.HasNutritionBag(ra))
                         {
-                            Logger.LogInformation("自动结束吃药：{t} 营养袋，结束吃药关闭", "未发现");
+                            Logger.LogInformation("自动结束吃药：未发现营养袋，结束吃药关闭");
                             return;
                         }
                     }
 
+                    // 检查4个角色槽位的血量
                     for (var h = 0; h < 4; h++)
                     {
-                        using var bloodtRect = ra.DeriveCrop(1694, 267 + h * 96, 3, 24);
-                        using var mask = OpenCvCommonHelper.Threshold(bloodtRect.SrcMat, new Scalar(150, 215, 34),
-                            new Scalar(161, 220, 60));
-                        using var labels = new Mat();
-                        using var stats = new Mat();
-                        using var centroids = new Mat();
+                        var hasGreenBlood = CombatHealthDetector.IsSlotRedBlood(ra, h);
+                        var isActive = CombatHealthDetector.IsSlotActive(ra, h);
 
-                        var numLabels = Cv2.ConnectedComponentsWithStats(mask, labels, stats, centroids,
-                            connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S); //非出战角色，右侧头像血量检查
-
-                        using var bloodtRect2 = ra.DeriveCrop(1859, 264 + h * 96, 3, 3);
-                        using var mask2 = OpenCvCommonHelper.Threshold(bloodtRect2.SrcMat, new Scalar(255, 255, 255));
-                        using var labels2 = new Mat();
-                        using var stats2 = new Mat();
-                        using var centroids2 = new Mat();
-
-                        var numLabels2 = Cv2.ConnectedComponentsWithStats(mask2, labels2, stats2, centroids2,
-                            connectivity: PixelConnectivity.Connectivity4,
-                            ltype: MatType.CV_32S); //出战代表没有死亡，如果红血，会在开头的TakeMedicine恢复
-
-                        // Logger.LogInformation("自动结束吃药：{text} 血量检查，{text4}", h + 1, numLabels);
-                        if (numLabels > 1 || !(numLabels2 > 1))
+                        // 有绿血或非出战状态（可能死亡）的角色需要吃药
+                        if (hasGreenBlood || !isActive)
                         {
-                            ms = 1; 
+                            ms = 1;
                             useMedicine.Remove(h + 1);
-                            // Logger.LogInformation("自动结束吃药：{text} 发现红血 {t4}", h + 1,useMedicine);
                         }
                     }
                 }
-                
-                // Logger.LogWarning("自动结束吃药：{text} 个", useMedicine.Count);
 
-                if (useMedicine.Count > 0 && !endBloodCheck) //发现红血角色，可能因为游泳等误判，进行复检
+                // 发现红血角色，可能因为游泳等误判，进行复检
+                if (useMedicine.Count > 0 && !hasRechecked)
                 {
-                    endBloodCheck = true;
-                    TaskControl.Logger.LogInformation("自动结束吃药：检测到红血角色，{text} 结束吃药，进行复检", useMedicine);
-                    ms = 100; // 设置100会再次检测
+                    hasRechecked = true;
+                    Logger.LogInformation("自动结束吃药：检测到红血角色 {slots}，进行复检", useMedicine);
+                    ms = 100;
                     useMedicine = new List<int> { 1, 2, 3, 4 };
                     await Task.Delay(500, ct);
                 }
@@ -2216,25 +2100,26 @@ public class AutoFightTask : ISoloTask
             using var swimming = CaptureToRectArea();
             if (useMedicine.Count > 0 && !Avatar.SwimmingConfirm(swimming))
             {
+                // 优先使用技能恢复
                 if (_taskParam.QRecoverAvatar && PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex is not null)
                 {
                     var pathExecutor = new PathExecutor(ct);
-                    Logger.LogWarning("自动结束吃药：{text} 结束吃药，执行技能恢复 {text2}", useMedicine,PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex);
-                    await pathExecutor.TryPartyHealing(combatScenes,PathingConditionConfig.PartyConfigBackUp);
-                    // if (_taskParam.QRecoverAvatar) return; 
+                    Logger.LogWarning("自动结束吃药：执行技能恢复 {slots} {avatar}", useMedicine, PathingConditionConfig.PartyConfigBackUp.RecoverAvatarIndex);
+                    await pathExecutor.TryPartyHealing(combatScenes, PathingConditionConfig.PartyConfigBackUp);
                     return;
                 }
 
-                //计算2上次吃药时间到现在是否超过2秒，未超过就等待
-                if ((DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds < 1500)
+                // 等待吃药冷却
+                var timeSinceLastEat = (DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds;
+                if (timeSinceLastEat < 1500)
                 {
-                    await Task.Delay(
-                        1500 - (int)(DateTime.UtcNow - PathingConditionConfig.LastEatTime).TotalMilliseconds, ct);
+                    await Task.Delay(1500 - (int)timeSinceLastEat, ct);
                 }
 
                 PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                TaskControl.Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {text} 编号", useMedicine);
-                //通过编号切换角色补血,不进行确认是否吃上
+                Logger.LogInformation("自动结束吃药：发现红血角色，执行吃药 {slots} 编号", useMedicine);
+
+                // 切换角色并吃药
                 foreach (var num in useMedicine)
                 {
                     Simulation.ReleaseAllKey();
@@ -2244,50 +2129,63 @@ public class AutoFightTask : ISoloTask
 
                     using (var bitmap = CaptureToRectArea())
                     {
-                        if (Bv.IsInRevivePrompt(bitmap)) //如果在复活界面，说明没复活药了
+                        if (Bv.IsInRevivePrompt(bitmap))
                         {
-                            Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                            await Task.Delay(500, ct);
+                            // 先点确认尝试复活，再点取消关闭弹窗
+                            var confirmArea = bitmap.Find(AutoFightAssets.Instance.ConfirmRa);
+                            if (confirmArea.IsExist())
+                            {
+                                confirmArea.Click();
+                            }
+                            await Task.Delay(300, ct);
+                            using var bitmap2 = CaptureToRectArea();
+                            var exitArea = bitmap2.Find(AutoFightAssets.Instance.ExitRa);
+                            if (exitArea.IsExist())
+                            {
+                                exitArea.Click();
+                                await Task.Delay(200, ct);
+                            }
                         }
                     }
 
                     try
                     {
-                        if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1,ct).Result)
+                        if (!await AutoFightSkill.MedicinalCdAsync(Logger, false, 1, ct))
                         {
                             Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
-                        } 
+                        }
                     }
-                    catch (OperationCanceledException ex)
+                    catch (OperationCanceledException)
                     {
-                        Console.WriteLine($"自动结束吃药1：{ex.Message}");
+                        break;
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"自动结束吃药发生异常1: {ex.Message}");
+                        Logger.LogWarning(ex, "自动结束吃药异常");
                     }
-                    
+
                     await Task.Delay(700, ct);
                 }
             }
             else
             {
-                TaskControl.Logger.LogInformation("自动结束吃药：检测未发现红血角色，{text} 结束吃药", "不执行");
+                Logger.LogInformation("自动结束吃药：检测未发现红血角色，不执行结束吃药");
             }
 
-            IsTpForRecover = false; // 复活检测打开
+            _medicineState.ExitMedicineScope(shouldEnableReviveCheck: true);
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            Console.WriteLine($"战斗结束血量检测发生异常: {ex.Message}");
+            // 正常取消
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"战斗结束血量检测发生异常: {ex.Message}");
+            Logger.LogWarning(ex, "战斗结束血量检测异常");
         }
         finally
         {
-            // PathingConditionConfig.PartyConfigBackUp = new PathingPartyConfig();
+            // 确保状态恢复
+            _medicineState.ExitMedicineScope(shouldEnableReviveCheck: true);
         }
     }
 

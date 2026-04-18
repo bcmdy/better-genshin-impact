@@ -290,11 +290,11 @@ public class PathExecutor
                                 if ((_lastWaypoint?.Action == ActionEnum.Fight.Code || last2Waypoints) && nextDdistance < 20 && nextWaypoint == null&& waypoint.Misidentification.HandlingMode != "mapRecognition")
                                 {
                                     last2Waypoints = true;
-                                    // Logger.LogWarning("战斗后节点较近！！-2");
+                                    // Logger.LogWarning("战斗后节点较近111！！-2");
                                 }
                                 else
                                 {
-                                    // Logger.LogWarning("战斗后节点较近333！！-2");
+                                    // Logger.LogWarning("战斗后节点较近222！！-2");
                                     last2Waypoints = false;
                                     await MoveTo(waypoint,true,task,nextWaypoint,nextDdistance);
                                 }
@@ -437,6 +437,38 @@ public class PathExecutor
             
             if (numLabels <= 1)
             {
+                // 首次检测失败，等待派蒙头像出现确认画面加载完成后复检
+                Logger.LogInformation("自动吃药：首次检测未发现营养袋，等待派蒙头像出现后复检");
+                var paimonFound = await Bv.WaitUntilFound(ElementAssets.Instance.PaimonMenuRo, ct, retryTimes: 10, delayMs: 200); // 2000ms超时
+                if (!paimonFound)
+                {
+                    _returnMainUiTask.Start(ct).Wait(5000,ct);
+                    await Delay(1000, ct);
+                    Logger.LogWarning("自动吃药：等待派蒙头像超时(2000ms)，继续复检");
+                }
+
+                using (var ra2 = CaptureToRectArea())
+                {
+                    using var recheckRect = ra2.DeriveCrop(1817, 781, 4, 14);
+                    using var recheckMask = OpenCvCommonHelper.Threshold(recheckRect.SrcMat, new Scalar(185, 225, 95), new Scalar(200, 240, 110));
+                    using var recheckLabels = new Mat();
+                    using var recheckStats = new Mat();
+                    using var recheckCentroids = new Mat();
+
+                    var recheckNumLabels = Cv2.ConnectedComponentsWithStats(recheckMask, recheckLabels, recheckStats, recheckCentroids,
+                        connectivity: PixelConnectivity.Connectivity4, ltype: MatType.CV_32S);
+
+                    if (recheckNumLabels > 1)
+                    {
+                        // 复检成功，启用自动吃药
+                        Logger.LogInformation("自动吃药：复检成功，发现营养袋，自动吃药{text}", "开启");
+                        PathingConditionConfig.AutoEatCount = 0;
+                        return;
+                    }
+                }
+
+                // 复检仍失败，按原有逻辑处理
+                Logger.LogInformation("自动吃药：复检仍未发现营养袋");
                 if (PathingConditionConfig.RetryAssemblyNum > 0)
                 {
                     if (await RetryAssembly())
@@ -1359,10 +1391,22 @@ public class PathExecutor
             {
                 if (distance > 500 && num > 2)
                 {
-                    Logger.LogWarning("检测到离开目标点异常，停止移动，距离1：{distance}- {x} - {y}", distance,position.X, position.Y);
-                    await Delay(1000, ct);
-                    using var screen23 = CaptureToRectArea();
-                    (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
+                    // 检查是否为真实远距离（坐标稳定）还是误识别（坐标跳变）
+                    var distToPrevCheck = prevNotTooFarPosition is not { X: 0, Y: 0 } && position is not { X: 0, Y: 0 }
+                        ? Math.Sqrt(Math.Pow(position.X - prevNotTooFarPosition.X, 2) + Math.Pow(position.Y - prevNotTooFarPosition.Y, 2))
+                        : double.MaxValue;
+                    
+                    if (distToPrevCheck <= 200 && position is not { X: 0, Y: 0 })
+                    {
+                        // 坐标稳定，角色确实离目标远，不停止移动，正常继续
+                        prevNotTooFarPosition = position;
+                    }
+                    else
+                    {
+                        Logger.LogWarning("检测到离开目标点异常，停止移动，距离1：{distance}- {x} - {y}", distance,position.X, position.Y);
+                        await Delay(1000, ct);
+                        using var screen23 = CaptureToRectArea();
+                        (position, additionalTimeInMs) = await GetPositionAndTime(screen23, waypoint,isPoint);
                     if (position is not  { X: 0, Y: 0 })
                     {
                         prePosition = position;
@@ -1411,36 +1455,6 @@ public class PathExecutor
                         }
                     }
                     // Simulation.SendInput.SimulateAction(GIActions.MoveForward, KeyType.KeyDown);
-                }
-
-                if (num > 1 && distance < 20 && _lastWaypoint?.Action == ActionEnum.Fight.Code)
-                {
-                    using var ra = CaptureToRectArea();
-                    for (int k = 1; k <= 4; k++)
-                    {
-                        var avatar2 = _combatScenes?.SelectAvatar(k);
-                        if (avatar2 != null && avatar2.IsActive(ra))
-                        {
-                            if (avatar2.Name == "玛薇卡")
-                            {
-                                using var region2 = CaptureToRectArea();
-                                // 获取两个点的颜色值
-                                var pos = region2.SrcMat.At<Vec3b>(978, 1692);
-                                var pos2 = region2.SrcMat.At<Vec3b>(995, 1702);
-                                double colorDifference = Math.Sqrt(
-                                    Math.Pow(pos.Item0 - pos2.Item0, 2) + // 蓝通道差值的平方
-                                    Math.Pow(pos.Item1 - pos2.Item1, 2) + // 绿通道差值的平方
-                                    Math.Pow(pos.Item2 - pos2.Item2, 2) // 红通道差值的平方
-                                );
-
-                                if (colorDifference < 15)
-                                {
-                                    // Logger.LogWarning("当前出战角色2 {t} -{distance}",avatar2.Name,distance);
-                                    Simulation.SendInput.SimulateAction(GIActions.ElementalSkill);
-                                    break;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -2058,18 +2072,23 @@ public class PathExecutor
                             ? Math.Sqrt(Math.Pow(position.X - prevNotTooFarPosition.X, 2) + Math.Pow(position.Y - prevNotTooFarPosition.Y, 2))
                             : double.MaxValue;
                         
-                        // 判断是否为误识别：需要同时满足两个条件
-                        // 1. 有上次有效坐标（prevNotTooFarPosition不是初始值）
-                        // 2. 当前坐标和上次有效坐标差距很大（>200），说明坐标跳变了
-                        // 如果当前坐标和上次有效坐标很近，说明识别一致，角色确实离目标远，不是误识别
                         var isMisidentification = prevNotTooFarPosition is not { X: 0, Y: 0 } && distToPrev > 200;
                         
                         if (!isMisidentification)
                         {
-                            // 信任当前坐标：要么没有历史参考，要么和历史坐标一致
-                            Logger.LogInformation($"距离较远，信任当前识别({position.X},{position.Y})，距目标={Math.Round(distance)}，正常移动");
+                            distanceTooFarRetryCount++;
+                            // 坐标稳定但距离一直>500，可能是传送后首次识别就错了
+                            // 累积超过10次后触发全局匹配重新定位
+                            if (distanceTooFarRetryCount > 10)
+                            {
+                                Logger.LogWarning($"距离持续>500达{distanceTooFarRetryCount}次，触发全局匹配重新定位");
+                                Navigation.Reset();
+                                prevNotTooFarPosition = default;
+                                distanceTooFarRetryCount = 0;
+                                await Delay(200, ct);
+                                continue;
+                            }
                             prevNotTooFarPosition = position;
-                            distanceTooFarRetryCount = 0;
                         }
                         else
                         {

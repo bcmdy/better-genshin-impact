@@ -124,48 +124,37 @@ public class Avatar
     /// <returns></returns>
     private static void ThrowWhenDefeated(ImageRegion region, CancellationToken ct)
     {
-        // Logger.LogInformation("检测到123 {t} {t2} {t3}",PathingConditionConfig.AutoEatCount,AutoFightTask.RecoverCount,AutoFightTask.IsTpForRecover);
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            if (PathingConditionConfig.AutoEatCount < 2)
+            // AutoEatCount >= 2 表示吃药超额，直接去七天神像
+            if (PathingConditionConfig.AutoEatCount >= 2)
             {
+                Logger.LogWarning("检测到复苏界面，吃药已超额(AutoEatCount={t})，前往七天神像", PathingConditionConfig.AutoEatCount);
+                PathingConditionConfig.AutoEatCount = 0;
+                TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
+            }
+            else
+            {
+                // 还有吃药次数，尝试点击确认使用小道具
                 if (DateTime.UtcNow > PathingConditionConfig.LastEatTime.AddSeconds(1.5))
                 {
                     PathingConditionConfig.LastEatTime = DateTime.UtcNow;
-                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n {t}",PathingConditionConfig.AutoEatCount);
+                    Logger.LogWarning("自动吃药：尝试使用小道具恢复-n {t}", PathingConditionConfig.AutoEatCount);
                     var confirmRectArea = region.Find(AutoFightAssets.Instance.ConfirmRa);
                     if (!confirmRectArea.IsEmpty())
                     {
-                        if(PathingConditionConfig.AutoEatCount <2)PathingConditionConfig.AutoEatCount++;
+                        PathingConditionConfig.AutoEatCount++;
                         Simulation.ReleaseAllKey();
                         confirmRectArea.Click();
-                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
                     }
-                    
                 }
                 else
                 {
-                    //等待
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
                     Sleep(300, ct);
-                    Logger.LogWarning("自动吃药：距离上次吃药时间过小，等待重试-l");
                 }
                 return;
             }
-            
-            Logger.LogWarning("检测到复苏界面，-o {t}",PathingConditionConfig.AutoEatCount);
-            if (PathingConditionConfig.AutoEatCount < 3) PathingConditionConfig.AutoEatCount = 0;
-
-            using (var bitmap = CaptureToRectArea())
-            {
-                if (Bv.IsInRevivePrompt(bitmap))
-                {
-                    Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_ESCAPE);
-                    Sleep(300, ct);
-                }
-            }
-            
-            TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活-i"));
         }
         else if(AutoFightParam.SwimmingEnabled && !AutoFightTask.FightEndFlag && SwimmingConfirm(region))
         {
