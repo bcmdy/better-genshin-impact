@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$Version = "0.60.1+lcb.21.5-QuickyEnd-fix1-DF3.2",
+    [string]$Version = "0.60.1+lcb.21.5-QuickyEnd-fix1-DF3.3",
     [string]$KachinaChannel = "release",
     [switch]$SkipClone,
     [switch]$SkipBuild,
@@ -123,11 +123,22 @@ if (-not $SkipClone) {
 Write-Step "更新版本号..."
 $csprojPath = "BetterGenshinImpact\BetterGenshinImpact.csproj"
 if (Test-Path $csprojPath) {
-    $content = Get-Content $csprojPath -Raw
+    $content = Get-Content $csprojPath -Raw -Encoding UTF8
     if ($content -match '<Version>.*</Version>') {
         $content = $content -replace '<Version>.*</Version>', "<Version>$Version</Version>"
-        Set-Content -Path $csprojPath -Value $content
+        [System.IO.File]::WriteAllText($csprojPath, $content, [System.Text.UTF8Encoding]::new($false))
         Write-Success "版本号已更新为: $Version"
+    }
+}
+
+# 同步版本到本地脚本
+$localScript = "build-actions-local.ps1"
+if (Test-Path $localScript) {
+    $content = Get-Content $localScript -Raw -Encoding UTF8
+    if ($content -match 'param\(\[string\]\$Version = "([^"]+)"') {
+        $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$Version`""
+        [System.IO.File]::WriteAllText($localScript, $content, [System.Text.UTF8Encoding]::new($false))
+        Write-Info "已同步版本到: $localScript"
     }
 }
 

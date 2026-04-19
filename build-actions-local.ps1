@@ -1,4 +1,50 @@
-﻿param([string]$Version = "0.60.1+lcb.21.5-QuickyEnd-fix1-DF3.2")
+﻿param([string]$Version = "0.60.1+lcb.21.5-QuickyEnd-fix1-DF3.3")
+
+# 函数：更新版本号（保持编码）
+function Update-VersionInFile {
+    param(
+        [string]$FilePath,
+        [string]$NewVersion
+    )
+    if (Test-Path $FilePath) {
+        $content = Get-Content $FilePath -Raw -Encoding UTF8
+        if ($content -match '<Version>.*</Version>') {
+            $content = $content -replace '<Version>.*</Version>', "<Version>$NewVersion</Version>"
+            [System.IO.File]::WriteAllText($FilePath, $content, [System.Text.UTF8Encoding]::new($false))
+            $script:updatedFiles += $FilePath
+            return $true
+        }
+        if ($FilePath -match 'param\(\[string\]\$Version') {
+            $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$NewVersion`""
+            [System.IO.File]::WriteAllText($FilePath, $content, [System.Text.UTF8Encoding]::new($false))
+            $script:updatedFiles += $FilePath
+            return $true
+        }
+    }
+    return $false
+}
+
+# 函数：同步版本号到另一个脚本
+function Sync-VersionToOther {
+    param([string]$NewVersion)
+    $otherScript = "build-actions-new.ps1"
+    if ($MyInvocation.MyCommand.Name -match "local") { $otherScript = "build-actions-local.ps1" }
+    if (Test-Path $otherScript) {
+        $content = Get-Content $otherScript -Raw -Encoding UTF8
+        if ($content -match 'param\(\[string\]\$Version = "([^"]+)"') {
+            $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$NewVersion`""
+            [System.IO.File]::WriteAllText($otherScript, $content, [System.Text.UTF8Encoding]::new($false))
+            Write-Host "  已同步版本到: $otherScript" -ForegroundColor Gray
+        }
+    }
+}
+
+$updatedFiles = @()
+
+# 编译前先更新csproj和另一个脚本的版本号
+Write-Host "`n[0] 更新版本号..." -ForegroundColor Cyan
+Update-VersionInFile -FilePath "BetterGenshinImpact\BetterGenshinImpact.csproj" -NewVersion $Version
+Sync-VersionToOther -NewVersion $Version
 
 Write-Host "=== BetterGI 本地构建脚本 ===" -ForegroundColor Cyan
 Write-Host "版本: $Version" -ForegroundColor Yellow

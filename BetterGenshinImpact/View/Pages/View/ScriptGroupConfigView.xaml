@@ -1,4 +1,4 @@
-<UserControl x:Class="BetterGenshinImpact.View.Pages.View.ScriptGroupConfigView"
+﻿<UserControl x:Class="BetterGenshinImpact.View.Pages.View.ScriptGroupConfigView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
@@ -164,7 +164,7 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <ui:TextBlock FontTypography="BodyStrong"
-                                                      Text="减少等待时间"
+                                                      Text="减少等待时间（默认开启，需开启地图追踪行走配置，否则开关等设置不生效）"
                                                       TextWrapping="Wrap"/>
                                         <ui:TextBlock FontSize="12"
                                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
