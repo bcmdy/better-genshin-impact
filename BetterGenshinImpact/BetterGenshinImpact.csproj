@@ -33,7 +33,12 @@
 		<Resource Include="Resources\Images\Anniversary\*" />
 		<Resource Include="Resources\Images\*.png" />
 		<Resource Include="Resources\Images\*.ico" />
-		<Resource Include="Resources\Fonts\*.ttf" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Fonts\*.ttf">
+			<LogicalName>Resources.Fonts.%(Filename).ttf</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
