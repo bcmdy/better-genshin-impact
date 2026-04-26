@@ -38,6 +38,30 @@
 
 **返回：** `string[]`
 
+### generateFromFontFile(text, fontFilePath, fontSize?, textColor?, bgColor?)
+
+从字体文件生成图片，返回 `byte[]`。
+
+**参数：**
+- `text` (string) - 要生成的文字
+- `fontFilePath` (string) - 字体文件路径(.ttf/.ttc)
+- `fontSize` (number, optional) - 字体大小，默认 `24`
+- `textColor` (string, optional) - 文字颜色(hex)，默认 `#505769`
+- `bgColor` (string, optional) - 背景颜色(hex)，默认 `#F5F6F7`
+
+**返回：** `byte[]` PNG格式二进制数据
+
+### generateMatFromFontFile(text, fontFilePath, fontSize?, textColor?, bgColor?)
+
+从字体文件生成图片，返回 `Mat`。
+
+### generateMatFromFontBytes(text, fontBytes, fontSize?, textColor?, bgColor?)
+
+从字体字节数据生成图片，返回 `Mat`。
+
+**参数：**
+- `fontBytes` (byte[]) - 字体字节数据
+
 ## 使用示例
 
 ### 示例1：生成PNG图片并保存
@@ -101,6 +125,30 @@ var mat3 = textToImage.generateMat("标题", "MiSans-Regular", 36, "#000000", "#
 mat1.Dispose();
 mat2.Dispose();
 mat3.Dispose();
+```
+
+### 示例5：使用外部字体文件生成图片
+
+```javascript
+// 从字体文件路径生成
+var fontPath = "C:/Windows/Fonts/msyh.ttc";
+var mat = textToImage.generateMatFromFontFile("测试文字", fontPath, 24, "#000000", "#FFFFFF");
+
+// 完成后释放
+mat.Dispose();
+```
+
+### 示例6：使用字体字节数据生成图片
+
+```javascript
+// 从文件读取字体字节
+var fontBytes = file.ReadBytes("assets/custom.ttf");
+
+// 使用字体字节生成图片
+var mat = textToImage.generateMatFromFontBytes("自定义字体", fontBytes, 24, "#FF0000", "#FFFFFF");
+log.info("生成的图片尺寸: " + mat.Width + "x" + mat.Height);
+
+mat.Dispose();
 ```
 
 ## 颜色参考
