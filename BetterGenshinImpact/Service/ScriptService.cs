@@ -600,6 +600,8 @@ public partial class ScriptService : IScriptService
                     var first = true;
                     var sw = Stopwatch.StartNew();
                     var loseFocusCount = 0;
+                    double lastAttemptSeconds = 0;
+
                     while (true)
                     {
                         if (!homePageViewModel.TaskDispatcherEnabled || !TaskContext.Instance().IsInitialized)
@@ -624,6 +626,24 @@ public partial class ScriptService : IScriptService
                         await Task.Delay(500);
                         if (sw.Elapsed.TotalSeconds >= 30)
                         {
+                            var totalSeconds = sw.Elapsed.TotalSeconds;
+                            if (totalSeconds - lastAttemptSeconds >= 30)
+                            {
+                                lastAttemptSeconds = totalSeconds;
+                                var retryCount = (int)(totalSeconds / 30);
+                                TaskControl.Logger.LogInformation($"尝试进入主界面（第{retryCount}次）...");
+
+                                var returnTask = new ReturnMainUiTask();
+                                try
+                                {
+                                    returnTask.Start(CancellationToken.None).Wait(5000);
+                                }
+                                catch (Exception ex)
+                                {
+                                    TaskControl.Logger.LogWarning($"返回主界面失败: {ex.Message}");
+                                }
+                            }
+
                             //防止自启动游戏后因为一些原因失焦，导致一直卡住
                             if (!SystemControl.IsGenshinImpactActiveByProcess())
                             {
