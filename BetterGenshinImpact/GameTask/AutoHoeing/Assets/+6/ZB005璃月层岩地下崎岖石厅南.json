@@ -10,7 +10,7 @@
     "description": "  路线信息：该路线预计用时124秒，包含以下怪物：1只打手丘丘人、1只黯色空壳·旗令、1只黯色空壳·近卫、1只黑蛇骑士·斩风之剑、1只遗迹重机。",
     "enable_monster_loot_split": false,
     "hash_res": "15399287",
-    "last_modified_time": 1778698020775,
+    "last_modified_time": 1779213489306,
     "map_match_method": "",
     "map_name": "TheChasm",
     "name": "ZB005璃月层岩地下崎岖石厅南",
@@ -115,8 +115,8 @@
       "id": 11,
       "move_mode": "dash",
       "type": "path",
-      "x": 348.1641845703125,
-      "y": 69.5811767578125
+      "x": 350.856689453125,
+      "y": 71.84375
     },
     {
       "action": "",

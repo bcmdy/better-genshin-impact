@@ -9,9 +9,9 @@
     ],
     "bgi_version": "0.45.0",
     "description": "  路线信息：该路线预计用时63秒，包含以下怪物：1只黯色空壳·旗令、1只黑蛇骑士·斩风之剑。",
-    "hash_res": "23891892",
     "enable_monster_loot_split": false,
-    "last_modified_time": 1759434863797,
+    "hash_res": "23891892",
+    "last_modified_time": 1777749424486,
     "map_match_method": "",
     "map_name": "TheChasm",
     "name": "ZB007璃月层岩水泽",
@@ -62,8 +62,8 @@
       "id": 5,
       "move_mode": "dash",
       "type": "path",
-      "x": 626.27,
-      "y": 806.74
+      "x": 628.0889892578125,
+      "y": 807.908203125
     }
   ]
 }
