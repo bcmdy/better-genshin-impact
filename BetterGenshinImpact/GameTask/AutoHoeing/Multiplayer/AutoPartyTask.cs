@@ -419,14 +419,20 @@ public class AutoPartyTask
                     lastKickScanTime = DateTime.Now;
                 }
 
-                // 在 F2 界面，按 Y 触发申请弹窗（如果有待处理的申请）
+                // 在 F2 界面，持续按 Y 触发申请弹窗（弹窗本身由循环顶部 ConfirmBtnRo 持续检测捕获）
+                // 设计：按 Y 与弹窗检测解耦——Y 不停按让游戏尽快弹出申请，识别由顶部统一处理。
+                // 间隔 250ms（按 Y 后给游戏足够响应时间但不过度等待），让弹窗 10s 倒计时窗口内
+                // 能容纳更多次顶部检测机会（约 25+ 次），减少漏识。
                 if (isInF2Screen)
                 {
                     Simulation.SendInput.Keyboard.KeyPress(User32.VK.VK_Y);
+                    await Delay(250, ct);
+                }
+                else
+                {
+                    // 不在 F2（理论上不应该出现，主界面分支会补开 F2），保底休眠避免空转
                     await Delay(500, ct);
                 }
-
-                await Delay(500, ct);
             }
 
             // 超时：返回 0，由调用方根据 PartyTimeoutAction 决定
