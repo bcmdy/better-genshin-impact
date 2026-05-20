@@ -732,6 +732,22 @@ public class AutoPartyTask
                 return false;
             }
 
+            // 关键守卫：陌生人闯入 ⇔ 游戏内实际人数（踢出按钮 + 1）> BGI 房间登记人数
+            // 游戏世界硬上限 4 人，所以只有 BGI 没满 + 游戏世界先被陌生人占满才会触发。
+            // 没有这道守卫时，调用方（满员判定 / 周期性扫描）一旦因模板偶发漏识或 OCR
+            // 偏差走到 KickStrangersAsync，会把队伍内合法成员当陌生人误踢。
+            var f2Count = kickRegions.Count + 1;
+            var bgiCount = client.CurrentRoomPlayerCount;
+            if (bgiCount <= 0 || f2Count <= bgiCount)
+            {
+                _logger.LogDebug("[踢陌生人] 游戏内 {F2} 人 <= BGI 房间 {Bgi} 人，无陌生人，跳过扫描",
+                    f2Count, bgiCount);
+                return false;
+            }
+
+            _logger.LogInformation("[踢陌生人] 检测到陌生人闯入：游戏内 {F2} 人 > BGI 房间 {Bgi} 人，开始扫描",
+                f2Count, bgiCount);
+
             // 按 Y 坐标排序：从上到下对应 2P / 3P / 4P
             var sorted = kickRegions.OrderBy(r => r.Y).ToList();
             var scale = TaskContext.Instance().SystemInfo.ScaleTo1080PRatio;

@@ -930,10 +930,7 @@ public class AutoHoeingTask : ISoloTask
         
         _logger.LogInformation("[联机] 开始准备联机队伍和角色");
 
-        // 0a. 检测当前是否在多人联机世界，如是则先退出
-        await EnsureInOwnWorldBeforeMultiplayerAsync();
-
-        // 0b. 设置世界权限为确认后才能加入
+        // 0a. 设置世界权限为确认后才能加入
         await SetWorldPermissionToConfirmJoin();
         
         // 1. 切换队伍
@@ -1116,6 +1113,12 @@ public class AutoHoeingTask : ISoloTask
             // （_partyConfig 为 null 时由 RouteExecutionEngine 在每条路线执行前处理）
             if (_partyConfig != null)
                 _partyConfig.DisableAutoFetchDispatch = true;
+
+            // 任务最开始：检测当前是否在多人联机世界（前一次任务残留），如是则先退出。
+            // 必须在所有联机准备步骤之前一次性做完，且只做一次——
+            // 否则放在 PrepareMultiplayerPartyAndAvatar 里会被多世界每一轮重复调用，
+            // 把刚刚 WaitForMembersAsync 拉进来的成员误当残留踢出去。
+            await EnsureInOwnWorldBeforeMultiplayerAsync();
 
             // 联机前准备：切换队伍和角色
             await PrepareMultiplayerPartyAndAvatar();
