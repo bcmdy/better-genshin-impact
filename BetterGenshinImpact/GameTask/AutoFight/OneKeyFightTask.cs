@@ -27,7 +27,8 @@ public class OneKeyFightTask : Singleton<OneKeyFightTask>
     private CancellationTokenSource? _cts = null;
     private Task? _fightTask;
 
-    private bool _isKeyDown = false;
+    private bool _isRunning = false;
+    private readonly object _lock = new object();
     private int _activeMacroPriority = -1;
     private DateTime _lastUpdateTime = DateTime.MinValue;
 
@@ -35,63 +36,100 @@ public class OneKeyFightTask : Singleton<OneKeyFightTask>
 
     public void KeyDown()
     {
-        if (_isKeyDown || !IsEnabled())
+        lock (_lock)
         {
-            return;
-        }
-
-        _isKeyDown = true;
-        if (_activeMacroPriority != TaskContext.Instance().Config.MacroConfig.CombatMacroPriority ||
-            IsAvatarMacrosEdited())
-        {
-            _activeMacroPriority = TaskContext.Instance().Config.MacroConfig.CombatMacroPriority;
-            _avatarMacros = LoadAvatarMacros();
-            Logger.LogInformation("加载一键宏配置完成");
-        }
-
-        if (IsHoldOnMode())
-        {
-            if (_cts == null || _cts.Token.IsCancellationRequested)
+            if (!IsEnabled())
             {
-                _cts = new CancellationTokenSource();
-                _fightTask = FightTask(_cts.Token);
-                if (!_fightTask.IsCompleted)
+                return;
+            }
+
+            if (IsHoldOnMode())
+            {
+                if (_isRunning)
                 {
-                    _fightTask.Start();
+                    return;
+                }
+
+                _isRunning = true;
+                if (_activeMacroPriority != TaskContext.Instance().Config.MacroConfig.CombatMacroPriority ||
+                    IsAvatarMacrosEdited())
+                {
+                    _activeMacroPriority = TaskContext.Instance().Config.MacroConfig.CombatMacroPriority;
+                    _avatarMacros = LoadAvatarMacros();
+                    Logger.LogInformation("加载一键宏配置完成");
+                }
+
+                if (_cts == null || _cts.Token.IsCancellationRequested)
+                {
+                    _cts = new CancellationTokenSource();
+                    _fightTask = FightTask(_cts.Token);
+                    if (!_fightTask.IsCompleted)
+                    {
+                        _fightTask.Start();
+                    }
                 }
             }
-        }
-        else if (IsTickMode())
-        {
-            if (_cts == null || _cts.Token.IsCancellationRequested)
+            else if (IsTickMode())
             {
-                _cts = new CancellationTokenSource();
-                _fightTask = FightTask(_cts.Token);
-                if (!_fightTask.IsCompleted)
+                if (_isRunning)
                 {
-                    _fightTask.Start();
+                    StopFightTask();
+                    return;
                 }
-            }
-            else
-            {
-                _cts.Cancel();
-                Simulation.ReleaseAllKey();
+
+                _isRunning = true;
+                if (_activeMacroPriority != TaskContext.Instance().Config.MacroConfig.CombatMacroPriority ||
+                    IsAvatarMacrosEdited())
+                {
+                    _activeMacroPriority = TaskContext.Instance().Config.MacroConfig.CombatMacroPriority;
+                    _avatarMacros = LoadAvatarMacros();
+                    Logger.LogInformation("加载一键宏配置完成");
+                }
+
+                if (_cts == null || _cts.Token.IsCancellationRequested)
+                {
+                    _cts = new CancellationTokenSource();
+                    _fightTask = FightTask(_cts.Token);
+                    if (!_fightTask.IsCompleted)
+                    {
+                        _fightTask.Start();
+                    }
+                }
             }
         }
     }
 
     public void KeyUp()
     {
-        _isKeyDown = false;
-        if (!IsEnabled())
+        lock (_lock)
         {
-            return;
-        }
+            if (!IsEnabled())
+            {
+                return;
+            }
 
-        if (IsHoldOnMode())
+            if (IsHoldOnMode())
+            {
+                StopFightTask();
+            }
+        }
+    }
+
+    private void StopFightTask()
+    {
+        if (_isRunning)
         {
             _cts?.Cancel();
+            try
+            {
+                _fightTask?.Wait(100);
+            }
+            catch (AggregateException)
+            {
+                // Task was cancelled, ignore
+            }
             Simulation.ReleaseAllKey();
+            _isRunning = false;
         }
     }
 
@@ -171,18 +209,14 @@ public class OneKeyFightTask : Singleton<OneKeyFightTask>
             return new Task(() =>
             {
                 var round = 1;
-                while (!ct.IsCancellationRequested && IsEnabled())
+                while (!ct.IsCancellationRequested && IsEnabled() && _isRunning)
                 {
                     Logger.LogInformation("→ {Name}执行宏 (第{Round}轮)", activeAvatar.Name, round);
-                    if (IsHoldOnMode() && !_isKeyDown)
-                    {
-                        break;
-                    }
 
                     // 通用化战斗策略
                     foreach (var command in combatCommands)
                     {
-                        if (ct.IsCancellationRequested) break;
+                        if (ct.IsCancellationRequested || !_isRunning) break;
                         if (command.ActivatingRound != null && command.ActivatingRound.Count > 0 && !command.ActivatingRound.Contains(round))
                         {
                             continue;
@@ -193,6 +227,7 @@ public class OneKeyFightTask : Singleton<OneKeyFightTask>
                 }
 
                 Logger.LogInformation("→ {Name}停止宏", activeAvatar.Name);
+                _isRunning = false;
             });
         }
         else
