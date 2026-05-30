@@ -665,11 +665,15 @@ public class TpTask
     }
 
     /// <summary>
-    /// 加速识别模式：按 M 后轮询等大地图 UI 出现。30ms 一帧，命中即返回 true，超时返回 false。
-    /// 高配机器地图打开动画通常 100-300ms，节省 700-900ms。
-    /// fast-drag-recognition-acceleration spec / step 1 boot delay optimization
+    /// 加速识别模式：按 M 后轮询等大地图 UI 出现即返回（单判据）。
+    /// 之前为了防"地图特征点未渲染→走 SwitchArea 弯路"加过双判据，但用户实测：
+    /// 双判据导致每次都顿一下；旧版本（无特征点判据）也不是每次都走 SwitchArea。
+    /// 改回单判据后，"特征点识别"由下游 SwitchRecentlyCountryMap 入口的 3×100ms retry 兜底
+    /// （见 SwitchRecentlyCountryMap 注释）。最坏 ~300ms 仍能识别成功，避免误走 SwitchArea。
+    ///
+    /// fast-drag-recognition-acceleration spec / step 1 boot delay optimization (single criterion)
     /// </summary>
-    private async Task<bool> WaitForBigMapUiOrTimeoutAsync(int timeoutMs, int pollMs = 30)
+    private async Task<bool> WaitForBigMapUiOrTimeoutAsync(int timeoutMs, int pollMs = 10)
     {
         long deadline = Environment.TickCount + timeoutMs;
         while (Environment.TickCount < deadline)
@@ -685,7 +689,36 @@ public class TpTask
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                Logger.LogDebug("[快速识别] IsInBigMapUi 探测异常: {Msg}", ex.Message);
+                Logger.LogDebug("[快速识别] OpenBigMapUi 探测异常: {Msg}", ex.Message);
+            }
+            await Delay(pollMs, ct);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 加速识别模式：轮询等指定 RecognitionObject 出现，超时兜底。
+    /// 主要用于"等弹窗 / 菜单出现"场景（如 SwitchArea 等地区菜单的白色 X 关闭按钮）。
+    /// fast-drag-recognition-acceleration spec
+    /// </summary>
+    private async Task<bool> WaitForElementOrTimeoutAsync(RecognitionObject ro, int timeoutMs, int pollMs = 15)
+    {
+        long deadline = Environment.TickCount + timeoutMs;
+        while (Environment.TickCount < deadline)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                using var ra = CaptureToRectArea();
+                using var found = ra.Find(ro);
+                if (found.IsExist())
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                Logger.LogDebug("[快速识别] WaitForElement 探测异常 {Name}: {Msg}", ro.Name, ex.Message);
             }
             await Delay(pollMs, ct);
         }
@@ -1444,8 +1477,19 @@ public class TpTask
         }
 
         // 识别当前位置
+        // 第一次识别可能因地图刚打开特征点未渲染而失败 → 短轮询补救（最多 ~450ms）。
+        // fast-drag-recognition-acceleration spec / SwitchRecentlyCountryMap regression safety net：
+        // 防止"识别失败 → minDistance 保持 MaxValue → 误走 SwitchArea 弯路（即使传送点就在旁边）"
         var minDistance = double.MaxValue;
-        var bigMapCenterPointNullable = GetPositionFromBigMapNullable(MapTypes.Teyvat.ToString());
+        Point2f? bigMapCenterPointNullable = GetPositionFromBigMapNullable(MapTypes.Teyvat.ToString());
+        if (bigMapCenterPointNullable == null)
+        {
+            for (int i = 0; i < 3 && bigMapCenterPointNullable == null; i++)
+            {
+                await Delay(150, ct);
+                bigMapCenterPointNullable = GetPositionFromBigMapNullable(MapTypes.Teyvat.ToString());
+            }
+        }
 
         if (bigMapCenterPointNullable != null)
         {
@@ -1496,7 +1540,19 @@ public class TpTask
     internal async Task SwitchArea(string areaName)
     {
         GameCaptureRegion.GameRegionClick((rect, scale) => (rect.Width - 160 * scale, rect.Height - 60 * scale));
-        await Delay(300, ct);
+
+        // 加速识别模式：等地区菜单弹出（白色 X 关闭按钮出现），兜底 300ms 与旧 Delay 等值。
+        // MapCloseButtonWhiteRo = 弹出层（含地区菜单）的白色 X 关闭按钮。
+        // fast-drag-recognition-acceleration spec / SwitchArea menu popup optimization
+        if (_tpConfig.MapMoveStepDivisor && _tpConfig.FastDragRecognitionEnabled)
+        {
+            await WaitForElementOrTimeoutAsync(QuickTeleportAssets.Instance.MapCloseButtonWhiteRo, timeoutMs: 300);
+        }
+        else
+        {
+            await Delay(300, ct);
+        }
+
         using var ra = CaptureToRectArea();
         var list = ra.FindMulti(new RecognitionObject
         {
