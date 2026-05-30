@@ -290,6 +290,12 @@ public class TaskControl
             return;
         }
 
+        // 用户已停止任务 → 立即 return，不再抢焦点（spec focus-recovery-driven-by-capture-loop 漏掉的取消语义补丁）
+        if (BetterGenshinImpact.Core.Script.CancellationContext.Instance.IsCancellationRequested)
+        {
+            return;
+        }
+
         // P-1：Cfg=Off 旧分支保留——用户显式希望"前台不是原神就抛异常暂停"的严格模式
         if (!TaskContext.Instance().Config.OtherConfig.RestoreFocusOnLostEnabled)
         {
@@ -536,6 +542,13 @@ public class TaskControl
         {
             while (true)
             {
+                // 用户已停止任务 → 立即抛 NormalEndException 退出 30s 等待循环
+                // （spec focus-recovery-driven-by-capture-loop 漏掉的取消语义补丁）
+                if (BetterGenshinImpact.Core.Script.CancellationContext.Instance.IsCancellationRequested)
+                {
+                    throw new NormalEndException("取消自动任务");
+                }
+
                 var decision = CaptureRetryDecisions.Decide(
                     lastAttemptSucceeded: false, elapsed: sw.Elapsed);
 
