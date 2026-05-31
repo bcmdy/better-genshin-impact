@@ -126,7 +126,8 @@ public class TpTask
         // 提前调整至恰当的缩放以更快的传送
         if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
         {
-            double currentZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
+            using var ra3 = CaptureToRectArea();
+            double currentZoomLevel = GetBigMapZoomLevel(ra3);
             if (currentZoomLevel > DisplayTpPointZoomLevel)
             {
                 await AdjustMapZoomLevel(currentZoomLevel, DisplayTpPointZoomLevel);
@@ -295,25 +296,35 @@ public class TpTask
         }
         await Delay(50, ct);
 
-
+        Rect bigMapInAllMapRect;
         // 3. 调整初始缩放等级，避免识别中心点失败
-        var zoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
+        using var ra3 = CaptureToRectArea();
+        var zoomLevel = GetBigMapZoomLevel(ra3);
         if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
         {
             /* 动态调整缩放逻辑：
                 1. 如果当前缩放大于显示传送点级别 -> 缩小
                 2. 如果小于配置的最小级别 -> 放大 */
+            await Delay(70, ct);
+            using var ra2 = CaptureToRectArea();
+            if (Bv.BigMapIsUnderground(ra2))
+            {
+                ra2.Find(_assets.MapUndergroundToGroundButtonRo).Click();
+            }
+                
             if (zoomLevel > DisplayTpPointZoomLevel + _tpConfig.PrecisionThreshold)
             {
                 await AdjustMapZoomLevel(zoomLevel, DisplayTpPointZoomLevel);
                 zoomLevel = DisplayTpPointZoomLevel;
                 TaskControl.Logger.LogInformation("当前缩放等级过大，调整为 {zoomLevel:0.00}", DisplayTpPointZoomLevel);
+                bigMapInAllMapRect = GetBigMapRect(mapName);
             }
             else if (zoomLevel < _tpConfig.MinZoomLevel - _tpConfig.PrecisionThreshold)
             {
                 await AdjustMapZoomLevel(zoomLevel, _tpConfig.MinZoomLevel);
                 zoomLevel = _tpConfig.MinZoomLevel;
                 TaskControl.Logger.LogInformation("当前缩放等级过小，调整为 {zoomLevel:0.00}", _tpConfig.MinZoomLevel);
+                bigMapInAllMapRect = GetBigMapRect(mapName);
             }
         }
 
@@ -326,7 +337,7 @@ public class TpTask
                 await MoveMapTo(x, y, mapName, minZoomLevel,country);
                 if (_tpConfig.MapMoveStepDivisor)
                 {
-                    int timeoutMs = 80 + _tpConfig.StepIntervalMilliseconds * 10;
+                    int timeoutMs = 800 + _tpConfig.StepIntervalMilliseconds * 10;
                     if (_tpConfig.FastDragRecognitionEnabled)
                     {
                         await WaitMapStableOrTimeoutAsync(timeoutMs); // fast-drag-recognition-acceleration spec
@@ -347,9 +358,9 @@ public class TpTask
                 // TODO 部分无法区分点位强制缩放，即使没有zoomEnabled。
             }
         }
-
+        
         // 5. 判断传送点是否在当前界面，若否则移动地图
-        var bigMapInAllMapRect = GetBigMapRect(mapName);
+        bigMapInAllMapRect = GetBigMapRect(mapName);
         var retryCount = 0;
         do
         {
@@ -359,7 +370,7 @@ public class TpTask
                 TaskControl.Logger.LogWarning("多次尝试未移动到目标传送点，传送失败");
                 throw new Exception("多次尝试未移动到目标传送点，传送失败");
             }
-
+            
             TaskControl.Logger.LogInformation("传送点不在当前大地图范围内，重新调整地图位置-1");
             await MoveMapTo(x, y, mapName,2,country, retryTimes);
             if (_tpConfig.MapMoveStepDivisor)
@@ -369,7 +380,7 @@ public class TpTask
                 {
                     // 加速：等像素稳定（远比连续两次模板匹配 GetBigMapRect 快），稳定后再单次 GetBigMapRect
                     // fast-drag-recognition-acceleration spec / design.md §4.2（feedback adjustment）
-                    await WaitMapStableOrTimeoutAsync(timeoutMs);
+                    await WaitMapStableOrTimeoutAsync(1000);
                 }
                 else
                 {
@@ -388,7 +399,8 @@ public class TpTask
         // 注意这个坐标的原点是中心区域某个点，所以要转换一下点击坐标（点击坐标是左上角为原点的坐标系），不能只是缩放
         var (clickX, clickY) = ConvertToGameRegionPosition(mapName, bigMapInAllMapRect, x, y);
         TaskControl.Logger.LogInformation("点击传送点");
-        CaptureToRectArea().ClickTo((int)clickX, (int)clickY);
+        using var ra4 = CaptureToRectArea();
+        ra4.ClickTo((int)clickX, (int)clickY);
 
         // 7. 触发一次快速传送功能
         if (_tpConfig.MapMoveStepDivisor && _tpConfig.FastDragRecognitionEnabled)
@@ -400,13 +412,15 @@ public class TpTask
             bool entered = await FastClickTeleportButtonAsync();
             if (!entered)
             {
-                await ClickTpPoint(CaptureToRectArea());
+                using var ra1 = CaptureToRectArea();
+                await ClickTpPoint(ra1);
             }
         }
         else
         {
             await Delay(500, ct);
-            await ClickTpPoint(CaptureToRectArea());
+            using var ra1 = CaptureToRectArea();
+            await ClickTpPoint(ra1);
         }
 
         // 8. 等待传送完成
@@ -648,13 +662,13 @@ public class TpTask
         }
 
         // 旧行为：固定 1000ms 后再 3 次 500ms 重试
-        await Delay(1000, ct);
-        for (int i = 0; i < 3; i++)
+        await Delay(500, ct);
+        for (int i = 0; i < 30; i++)
         {
             ra1 = CaptureToRectArea();
             if (!Bv.IsInBigMapUi(ra1))
             {
-                await Delay(500, ct);
+                await Delay(50, ct);
             }
             else
             {
@@ -773,9 +787,10 @@ public class TpTask
     public async Task MoveMapTo(double x, double y, string mapName, double finalZoomLevel = 2, string? country = null, int retryTimes = 0)
     {
         // 参数初始化
+        using var ra1 = CaptureToRectArea();
         double minZoomLevel = Math.Min(finalZoomLevel, _tpConfig.MinZoomLevel);
         double maxZoomLevel = _tpConfig.MaxZoomLevel;
-        double currentZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
+        double currentZoomLevel = GetBigMapZoomLevel(ra1);
         int exceptionTimes = 0;
         var falseCount = 0;
         Point2f mapCenterPoint;
@@ -849,10 +864,11 @@ public class TpTask
         {
             if (mouseDistance > _tpConfig.MapZoomOutDistance)
             {
+                using var ra = CaptureToRectArea();
                 double targetZoomLevel = currentZoomLevel * mouseDistance / _tpConfig.MapZoomOutDistance;
                 targetZoomLevel = Math.Min(targetZoomLevel, maxZoomLevel);
                 await AdjustMapZoomLevel(currentZoomLevel, targetZoomLevel);
-                double nextZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
+                double nextZoomLevel = GetBigMapZoomLevel(ra);
                 totalMoveMouseX *= currentZoomLevel / nextZoomLevel;
                 totalMoveMouseY *= currentZoomLevel / nextZoomLevel;
                 mouseDistance *= currentZoomLevel / nextZoomLevel;
@@ -872,7 +888,8 @@ public class TpTask
                     if (currentZoomLevel > minZoomLevel + _tpConfig.PrecisionThreshold)
                     {
                         await AdjustMapZoomLevel(currentZoomLevel, targetZoomLevel);
-                        double nextZoomLevel = GetBigMapZoomLevel(CaptureToRectArea());
+                        using var ra4 = CaptureToRectArea();
+                        double nextZoomLevel = GetBigMapZoomLevel(ra4);
                         totalMoveMouseX *= currentZoomLevel / nextZoomLevel;
                         totalMoveMouseY *= currentZoomLevel / nextZoomLevel;
                         mouseDistance *= currentZoomLevel / nextZoomLevel;
@@ -1191,6 +1208,12 @@ public class TpTask
                 {
                     if (++hits >= stableHits)
                     {
+                        await Delay(70, ct);
+                        using var ra2 = CaptureToRectArea();
+                        if (Bv.BigMapIsUnderground(ra2))
+                        {
+                            ra2.Find(_assets.MapUndergroundToGroundButtonRo).Click();
+                        }
                         return;
                     }
                 }
@@ -1584,7 +1607,7 @@ public class TpTask
         // fast-drag-recognition-acceleration spec / SwitchArea tail wait optimization
         if (_tpConfig.MapMoveStepDivisor && _tpConfig.FastDragRecognitionEnabled)
         {
-            await WaitMapStableOrTimeoutAsync(timeoutMs: 500);
+            await WaitMapStableOrTimeoutAsync(timeoutMs: 1000);
         }
         else
         {
