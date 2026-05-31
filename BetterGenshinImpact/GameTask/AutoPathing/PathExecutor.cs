@@ -3007,7 +3007,7 @@ public class PathExecutor
 
             if (distance > 500)
             {
-                if (pathExecutorSuspend.CheckAndResetSuspendPoint())
+                if (pathExecutorSuspend.CheckAndResetSuspendPoint() && !TryConsumeRevivalSignal())
                 {
                     throw new RetryNoCountException("可能暂停导致路径过远，重试一次此路线！");
                 }
