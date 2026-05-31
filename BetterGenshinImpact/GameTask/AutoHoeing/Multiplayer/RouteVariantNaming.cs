@@ -102,6 +102,32 @@ public static class RouteVariantNaming
     }
 
     /// <summary>
+    /// 不依赖"文件所在变体文件夹"的基名归一化：去扩展名后，若文件名以任一变体后缀
+    /// （_a/_b/_c/_d，大小写不敏感）结尾就一并去掉，得到统一的线路基名。
+    /// hoeing-variant-route 死等修复：手动模式 LogicalRouteId 为空时的 fallback 命名空间专用。
+    /// 旧逻辑直接用原始 FileName（带 _a/_b 后缀和 .json），导致：
+    ///   - 房主路线在 A变体/ 子文件夹 → 派生出基名命名空间；
+    ///   - 成员同名路线落在扁平 pathing 目录 → LogicalRouteId 为空 → fallback 用原始 FileName；
+    /// 两边命名空间不一致（基名 vs F085..._a.json）→ syncId 永不相等 → 全员死等。
+    /// 用本方法归一化后，无论文件在哪个目录、跑 _a 还是 _b，fallback 命名空间都收敛到同一基名。
+    /// 纯函数，PBT 友好。
+    /// </summary>
+    public static string StripBaseNameAnyVariant(string fileName)
+    {
+        var name = Path.GetFileNameWithoutExtension(fileName ?? string.Empty);
+        foreach (var folder in VariantFolders)
+        {
+            var suffix = SuffixFor(folder);
+            if (!string.IsNullOrEmpty(suffix)
+                && name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return name.Substring(0, name.Length - suffix.Length);
+            }
+        }
+        return name;
+    }
+
+    /// <summary>
     /// 代表选择：给定同一基名下各变体文件夹集合，按 A→B→C→D 顺序返回第一个存在的变体文件夹。
     /// 用于 LoadFixedDebugRoutes 去重（每个基名只跑一个代表，跨玩家确定性一致）。
     /// 找不到任何变体文件夹时返回 null。

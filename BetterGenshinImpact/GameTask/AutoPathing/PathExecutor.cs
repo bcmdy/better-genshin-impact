@@ -578,8 +578,13 @@ public class PathExecutor
                             // 段级缓存中查命中的传送同步点 syncId（None 时为 null），
                             // 透传给 HandleTeleportWaypoint → TpTask.Tp，TpTask.IsLoadingScreen 命中时
                             // 内联抢报。单机 / 缓存 null 时整链路短路。
+                            // fastsync-claim-respect-enable-toggle 修复：仅当用户开启"快速同步点抢报"
+                            // 开关时才透传抢报 syncId；关闭时置 null → TpTask loading 命中也不 fire-and-forget。
+                            // 传送后的严格等待（line ~666 tpSyncId）走独立查询、不受此开关影响。
                             string? __tpFastSyncId = null;
-                            if (MultiplayerCoordinator != null && _wpIdxToSyncIdCache != null)
+                            if (MultiplayerCoordinator != null
+                                && _wpIdxToSyncIdCache != null
+                                && MultiplayerCoordinator.EffectiveConfig.FastSyncPointEnabled)
                             {
                                 _wpIdxToSyncIdCache.TryGetValue(CurWaypoint.Item1, out __tpFastSyncId);
                             }
@@ -1641,8 +1646,14 @@ public class PathExecutor
     /// </summary>
     private void BuildSyncPointMapManual(PathingTask task, List<List<WaypointForTrack>> waypointsList)
     {
-        // R3.6：LogicalRouteId 为空但有 waypoint 标了 SyncPointId 时，用 FileName 作为 fallback 命名空间。
-        string idNamespace = string.IsNullOrEmpty(task.LogicalRouteId) ? task.FileName : task.LogicalRouteId;
+        // R3.6 + hoeing-variant-route 死等修复：LogicalRouteId 为空时的 fallback 命名空间。
+        // 旧实现直接用 task.FileName（带 _a/_b 后缀和 .json），导致同一逻辑路线的不同变体
+        // 或不同目录布局（变体子文件夹 vs 扁平 pathing 目录）下命名空间不一致 → syncId 永不相等 → 死等。
+        // 改用 StripBaseNameAnyVariant 归一化到统一基名，使 fallback 命名空间与
+        // BuildFromFilePath 派生的 LogicalRouteId（基名）一致，保证跨玩家/跨变体 syncId 对齐。
+        string idNamespace = string.IsNullOrEmpty(task.LogicalRouteId)
+            ? BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.RouteVariantNaming.StripBaseNameAnyVariant(task.FileName)
+            : task.LogicalRouteId;
         bool isFallback = string.IsNullOrEmpty(task.LogicalRouteId);
 
         int markedSyncPoints = 0;
@@ -2301,7 +2312,8 @@ public class PathExecutor
                     fastSyncId,
                     isMultiplayer: MultiplayerCoordinator != null,
                     isConnected: MultiplayerCoordinator?.IsConnected ?? false,
-                    alreadyReported: fastReported))
+                    alreadyReported: fastReported,
+                    fastSyncEnabled: MultiplayerCoordinator?.EffectiveConfig.FastSyncPointEnabled ?? false))
             {
                 fastReported = true;
                 var __progress = ComputeProgress(CurWaypoints.Item1, CurWaypoint.Item1);
@@ -3453,7 +3465,8 @@ public class PathExecutor
                     fastSyncId,
                     isMultiplayer: MultiplayerCoordinator != null,
                     isConnected: MultiplayerCoordinator?.IsConnected ?? false,
-                    alreadyReported: fastReported))
+                    alreadyReported: fastReported,
+                    fastSyncEnabled: MultiplayerCoordinator?.EffectiveConfig.FastSyncPointEnabled ?? false))
             {
                 fastReported = true;
                 var __progress = ComputeProgress(CurWaypoints.Item1, CurWaypoint.Item1);

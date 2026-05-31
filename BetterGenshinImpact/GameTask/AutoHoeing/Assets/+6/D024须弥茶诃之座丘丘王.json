@@ -11,7 +11,7 @@
     "description": "  路线信息：该路线预计用时52.73秒，包含以下怪物：1只丘丘雷兜王、1只丘丘岩盔王。",
     "enable_monster_loot_split": false,
     "hash_res": "35302615",
-    "last_modified_time": 1778696994703,
+    "last_modified_time": 1780166001789,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "D024须弥茶诃之座丘丘王",
@@ -27,16 +27,16 @@
       "move_mode": "walk",
       "type": "teleport",
       "x": 3546.66,
-      "y": -1993.619999999999
+      "y": -1993.62
     },
     {
-      "action": "",
-      "action_params": "",
+      "action": "combat_script",
+      "action_params": ";茜特菈莉 e;莱依拉 e;伊涅芙 e;尼可 e; ;",
       "id": 2,
       "move_mode": "dash",
       "type": "path",
-      "x": 3583.765625,
-      "y": -1994.78515625
+      "x": 3583.7656,
+      "y": -1994.7852
     },
     {
       "action": "",
@@ -44,8 +44,8 @@
       "id": 3,
       "move_mode": "dash",
       "type": "path",
-      "x": 3594.9560546875,
-      "y": -2004.587890625
+      "x": 3594.9561,
+      "y": -2004.5879
     },
     {
       "action": "fight",
@@ -53,8 +53,8 @@
       "id": 4,
       "move_mode": "dash",
       "type": "path",
-      "x": 3606.0205078125,
-      "y": -2007.4140625
+      "x": 3606.0205,
+      "y": -2007.4141
     }
   ]
 }

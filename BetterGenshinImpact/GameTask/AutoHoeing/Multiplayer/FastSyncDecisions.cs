@@ -18,7 +18,10 @@ internal static class FastSyncDecisions
     /// <summary>
     /// 判定路径同步点抢报是否应该触发（fastsync-redesign-parameter-passing spec / OQ-7=a）。
     ///
-    /// 6 个守门条件全 AND，任一不满足返回 false：
+    /// 7 个守门条件全 AND，任一不满足返回 false：
+    ///   fastSyncEnabled=false → false（用户在配置组/全局关闭了"快速同步点抢报"开关，
+    ///                                    fastsync-claim-respect-enable-toggle 修复：
+    ///                                    关闭后只走严格等待，绝不 fire-and-forget 抢报）
     ///   alreadyReported=true  → false（一次性 bool 短路，避免重复抢报）
     ///   isMultiplayer=false   → false（单机零回归）
     ///   isConnected=false     → false（断线时不抢报）
@@ -35,8 +38,10 @@ internal static class FastSyncDecisions
         string? fastSyncId,
         bool isMultiplayer,
         bool isConnected,
-        bool alreadyReported)
+        bool alreadyReported,
+        bool fastSyncEnabled)
     {
+        if (!fastSyncEnabled) return false;
         if (alreadyReported) return false;
         if (!isMultiplayer || !isConnected) return false;
         if (fastSyncId == null) return false;
