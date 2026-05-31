@@ -232,7 +232,12 @@ public class CoordinatorHub : Hub
 
         if (VariantSchemaTimeouts.TryRemove(roomCode, out var timeoutCts))
         {
-            try { timeoutCts.Cancel(); } catch { }
+            // 注意：不能调用 timeoutCts.Cancel()！
+            // 超时回调是通过 cts.Token.Register(...) 注册的，Cancel() 会同步触发该回调
+            // → OnVariantSchemaTimeoutAsync 广播 RouteVariantConsistencyFailed，
+            // 与紧随其后的 EvaluateVariantSchemaAsync 广播 Passed 形成"既发 Failed 又发 Passed"竞态，
+            // 客户端先收到 Failed 误判校验失败（单人房主场景必现）。
+            // Dispose() 会停掉底层 30s 计时器且不触发已注册回调，正是我们需要的"静默取消计时器"。
             timeoutCts.Dispose();
         }
 

@@ -122,6 +122,15 @@ public class AutoHoeingTask : ISoloTask
             _logger.LogError(ex, "[变体] 代表路线 {Host} 加载失败（InvalidRouteException）", hostFileName);
             return (null, new RouteVariantSchemaItem { ActualVariantFileName = hostFileName });
         }
+        catch (Exception ex)
+        {
+            // hoeing-variant-route-empty-json-crash-and-discovery-fix / EB-A：
+            // 空文件 / 不含合法 JSON token / 反序列化失败（如历史遗留的占位 JSON）
+            // 会让 STJ 抛 JsonException。此处兜底跳过该路线（返回 null）、
+            // 由调用方剔除出执行/上报列表并继续其余路线，不终止整个一条龙任务。
+            _logger.LogWarning(ex, "[变体] 代表路线 {Host} 加载失败（空/损坏 JSON），跳过该路线", hostFileName);
+            return (null, new RouteVariantSchemaItem { ActualVariantFileName = hostFileName });
+        }
         if (loaded == null)
         {
             return (null, new RouteVariantSchemaItem { ActualVariantFileName = hostFileName });
@@ -2380,20 +2389,37 @@ public class AutoHoeingTask : ISoloTask
         if (_multiplayerCoordinator != null && _config.MultiplayerEnabled)
         {
             var variantSchemaItems = new List<RouteVariantSchemaItem>();
+            var failedRoutes = new List<RouteInfo>();
             foreach (var route in groupRoutes)
             {
                 if (string.IsNullOrEmpty(route.FullPath)) continue;
                 var pathingDir = Path.GetDirectoryName(route.FullPath) ?? "";
                 var (actualTask, schemaItem) = ResolveAndLoadActualVariant(route.FileName, route.FullPath, pathingDir);
+
+                // hoeing-variant-route-empty-json-crash-and-discovery-fix / EB-A 2.2：
+                // 加载失败（空/损坏 JSON）→ 该路线既不纳入执行列表也不上报 R6 校验，
+                // 跳过它继续其余路线，避免空占位 JSON 终止整任务。
+                if (actualTask == null)
+                {
+                    _logger.LogWarning("[变体] 路线 {File} 加载失败，已从本场执行列表剔除", route.FileName);
+                    failedRoutes.Add(route);
+                    continue;
+                }
+
                 // R14：若解析出的实际变体与 Host 默认不同，就地替换 route 指向变体文件，
                 // 使 ExecuteRoute 自然加载变体（actualTask 非空且 FullPath 改变时）。
-                if (actualTask != null && !string.IsNullOrEmpty(actualTask.FullPath)
+                if (!string.IsNullOrEmpty(actualTask.FullPath)
                     && !string.Equals(actualTask.FullPath, route.FullPath, StringComparison.OrdinalIgnoreCase))
                 {
                     route.FullPath = actualTask.FullPath;
                     route.FileName = actualTask.FileName;
                 }
                 variantSchemaItems.Add(schemaItem);
+            }
+
+            if (failedRoutes.Count > 0)
+            {
+                groupRoutes.RemoveAll(r => failedRoutes.Contains(r));
             }
 
             // 调试模式跳过网络校验（与 MD5 校验的 DebugMode 跳过一致），但变体替换已完成

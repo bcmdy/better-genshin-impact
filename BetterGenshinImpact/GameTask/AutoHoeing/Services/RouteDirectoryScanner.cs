@@ -62,7 +62,11 @@ public class RouteDirectoryScanner
                 if (folderName.Equals("DebugRoutes", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var routeFiles = Directory.GetFiles(dir, "*.json");
+                // hoeing-variant-route-empty-json-crash-and-discovery-fix / EB-B：
+                // 递归统计（含变体子文件夹 A变体/B变体/... 内的 JSON），
+                // 使"只含变体子文件夹、无顶层 JSON"的纯变体目录也被识别为有效目录，
+                // 用户无需再往顶层放占位 JSON。真正的空目录（递归也无 JSON）仍跳过。
+                var routeFiles = Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories);
                 if (routeFiles.Length == 0)
                 {
                     Logger.LogDebug("[内置线路扫描] 跳过空文件夹: {Folder}", folderName);
