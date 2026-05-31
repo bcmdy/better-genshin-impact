@@ -121,7 +121,7 @@ internal class AutoFightHandler : IActionHandler
                 // multiplayer-kazuha-fixed-fight-overrides §2: 联机万叶玩家专属 10 项战斗参数覆盖
                 // 7 项固定值（旋转寻敌=true, RotaryFactor=1, Q前检测=false, 尝试面敌=false,
                 //          GoDistance=0, 不等待旋转结束=true, 快速连续检查=true, 派蒙模式=true）
-                // 2 项下限钳制（FightWaitNotEndTime ≥ 1000ms, FastCheckDelay ≥ 0.8s）
+                // 2 项钳制（FightWaitNotEndTime ≥ 1000ms, FastCheckDelay ∈ [0.08s, 0.4s]）
                 var kazuhaOverride = MultiplayerKazuhaFightOverrides.Apply(taskParams);
                 _logger.LogInformation(
                     "[联机][万叶] 已应用万叶战斗参数覆盖: " +

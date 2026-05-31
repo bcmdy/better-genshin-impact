@@ -18,7 +18,10 @@ public static class MultiplayerKazuhaFightOverrides
     public const int FightWaitNotEndTimeFloor = 1000;
 
     /// <summary>"派蒙模式检查延时（秒）"下限。低于该值则用此值。</summary>
-    public const double FastCheckDelayFloor = 0.8;
+    public const double FastCheckDelayFloor = 0.08;
+
+    /// <summary>"派蒙模式检查延时（秒）"上限。高于该值则用此值。</summary>
+    public const double FastCheckDelayCeiling = 0.4;
 
     /// <summary>
     /// 钳制 FightWaitNotEndTime 到下限以上。
@@ -29,14 +32,16 @@ public static class MultiplayerKazuhaFightOverrides
         => Math.Max(playerValue, FightWaitNotEndTimeFloor);
 
     /// <summary>
-    /// 钳制 FastCheckDelay 到下限以上。
-    /// <c>player &gt; 0.8</c> → 返回 player；否则（含 NaN / 负数 / 0）返回 0.8。
-    /// 注意：.NET <c>Math.Max(double.NaN, x)</c> 返回 NaN（IEEE 754），所以单独显式 NaN 兜底。
+    /// 钳制 FastCheckDelay 到闭区间 [0.08, 0.4]。
+    /// <c>player &lt; 0.08</c>（含 NaN / 负数 / 0）→ 返回 0.08；
+    /// <c>player &gt; 0.4</c>（含 +∞）→ 返回 0.4；
+    /// 区间内 → 返回 player。
+    /// 注意：.NET <c>Math.Clamp(double.NaN, lo, hi)</c> 返回 NaN（IEEE 754），所以单独显式 NaN 兜底到下限。
     /// </summary>
     public static double ClampFastCheckDelay(double playerValue)
     {
         if (double.IsNaN(playerValue)) return FastCheckDelayFloor;
-        return Math.Max(playerValue, FastCheckDelayFloor);
+        return Math.Clamp(playerValue, FastCheckDelayFloor, FastCheckDelayCeiling);
     }
 
     /// <summary>
