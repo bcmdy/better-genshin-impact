@@ -557,8 +557,20 @@ public class MultiplayerCoordinator : IAsyncDisposable
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, localTimeout.Token);
             using var reg = linked.Token.Register(() =>
             {
-                _logger.LogWarning("[变体校验] 客户端等待事件超时 30s，视为失败");
-                tcs.TrySetResult(false);
+                if (!selfHasAnyLogicalRouteId)
+                {
+                    // 全员老线路防御：旧版服务端在"全空"时静默不广播 Passed，
+                    // 新客户端会一直等到此超时。本玩家没有任何变体路线 → 没有 schema 可校验，
+                    // 超时按"放行"处理（老线路一致性已由 MD5 校验覆盖），避免误判失败卡住联机。
+                    // 已升级的服务端会在全空时主动广播 Passed，正常不会走到这里。
+                    _logger.LogInformation("[变体校验] 等待超时且本玩家全员老线路，按放行处理（兼容未升级服务端）");
+                    tcs.TrySetResult(true);
+                }
+                else
+                {
+                    _logger.LogWarning("[变体校验] 客户端等待事件超时 30s，视为失败");
+                    tcs.TrySetResult(false);
+                }
             });
             return await tcs.Task;
         }

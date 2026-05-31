@@ -535,20 +535,11 @@ public class PathExecutor
                         
                         TryCloseSkipOtherOperations();
 
-                        // 联机模式：到达集合点时等待所有玩家（跳过传送点，传送点在传送后单独处理）
-                        // 快速同步点抢报 watcher 已在 waypoint 循环开始时装配（fast-sync-point-claim-no-effect-fix spec §4.1.A）；
-                        // 此处仅做严格路径等待，watcher 在 waypoint 循环末尾的 finally 内 cancel。
-                        if (MultiplayerCoordinator != null && waypoint.Type != WaypointType.Teleport.Code)
-                        {
-                            // syncId 复用 §抢报反查已计算的 __fastSyncId 避免重复 TryGetValue
-                            if (__fastSyncId != null)
-                            {
-                                var progress = ComputeProgress(CurWaypoints.Item1, CurWaypoint.Item1);
-                                Logger.LogInformation("[联机] 到达集合点，等待所有玩家，syncId={SyncId}, 进度={Progress}", __fastSyncId, progress);
-                                await MultiplayerCoordinator.WaitForAllPlayers(__fastSyncId, ct, progress);
-                                Logger.LogInformation("[联机] 集合完成，继续前进，syncId={SyncId}", __fastSyncId);
-                            }
-                        }
+                        // fastsync-preclaim-fires-after-rendezvous-fix（OQ-1=方案甲）：
+                        // 形式集合等待块已从此处（迭代顶部、MoveTo 之前）挪到下方非传送分支的
+                        // MoveTo/MoveCloseTo 之后、Action 块之前。原因：对「集合点紧跟传送、无前置
+                        // 移动段」路线，顶部等待会先于任何对该 syncId 的抢报触发，导致抢报晚于集合完成。
+                        // 挪动后玩家先走向集合点（MoveTo 内对 fastSyncWaypoint 的抢报先行），到达后再等全员。
 
                         await RecoverWhenLowHp(waypoint,PartyConfig.RedBloodSwitchOnly); // 低血量恢复
 
@@ -738,6 +729,19 @@ public class PathExecutor
                             if (IsTargetPoint(waypoint))
                             {
                                 await MoveCloseTo(waypoint, fastSyncId: __nextPendingSyncId, fastSyncWaypoint: __nextPendingSyncWaypoint);
+                            }
+
+                            // === 形式集合等待块（fastsync-preclaim-fires-after-rendezvous-fix / OQ-1=方案甲）===
+                            // 挪动后位置：MoveTo/MoveCloseTo（走向集合点）之后、Action 块之前。
+                            // 守卫保持 waypoint.Type != Teleport（此分支本就是非传送），__fastSyncId 复用顶部反查。
+                            // 语义：玩家已走到集合点（途中 MoveTo 对 fastSyncWaypoint 的抢报先行）→ 在此等全员
+                            //       → 再执行本 waypoint 的 Action。形式等待原样保留（仍阻塞等全员，不删不改成非阻塞）。
+                            if (MultiplayerCoordinator != null && __fastSyncId != null)
+                            {
+                                var progress = ComputeProgress(CurWaypoints.Item1, CurWaypoint.Item1);
+                                Logger.LogInformation("[联机] 到达集合点，等待所有玩家，syncId={SyncId}, 进度={Progress}", __fastSyncId, progress);
+                                await MultiplayerCoordinator.WaitForAllPlayers(__fastSyncId, ct, progress);
+                                Logger.LogInformation("[联机] 集合完成，继续前进，syncId={SyncId}", __fastSyncId);
                             }
 
                             //skipOtherOperations如果重试，则跳过相关操作，

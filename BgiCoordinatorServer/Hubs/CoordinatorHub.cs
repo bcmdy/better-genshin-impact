@@ -266,7 +266,14 @@ public class CoordinatorHub : Hub
 
         if (groupedByLogicalId.Count == 0)
         {
-            _logger.LogInformation("[变体校验] 房间 {Code} 全员老路径，跳过校验（不广播 Passed/Failed）", roomCode);
+            // 全员老路径（无任何非空 LogicalRouteId）：没有变体 schema 需要比对。
+            // 必须广播 Passed 而不是沉默——客户端 VerifyRouteVariantSchemaAsync 在
+            // subscribe-before-action 后等待 Passed/Failed 事件，若服务端不广播，
+            // 客户端会一直等到 30s 超时并误判失败（全员老线路联机必现）。
+            // 老线路的文件一致性已由 ReportRouteList 的 MD5 校验覆盖，这里广播 Passed 表示
+            // "无变体可校验、放行"，与变体场景的 Passed 语义一致，混合/变体场景不受影响。
+            _logger.LogInformation("[变体校验] 房间 {Code} 全员老路径（无变体），广播 Passed 放行", roomCode);
+            await Clients.Group(roomCode).SendAsync("RouteVariantConsistencyPassed");
             VariantSchemaReports.TryRemove(roomCode, out _);
             return;
         }
