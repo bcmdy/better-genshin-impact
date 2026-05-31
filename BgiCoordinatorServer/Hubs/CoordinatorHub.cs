@@ -909,6 +909,7 @@ public class CoordinatorHub : Hub
                     syncId, code);
                 await Clients.Group(code).SendAsync("AllArrived", syncId);
                 _roomManager.ClearArrivalSet(code, syncId);
+                lock (updatedRoom) { updatedRoom.BroadcastedSyncIds.Add(syncId); }   // fastsync-claim-short-circuit-premature-release-fix: 记录本轮已广播，供晚到抢报方补发
             }
 
             // === 集体卡死监测 piggyback（multiplayer-mutual-wait-collective-skip §8.4 改动 5）===
@@ -1179,6 +1180,11 @@ public class CoordinatorHub : Hub
             room.ObservationStartTime = default;
             room.CollectiveSkipTimer?.Dispose();
             room.CollectiveSkipTimer = null;
+
+            // fastsync-claim-short-circuit-premature-release-fix（OQ-3=c→落地清理）：
+            // syncId 不含轮次标识，同名路线跨轮复用。不清理则上一轮已广播的 syncId 残留，
+            // 本轮第一个到达者一调 WaitForAllPlayers 即被补发 AllArrived → 跨轮误放。
+            room.BroadcastedSyncIds.Clear();
 
             _logger.LogInformation("[ResetForNewWorldRound] 房间{RoomCode}进入第{Round}轮，等待点、异常状态、万叶候选已重置", roomCode, newRound);
         }
@@ -1577,6 +1583,7 @@ public class CoordinatorHub : Hub
                 syncId, roomCode, progress);
             await Clients.Group(roomCode).SendAsync("AllArrived", syncId);
             _roomManager.ClearArrivalSet(roomCode, syncId);
+            lock (room) { room.BroadcastedSyncIds.Add(syncId); }   // fastsync-claim-short-circuit-premature-release-fix: 记录本轮已广播，供晚到抢报方补发
         }
 
         // === 集体卡死监测 piggyback（multiplayer-mutual-wait-collective-skip §8.4 改动 1）===
@@ -1632,6 +1639,7 @@ public class CoordinatorHub : Hub
                 sid, roomCode, sp);
             await Clients.Group(roomCode).SendAsync("AllArrived", sid);
             _roomManager.ClearArrivalSet(roomCode, sid);
+            lock (room) { room.BroadcastedSyncIds.Add(sid); }   // fastsync-claim-short-circuit-premature-release-fix: 记录本轮已广播，供晚到抢报方补发
         }
 
         // === 集体卡死监测 piggyback（multiplayer-mutual-wait-collective-skip §8.4 改动 1）===
@@ -1720,6 +1728,24 @@ public class CoordinatorHub : Hub
         // 记录当前连接已到达
         _roomManager.RecordArrival(roomCode, syncId, Context.ConnectionId, 0);
 
+        // fastsync-claim-short-circuit-premature-release-fix（OQ-1=a）：
+        // 若该 syncId 本轮已广播过 AllArrived（说明已全员放行、ArrivalSet 已清空），
+        // 则对晚到的本调用方单独补发 AllArrived 解锁——它错过了 Clients.Group 广播，
+        // 删短路后会订阅一个不会再触发的事件而死等到 120s（bugfix.md 组合 7）。
+        bool alreadyBroadcasted;
+        lock (room)
+        {
+            alreadyBroadcasted = room.BroadcastedSyncIds.Contains(syncId);
+        }
+        if (SyncReplayDecisions.ShouldReplayAllArrived(alreadyBroadcasted))
+        {
+            _logger.LogInformation("[WaitForAllPlayers] 该同步点本轮已放行，补发 AllArrived 给晚到调用方: 房间={RoomCode}, 同步点={SyncId}, 连接={ConnId}",
+                roomCode, syncId, Context.ConnectionId);
+            await Clients.Caller.SendAsync("AllArrived", syncId);
+            // 补发后仍继续走全量重评估（幂等：不改 BroadcastedSyncIds 状态），
+            // 保证其他历史 syncId 的放行不被跳过。
+        }
+
         // 全量重评估：当前 syncId 与所有历史 ArrivalSets 一并判定
         List<(string syncId, long progress)> satisfiedSyncs;
         lock (room)
@@ -1736,6 +1762,7 @@ public class CoordinatorHub : Hub
                 roomCode, sid, sp);
             await Clients.Group(roomCode).SendAsync("AllArrived", sid);
             _roomManager.ClearArrivalSet(roomCode, sid);
+            lock (room) { room.BroadcastedSyncIds.Add(sid); }   // fastsync-claim-short-circuit-premature-release-fix: 记录本轮已广播，供晚到抢报方补发
         }
 
         // 保留：caller 是异常玩家、刚汇合到 syncProgress 的"恢复"清理（与现状一致）
@@ -2110,6 +2137,7 @@ public class CoordinatorHub : Hub
                     roomCode, sid, sp);
                 await Clients.Group(roomCode).SendAsync("AllArrived", sid);
                 _roomManager.ClearArrivalSet(roomCode, sid);
+                lock (room) { room.BroadcastedSyncIds.Add(sid); }   // fastsync-claim-short-circuit-premature-release-fix: 记录本轮已广播，供晚到抢报方补发
             }
 
             // ② 后 RequestSkipToProgress：让落后玩家神像跳段

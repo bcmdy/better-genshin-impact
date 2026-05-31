@@ -1120,7 +1120,7 @@ public class CoordinatorClient : IAsyncDisposable
     /// 等待所有玩家到达指定同步点
     /// syncProgress：当前同步点的全局进度值（用于服务端判定异常玩家是否会经过此点）
     /// </summary>
-    public async Task WaitForAllPlayersAsync(string syncId, CancellationToken ct, long syncProgress = -1)
+    public async Task WaitForAllPlayersAsync(string syncId, CancellationToken ct, long syncProgress = -1, bool wasFastReported = false)
     {
         if (_connection == null || !IsConnected) return;
 
@@ -1150,6 +1150,27 @@ public class CoordinatorClient : IAsyncDisposable
             // 本地等待 AllArrived 事件（受 CT 控制，可被用户取消）
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+            // fastsync-claim-short-circuit-premature-release-fix（OQ-4=a / 方案 B）：
+            // 短探测窗口区分"全员已到 / 服务端补发命中 → 立即放行"与"全员未到 → 进入等待"。
+            // 200ms 内收到 AllArrived（含服务端 Clients.Caller 补发）即视为立即放行。
+            // wasFastReported 仅决定日志文案前缀，不影响放行逻辑。
+            const int replayProbeMs = 200;
+            var probe = await Task.WhenAny(tcs.Task, Task.Delay(replayProbeMs, linkedCts.Token));
+            if (probe == tcs.Task && tcs.Task.IsCompletedSuccessfully)
+            {
+                if (wasFastReported)
+                    _logger.LogInformation("[联机][FastSync] 已抢报且全员已到，立即放行: {SyncId}", syncId);
+                else
+                    _logger.LogInformation("[联机] 同步点全员已到，立即放行: {SyncId}", syncId);
+                return;
+            }
+
+            if (wasFastReported)
+                _logger.LogInformation("[联机][FastSync] 已抢报但全员未到，进入等待: {SyncId}", syncId);
+            else
+                _logger.LogInformation("[联机] 同步点全员未到，进入等待: {SyncId}", syncId);
+
             await tcs.Task.WaitAsync(linkedCts.Token);
         }
         catch (OperationCanceledException)

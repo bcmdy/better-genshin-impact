@@ -249,7 +249,12 @@ public class MultiplayerCoordinator : IAsyncDisposable
         RouteSyncCoordinator?.Reset();
         StateManager?.Reset();
         WaitPointStateManager?.ResetCurrentRound();
-        
+
+        // fastsync-claim-short-circuit-premature-release-fix（OQ-3=c→落地清理）：
+        // syncId 编码不含世界轮次标识（PathExecutor.BuildSyncPointMap*），同名路线跨轮次复用产生相同 syncId。
+        // 不清理则上一轮抢报记录会让本轮 IsFastReported 段内反查误判该点"已抢报"而跳过抢报。
+        _fastReportedSyncIds.Clear();
+
         _logger.LogInformation("[联机] 已重置为新轮次");
     }
 
@@ -354,18 +359,16 @@ public class MultiplayerCoordinator : IAsyncDisposable
 
     public async Task WaitForAllPlayers(string syncId, CancellationToken ct, long syncProgress = -1)
     {
-        // 抢报已经成功的 syncId：自己已经上报过，服务端可能也已经广播过 AllArrived 把 ArrivalSet 清掉了，
-        // 再走一次严格 WaitForAllPlayersAsync 会订阅一个永远不会触发的事件 → 死等到超时。
-        // 直接 short-circuit 返回让调用方继续走（fastsync-redesign-parameter-passing spec 修复）。
-        if (_fastReportedSyncIds.ContainsKey(syncId))
-        {
-            _logger.LogInformation("[联机][FastSync] WaitForAllPlayers short-circuit（本玩家已抢报过）: {SyncId}", syncId);
-            return;
-        }
-
+        // fastsync-claim-short-circuit-premature-release-fix（OQ-1=a）：
+        // 删除「自己已抢报过即短路放行」分支。抢报方真正到达同步点后，照常走严格
+        // subscribe-before-action 路径等全员到齐。抢报「让别人早走」能力由 FastReportAsync 保留。
+        // 组合 7「服务端已广播 + 已清空 ArrivalSet」竞态由服务端对已放行 syncId 的幂等补发 AllArrived 解决
+        // （见 CoordinatorHub.WaitForAllPlayers 补发分支），不再依赖客户端短路规避死等。
+        // wasFastReported 仅用于日志文案区分（OQ-4=a / 方案 B），不参与放行决策。
+        bool wasFastReported = _fastReportedSyncIds.ContainsKey(syncId);
         try
         {
-            await _client.WaitForAllPlayersAsync(syncId, ct, syncProgress);
+            await _client.WaitForAllPlayersAsync(syncId, ct, syncProgress, wasFastReported);
         }
         catch (Exception ex)
         {

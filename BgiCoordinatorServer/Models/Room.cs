@@ -10,6 +10,16 @@ public class Room
     /// <summary>syncPointId → 已到达的 connectionId 集合</summary>
     public Dictionary<string, HashSet<string>> ArrivalSets { get; set; } = [];
 
+    /// <summary>
+    /// 本轮已广播过 AllArrived 的 syncId 集合（fastsync-claim-short-circuit-premature-release-fix / OQ-1=a）。
+    /// 每次广播 AllArrived 并 ClearArrivalSet 时加入；当某玩家调 WaitForAllPlayers(syncId) 而该 syncId
+    /// 已在此集合中，说明该 syncId 本轮确已全员放行过，对该调用方单独补发 AllArrived 解锁
+    /// （晚到抢报方错过了 Clients.Group 广播）。
+    /// per-room 运行时状态（非配置，不进 RoomConfig）；多世界轮换在 ResetForNewWorldRound 清空，
+    /// 避免下一轮同名 syncId 残留误放。
+    /// </summary>
+    public HashSet<string> BroadcastedSyncIds { get; set; } = [];
+
     /// <summary>syncPointId → 已完成战斗的 connectionId 集合</summary>
     public Dictionary<string, HashSet<string>> FightDoneSets { get; set; } = [];
 
