@@ -8,6 +8,7 @@ using BetterGenshinImpact.GameTask.AutoPathing;
 using BetterGenshinImpact.GameTask.AutoPathing.Model;
 using BetterGenshinImpact.GameTask.AutoTrackPath;
 using BetterGenshinImpact.GameTask.Common;
+using BetterGenshinImpact.GameTask.Common.Exceptions;
 using BetterGenshinImpact.GameTask.Common.Job;
 using BetterGenshinImpact.GameTask.Model.Area;
 using Microsoft.Extensions.Logging;
@@ -99,6 +100,153 @@ public class AutoHoeingTask : ISoloTask
         {
             return url;
         }
+    }
+
+    /// <summary>
+    /// route-variant-sync-by-logical-id spec / R14：对单条计划路线执行
+    /// LogicalRouteId 加载 + 变体偏好查询 + 必要时切换文件 + fallback 处理。
+    /// 返回 (实际加载的 PathingTask, schemaItem)。
+    /// schemaItem.LogicalRouteId 为空字符串时表示老路径，调用方不应纳入 R6 上报比较。
+    /// </summary>
+    private (PathingTask? actualTask, RouteVariantSchemaItem schemaItem) ResolveAndLoadActualVariant(
+        string hostFileName, string hostFullPath, string pathingDir)
+    {
+        PathingTask? loaded;
+        try
+        {
+            loaded = PathingTask.BuildFromFilePath(hostFullPath);
+        }
+        catch (InvalidRouteException ex)
+        {
+            // 代表文件本身就坏（重复 SyncPointId）→ 让调用方拿到 null 后跳过/报错
+            _logger.LogError(ex, "[变体] 代表路线 {Host} 加载失败（InvalidRouteException）", hostFileName);
+            return (null, new RouteVariantSchemaItem { ActualVariantFileName = hostFileName });
+        }
+        if (loaded == null)
+        {
+            return (null, new RouteVariantSchemaItem { ActualVariantFileName = hostFileName });
+        }
+
+        // route-variant-sync-by-logical-id spec / §15.5：文件夹式变体派生身份。
+        // 代表文件所在变体文件夹 → 基名（= 配对键 = syncId 命名空间）；其总文件夹名 → 偏好 key。
+        var repFolder = RouteVariantNaming.TryGetVariantFolder(hostFullPath);
+        var baseName = repFolder == null ? null : RouteVariantNaming.StripBaseName(hostFileName, repFolder);
+        var topFolderName = RouteVariantNaming.TryGetTopFolderName(hostFullPath);
+
+        // 老路径（非变体布局）OR 单机模式 → 直接返回，不进入替换分支（R15.4）
+        if (string.IsNullOrEmpty(baseName) || _multiplayerCoordinator == null)
+        {
+            return (loaded, BuildSchemaItem(loaded, loaded.FileName));
+        }
+
+        // 加载后强制进手动同步模式：syncId 命名空间 = 基名（即使没替换，代表也得进手动模式才能跨变体对齐）
+        loaded.LogicalRouteId = baseName;
+
+        // topDir = 变体子文件夹的父目录（总线路文件夹，如 传奇）
+        var topDir = Path.GetDirectoryName(Path.GetDirectoryName(hostFullPath)) ?? pathingDir;
+        var scan = RouteVariantScanner.ScanVariants(topDir, forceRefresh: false);
+        var prefs = _config.VariantPreferences ?? new Dictionary<string, string>();
+
+        var result = RouteVariantResolver.Resolve(
+            representativeFileName: hostFileName,
+            representativeAbsolutePath: hostFullPath,
+            baseName: baseName,
+            topFolderName: topFolderName,
+            variantPreferences: prefs,
+            scanByBaseName: scan);
+
+        if (result.Reason != RouteVariantResolver.FallbackReason.None)
+        {
+            _logger.LogWarning("[变体] 偏好不可用，回退到代表 {Host}（原因: {Reason}, 总文件夹={Top}, 基名={Base}）",
+                hostFileName, result.Reason, topFolderName, baseName);
+        }
+
+        PathingTask actualTask = loaded;
+        if (!string.Equals(result.ActualAbsolutePath, hostFullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var reloaded = PathingTask.BuildFromFilePath(result.ActualAbsolutePath);
+                if (reloaded == null)
+                {
+                    _logger.LogWarning("[变体] 偏好文件 {Pref} 加载返回 null，回退到代表 {Host}",
+                        result.ActualFileName, hostFileName);
+                    actualTask = loaded;
+                }
+                else
+                {
+                    // 偏好变体同样强制进手动模式，命名空间 = 同一基名（保证与代表/其他变体对齐）
+                    reloaded.LogicalRouteId = baseName;
+                    actualTask = reloaded;
+                }
+            }
+            catch (InvalidRouteException ex)
+            {
+                _logger.LogWarning(ex, "[变体] 偏好文件 {Pref} 加载抛 InvalidRouteException，回退到代表 {Host}",
+                    result.ActualFileName, hostFileName);
+                actualTask = loaded;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[变体] 偏好文件 {Pref} 加载失败（FilePreferenceUnreadable），回退到代表 {Host}",
+                    result.ActualFileName, hostFileName);
+                actualTask = loaded;
+            }
+        }
+
+        _logger.LogInformation("[变体] 实际执行 {Actual}（代表={Host}, 基名={Base}）",
+            actualTask.FileName, hostFileName, baseName);
+
+        return (actualTask, BuildSchemaItem(actualTask, actualTask.FileName));
+    }
+
+    /// <summary>
+    /// 从加载完成的 PathingTask 提取 SyncPointList + TeleportSyncPointSequence 用于 R6 上报。
+    /// 段切分必须与 PathExecutor.ConvertWaypointsForTrack 完全一致
+    /// （teleport 遇到且当前段非空时起新段、第一个若是 teleport 则为段0 wpIdx0）。
+    /// </summary>
+    private static RouteVariantSchemaItem BuildSchemaItem(PathingTask task, string actualFileName)
+    {
+        var item = new RouteVariantSchemaItem
+        {
+            LogicalRouteId = task.LogicalRouteId ?? string.Empty,
+            ActualVariantFileName = actualFileName,
+            SyncPointList = new List<string>(),
+            TeleportSyncPointSequence = new List<int[]>()
+        };
+        if (string.IsNullOrEmpty(task.LogicalRouteId)) return item;
+
+        // 复刻 ConvertWaypointsForTrack 的段切分
+        var segments = new List<List<Waypoint>>();
+        var temp = new List<Waypoint>();
+        foreach (var wp in task.Positions)
+        {
+            if (wp.Type == "teleport" && temp.Count > 0)
+            {
+                segments.Add(temp);
+                temp = new List<Waypoint>();
+            }
+            temp.Add(wp);
+        }
+        segments.Add(temp);
+
+        for (int listIdx = 0; listIdx < segments.Count; listIdx++)
+        {
+            var seg = segments[listIdx];
+            for (int wpIdx = 0; wpIdx < seg.Count; wpIdx++)
+            {
+                var wp = seg[wpIdx];
+                if (!string.IsNullOrEmpty(wp.SyncPointId))
+                {
+                    item.SyncPointList.Add(wp.SyncPointId);
+                }
+                if (wp.Type == "teleport")
+                {
+                    item.TeleportSyncPointSequence.Add(new[] { listIdx, wpIdx });
+                }
+            }
+        }
+        return item;
     }
 
     /// <summary>
@@ -2227,6 +2375,54 @@ public class AutoHoeingTask : ISoloTask
             _logger.LogDebug("[联机] 路线验证已在步骤2完成，跳过额外同步等待");
         }
 
+        // === route-variant-sync-by-logical-id spec / R6 + R14：变体解析 + 启动期 schema 校验 ===
+        // R6.9：仅启动期一次性触发，执行过程不再校验。
+        if (_multiplayerCoordinator != null && _config.MultiplayerEnabled)
+        {
+            var variantSchemaItems = new List<RouteVariantSchemaItem>();
+            foreach (var route in groupRoutes)
+            {
+                if (string.IsNullOrEmpty(route.FullPath)) continue;
+                var pathingDir = Path.GetDirectoryName(route.FullPath) ?? "";
+                var (actualTask, schemaItem) = ResolveAndLoadActualVariant(route.FileName, route.FullPath, pathingDir);
+                // R14：若解析出的实际变体与 Host 默认不同，就地替换 route 指向变体文件，
+                // 使 ExecuteRoute 自然加载变体（actualTask 非空且 FullPath 改变时）。
+                if (actualTask != null && !string.IsNullOrEmpty(actualTask.FullPath)
+                    && !string.Equals(actualTask.FullPath, route.FullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    route.FullPath = actualTask.FullPath;
+                    route.FileName = actualTask.FileName;
+                }
+                variantSchemaItems.Add(schemaItem);
+            }
+
+            // 调试模式跳过网络校验（与 MD5 校验的 DebugMode 跳过一致），但变体替换已完成
+            if (_config.DebugMode)
+            {
+                _logger.LogInformation("[变体校验] 调试模式：跳过跨玩家 schema 网络校验（变体替换已完成）");
+            }
+            else
+            {
+                bool variantOk;
+                try
+                {
+                    variantOk = await _multiplayerCoordinator.VerifyRouteVariantSchemaAsync(variantSchemaItems, _ct);
+                }
+                catch (InvalidOperationException ex)   // R8.7：服务端不支持变体功能
+                {
+                    _logger.LogError(ex, "[变体校验] 服务端版本不支持变体功能，停止本场联机锄地");
+                    try { Wpf.Ui.Violeta.Controls.Toast.Warning("服务端版本不支持变体功能，请升级 BgiCoordinatorServer"); } catch { }
+                    return;
+                }
+                if (!variantOk)
+                {
+                    _logger.LogError("[变体校验] 跨玩家 schema 校验失败，停止本场联机锄地");
+                    return;
+                }
+                _logger.LogInformation("[变体校验] 跨玩家 schema 校验通过");
+            }
+        }
+
         // 路线为0时直接返回，避免卡住
         if (groupRoutes.Count == 0)
         {
@@ -2648,6 +2844,49 @@ public class AutoHoeingTask : ISoloTask
     }
 
     /// <summary>
+    /// route-variant-sync-by-logical-id spec：解析锄地线路"所有可能的来源目录"。
+    /// 供 UI 变体偏好面板扫描用——用户可能用普通模式或固定调试线路模式，
+    /// 这里返回所有候选目录（存在的），UI 全部扫一遍合并，避免漏掉用户实际放变体的目录。
+    /// 与 LoadRoutesBasedOnConfig 的三级优先级目录保持一致。
+    /// </summary>
+    /// <summary>
+    /// route-variant-sync-by-logical-id spec：解析锄地线路"所有可能的来源目录"。
+    /// 供 UI 变体偏好面板扫描用——用户可能用普通模式或固定调试线路模式，
+    /// 这里返回所有候选目录（存在的），UI 全部扫一遍合并，避免漏掉用户实际放变体的目录。
+    /// 与 LoadRoutesBasedOnConfig 的三级优先级目录保持一致，并额外纳入整个 Assets 根目录
+    /// （递归扫描所有内置线路子目录，不依赖 SelectedBuiltinRoute 当前值）。
+    /// </summary>
+    public static List<string> ResolveAllHoeingRouteDirs(AutoHoeingConfig config)
+    {
+        var dirs = new List<string>();
+        var baseDir = AppContext.BaseDirectory;
+
+        // 1. 普通模式目录
+        var normalPathing = Path.Combine(baseDir, "User", "JsScript", "AutoHoeingOneDragon", "pathing");
+        if (Directory.Exists(normalPathing)) dirs.Add(normalPathing);
+
+        // 2. 整个 Assets 根目录：RouteVariantScanner.ScanVariants 递归扫子目录，
+        //    一次性覆盖「传奇 / +6 / -6(3人) / DebugRoutes / ...」等所有内置线路子目录，
+        //    不依赖 SelectedBuiltinRoute 当前选了哪个（否则用户没选某目录就扫不到其中的变体）。
+        var assetsRoot = Path.Combine(baseDir, "GameTask", "AutoHoeing", "Assets");
+        if (Directory.Exists(assetsRoot)) dirs.Add(assetsRoot);
+
+        // 3. 用户手填的自定义调试路径（可能在 Assets 之外）
+        if (config != null
+            && !string.IsNullOrWhiteSpace(config.FixedDebugRoutePath)
+            && Directory.Exists(config.FixedDebugRoutePath))
+        {
+            dirs.Add(config.FixedDebugRoutePath);
+        }
+
+        // 去重（按绝对路径，忽略大小写）
+        return dirs
+            .Select(d => Path.GetFullPath(d))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>
     /// 根据配置加载路线，实现三级优先级逻辑
     /// 优先级 1: 手动输入的 FixedDebugRoutePath
     /// 优先级 2: 选中的 SelectedBuiltinRoute
@@ -2697,9 +2936,25 @@ public class AutoHoeingTask : ISoloTask
             return routes;
         }
 
-        var files = Directory.GetFiles(dirPath, "*.json")
-            .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        // route-variant-sync-by-logical-id spec / §15.4 / R15.3：
+        // 若目录下存在变体子文件夹（A变体/B变体/C变体/D变体），递归扫描并按基名去重，
+        // 每个基名只产出一个代表（A→B→C→D 第一个存在的变体），避免同一逻辑线路的
+        // 多个变体（_a/_b...）被全部跑一遍。非变体布局保持原"仅扫顶层 *.json"行为。
+        var allJson = Directory.GetFiles(dirPath, "*.json", SearchOption.AllDirectories);
+        var hasVariantLayout = allJson.Any(f => RouteVariantNaming.TryGetVariantFolder(f) != null);
+
+        string[] files;
+        if (!hasVariantLayout)
+        {
+            // 老布局：仅顶层 *.json，行为与改前完全一致
+            files = Directory.GetFiles(dirPath, "*.json")
+                .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+        else
+        {
+            files = SelectVariantRepresentatives(dirPath, allJson);
+        }
 
         for (int i = 0; i < files.Length; i++)
         {
@@ -2717,6 +2972,53 @@ public class AutoHoeingTask : ISoloTask
         }
 
         return routes;
+    }
+
+    /// <summary>
+    /// route-variant-sync-by-logical-id spec / §15.4：变体布局下选代表。
+    /// - 变体子文件夹（A变体..D变体）内的文件：按基名分组，每基名取 A→B→C→D 第一个存在的代表。
+    /// - 不在变体子文件夹里的普通文件：原样保留。
+    /// 返回排序后的代表绝对路径数组（确定性，跨玩家一致）。
+    /// </summary>
+    private static string[] SelectVariantRepresentatives(string dirPath, string[] allJson)
+    {
+        // 基名 → (变体文件夹 → 绝对路径)
+        var byBase = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        var nonVariant = new List<string>();
+
+        foreach (var path in allJson)
+        {
+            var folder = RouteVariantNaming.TryGetVariantFolder(path);
+            if (folder == null)
+            {
+                nonVariant.Add(path);
+                continue;
+            }
+            var baseName = RouteVariantNaming.StripBaseName(Path.GetFileName(path), folder);
+            if (string.IsNullOrEmpty(baseName)) { nonVariant.Add(path); continue; }
+
+            if (!byBase.TryGetValue(baseName, out var folderMap))
+            {
+                folderMap = new Dictionary<string, string>(StringComparer.Ordinal);
+                byBase[baseName] = folderMap;
+            }
+            // 同一基名同一变体文件夹理论上只有一个文件；若重复以先扫到的为准
+            if (!folderMap.ContainsKey(folder))
+                folderMap[folder] = path;
+        }
+
+        var representatives = new List<string>();
+        foreach (var (_, folderMap) in byBase)
+        {
+            var repFolder = RouteVariantNaming.PickRepresentativeFolder(folderMap.Keys);
+            if (repFolder != null && folderMap.TryGetValue(repFolder, out var repPath))
+                representatives.Add(repPath);
+        }
+        representatives.AddRange(nonVariant);
+
+        return representatives
+            .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private void ValidateTeam()
@@ -3015,6 +3317,64 @@ public class AutoHoeingTask : ISoloTask
 
         _config.MultiWorldEnabled = Get("multiWorldEnabled", _config.MultiWorldEnabled);
         _config.MultiWorldCount = Get("multiWorldCount", _config.MultiWorldCount);
+
+        // route-variant-sync-by-logical-id spec / §15.7 / R15.5：
+        // 配置组级变体偏好（key=线路基名, value=变体文件夹名）合并到 _config.VariantPreferences，
+        // 配置组键覆盖全局键。_config 已是全局深拷贝，可安全 mutate（不污染全局单例）。
+        ApplyVariantPreferencesOverride();
+    }
+
+    /// <summary>
+    /// 把配置组 settings["variantPreferences"]（STJ 反序列化为 JsonElement object）合并进
+    /// _config.VariantPreferences。配置组键覆盖全局键；缺失或解析失败则保持全局值（可恢复）。
+    /// </summary>
+    private void ApplyVariantPreferencesOverride()
+    {
+        if (_settingsOverride == null) return;
+        if (!_settingsOverride.TryGetValue("variantPreferences", out var raw) || raw == null) return;
+
+        var parsed = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            if (raw is JsonElement je && je.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var prop in je.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.String)
+                    {
+                        var v = prop.Value.GetString();
+                        if (!string.IsNullOrEmpty(prop.Name) && !string.IsNullOrEmpty(v))
+                            parsed[prop.Name] = v!;
+                    }
+                }
+            }
+            else if (raw is IDictionary<string, object?> dict)
+            {
+                foreach (var (k, v) in dict)
+                    if (!string.IsNullOrEmpty(k) && v is string s && !string.IsNullOrEmpty(s))
+                        parsed[k] = s;
+            }
+            else if (raw is Dictionary<string, string> sd)
+            {
+                foreach (var (k, v) in sd)
+                    if (!string.IsNullOrEmpty(k) && !string.IsNullOrEmpty(v))
+                        parsed[k] = v;
+            }
+        }
+        catch (Exception ex)
+        {
+            // 配置组变体偏好解析失败属可恢复异常：保持全局偏好不变，不阻塞任务启动。
+            _logger.LogWarning(ex, "[变体] 配置组变体偏好解析失败，沿用全局偏好");
+            return;
+        }
+
+        if (parsed.Count == 0) return;
+
+        // 在全局深拷贝基础上叠加配置组键（覆盖同名 key）
+        var merged = new Dictionary<string, string>(_config.VariantPreferences ?? new(), StringComparer.Ordinal);
+        foreach (var (k, v) in parsed) merged[k] = v;
+        _config.VariantPreferences = merged;
+        _logger.LogInformation("[变体] 已应用配置组变体偏好 {Count} 条（覆盖全局）", parsed.Count);
     }
 
     /// <summary>

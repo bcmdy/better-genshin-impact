@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 
 namespace BetterGenshinImpact.GameTask.AutoHoeing;
 
@@ -480,4 +481,39 @@ public partial class AutoHoeingConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private int _routeRevivalCap = 3;
+
+    // === 路线变体偏好（route-variant-sync-by-logical-id spec / R13）===
+
+    /// <summary>
+    /// 路线变体偏好字典：key = LogicalRouteId, value = 玩家选中的变体文件名。
+    /// 全局存储（落盘到 User/config.json），不进 RoomConfig（不同步给其他玩家——
+    /// 不同玩家独立选自己跑哪个变体是核心价值）。
+    /// 默认空字典；老用户升级后所有路线走"无偏好"分支，行为完全不变。
+    ///
+    /// ⚠️ 直接 mutate 字典（如 VariantPreferences[k] = v）不会触发 PropertyChanged，
+    ///    持久化会丢失。请使用 SetVariantPreference / RemoveVariantPreference 方法。
+    /// </summary>
+    [ObservableProperty]
+    private Dictionary<string, string> _variantPreferences = new();
+
+    /// <summary>
+    /// 设置某 LogicalRouteId 的变体偏好（R13.5）。
+    /// 类内显式 OnPropertyChanged，避开 [ObservableProperty] 字典 mutate 不触发的陷阱。
+    /// </summary>
+    public void SetVariantPreference(string logicalRouteId, string fileName)
+    {
+        if (string.IsNullOrEmpty(logicalRouteId)) return;
+        _variantPreferences[logicalRouteId] = fileName ?? string.Empty;
+        OnPropertyChanged(nameof(VariantPreferences));
+    }
+
+    /// <summary>
+    /// 移除某 LogicalRouteId 的变体偏好。
+    /// </summary>
+    public void RemoveVariantPreference(string logicalRouteId)
+    {
+        if (string.IsNullOrEmpty(logicalRouteId)) return;
+        if (_variantPreferences.Remove(logicalRouteId))
+            OnPropertyChanged(nameof(VariantPreferences));
+    }
 }

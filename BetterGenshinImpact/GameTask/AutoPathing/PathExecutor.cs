@@ -351,62 +351,19 @@ public class PathExecutor
 
         // 联机模式：预计算所有战斗点的集合点映射
         // key = listIdx * 10000 + syncPointIdx（集合点索引），value = syncPointId
+        // route-variant-sync-by-logical-id spec / R2：自动 vs 手动模式分流。
+        // 整条路线执行期间不切换模式（R2.4）。
         if (MultiplayerCoordinator != null)
         {
             _syncPointMap = new Dictionary<int, string?>();
-            var resolver = new SyncPointResolver();
-            var minDist = TaskContext.Instance().Config.AutoHoeingConfig.SyncPointMinDistance;
-            int totalFightPoints = 0;
-            int mappedSyncPoints = 0;
-            for (int listIdx = 0; listIdx < waypointsList.Count; listIdx++)
+            if (PathingTaskHelper.IsManualMode(task))
             {
-                var syncResult = resolver.ResolveWithIndex(waypointsList[listIdx], minDist);
-                foreach (var (fightIdx, syncPointIdx, syncPoint) in syncResult)
-                {
-                    totalFightPoints++;
-                    if (syncPoint != null && syncPointIdx >= 0)
-                    {
-                        var key = listIdx * 10000 + syncPointIdx;
-                        var syncId = $"{task.FileName}_{listIdx}_{fightIdx}";
-                        _syncPointMap[key] = syncId;
-                        mappedSyncPoints++;
-                        var isImmediate = syncPointIdx == fightIdx;
-                        Logger.LogDebug("[联机] 路线段{ListIdx} 战斗点{FightIdx} → 集合点索引{SyncIdx}{Immediate}: {SyncId}",
-                            listIdx, fightIdx, syncPointIdx,
-                            isImmediate ? "（传送后立即等待）" : "",
-                            syncId);
-                    }
-                    else
-                    {
-                        Logger.LogDebug("[联机] 路线段{ListIdx} 战斗点{FightIdx} → 无集合点（跳过同步）", listIdx, fightIdx);
-                    }
-                }
+                BuildSyncPointMapManual(task, waypointsList);   // R3 新拼法
             }
-            Logger.LogInformation("[联机] 路线 {Name} 预计算完成：{Total} 个战斗点，{Mapped} 个有集合点",
-                task.FileName, totalFightPoints, mappedSyncPoints);
-
-            // 传送点必同步：为每个传送点生成额外的 syncPointId（需求 R1：传送必等待默认启用）
-            Logger.LogInformation("[联机] 传送必同步已启用（默认），为所有传送点生成同步点");
-            int teleportSyncCount = 0;
-            for (int listIdx = 0; listIdx < waypointsList.Count; listIdx++)
+            else
             {
-                for (int wpIdx = 0; wpIdx < waypointsList[listIdx].Count; wpIdx++)
-                {
-                    if (waypointsList[listIdx][wpIdx].Type == "teleport")
-                    {
-                        var key = listIdx * 10000 + wpIdx;
-                        if (!_syncPointMap.ContainsKey(key)) // 不覆盖已有的战斗同步点
-                        {
-                            var syncId = $"{task.FileName}_tp_{listIdx}_{wpIdx}";
-                            _syncPointMap[key] = syncId;
-                            teleportSyncCount++;
-                            Logger.LogDebug("[联机] 路线段{ListIdx} 传送点{WpIdx} → 传送同步点: {SyncId}",
-                                listIdx, wpIdx, syncId);
-                        }
-                    }
-                }
+                BuildSyncPointMapAuto(task, waypointsList);     // 现有 SyncPointResolver 逻辑（R4 零回归）
             }
-            Logger.LogInformation("[联机] 传送点必同步：新增 {Count} 个传送同步点", teleportSyncCount);
         }
 
         await Delay(100, ct);
@@ -1618,8 +1575,114 @@ public class PathExecutor
     }
 
     /// <summary>
-    /// 尝试队伍回血，如果单人回血，由于记录检查时是哪位残血，则当作行走位处理。
+    /// 自动同步模式（route-variant-sync-by-logical-id spec / R4）：现有 SyncPointResolver + Old_Sync_Id_Format。
+    /// 行为与改动前完全一致。
     /// </summary>
+    private void BuildSyncPointMapAuto(PathingTask task, List<List<WaypointForTrack>> waypointsList)
+    {
+        var resolver = new SyncPointResolver();
+        var minDist = TaskContext.Instance().Config.AutoHoeingConfig.SyncPointMinDistance;
+        int totalFightPoints = 0;
+        int mappedSyncPoints = 0;
+        for (int listIdx = 0; listIdx < waypointsList.Count; listIdx++)
+        {
+            var syncResult = resolver.ResolveWithIndex(waypointsList[listIdx], minDist);
+            foreach (var (fightIdx, syncPointIdx, syncPoint) in syncResult)
+            {
+                totalFightPoints++;
+                if (syncPoint != null && syncPointIdx >= 0)
+                {
+                    var key = listIdx * 10000 + syncPointIdx;
+                    var syncId = $"{task.FileName}_{listIdx}_{fightIdx}";
+                    _syncPointMap[key] = syncId;
+                    mappedSyncPoints++;
+                    var isImmediate = syncPointIdx == fightIdx;
+                    Logger.LogDebug("[联机] 路线段{ListIdx} 战斗点{FightIdx} → 集合点索引{SyncIdx}{Immediate}: {SyncId}",
+                        listIdx, fightIdx, syncPointIdx,
+                        isImmediate ? "（传送后立即等待）" : "",
+                        syncId);
+                }
+                else
+                {
+                    Logger.LogDebug("[联机] 路线段{ListIdx} 战斗点{FightIdx} → 无集合点（跳过同步）", listIdx, fightIdx);
+                }
+            }
+        }
+        Logger.LogInformation("[联机] 路线 {Name} 预计算完成（自动模式）：{Total} 个战斗点，{Mapped} 个有集合点",
+            task.FileName, totalFightPoints, mappedSyncPoints);
+
+        Logger.LogInformation("[联机] 传送必同步已启用（默认），为所有传送点生成同步点");
+        int teleportSyncCount = 0;
+        for (int listIdx = 0; listIdx < waypointsList.Count; listIdx++)
+        {
+            for (int wpIdx = 0; wpIdx < waypointsList[listIdx].Count; wpIdx++)
+            {
+                if (waypointsList[listIdx][wpIdx].Type == "teleport")
+                {
+                    var key = listIdx * 10000 + wpIdx;
+                    if (!_syncPointMap.ContainsKey(key))
+                    {
+                        var syncId = $"{task.FileName}_tp_{listIdx}_{wpIdx}";
+                        _syncPointMap[key] = syncId;
+                        teleportSyncCount++;
+                        Logger.LogDebug("[联机] 路线段{ListIdx} 传送点{WpIdx} → 传送同步点: {SyncId}",
+                            listIdx, wpIdx, syncId);
+                    }
+                }
+            }
+        }
+        Logger.LogInformation("[联机] 传送点必同步：新增 {Count} 个传送同步点", teleportSyncCount);
+    }
+
+    /// <summary>
+    /// 手动同步模式（route-variant-sync-by-logical-id spec / R3）：按显式 SyncPointId 标记 + LogicalRouteId 拼 syncId。
+    /// 战斗 syncId 不含任何 fightIdx / wpIdx 索引，A、B 变体可任意调整 waypoint 数量与走法。
+    /// 传送 syncId 仍按 (listIdx, wpIdx) 顺序自动编号，作者负责 A/B 变体传送序列一致。
+    /// </summary>
+    private void BuildSyncPointMapManual(PathingTask task, List<List<WaypointForTrack>> waypointsList)
+    {
+        // R3.6：LogicalRouteId 为空但有 waypoint 标了 SyncPointId 时，用 FileName 作为 fallback 命名空间。
+        string idNamespace = string.IsNullOrEmpty(task.LogicalRouteId) ? task.FileName : task.LogicalRouteId;
+        bool isFallback = string.IsNullOrEmpty(task.LogicalRouteId);
+
+        int markedSyncPoints = 0;
+        int teleportSyncCount = 0;
+
+        for (int listIdx = 0; listIdx < waypointsList.Count; listIdx++)
+        {
+            var waypoints = waypointsList[listIdx];
+            for (int wpIdx = 0; wpIdx < waypoints.Count; wpIdx++)
+            {
+                var wp = waypoints[wpIdx];
+                var key = listIdx * 10000 + wpIdx;
+
+                if (!string.IsNullOrEmpty(wp.SyncPointId))
+                {
+                    var syncId = $"{idNamespace}_{wp.SyncPointId}";    // R3.1 / R3.2
+                    _syncPointMap[key] = syncId;
+                    markedSyncPoints++;
+                    Logger.LogDebug("[联机] 路线段{ListIdx} waypoint{WpIdx} 显式同步点: {SyncId}{Fb}",
+                        listIdx, wpIdx, syncId, isFallback ? "（fallback FileName 命名）" : "");
+                }
+                else if (wp.Type == "teleport")
+                {
+                    if (!_syncPointMap.ContainsKey(key))
+                    {
+                        var syncId = $"{idNamespace}_tp_{listIdx}_{wpIdx}";   // R3.4
+                        _syncPointMap[key] = syncId;
+                        teleportSyncCount++;
+                        Logger.LogDebug("[联机] 路线段{ListIdx} 传送点{WpIdx} → 传送同步点: {SyncId}{Fb}",
+                            listIdx, wpIdx, syncId, isFallback ? "（fallback FileName 命名）" : "");
+                    }
+                }
+            }
+        }
+
+        Logger.LogInformation("[联机] 路线 {Name} 预计算完成（手动模式{Mode}）：{Marked} 个显式同步点，{Tp} 个传送同步点",
+            task.FileName,
+            isFallback ? "/Fallback" : "",
+            markedSyncPoints, teleportSyncCount);
+    }
     public async Task<bool> TryPartyHealing(CombatScenes? combatScenes = null,PathingPartyConfig? partyConfig = null)
     {
         if (_combatScenes is null)

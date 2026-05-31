@@ -5337,6 +5337,16 @@
                                                  FontSize="11"
                                                  Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" />
                                 </StackPanel>
+
+                                <!-- 线路变体偏好入口（route-variant-sync-by-logical-id spec / R15.6），始终可见 -->
+                                <ui:Button Content="线路变体偏好…"
+                                           Margin="0,10,0,0"
+                                           Command="{Binding OpenVariantPreferencesCommand}" />
+                                <ui:TextBlock Text="{Binding VariantPreferenceSummary}"
+                                              Margin="0,4,0,0"
+                                              FontSize="11"
+                                              TextWrapping="Wrap"
+                                              Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" />
                             </StackPanel>
                         </Expander>
 

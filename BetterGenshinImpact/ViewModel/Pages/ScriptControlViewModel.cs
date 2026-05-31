@@ -2569,6 +2569,265 @@ public partial class ScriptControlViewModel : ViewModel
         rootPanel.Children.Add(soloPanel);
         rootPanel.Children.Add(mpPanel);
 
+        // ===== route-variant-sync-by-logical-id spec / §15.8 / R15.6：线路变体偏好折叠面板 =====
+        // 房主和成员都可见可编辑（不随角色切换隐藏），偏好（基名→变体文件夹名）存配置组
+        // settings["variantPreferences"]，并镜像到全局 AutoHoeingConfig.VariantPreferences 作兜底。
+        // 列表 + 点击弹窗选 A变体/B变体/C变体/D变体，解决 200+ 线路场景下下拉框过多的问题。
+        var variantExpander = new System.Windows.Controls.Expander
+        {
+            IsExpanded = false,
+            Margin = new Thickness(0, 8, 0, 0),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        };
+        // 折叠标题栏：左侧标题文字 + 右侧两个按钮（使用教程 / 制作规则），点击打开对应说明文档
+        {
+            var headerGrid = new System.Windows.Controls.Grid { HorizontalAlignment = HorizontalAlignment.Stretch };
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var headerText = new TextBlock
+            {
+                Text = "线路变体偏好",
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            System.Windows.Controls.Grid.SetColumn(headerText, 0);
+            headerGrid.Children.Add(headerText);
+
+            // 打开输出根目录下的某个 md 说明文档（点击不应连带触发 Expander 展开/收起）
+            void OpenDoc(string fileName)
+            {
+                try
+                {
+                    var docPath = System.IO.Path.Combine(AppContext.BaseDirectory, fileName);
+                    if (System.IO.File.Exists(docPath))
+                    {
+                        Process.Start(new ProcessStartInfo(docPath) { UseShellExecute = true });
+                    }
+                    else
+                    {
+                        Toast.Warning($"未找到《{fileName}》，请重新编译以生成该文件");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[变体偏好] 打开说明文档失败: {File}", fileName);
+                    Toast.Warning("打开说明文档失败，请查看日志");
+                }
+            }
+
+            var btnPanel = new System.Windows.Controls.StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(12, 0, 8, 0),
+            };
+            var tutorialBtn = new Button
+            {
+                Content = "使用教程",
+                Padding = new Thickness(8, 2, 8, 2),
+                Margin = new Thickness(0, 0, 6, 0),
+            };
+            tutorialBtn.Click += (s, e) => { e.Handled = true; OpenDoc("联机锄地使用教程.md"); };
+            btnPanel.Children.Add(tutorialBtn);
+
+            var rulesBtn = new Button
+            {
+                Content = "制作规则",
+                Padding = new Thickness(8, 2, 8, 2),
+            };
+            rulesBtn.Click += (s, e) => { e.Handled = true; OpenDoc("联机锄地变体线路制作规则.md"); };
+            btnPanel.Children.Add(rulesBtn);
+
+            System.Windows.Controls.Grid.SetColumn(btnPanel, 1);
+            headerGrid.Children.Add(btnPanel);
+            variantExpander.Header = headerGrid;
+        }
+        // 当前对话框会话内的变体偏好编辑缓冲（基名 → 变体文件夹名）。保存时写入 settings。
+        var variantPrefBuffer = new Dictionary<string, string>(StringComparer.Ordinal);
+        // 预填：先全局，再用配置组已存的覆盖
+        {
+            var gcfg = TaskContext.Instance().Config.AutoHoeingConfig;
+            if (gcfg.VariantPreferences != null)
+                foreach (var (k, v) in gcfg.VariantPreferences)
+                    if (!string.IsNullOrEmpty(k) && !string.IsNullOrEmpty(v)) variantPrefBuffer[k] = v;
+            if (settings.TryGetValue("variantPreferences", out var existRaw) && existRaw != null)
+            {
+                try
+                {
+                    if (existRaw is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.Object)
+                    {
+                        foreach (var p in je.EnumerateObject())
+                            if (p.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                            {
+                                var v = p.Value.GetString();
+                                if (!string.IsNullOrEmpty(p.Name) && !string.IsNullOrEmpty(v)) variantPrefBuffer[p.Name] = v!;
+                            }
+                    }
+                    else if (existRaw is Dictionary<string, string> sd)
+                    {
+                        foreach (var (k, v) in sd)
+                            if (!string.IsNullOrEmpty(k) && !string.IsNullOrEmpty(v)) variantPrefBuffer[k] = v;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "[变体偏好] 读取配置组已存偏好失败，仅用全局值预填");
+                }
+            }
+        }
+        variantExpander.Expanded += (_, _) =>
+        {
+            try
+            {
+                var globalCfg = TaskContext.Instance().Config.AutoHoeingConfig;
+                var dirs = BetterGenshinImpact.GameTask.AutoHoeing.AutoHoeingTask
+                    .ResolveAllHoeingRouteDirs(globalCfg);
+                // 按"总文件夹"分组：每个总文件夹 → 其下存在的变体子文件夹集合（A→B→C→D）
+                var topFolders = BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.RouteVariantScanner
+                    .ScanTopFolders(dirs, forceRefresh: true);
+
+                if (topFolders.Count == 0)
+                {
+                    variantExpander.Content = new TextBlock
+                    {
+                        Text = "未发现变体线路。请在总线路文件夹下建 A变体/B变体/C变体/D变体 子文件夹并放入对应 _a/_b 后缀的 JSON。",
+                        Margin = new Thickness(8),
+                        Foreground = SystemColors.GrayTextBrush,
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    return;
+                }
+
+                var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(8) };
+                foreach (var kv in topFolders.OrderBy(k => k.Key, StringComparer.Ordinal))
+                {
+                    var topName = kv.Key;
+                    var availableFolders = kv.Value;   // 已按 A→B→C→D 排序
+                    if (availableFolders.Count == 0) continue;
+
+                    var rowGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 6) };
+                    // 左列放线路名（自适应，给个最小宽），右列按钮占满剩余空间（避免说明文字被截断）
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 90 });
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                    var label = new TextBlock
+                    {
+                        Text = topName,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 0, 12, 0),
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    System.Windows.Controls.Grid.SetColumn(label, 0);
+                    rowGrid.Children.Add(label);
+
+                    // 默认代表（A→B→C→D 第一个存在）
+                    var repFolder = availableFolders[0];
+
+                    // 预读各变体说明（变体说明.txt），用于弹窗 + 按钮展示（R15.11）
+                    var folderDescs = new Dictionary<string, string>(StringComparer.Ordinal);
+                    foreach (var vf in availableFolders)
+                    {
+                        var desc = BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.RouteVariantScanner
+                            .ReadVariantDescription(dirs, topName, vf);
+                        folderDescs[vf] = desc;
+                    }
+                    string DescSuffix(string vf)
+                        => folderDescs.TryGetValue(vf, out var d) && !string.IsNullOrEmpty(d) ? $"（{d}）" : "";
+
+                    string CurrentLabel()
+                    {
+                        if (variantPrefBuffer.TryGetValue(topName, out var f) && !string.IsNullOrEmpty(f))
+                            return $"当前：{f}{DescSuffix(f)}";
+                        return $"跟随默认（{repFolder}{DescSuffix(repFolder)}）";
+                    }
+
+                    var pickBtn = new Button
+                    {
+                        Content = CurrentLabel(),
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                        HorizontalContentAlignment = HorizontalAlignment.Left,
+                    };
+                    System.Windows.Controls.Grid.SetColumn(pickBtn, 1);
+                    rowGrid.Children.Add(pickBtn);
+
+                    pickBtn.Click += async (_, _) =>
+                    {
+                        try
+                        {
+                            var optionPanel = new System.Windows.Controls.StackPanel { Margin = new Thickness(8) };
+                            optionPanel.Children.Add(new TextBlock
+                            {
+                                Text = $"为「{topName}」选择变体（整个文件夹下所有线路都跑此变体）：",
+                                Margin = new Thickness(0, 0, 0, 8),
+                                TextWrapping = TextWrapping.Wrap
+                            });
+                            string? chosen = variantPrefBuffer.TryGetValue(topName, out var cur) ? cur : null;
+                            var group = "variant_" + topName;
+
+                            var rbDefault = new System.Windows.Controls.RadioButton
+                            {
+                                Content = $"跟随默认（{repFolder}{DescSuffix(repFolder)}）",
+                                GroupName = group,
+                                Margin = new Thickness(0, 2, 0, 2),
+                                IsChecked = string.IsNullOrEmpty(chosen)
+                            };
+                            optionPanel.Children.Add(rbDefault);
+                            var folderRadios = new List<System.Windows.Controls.RadioButton>();
+                            foreach (var f in availableFolders)
+                            {
+                                var rb = new System.Windows.Controls.RadioButton
+                                {
+                                    Content = $"{f}{DescSuffix(f)}",
+                                    GroupName = group,
+                                    Tag = f,
+                                    Margin = new Thickness(0, 2, 0, 2),
+                                    IsChecked = string.Equals(chosen, f, StringComparison.Ordinal)
+                                };
+                                folderRadios.Add(rb);
+                                optionPanel.Children.Add(rb);
+                            }
+
+                            var pickDialog = new Wpf.Ui.Controls.MessageBox
+                            {
+                                Title = $"选择变体 - {topName}",
+                                Content = optionPanel,
+                                PrimaryButtonText = "确定",
+                                CloseButtonText = "取消",
+                                Owner = Application.Current.MainWindow,
+                                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                            };
+                            var r = await pickDialog.ShowDialogAsync();
+                            if (r != MessageBoxResult.Primary) return;
+
+                            var pickedFolder = folderRadios.FirstOrDefault(x => x.IsChecked == true)?.Tag as string;
+                            if (string.IsNullOrEmpty(pickedFolder))
+                                variantPrefBuffer.Remove(topName);   // 跟随默认 = 清除偏好
+                            else
+                                variantPrefBuffer[topName] = pickedFolder!;
+                            pickBtn.Content = CurrentLabel();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "[变体偏好] 选择变体弹窗异常");
+                        }
+                    };
+
+                    stack.Children.Add(rowGrid);
+                }
+                variantExpander.Content = stack;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[变体偏好] 折叠面板加载失败");
+                variantExpander.Content = new TextBlock
+                {
+                    Text = "加载变体列表失败，请查看日志",
+                    Margin = new Thickness(8),
+                    Foreground = SystemColors.GrayTextBrush
+                };
+            }
+        };
+        rootPanel.Children.Add(variantExpander);
+
         modeToggle.Checked += (_, _) =>
         {
             soloPanel.Visibility = Visibility.Collapsed;
@@ -2686,6 +2945,21 @@ public partial class ScriptControlViewModel : ViewModel
                         "multiWorldEnabled", "multiWorldCount"
                     })
                         settings.Remove(key);
+                }
+
+                // route-variant-sync-by-logical-id spec / §15.7 / R15.5：
+                // 变体偏好（基名→变体文件夹名）写入配置组 settings，并镜像到全局作兜底。
+                // 不随联机/单机分支清除（运行时仅联机生效，存着无害）。
+                if (variantPrefBuffer.Count > 0)
+                {
+                    settings["variantPreferences"] = new Dictionary<string, string>(variantPrefBuffer, StringComparer.Ordinal);
+                    var gcfg = TaskContext.Instance().Config.AutoHoeingConfig;
+                    foreach (var (k, v) in variantPrefBuffer)
+                        gcfg.SetVariantPreference(k, v);   // 镜像到全局兜底
+                }
+                else
+                {
+                    settings.Remove("variantPreferences");
                 }
 
                 foreach (var group in ScriptGroups)

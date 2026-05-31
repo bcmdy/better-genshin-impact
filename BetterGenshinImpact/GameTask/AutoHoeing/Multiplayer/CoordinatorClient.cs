@@ -99,6 +99,14 @@ public class CoordinatorClient : IAsyncDisposable
     /// <summary>当前同步周期内所有玩家都到达战斗点时触发，载荷为 syncKey（routeId:segmentIndex）。</summary>
     public event Action<string>? AllArrivedAtFightPoint;
 
+    // === 路线变体一致性校验事件（route-variant-sync-by-logical-id spec / R6 / R8）===
+    /// <summary>服务端按 LogicalRouteId 分组比对全部通过时触发（无参）。</summary>
+    public event Action? RouteVariantConsistencyPassed;
+    /// <summary>
+    /// 服务端校验失败时触发。载荷：logicalRouteId（空字符串表示 30s 超时）+ playerItems（connId → 该玩家上报的 schema）。
+    /// </summary>
+    public event Action<string, Dictionary<string, Models.RouteVariantSchemaItem>>? RouteVariantConsistencyFailed;
+
     public List<PlayerInfo> CurrentPlayerList { get; set; } = new();
     public int CurrentRoomPlayerCount { get; set; }
     public string HostPlayerUid { get; set; } = string.Empty;
@@ -173,6 +181,14 @@ public class CoordinatorClient : IAsyncDisposable
 
             _connection.On("RouteVerificationPassed",
                 () => RouteVerificationPassed?.Invoke());
+
+            // === 路线变体一致性校验订阅（route-variant-sync-by-logical-id spec）===
+            _connection.On("RouteVariantConsistencyPassed",
+                () => RouteVariantConsistencyPassed?.Invoke());
+
+            _connection.On<string, Dictionary<string, Models.RouteVariantSchemaItem>>(
+                "RouteVariantConsistencyFailed",
+                (logicalId, playerItems) => RouteVariantConsistencyFailed?.Invoke(logicalId, playerItems));
 
             _connection.On<string>("RoomClosed",
                 reason => RoomClosed?.Invoke(reason));
@@ -776,6 +792,22 @@ public class CoordinatorClient : IAsyncDisposable
         {
             _logger.LogWarning(ex, "ReportHostReadyAsync 失败（静默忽略）");
         }
+    }
+
+    /// <summary>
+    /// 上报本玩家所有计划路线的变体 schema 摘要（route-variant-sync-by-logical-id spec / R6 / R8）。
+    /// 旧服务端不识别此方法时抛 HubException，调用方（MultiplayerCoordinator.VerifyRouteVariantSchemaAsync）
+    /// 按 R8.6 / R8.7 分流。不静默 catch，让 caller 决定 fallback / 显式报错。
+    /// </summary>
+    public async Task ReportRouteVariantSchemaAsync(
+        List<Models.RouteVariantSchemaItem> items, CancellationToken ct = default)
+    {
+        if (_connection == null || !IsConnected)
+            throw new InvalidOperationException("CoordinatorClient 未连接");
+
+        await _connection.InvokeAsync("ReportRouteVariantSchema", items, ct);
+        _logger.LogInformation("[变体校验] 已上报 {Count} 条 schema（含非空 LogicalRouteId {NonEmpty} 条）",
+            items?.Count ?? 0, items?.Count(i => !string.IsNullOrEmpty(i.LogicalRouteId)) ?? 0);
     }
 
     /// <summary>

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BetterGenshinImpact.Core.Config;
 using BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.Models;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer;
@@ -493,6 +494,91 @@ public class MultiplayerCoordinator : IAsyncDisposable
         {
             _client.StartRouteReceived -= onStartRoute;
         }
+    }
+
+    // === 路线变体一致性校验（route-variant-sync-by-logical-id spec / R6 / R8）===
+
+    /// <summary>
+    /// 客户端发起 R6 启动期校验（route-variant-sync-by-logical-id spec / R6 / R8.5-7）。
+    /// 返回值：
+    ///   - true：校验通过 OR 服务端不识别该方法且 items 全空（老路径）
+    ///   - false：校验失败 OR 30s 超时 OR ct 取消
+    /// 抛异常（caller 应终止本场会话）：
+    ///   - InvalidOperationException：服务端不识别新协议但 items 中至少一条非空 LogicalRouteId（R8.7）
+    /// </summary>
+    public async Task<bool> VerifyRouteVariantSchemaAsync(
+        List<RouteVariantSchemaItem> items, CancellationToken ct)
+    {
+        items ??= new List<RouteVariantSchemaItem>();
+        bool selfHasAnyLogicalRouteId = items.Any(i => !string.IsNullOrEmpty(i.LogicalRouteId));
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action? onPassed = null;
+        Action<string, Dictionary<string, RouteVariantSchemaItem>>? onFailed = null;
+        onPassed = () => tcs.TrySetResult(true);
+        onFailed = (logicalId, playerItems) =>
+        {
+            if (string.IsNullOrEmpty(logicalId))
+            {
+                _logger.LogWarning("[变体校验] 服务端 30s 超时（视为失败）");
+            }
+            else
+            {
+                _logger.LogWarning("[变体校验] LogicalRouteId={LRI} 不一致；玩家文件: {Files}",
+                    logicalId, string.Join(", ",
+                        playerItems.Select(kv => $"{kv.Key}={kv.Value.ActualVariantFileName}")));
+            }
+            tcs.TrySetResult(false);
+        };
+        // subscribe-before-action：先订阅事件再上报，避免服务端在订阅前就广播完成（bgi-config-and-mvvm §5.1）
+        _client.RouteVariantConsistencyPassed += onPassed;
+        _client.RouteVariantConsistencyFailed += onFailed;
+        try
+        {
+            try
+            {
+                await _client.ReportRouteVariantSchemaAsync(items, ct);
+            }
+            catch (HubException ex) when (IsMethodNotFoundException(ex))
+            {
+                if (selfHasAnyLogicalRouteId)
+                {
+                    throw new InvalidOperationException(
+                        "服务端版本不支持变体功能（ReportRouteVariantSchema 方法不存在），请升级 BgiCoordinatorServer", ex);
+                }
+                _logger.LogInformation("[变体校验] 服务端不支持新协议且本玩家全员老路径，按老路径执行");
+                return true;
+            }
+
+            using var localTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, localTimeout.Token);
+            using var reg = linked.Token.Register(() =>
+            {
+                _logger.LogWarning("[变体校验] 客户端等待事件超时 30s，视为失败");
+                tcs.TrySetResult(false);
+            });
+            return await tcs.Task;
+        }
+        finally
+        {
+            _client.RouteVariantConsistencyPassed -= onPassed;
+            _client.RouteVariantConsistencyFailed -= onFailed;
+        }
+    }
+
+    /// <summary>
+    /// 识别 HubException 是否为"服务端方法不存在"。
+    /// SignalR 调到不存在的方法时抛 HubException，message 形如：
+    ///   "Method 'ReportRouteVariantSchema' does not exist"
+    ///   "Failed to invoke 'ReportRouteVariantSchema' due to an error on the server. ..."
+    /// </summary>
+    private static bool IsMethodNotFoundException(Exception ex)
+    {
+        if (ex == null) return false;
+        var msg = ex.Message ?? string.Empty;
+        return msg.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0
+            || (msg.IndexOf("ReportRouteVariantSchema", StringComparison.OrdinalIgnoreCase) >= 0
+                && msg.IndexOf("error on the server", StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     // === 中断状态清除 ===

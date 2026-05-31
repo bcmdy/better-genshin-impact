@@ -61,4 +61,14 @@ public class Waypoint
     /// 怪物、特产
     /// </summary>
     public List<MaterialInfo> Items { get; set; } = [];
+
+    /// <summary>
+    /// 逻辑同步点标记（route-variant-sync-by-logical-id spec / R1.2）。
+    /// 非空时表示该 waypoint 是一个逻辑同步点，syncId 拼为 {LogicalRouteId}_{SyncPointId}
+    /// （或 fallback {FileName}_{SyncPointId}，见 R3.6）。
+    /// 建议作者使用字母前缀（如 fight_1, pickup_2），避免与自动模式
+    /// {FileName}_{listIdx}_{fightIdx} 拼法的纯数字段命名空间冲突（D-5）。
+    /// 老 JSON 保持 null，行为完全不变。
+    /// </summary>
+    public string? SyncPointId { get; set; }
 }

@@ -9,19 +9,30 @@ public class CoordinatorHub : Hub
 {
     private readonly RoomManager _roomManager;
     private readonly ILogger<CoordinatorHub> _logger;
+    private readonly IHubContext<CoordinatorHub> _hubContext;
 
     // 每个房间的路线上报缓存：roomCode → (connectionId → routes)
     private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, List<RouteHash>>>
         RouteReports = new();
 
+    // 每个房间的变体 schema 上报缓存：roomCode → (connectionId → items)
+    // route-variant-sync-by-logical-id spec / R6
+    private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, List<RouteVariantSchemaItem>>>
+        VariantSchemaReports = new();
+
+    // 每个房间的变体校验 30s 超时器（R6.8）
+    private static readonly ConcurrentDictionary<string, CancellationTokenSource>
+        VariantSchemaTimeouts = new();
+
     // 每个连接当前所属的 SignalR Group 列表（用于轮换房间时清理旧 Group 订阅，
     // 避免上一个房间关闭/广播时串扰到已切换到新房间的连接）。
     private static readonly ConcurrentDictionary<string, HashSet<string>> _connectionGroups = new();
 
-    public CoordinatorHub(RoomManager roomManager, ILogger<CoordinatorHub> logger)
+    public CoordinatorHub(RoomManager roomManager, ILogger<CoordinatorHub> logger, IHubContext<CoordinatorHub> hubContext)
     {
         _roomManager = roomManager;
         _logger = logger;
+        _hubContext = hubContext;
     }
 
     /// <summary>
@@ -179,6 +190,138 @@ public class CoordinatorHub : Hub
 
         // 清理缓存
         RouteReports.TryRemove(roomCode, out _);
+    }
+
+    /// <summary>
+    /// 上报本玩家计划要执行的所有路线的变体 schema（route-variant-sync-by-logical-id spec / R6）。
+    /// 服务端按 LogicalRouteId 分组比对所有玩家的 SyncPointList + TeleportSyncPointSequence。
+    /// 全部一致 → 广播 RouteVariantConsistencyPassed；任一不一致 / 30s 超时 → 广播 RouteVariantConsistencyFailed。
+    /// 全员 LogicalRouteId 均为空 → 跳过校验、不广播（老路径零回归 R6.7）。
+    /// </summary>
+    public async Task ReportRouteVariantSchema(List<RouteVariantSchemaItem> items)
+    {
+        var (room, roomCode) = _roomManager.GetRoomByConnectionId(Context.ConnectionId);
+        if (room == null || roomCode == null)
+        {
+            _logger.LogWarning("[变体校验] 连接 {ConnId} 未在房间内", Context.ConnectionId);
+            return;
+        }
+
+        items ??= new List<RouteVariantSchemaItem>();
+        var roomReports = VariantSchemaReports.GetOrAdd(roomCode,
+            _ => new ConcurrentDictionary<string, List<RouteVariantSchemaItem>>());
+        roomReports[Context.ConnectionId] = items;
+
+        _logger.LogInformation("[变体校验] 连接 {ConnId} 在房间 {Code} 上报 {Count} 条 schema（含非空 LogicalRouteId {NonEmpty} 条）",
+            Context.ConnectionId, roomCode, items.Count, items.Count(i => !string.IsNullOrEmpty(i.LogicalRouteId)));
+
+        // 启动 30s 超时器（首个上报触发）
+        VariantSchemaTimeouts.GetOrAdd(roomCode, code =>
+        {
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            cts.Token.Register(() => _ = OnVariantSchemaTimeoutAsync(code));
+            return cts;
+        });
+
+        List<string> onlineConnIds;
+        lock (room) { onlineConnIds = room.Players.Select(p => p.ConnectionId).ToList(); }
+        if (!onlineConnIds.All(id => roomReports.ContainsKey(id)))
+        {
+            return;   // 还有人未上报
+        }
+
+        if (VariantSchemaTimeouts.TryRemove(roomCode, out var timeoutCts))
+        {
+            try { timeoutCts.Cancel(); } catch { }
+            timeoutCts.Dispose();
+        }
+
+        await EvaluateVariantSchemaAsync(roomCode, onlineConnIds, roomReports);
+    }
+
+    private async Task EvaluateVariantSchemaAsync(string roomCode,
+        List<string> onlineConnIds,
+        ConcurrentDictionary<string, List<RouteVariantSchemaItem>> roomReports)
+    {
+        var groupedByLogicalId = new Dictionary<string, List<(string connId, RouteVariantSchemaItem item)>>();
+        foreach (var connId in onlineConnIds)
+        {
+            if (!roomReports.TryGetValue(connId, out var items)) continue;
+            foreach (var it in items)
+            {
+                if (string.IsNullOrEmpty(it.LogicalRouteId)) continue;
+                if (!groupedByLogicalId.TryGetValue(it.LogicalRouteId, out var list))
+                {
+                    list = new List<(string, RouteVariantSchemaItem)>();
+                    groupedByLogicalId[it.LogicalRouteId] = list;
+                }
+                list.Add((connId, it));
+            }
+        }
+
+        if (groupedByLogicalId.Count == 0)
+        {
+            _logger.LogInformation("[变体校验] 房间 {Code} 全员老路径，跳过校验（不广播 Passed/Failed）", roomCode);
+            VariantSchemaReports.TryRemove(roomCode, out _);
+            return;
+        }
+
+        foreach (var (logicalId, entries) in groupedByLogicalId)
+        {
+            if (entries.Count <= 1) continue;
+            var first = entries[0].item;
+            for (int i = 1; i < entries.Count; i++)
+            {
+                var other = entries[i].item;
+                if (!SyncPointListEquals(first.SyncPointList, other.SyncPointList)
+                    || !TeleportSeqEquals(first.TeleportSyncPointSequence, other.TeleportSyncPointSequence))
+                {
+                    var playerItems = entries.ToDictionary(e => e.connId, e => e.item);
+                    _logger.LogWarning("[变体校验] 房间 {Code} LogicalRouteId={LRI} schema 不一致，广播 Failed",
+                        roomCode, logicalId);
+                    await Clients.Group(roomCode).SendAsync(
+                        "RouteVariantConsistencyFailed", logicalId, playerItems);
+                    VariantSchemaReports.TryRemove(roomCode, out _);
+                    return;
+                }
+            }
+        }
+
+        _logger.LogInformation("[变体校验] 房间 {Code} 通过（{Count} 个 LogicalRouteId 分组）",
+            roomCode, groupedByLogicalId.Count);
+        await Clients.Group(roomCode).SendAsync("RouteVariantConsistencyPassed");
+        VariantSchemaReports.TryRemove(roomCode, out _);
+    }
+
+    private async Task OnVariantSchemaTimeoutAsync(string roomCode)
+    {
+        if (!VariantSchemaReports.TryRemove(roomCode, out _)) return;
+        VariantSchemaTimeouts.TryRemove(roomCode, out var cts);
+        cts?.Dispose();
+        _logger.LogWarning("[变体校验] 房间 {Code} 30s 上报超时，广播 Failed", roomCode);
+        await _hubContext.Clients.Group(roomCode).SendAsync(
+            "RouteVariantConsistencyFailed",
+            "", new Dictionary<string, RouteVariantSchemaItem>());
+    }
+
+    private static bool SyncPointListEquals(List<string> a, List<string> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+            if (!string.Equals(a[i], b[i], StringComparison.Ordinal)) return false;
+        return true;
+    }
+
+    private static bool TeleportSeqEquals(List<int[]> a, List<int[]> b)
+    {
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+        {
+            if (a[i] == null || b[i] == null) return false;
+            if (a[i].Length != 2 || b[i].Length != 2) return false;
+            if (a[i][0] != b[i][0] || a[i][1] != b[i][1]) return false;
+        }
+        return true;
     }
 
     /// <summary>上报到达集合点，全员到达时广播 AllArrived</summary>
