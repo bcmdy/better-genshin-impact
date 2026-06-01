@@ -18,7 +18,7 @@
     "description": "  路线信息：该路线预计用时149秒，包含以下怪物：2只铸砂勇士·叩问人、1只嵴锋龙武士·碎晶打者、2只幼嵴锋龙、2只嵴锋龙、1只幼匿叶龙、5只匿叶龙。",
     "enable_monster_loot_split": false,
     "hash_res": "72491297",
-    "last_modified_time": 1780080987974,
+    "last_modified_time": 1780252502704,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "F010纳塔坚岩隘谷隆崛坡-1",
@@ -96,8 +96,8 @@
       "id": 8,
       "move_mode": "dash",
       "type": "path",
-      "x": 7828.5186,
-      "y": -1583.9072
+      "x": 7828.7246,
+      "y": -1568.7764
     },
     {
       "action": "",

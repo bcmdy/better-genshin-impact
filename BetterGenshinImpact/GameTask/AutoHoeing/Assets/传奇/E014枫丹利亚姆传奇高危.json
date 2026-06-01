@@ -72,6 +72,7 @@
       "action_params": "",
       "id": 6,
       "move_mode": "dash",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 2916.7793,
       "y": 3774.2871

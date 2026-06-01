@@ -8,13 +8,13 @@
       }
     ],
     "bgi_version": "0.45.0",
-    "description": "  路线信息：该路线预计用时57.73秒，包含以下怪物：1只冲锋丘丘人、1只丘丘岩盔王。",
+    "description": "  路线信息：该路线预计用时101.73秒，包含以下怪物：1只丘丘人、1只打手丘丘人、1只射手丘丘人、1只火箭丘丘人、1只冰箭丘丘人、1只丘丘岩盔王。",
     "enable_monster_loot_split": false,
-    "hash_res": "38158110",
-    "last_modified_time": 1779990596291,
+    "hash_res": "02534743",
+    "last_modified_time": 1777395734090,
     "map_match_method": "",
     "map_name": "Teyvat",
-    "name": "B040璃月震雷宫",
+    "name": "E024枫丹幽林雾道",
     "tags": [],
     "type": "collect",
     "version": "1.0"
@@ -26,8 +26,8 @@
       "id": 1,
       "move_mode": "walk",
       "type": "teleport",
-      "x": -416.34,
-      "y": 730.03
+      "x": 3373.935546875,
+      "y": 3290.1865234375
     },
     {
       "action": "",
@@ -35,35 +35,17 @@
       "id": 2,
       "move_mode": "dash",
       "type": "path",
-      "x": -415.1191,
-      "y": 712.7471
-    },
-    {
-      "action": "",
-      "action_params": "",
-      "id": 3,
-      "move_mode": "dash",
-      "type": "path",
-      "x": -454.5117,
-      "y": 661.0537
-    },
-    {
-      "action": "",
-      "action_params": "",
-      "id": 4,
-      "move_mode": "dash",
-      "type": "path",
-      "x": -464.1445,
-      "y": 658.7202
+      "x": 3422.173828125,
+      "y": 3204.48876953125
     },
     {
       "action": "fight",
       "action_params": "",
-      "id": 5,
+      "id": 3,
       "move_mode": "dash",
       "type": "path",
-      "x": -482.9375,
-      "y": 630.0002
+      "x": 3453.34375,
+      "y": 3187.34228515625
     }
   ]
 }

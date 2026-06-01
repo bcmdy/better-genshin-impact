@@ -52,6 +52,7 @@
       "action_params": "",
       "id": 4,
       "move_mode": "fly",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 1954.9326,
       "y": 1591.1748

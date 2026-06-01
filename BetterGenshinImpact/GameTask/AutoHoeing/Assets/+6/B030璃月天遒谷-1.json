@@ -10,7 +10,7 @@
     "bgi_version": "0.45.0",
     "description": "  路线信息：该路线预计用时74.84秒，包含以下怪物：1只岩龙蜥。",
     "enable_monster_loot_split": false,
-    "last_modified_time": 1779209744803,
+    "last_modified_time": 1780246344249,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "B030璃月天遒谷-1",
@@ -25,8 +25,8 @@
       "id": 1,
       "move_mode": "walk",
       "type": "teleport",
-      "x": 1151.51171875,
-      "y": 142.6953125
+      "x": 1151.5117,
+      "y": 142.6953
     },
     {
       "action": "",
@@ -34,8 +34,8 @@
       "id": 2,
       "move_mode": "dash",
       "type": "path",
-      "x": 1277.4619140625,
-      "y": 99.634765625
+      "x": 1277.4619,
+      "y": 99.6348
     },
     {
       "action": "fight",
@@ -43,8 +43,8 @@
       "id": 3,
       "move_mode": "dash",
       "type": "path",
-      "x": 1301.310546875,
-      "y": 66.5263671875
+      "x": 1305.8379,
+      "y": 61.5372
     }
   ]
 }

@@ -32,13 +32,14 @@
       "action_params": "",
       "id": 2,
       "move_mode": "dash",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 3550.3469,
       "y": 1430.4874
     },
     {
       "action": "combat_script",
-      "action_params": "attack(0.2);莉奈娅 e;钟离 a(0.2),e(hold);",
+      "action_params": ";钟离 a(0.2),e(hold);attack(0.2);莉奈娅 e;伊涅芙 e;芙宁娜 e;玛薇卡 e;爱可菲 e;",
       "id": 3,
       "move_mode": "dash",
       "type": "path",

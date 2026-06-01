@@ -11,7 +11,7 @@
     "description": "  路线信息：该路线预计用时216.63秒，包含以下怪物：1只射手丘丘人、1只丘丘雷兜王、1只丘丘岩盔王、1只大型碎石隙境原体、3只碎石隙境原体、2只大型狂蔓隙境原体。",
     "enable_monster_loot_split": false,
     "hash_res": "10796441",
-    "last_modified_time": 1780070317353,
+    "last_modified_time": 1780249410210,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "E037枫丹厄里那斯北",
@@ -125,8 +125,8 @@
       "id": 12,
       "move_mode": "dash",
       "type": "path",
-      "x": 5086.54,
-      "y": 3146.37
+      "x": 5085.8825,
+      "y": 3149.0166
     },
     {
       "action": "",

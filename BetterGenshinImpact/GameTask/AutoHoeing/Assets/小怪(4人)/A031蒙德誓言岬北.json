@@ -65,7 +65,7 @@
     },
     {
       "action": "combat_script",
-      "action_params": "attack(0.3);菈乌玛 e(hold);e",
+      "action_params": "s(0.2),attack(0.3);菈乌玛 e(hold);e,attack(0.7)",
       "id": 6,
       "move_mode": "dash",
       "type": "path",

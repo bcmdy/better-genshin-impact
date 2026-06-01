@@ -11,7 +11,7 @@
     "description": "  路线信息：该路线预计用时47秒，包含以下怪物：1只幼岩龙蜥、1只岩龙蜥。",
     "enable_monster_loot_split": false,
     "hash_res": "01936902",
-    "last_modified_time": 1779383408633,
+    "last_modified_time": 1780249151033,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "B011璃月奥藏山下",
@@ -26,8 +26,8 @@
       "id": 1,
       "move_mode": "walk",
       "type": "teleport",
-      "x": 1602.0400000000009,
-      "y": 1039.7700000000004
+      "x": 1602.04,
+      "y": 1039.77
     },
     {
       "action": "",
@@ -42,11 +42,10 @@
       "action": "stop_flying",
       "action_params": "4300",
       "id": 3,
-      "locked": false,
       "move_mode": "fly",
       "type": "path",
       "x": 1649.1875,
-      "y": 1056.896484375
+      "y": 1056.8965
     },
     {
       "action": "",
@@ -55,7 +54,7 @@
       "move_mode": "dash",
       "type": "path",
       "x": 1649.1875,
-      "y": 1056.896484375
+      "y": 1056.8965
     },
     {
       "action": "",
@@ -63,8 +62,8 @@
       "id": 5,
       "move_mode": "dash",
       "type": "path",
-      "x": 1642.2817721418414,
-      "y": 1103.102102820525
+      "x": 1642.2818,
+      "y": 1103.1021
     },
     {
       "action": "fight",
@@ -72,8 +71,8 @@
       "id": 6,
       "move_mode": "dash",
       "type": "path",
-      "x": 1634.6334092335328,
-      "y": 1104.734375
+      "x": 1634.6334,
+      "y": 1104.7344
     }
   ]
 }

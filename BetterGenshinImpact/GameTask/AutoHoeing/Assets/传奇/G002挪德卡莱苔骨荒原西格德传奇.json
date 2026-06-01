@@ -68,13 +68,14 @@
       "action_params": "",
       "id": 6,
       "move_mode": "fly",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 9080.4385,
       "y": 1950.4922
     },
     {
       "action": "combat_script",
-      "action_params": ";莉奈娅 e;keypress(f),wait(0.1),keypress(f);钟离 e(hold);茜特菈莉 e;莱依拉 e;伊涅芙 e;尼可 e;wait(3)",
+      "action_params": ";莉奈娅 e;keypress(f),wait(0.1),keypress(f);钟离 e(hold);茜特菈莉 e;莱依拉 e;伊涅芙 e;尼可 e;",
       "id": 7,
       "move_mode": "walk",
       "type": "target",
