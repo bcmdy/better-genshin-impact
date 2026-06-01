@@ -1950,6 +1950,25 @@ public class PathExecutor
     
     private async Task TpStatueOfTheSeven(bool switchOnly = false, bool requireLoadingScreen = false)
     {
+        // return-to-point-suspend-during-revival-teleport spec：
+        // 进入神像传送即置位标志，使两条"战斗中回点"后台循环 return 终止本场回点循环，
+        // 避免把刚传送到神像的角色又拉回战斗点。传送后角色必定不回战斗点，本循环已无意义，
+        // 故直接终止；回点能力由下一场战斗重新启动的新循环恢复。finally 复位保证任何退出路径
+        //（正常 / RetryException / 取消）都不会让标志永久悬挂。该方法是所有"去七天神像"的唯一
+        // 收口点（单机 + 联机共用），故在此置位天然覆盖两种模式。详见 design.md 改动 5 / Property 4。
+        AutoFightTask.IsTeleportingToStatue = true;
+        try
+        {
+            await TpStatueOfTheSevenCore(switchOnly, requireLoadingScreen);
+        }
+        finally
+        {
+            AutoFightTask.IsTeleportingToStatue = false;
+        }
+    }
+
+    private async Task TpStatueOfTheSevenCore(bool switchOnly = false, bool requireLoadingScreen = false)
+    {
         // Logger.LogInformation("AutoEatCount111 {text}",PathingConditionConfig.AutoEatCount);
         if (PartyConfig.AutoEatEnabled && PathingConditionConfig.AutoEatCount < 2)
         {

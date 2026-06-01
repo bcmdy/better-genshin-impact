@@ -83,4 +83,17 @@ public static class AutoFightSeekDecisions
         return elapsedSinceEnemySec > timeTriggerSeconds
                && elapsedSinceLastReturnMs >= intervalMs;
     }
+
+    /// <summary>
+    /// 判定回点后台循环是否应因"正在前往神像传送"而 return 终止本场回点循环。
+    /// 命中后调用方应 return 退出循环（不是 continue 跳过一轮）——传送后角色必定不回战斗点，
+    /// 本循环已无意义，回点能力由下一场战斗重新启动的新循环恢复。
+    /// 纯函数：仅以 AutoFightTask.IsTeleportingToStatue 为输入，不读取任何用户主动暂停信号
+    /// （IsSuspend / IsSuspendedByCapture）——死亡复苏是"游戏内事件需让路"，与用户主动暂停严格区分。
+    /// 详见 .kiro/specs/return-to-point-suspend-during-revival-teleport/design.md Property 1 / 3。
+    /// </summary>
+    public static bool ShouldStopReturnForTeleport(bool teleportingToStatue)
+    {
+        return teleportingToStatue;
+    }
 }

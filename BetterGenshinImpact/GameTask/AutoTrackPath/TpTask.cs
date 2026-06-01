@@ -394,6 +394,25 @@ public class TpTask
             bigMapInAllMapRect = GetBigMapRect(mapName);
         } while (true);
 
+        // 5.5 点击前强制把缩放归一到本次尝试的"可点击级别"，避免步骤 5 的 MoveMapTo(...,2,...)
+        //     把点击缩放带离传送点可点击区间。retryTimes 作为 attempt 序号，使每次重试换档。
+        //     详见 .kiro/specs/teleport-wrong-zoom-no-teleport-button-fix/design.md §2.2。
+        if (_tpConfig.MapZoomEnabled || _tpConfig.MapMoveStepDivisor)
+        {
+            using var raZoom = CaptureToRectArea();
+            double zoomBeforeClick = GetBigMapZoomLevel(raZoom);
+            double targetClickZoom = ComputeClickZoomCandidate(retryTimes, DisplayTpPointZoomLevel, _tpConfig.MinZoomLevel);
+            if (Math.Abs(zoomBeforeClick - targetClickZoom) > _tpConfig.PrecisionThreshold)
+            {
+                await AdjustMapZoomLevel(zoomBeforeClick, targetClickZoom);
+                TaskControl.Logger.LogInformation("点击前调整缩放：{From:0.00} -> {To:0.00}（第 {Attempt} 次尝试）",
+                    zoomBeforeClick, targetClickZoom, retryTimes + 1);
+                await Delay(_tpConfig.MapMoveStepDivisor ? 50 : 100, ct);
+                // 缩放变化使既有 bigMapInAllMapRect 失效，必须重新计算
+                bigMapInAllMapRect = GetBigMapRect(mapName);
+            }
+        }
+
         // 6. 计算传送点位置并点击
         // Debug.WriteLine($"({x},{y}) 在 {bigMapInAllMapRect} 内，计算它在窗体内的位置");
         // 注意这个坐标的原点是中心区域某个点，所以要转换一下点击坐标（点击坐标是左上角为原点的坐标系），不能只是缩放
@@ -1742,6 +1761,31 @@ public class TpTask
         var s = Bv.GetBigMapScale(region);
         // 1~6 的缩放等级
         return (-5 * s) + 6;
+    }
+
+    /// <summary>
+    /// 计算第 attempt 次尝试点击传送点时应使用的"可点击缩放"目标级别。
+    /// 缩放语义：值越小越放大（图标越大越易点出传送按键）。在 [minZoom, displayZoom] 区间内
+    /// 随尝试序号收敛——attempt 0 用 displayZoom(4.4)，后续逐步朝 minZoom 放大，
+    /// 使每次重试都换一个不同的、未被证明失败的缩放档位。
+    /// 详见 .kiro/specs/teleport-wrong-zoom-no-teleport-button-fix/design.md §2.1。
+    /// 纯函数：无 UI / Mat / logger 依赖，便于 PBT 撒输入。
+    /// </summary>
+    /// <param name="attempt">尝试序号（0 起，对应 Tp 的 retryTimes/i）</param>
+    /// <param name="displayZoom">传送点显示缩放（DisplayTpPointZoomLevel=4.4）</param>
+    /// <param name="minZoom">最放大可点击下限（TpConfig.MinZoomLevel，默认 2.0）</param>
+    /// <returns>夹在 [minZoom, displayZoom] 的目标缩放</returns>
+    public static double ComputeClickZoomCandidate(int attempt, double displayZoom, double minZoom)
+    {
+        // 防御：保证 lo <= hi（displayZoom/minZoom 顺序异常时不抛）
+        double hi = Math.Max(displayZoom, minZoom);
+        double lo = Math.Min(displayZoom, minZoom);
+        if (attempt <= 0) return hi;            // 第 0 次：传送点显示缩放
+        // 总尝试数固定 3（Tp 的 for i<3）→ 候选点 hi, 中点, lo
+        const int totalAttempts = 3;
+        int clamped = Math.Min(attempt, totalAttempts - 1);
+        double t = (double)clamped / (totalAttempts - 1); // attempt1→0.5, attempt2→1.0
+        return hi - (hi - lo) * t;              // 朝 lo（更放大）线性收敛
     }
 }
 

@@ -76,6 +76,25 @@ public class AutoFightTask : ISoloTask
     public static WaypointForTrack? FightWaypoint  {get; set;} = null;
 
     /// <summary>
+    /// "正在前往七天神像传送回血"标志（return-to-point-suspend-during-revival-teleport spec）。
+    /// 语义：true = 复苏/神像传送进行中，两条回点后台循环应 return 终止本场回点循环
+    ///   （终止 ≠ 暂停一轮——传送后角色必定不回战斗点，本循环已无意义，直接终止最干净；
+    ///    回点能力由下一场战斗重新启动的新循环恢复）。
+    ///
+    /// 写者（唯一）：PathExecutor.TpStatueOfTheSeven 的 try-finally —— 入口置 true，finally 复位 false，
+    ///   保证任何退出路径（正常 / RetryException / 取消）都复位，不会永久悬挂。
+    /// 读者：KazuhaContinuousReturnLoopAsync（MoveCloseTo 前）/ GeneralReturnToFightPointLoopAsync（MoveTo 前），
+    ///   命中即 return 终止本场回点循环。
+    /// 跨线程：PathExecutor 传送线程写、两个回点后台循环线程读，单调置位/复位无复合判断，volatile 足够。
+    ///
+    /// 严禁与以下信号混用 / 合并 / 重命名（语义完全不同）：
+    ///   - TpTask.SuppressAutoRevivalClick（抑制 AnomalyDetector 自动点击复苏）
+    ///   - PathExecutor._multiplayerRevivalDetected（待消费的复苏事件信号位）
+    ///   - IsSuspend / IsSuspendedByCapture（用户主动暂停 / 截图暂停）
+    /// </summary>
+    public static volatile bool IsTeleportingToStatue = false;
+
+    /// <summary>
     /// 最近一次"看到敌人"的时间戳。
     /// 由 AutoFightSeek.SeekAndFightAsync 在 4 处 return false 之前同步赋值；
     /// 由 GeneralReturnToFightPointLoopAsync 时间触发判据读取；
@@ -2873,6 +2892,19 @@ public class AutoFightTask : ISoloTask
                     continue;
                 }
 
+                // 复苏/神像传送进行中：终止本场回点循环，避免把刚传送到神像的角色又拉回战斗点。
+                // 终止 ≠ 暂停一轮——传送后角色必定不回战斗点，本循环已无意义，return 退出最干净；
+                // return 会走方法末尾的 finally（打 "持续回点后台任务已退出" 日志），是干净退出。
+                // 此处 return 之前 pathExecutor 在 while 外创建、无 using，与既有 return 路径
+                //（OperationCanceledException / FightEndTotoly）一致，不持有需手动释放的资源。
+                // 回点能力由下一场战斗重新启动的新循环恢复。
+                // 详见 return-to-point-suspend-during-revival-teleport/design.md 改动 3 / Property 1。
+                if (AutoFightSeekDecisions.ShouldStopReturnForTeleport(AutoFightTask.IsTeleportingToStatue))
+                {
+                    TaskControl.Logger.LogDebug("[联机][万叶] 复苏/神像传送进行中，终止本场回点循环（距战斗点 {Dist:F1}）", realtimeDistance);
+                    return;
+                }
+
                 try
                 {
                     fightWaypoint.MoveMode = MoveModeEnum.Walk.Code;
@@ -3006,6 +3038,19 @@ public class AutoFightTask : ISoloTask
                 }
 
                 if (!distanceTriggered && !timeTriggered) continue;
+
+                // 复苏/神像传送进行中：终止本场回点循环。
+                // 终止 ≠ 暂停一轮——传送后角色必定不回战斗点，本循环已无意义，return 退出最干净。
+                // 此处 return 在 endWatcher / moveCts 创建之前（那些在下方 try 块内），W 键也未按下
+                //（SimulateAction(MoveForward, KeyUp) 只在 MoveTo 的 finally 里，未进 MoveTo 就没按下），
+                // 故 return 不持有需手动释放的资源；return 会走方法末尾的 finally（打 "通用版回点后台任务已退出" 日志）。
+                // 回点能力由下一场战斗重新启动的新循环恢复。
+                // 详见 return-to-point-suspend-during-revival-teleport/design.md 改动 4 / Property 1。
+                if (AutoFightSeekDecisions.ShouldStopReturnForTeleport(AutoFightTask.IsTeleportingToStatue))
+                {
+                    TaskControl.Logger.LogDebug("[AutoFight][回点] 复苏/神像传送进行中，终止本场回点循环（距战斗点 {Dist:F1}）", realtimeDistance);
+                    return;
+                }
 
                 // 触发后重置容差计数器
                 triggerHitCount = 0;
