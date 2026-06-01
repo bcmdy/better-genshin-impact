@@ -2,6 +2,13 @@
 using BetterGenshinImpact.GameTask.Model;
 using OpenCvSharp;
 using System.Collections.Generic;
+using BetterGenshinImpact.Core.Recognition.OpenCv;
+using BetterGenshinImpact.Helpers.Extensions;
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 
 namespace BetterGenshinImpact.GameTask.QuickTeleport.Assets;
 
@@ -78,8 +85,10 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
                 (int)(440 * AssetScale),
                 (int)(40 * AssetScale),
                 (int)(200 * AssetScale)),
-            DrawOnWindow = false,
-            Threshold = 0.75
+            UseMask = true,
+            MaskColor = Color.FromArgb(0, 255, 0),
+            DrawOnWindow = true,
+            Threshold = 0.8
         }.InitTemplate();
 
         MapCloseButtonRo = new RecognitionObject
@@ -136,13 +145,15 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
         {
             Name = "MapUndergroundSwitchButton",
             RecognitionType = RecognitionTypes.TemplateMatch,
-            Use3Channels = true,
             TemplateImageMat = GameTaskManager.LoadAssetImage("QuickTeleport", "MapUndergroundSwitchButton.png"),
             RegionOfInterest = new Rect(CaptureRect.Width - (int)(120 * AssetScale),
                 (int)(250 * AssetScale),
                 (int)(90 * AssetScale),
                 (int)(570 * AssetScale)),
-            DrawOnWindow = false
+            DrawOnWindow = true,
+            UseMask = true,
+            MaskColor = Color.FromArgb(0, 255, 0),
+            Threshold = 0.8
         }.InitTemplate();
         MapUndergroundToGroundButtonRo = new RecognitionObject
         {
@@ -153,7 +164,10 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
                 (int)(250 * AssetScale),
                 (int)(90 * AssetScale),
                 (int)(570 * AssetScale)),
-            DrawOnWindow = false
+            UseMask = true,
+            MaskColor = Color.FromArgb(0, 255, 0),
+            DrawOnWindow = true,
+            Threshold = 0.95
         }.InitTemplate();
     }
 
