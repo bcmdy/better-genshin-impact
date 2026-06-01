@@ -3814,7 +3814,7 @@ public class PathExecutor
 
         var distance = Navigation.GetDistance(waypoint, position);
         //中途暂停过，地图未识别到
-        if (position is {X:0,Y:0} && GetPositionAndTimeSuspendFlag)
+        if (position is {X:0,Y:0} && GetPositionAndTimeSuspendFlag && !TryConsumeRevivalSignal())
         {
             GetPositionAndTimeSuspendFlag = false;
             throw new RetryNoCountException("可能暂停导致路径过远，重试一次此路线！");
