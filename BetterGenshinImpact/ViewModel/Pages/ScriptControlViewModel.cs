@@ -2151,7 +2151,7 @@ public partial class ScriptControlViewModel : ViewModel
         var startRouteIndexBox = new TextBox { Text = GetInt("startRouteIndex", globalCfg.StartRouteIndex).ToString(), PlaceholderText = "0=从头" };
         var enableKazuhaSyncCheck = new System.Windows.Controls.CheckBox { Content = "启用万叶聚物同步", IsChecked = GetBool("enableKazuhaSync", globalCfg.EnableKazuhaSync) };
         // multiplayer-hoeing-selectable-fight-strategy §C7: 固定策略开关（默认读 settings，缺省 globalCfg 当前值即默认 true）
-        var useFixedFightStrategyCheck = new System.Windows.Controls.CheckBox { Content = "固定使用联机战斗策略", IsChecked = GetBool("multiplayerUseFixedFightStrategy", globalCfg.MultiplayerUseFixedFightStrategy) };
+        var useFixedFightStrategyCheck = new System.Windows.Controls.CheckBox { Content = "固定使用联机战斗策略(关闭即使用配置组中选择的策略)", IsChecked = GetBool("multiplayerUseFixedFightStrategy", globalCfg.MultiplayerUseFixedFightStrategy) };
         var fightTimeoutBox = new TextBox { Text = GetInt("fightTimeoutSeconds", globalCfg.FightTimeoutSeconds).ToString(), PlaceholderText = "秒，默认120" };
 
         // ===== 快速同步点抢报（multiplayer-fast-sync-host-controlled spec, host-controlled）=====
@@ -2189,8 +2189,56 @@ public partial class ScriptControlViewModel : ViewModel
         enableKazuhaSyncCheck.Unchecked += (_, _) => UpdateKazuhaSyncEnabled();
         UpdateKazuhaSyncEnabled();
         var debugModeCheck = new System.Windows.Controls.CheckBox { Content = "调试模式（跳过路线一致性验证）", IsChecked = GetBool("debugMode", globalCfg.DebugMode) };
-        var useFixedRoutesCheck = new System.Windows.Controls.CheckBox { Content = "使用固定内置线路（按顺序执行内置线路）", IsChecked = GetBool("useFixedDebugRoutes", globalCfg.UseFixedDebugRoutes) };
+        // route-mode-dropdown: 用下拉框替换原 useFixedRoutesCheck 复选框（方案 A 布尔重映射）
+        var initialUseFixed = GetBool("useFixedDebugRoutes", globalCfg.UseFixedDebugRoutes);
+        var routeModeCombo = new System.Windows.Controls.ComboBox
+        {
+            ItemsSource = new[] { BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.BuiltinOnline, BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.SoloDebug },
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        // ComboBox SelectedItem 时序：ItemsSource 赋值后再设 SelectedItem（bgi-config-and-mvvm §4.1），
+        // 此处 ItemsSource 已先于 SelectedItem 赋值且为静态两项，直接赋值安全；用 Loaded 兜底再确认一次。
+        var initialRouteMode = BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.MapUseFixedToRouteMode(initialUseFixed);
+        routeModeCombo.SelectedItem = initialRouteMode;
+        routeModeCombo.Loaded += (_, _) =>
+        {
+            if (!Equals(routeModeCombo.SelectedItem, initialRouteMode))
+                routeModeCombo.SelectedItem = initialRouteMode;
+        };
         var fixedRoutePathBox = new TextBox { Text = GetStr("fixedDebugRoutePath", globalCfg.FixedDebugRoutePath), PlaceholderText = "调试线路目录（留空使用内置）" };
+
+        // route-mode-dropdown: "执行线路"下拉框 = 单机配置 groupIndex（勘察点 5）。
+        // 复用 SoloTaskRegistry 的 groupIndex 定义（Options「路径组一…路径组十」、DefaultValue=currentGroup），
+        // 不在弹窗内重复硬编码 groupNames，避免与 AutoHoeingTask.GetSettingDefinitions 漂移。
+        var groupIndexDef = settingItems.FirstOrDefault(s => s.Name == "groupIndex");
+        var groupOptions = groupIndexDef?.Options ?? new System.Collections.Generic.List<string> { "路径组一" };
+        var groupDefault = groupIndexDef?.DefaultValue?.ToString() ?? "路径组一";
+        var initialGroup = GetStr("groupIndex", groupDefault);
+        var groupIndexCombo = new System.Windows.Controls.ComboBox
+        {
+            ItemsSource = groupOptions,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        // SelectedItem 时序兜底：用 ResolveSelectedOrDefault 统一校验，saved 在选项内则用 saved，否则回退 groupDefault（bgi-config-and-mvvm §4.1）
+        var resolvedGroup = BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.ResolveSelectedOrDefault(groupOptions, initialGroup, groupDefault);
+        groupIndexCombo.SelectedItem = resolvedGroup;
+        groupIndexCombo.Loaded += (_, _) =>
+        {
+            if (!Equals(groupIndexCombo.SelectedItem, resolvedGroup))
+                groupIndexCombo.SelectedItem = resolvedGroup;
+        };
+        var groupIndexField = MakeField("执行线路", groupIndexCombo, "选择单机锄地的第几个路径组，联机将用该路径组所选线路来跑");
+
+        // route-mode-dropdown: 下拉框下方固定提示文案（Req 4.1 / 4.2，OQ-B 相对路径）
+        var routeModeHint = new TextBlock
+        {
+            Text = "如果使用单机调试线路，关闭联机选项进行线路调试，建议使用联机内置线路，针对联机做了优化。\n"
+                 + "提示：把你自己的线路文件夹拷贝到内置线路文件夹（安装目录下的 GameTask\\AutoHoeing\\Assets），即可作为内置线路被选择。",
+            FontSize = 11,
+            Foreground = SystemColors.GrayTextBrush,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
 
         // 多世界
         var multiWorldCheck = new System.Windows.Controls.CheckBox
@@ -2308,7 +2356,7 @@ public partial class ScriptControlViewModel : ViewModel
             });
             var openFixedStrategyBtn = new System.Windows.Controls.Button
             {
-                Content = "打开联机战斗策略文件(关闭即使用配置组中选择的策略)",
+                Content = "打开联机战斗策略文件",
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Padding = new Thickness(12, 4, 12, 4)
             };
@@ -2427,122 +2475,271 @@ public partial class ScriptControlViewModel : ViewModel
         var debugInner = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 6, 0, 0) };
         debugInner.Children.Add(debugModeCheck);
         debugInner.Children.Add(new System.Windows.Controls.StackPanel { Height = 4 });
-        debugInner.Children.Add(useFixedRoutesCheck);
+        // route-mode-dropdown: 下拉框替换原 useFixedRoutesCheck（位置不变：debugModeCheck 之后）
+        debugInner.Children.Add(routeModeCombo);
+        debugInner.Children.Add(routeModeHint);
         debugInner.Children.Add(new System.Windows.Controls.StackPanel { Height = 4 });
         
-        // 手动指定线路目录 - 只在固定调试线路开启时显示
+        // 手动指定线路目录 - 只在「固定内置联机线路」模式下显示
         var manualRouteField = MakeField("手动指定线路目录", fixedRoutePathBox, "留空则使用下方按钮选择");
         debugInner.Children.Add(manualRouteField);
+        // route-mode-dropdown: 执行线路（groupIndex）下拉，仅「单机调试线路」模式下显示
+        debugInner.Children.Add(groupIndexField);
 
         // 添加内置线路选择按钮
         var routeScanner = new BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteDirectoryScanner();
-        var builtinFolders = routeScanner.ScanBuiltinRoutes();
+
+        // import-local-route-folder C7: 变体偏好面板刷新委托（在 variantExpander.Expanded 定义处赋值）。
+        // 导入成功后若面板已展开，调用它立即重建变体列表（拿到新导入文件夹的变体子目录）。
+        Action? refreshVariantPanel = null;
 
         // 内置线路选择区域容器
         var builtinRouteContainer = new System.Windows.Controls.StackPanel();
-        
-        if (builtinFolders.Count > 0)
+
+        // import-local-route-folder C3: 从本地文件夹导入按钮（固定文案 OQ-1），恒为容器首节点，随容器显隐（Req 1.x）
+        var importFolderBtn = new System.Windows.Controls.Button
         {
-            builtinRouteContainer.Children.Add(new TextBlock 
-            { 
-                Text = "内置线路快速选择", 
-                FontSize = 12, 
-                Foreground = SystemColors.GrayTextBrush,
-                Margin = new Thickness(0, 8, 0, 4)
-            });
-            
-            var buttonPanel = new System.Windows.Controls.WrapPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
-            var selectedRoute = GetStr("selectedBuiltinRoute", globalCfg.SelectedBuiltinRoute);
-            
-            foreach (var folder in builtinFolders)
+            Content = "从本地文件夹导入线路",
+            Margin = new Thickness(0, 8, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+
+        // 打开内置线路目录（GameTask\AutoHoeing\Assets）按钮，放在导入按钮右侧
+        var openAssetsDirBtn = new System.Windows.Controls.Button
+        {
+            Content = "打开内置线路目录",
+            Margin = new Thickness(8, 8, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        openAssetsDirBtn.Click += (s, e) =>
+        {
+            try
             {
-                var btn = new System.Windows.Controls.Button
-                {
-                    Content = folder.FolderName,
-                    Margin = new Thickness(0, 0, 8, 8),
-                    Tag = folder.FolderName
-                };
-                
-                // 设置按钮样式 - 使用基本的 WPF 样式而不是 WPF UI 的 Appearance
-                if (folder.FolderName == selectedRoute)
-                {
-                    btn.Background = SystemColors.HighlightBrush;
-                    btn.Foreground = SystemColors.HighlightTextBrush;
-                }
-                else
-                {
-                    btn.Background = SystemColors.ControlBrush;
-                    btn.Foreground = SystemColors.ControlTextBrush;
-                }
-                
-                btn.Click += (s, e) =>
-                {
-                    // 更新所有按钮样式
-                    foreach (var child in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
-                    {
-                        child.Background = SystemColors.ControlBrush;
-                        child.Foreground = SystemColors.ControlTextBrush;
-                    }
-                    btn.Background = SystemColors.HighlightBrush;
-                    btn.Foreground = SystemColors.HighlightTextBrush;
-                    settings["selectedBuiltinRoute"] = btn.Tag.ToString();
-                };
-                
-                buttonPanel.Children.Add(btn);
+                var assetsDir = System.IO.Path.Combine(Global.Absolute("GameTask"), "AutoHoeing", "Assets");
+                System.IO.Directory.CreateDirectory(assetsDir);   // 目录不存在时创建（不删除任何内容）
+                Process.Start(new ProcessStartInfo(assetsDir) { UseShellExecute = true });
             }
-            
-            builtinRouteContainer.Children.Add(buttonPanel);
-            
-            builtinRouteContainer.Children.Add(new TextBlock 
-            { 
-                Text = "手动输入路径优先级高于按钮选择", 
-                FontSize = 11, 
-                Foreground = SystemColors.GrayTextBrush,
-                Margin = new Thickness(0, 4, 0, 0)
-            });
-            
-            // 更新按钮状态的方法
-            void UpdateButtonStates()
+            catch (Exception ex)
             {
-                var useFixedRoutes = useFixedRoutesCheck.IsChecked ?? false;
-                var hasManualPath = !string.IsNullOrWhiteSpace(fixedRoutePathBox.Text);
-                var buttonsEnabled = useFixedRoutes && !hasManualPath;
+                // 打开目录失败不应让弹窗崩溃；记录并提示
+                _logger.LogWarning(ex, "[内置线路] 打开内置线路目录失败");
+                Toast.Warning("打开内置线路目录失败，请查看日志");
+            }
+        };
+
+        // 导入按钮 + 打开目录按钮同行
+        var importRow = new System.Windows.Controls.StackPanel
+        {
+            Orientation = System.Windows.Controls.Orientation.Horizontal
+        };
+        importRow.Children.Add(importFolderBtn);
+        importRow.Children.Add(openAssetsDirBtn);
+
+        // import-local-route-folder C2: 可重入构建函数，解决"扫描==0→导入后>0"——每次清空容器并按最新扫描结果重建
+        void RebuildBuiltinButtons()
+        {
+            builtinRouteContainer.Children.Clear();
+            builtinRouteContainer.Children.Add(importRow);   // 导入按钮 + 打开目录按钮恒在顶部
+
+            var builtinFolders = routeScanner.ScanBuiltinRoutes();   // 每次重扫
+            if (builtinFolders.Count > 0)
+            {
+                builtinRouteContainer.Children.Add(new TextBlock 
+                { 
+                    Text = "内置线路快速选择", 
+                    FontSize = 12, 
+                    Foreground = SystemColors.GrayTextBrush,
+                    Margin = new Thickness(0, 8, 0, 4)
+                });
                 
-                // 控制手动输入框的可见性
-                manualRouteField.Visibility = useFixedRoutes ? Visibility.Visible : Visibility.Collapsed;
+                var buttonPanel = new System.Windows.Controls.WrapPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+                var selectedRoute = GetStr("selectedBuiltinRoute", globalCfg.SelectedBuiltinRoute);
                 
-                // 控制整个内置线路区域的可见性
-                builtinRouteContainer.Visibility = useFixedRoutes ? Visibility.Visible : Visibility.Collapsed;
-                
-                // 控制按钮的启用状态
-                foreach (var btn in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                foreach (var folder in builtinFolders)
                 {
-                    btn.IsEnabled = buttonsEnabled;
-                }
-                
-                // 如果不满足条件，清除选择状态
-                if (!buttonsEnabled)
-                {
-                    foreach (var btn in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                    var btn = new System.Windows.Controls.Button
+                    {
+                        Content = folder.FolderName,
+                        Margin = new Thickness(0, 0, 8, 8),
+                        Tag = folder.FolderName
+                    };
+                    
+                    // 设置按钮样式 - 使用基本的 WPF 样式而不是 WPF UI 的 Appearance
+                    if (folder.FolderName == selectedRoute)
+                    {
+                        btn.Background = SystemColors.HighlightBrush;
+                        btn.Foreground = SystemColors.HighlightTextBrush;
+                    }
+                    else
                     {
                         btn.Background = SystemColors.ControlBrush;
                         btn.Foreground = SystemColors.ControlTextBrush;
                     }
+                    
+                    btn.Click += (s, e) =>
+                    {
+                        // 更新所有按钮样式
+                        foreach (var child in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                        {
+                            child.Background = SystemColors.ControlBrush;
+                            child.Foreground = SystemColors.ControlTextBrush;
+                        }
+                        btn.Background = SystemColors.HighlightBrush;
+                        btn.Foreground = SystemColors.HighlightTextBrush;
+                        settings["selectedBuiltinRoute"] = btn.Tag.ToString();
+                    };
+                    
+                    buttonPanel.Children.Add(btn);
                 }
+                
+                builtinRouteContainer.Children.Add(buttonPanel);
+                
+                builtinRouteContainer.Children.Add(new TextBlock 
+                { 
+                    Text = "手动输入路径优先级高于按钮选择", 
+                    FontSize = 11, 
+                    Foreground = SystemColors.GrayTextBrush,
+                    Margin = new Thickness(0, 4, 0, 0)
+                });
+                
+                // 更新按钮状态的方法
+                void UpdateButtonStates()
+                {
+                    var useFixedRoutes = BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.IsBuiltinOnline(routeModeCombo.SelectedItem?.ToString());
+                    var hasManualPath = !string.IsNullOrWhiteSpace(fixedRoutePathBox.Text);
+                    var buttonsEnabled = useFixedRoutes && !hasManualPath;
+                    
+                    // 可见性统一由 UpdateRouteModeVisibility 控制（§3 C5.3），本方法只管按钮启用/高亮
+                    
+                    // 控制按钮的启用状态
+                    foreach (var btn in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                    {
+                        btn.IsEnabled = buttonsEnabled;
+                    }
+                    
+                    // 如果不满足条件，清除选择状态
+                    if (!buttonsEnabled)
+                    {
+                        foreach (var btn in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                        {
+                            btn.Background = SystemColors.ControlBrush;
+                            btn.Foreground = SystemColors.ControlTextBrush;
+                        }
+                    }
+                }
+                
+                // 监听线路模式下拉变化（route-mode-dropdown）
+                routeModeCombo.SelectionChanged += (s, e) => UpdateButtonStates();
+                
+                // 监听手动路径输入变化
+                fixedRoutePathBox.TextChanged += (s, e) => UpdateButtonStates();
+                
+                // 初始化状态
+                UpdateButtonStates();
             }
-            
-            // 监听UseFixedDebugRoutes变化
-            useFixedRoutesCheck.Checked += (s, e) => UpdateButtonStates();
-            useFixedRoutesCheck.Unchecked += (s, e) => UpdateButtonStates();
-            
-            // 监听手动路径输入变化
-            fixedRoutePathBox.TextChanged += (s, e) => UpdateButtonStates();
-            
-            // 初始化状态
-            UpdateButtonStates();
         }
-        
+        RebuildBuiltinButtons();   // 首次构建
+
+        // import-local-route-folder C3: 导入按钮点击 = 弹文件夹选择 → 校验 → 重名确认 → 拷贝 → 选中 → 重建 → 刷新变体 → Toast
+        importFolderBtn.Click += (s, e) =>
+        {
+            try
+            {
+                var picker = new Ookii.Dialogs.Wpf.VistaFolderBrowserDialog
+                {
+                    Description = "选择要导入的本地线路文件夹",
+                    UseDescriptionForTitle = true
+                };
+                if (picker.ShowDialog() != true) return;   // 取消 = no-op（Req 2.2）
+                var sourcePath = picker.SelectedPath;
+                if (string.IsNullOrWhiteSpace(sourcePath)) return;
+
+                // 校验 Valid_Route_Folder（Req 3.1 / 3.2 / 6.1）
+                if (!BetterGenshinImpact.GameTask.AutoHoeing.Services.LocalRouteFolderImporter.IsValidRouteFolder(sourcePath))
+                {
+                    Toast.Warning("所选文件夹不含线路文件（*.json）");
+                    return;
+                }
+
+                var assetsDir = System.IO.Path.Combine(Global.Absolute("GameTask"), "AutoHoeing", "Assets");
+                var targetName = BetterGenshinImpact.GameTask.AutoHoeing.Services.LocalRouteFolderImporter.ResolveTargetName(sourcePath);
+                if (string.IsNullOrWhiteSpace(targetName))
+                {
+                    Toast.Warning("无法解析所选文件夹名称");
+                    return;
+                }
+                var targetPath = System.IO.Path.Combine(assetsDir, targetName);
+
+                // 源已在 Assets 内 → 跳过拷贝直接选中（Req 3.5）
+                bool copied = false;
+                if (!BetterGenshinImpact.GameTask.AutoHoeing.Services.LocalRouteFolderImporter.IsInsideAssets(sourcePath, assetsDir))
+                {
+                    // 重名确认（OQ-2 / Req 4.1）
+                    if (BetterGenshinImpact.GameTask.AutoHoeing.Services.LocalRouteFolderImporter.NeedsOverwriteConfirm(System.IO.Directory.Exists(targetPath)))
+                    {
+                        var r = ThemedMessageBox.Question(
+                            $"内置线路目录已存在同名文件夹「{targetName}」。\n是否覆盖其中的同名文件？（不会删除目标目录的其他文件）",
+                            "导入线路 - 重名确认",
+                            MessageBoxButton.YesNo,
+                            System.Windows.MessageBoxResult.No);
+                        if (r != System.Windows.MessageBoxResult.Yes) return;   // 否/取消 = 终止，不拷贝不改选中（Req 4 / 6.4）
+                    }
+
+                    try
+                    {
+                        BetterGenshinImpact.GameTask.AutoHoeing.Services.LocalRouteFolderImporter
+                            .CopyDirectoryRecursive(sourcePath, targetPath, overwrite: true);
+                        copied = true;
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        // 无权限写入：记录并提示，不崩溃、不改选中（Req 6.3 / 6.4）
+                        _logger.LogWarning(ex, "[导入线路] 无权限拷贝到内置线路目录: {Target}", targetPath);
+                        Toast.Error("导入失败：无权限写入内置线路目录");
+                        return;
+                    }
+                    catch (IOException ex)
+                    {
+                        // 拷贝 IO 错误：记录并提示，不崩溃、不改选中（Req 6.2 / 6.4）
+                        _logger.LogWarning(ex, "[导入线路] 拷贝发生 IO 错误: {Target}", targetPath);
+                        Toast.Error("导入失败：拷贝文件时发生 IO 错误");
+                        return;
+                    }
+                }
+
+                // 成功：写选中 → 重建按钮组（高亮新文件夹）（Req 5.1/5.2/5.3）
+                settings["selectedBuiltinRoute"] = targetName;
+                RebuildBuiltinButtons();
+
+                // 刷新变体偏好面板（仅当已展开，OQ-5；IsExpanded 守卫在委托内部，避免前向引用 variantExpander）
+                refreshVariantPanel?.Invoke();
+
+                // 成功提示 + 联机一致性前提 A2（Req 7.1 / 7.2）
+                Toast.Success(copied ? $"已导入线路「{targetName}」并设为当前内置线路" : $"已选中内置线路「{targetName}」");
+                Toast.Information("提示：联机仅同步文件夹名并做 MD5 校验，不传输线路文件。请确保每位成员各自拥有同名、同内容的线路文件夹。", time: 6000);
+            }
+            catch (Exception ex)
+            {
+                // 兜底：任何未预期异常都不应让弹窗崩溃（Req 6.2/6.3/6.4）
+                _logger.LogWarning(ex, "[导入线路] 导入流程发生未预期异常");
+                Toast.Error("导入失败，请查看日志");
+            }
+        };
+
         debugInner.Children.Add(builtinRouteContainer);
+
+        // route-mode-dropdown: 线路模式可见性统一控制（覆盖扫描==0 场景）
+        void UpdateRouteModeVisibility()
+        {
+            var builtinOnline = BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.IsBuiltinOnline(routeModeCombo.SelectedItem?.ToString());
+            // 固定内置联机线路 → 显示手动框 + 内置按钮组，隐藏执行线路下拉
+            manualRouteField.Visibility = builtinOnline ? Visibility.Visible : Visibility.Collapsed;
+            builtinRouteContainer.Visibility = builtinOnline ? Visibility.Visible : Visibility.Collapsed;
+            // 单机调试线路 → 显示执行线路（groupIndex）下拉，隐藏上面两块
+            groupIndexField.Visibility = builtinOnline ? Visibility.Collapsed : Visibility.Visible;
+        }
+        routeModeCombo.SelectionChanged += (_, _) => UpdateRouteModeVisibility();
+        UpdateRouteModeVisibility();
 
         var debugExpander = new System.Windows.Controls.Expander
         {
@@ -2687,7 +2884,8 @@ public partial class ScriptControlViewModel : ViewModel
                 }
             }
         }
-        variantExpander.Expanded += (_, _) =>
+        // import-local-route-folder C7: 把变体面板重建逻辑抽成本地函数，供 Expanded 事件与导入后刷新复用（幂等，每次 forceRefresh 重扫）
+        void BuildVariantPanelContent()
         {
             try
             {
@@ -2838,7 +3036,10 @@ public partial class ScriptControlViewModel : ViewModel
                     Foreground = SystemColors.GrayTextBrush
                 };
             }
-        };
+        }
+        variantExpander.Expanded += (_, _) => BuildVariantPanelContent();
+        // C7: 供导入成功后复用（OQ-5）。IsExpanded 守卫在委托内，避免导入按钮闭包前向引用 variantExpander。
+        refreshVariantPanel = () => { if (variantExpander.IsExpanded) BuildVariantPanelContent(); };
         rootPanel.Children.Add(variantExpander);
 
         modeToggle.Checked += (_, _) =>
@@ -2910,7 +3111,8 @@ public partial class ScriptControlViewModel : ViewModel
                     if (double.TryParse(fastSyncPathingDistanceBox.Text, out var fspd)) settings["fastSyncPathingDistance"] = fspd;
                     if (int.TryParse(fastSyncTeleportLoadingDelayBox.Text, out var fstd)) settings["fastSyncTeleportLoadingDelayMs"] = fstd;
                     settings["debugMode"] = debugModeCheck.IsChecked ?? false;
-                    settings["useFixedDebugRoutes"] = useFixedRoutesCheck.IsChecked ?? false;
+                    // route-mode-dropdown: 下拉选中项 → useFixedDebugRoutes 布尔（方案 A 重映射）
+                    settings["useFixedDebugRoutes"] = BetterGenshinImpact.GameTask.AutoHoeing.Services.RouteModeDecisions.MapRouteModeToUseFixed(routeModeCombo.SelectedItem?.ToString());
                     settings["fixedDebugRoutePath"] = fixedRoutePathBox.Text;
                     // 保存选中的内置线路
                     if (settings.ContainsKey("selectedBuiltinRoute"))
@@ -2925,6 +3127,10 @@ public partial class ScriptControlViewModel : ViewModel
                     if (int.TryParse(multiWorldCountBox.Text, out var mwc)) settings["multiWorldCount"] = mwc;
                     // 拾取模式：与 AutoHoeingTask.ApplySettingsOverride 第 2881 行 Get("pickupMode", _config.PickupMode) 对齐
                     settings["pickupMode"] = pickupModeCombo.SelectedItem?.ToString();
+                    // route-mode-dropdown: 始终写入执行线路（groupIndex）下拉的当前值（与 soloPanel 共用键，类比 pickupMode）。
+                    // 运行时 ApplySettingsOverride 的 Get("groupIndex","") → groupMap 仅在 UseFixedDebugRoutes==false 分支影响选路；
+                    // UseFixedDebugRoutes==true 时运行时走 LoadRoutesBasedOnConfig，不读 GroupIndex，写入无副作用。
+                    settings["groupIndex"] = groupIndexCombo.SelectedItem?.ToString();
                 }
                 else
                 {
