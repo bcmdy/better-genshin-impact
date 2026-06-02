@@ -2317,6 +2317,76 @@ public partial class ScriptControlViewModel : ViewModel
         // 设置控件填满宽度
         void Stretch(System.Windows.FrameworkElement el) { el.HorizontalAlignment = HorizontalAlignment.Stretch; el.Width = double.NaN; }
 
+        // ── UI 重排新增布局常量与辅助函数（multiplayer-hoeing-settings-dialog-ui-redesign）──
+        const double LabelColWidth = 130;     // 两列对齐标签列固定宽度
+        const double NumericFieldWidth = 70;  // 数值字段统一宽度（秒/数量/距离/毫秒/步数）
+
+        // 两列对齐字段行：标签左固定列(130, 可换行) + 控件右填满列(Star)。
+        // hint（可选）以小号灰字显示在控件下方（跨右列），自动换行。
+        System.Windows.Controls.Grid MakeFieldRow(string label, System.Windows.UIElement control, string? hint = null)
+        {
+            var grid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 8) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = LabelColWidth });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var labelBlock = new TextBlock
+            {
+                Text = label,
+                FontSize = 12,
+                Foreground = SystemColors.GrayTextBrush,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 8, 0),
+            };
+            System.Windows.Controls.Grid.SetColumn(labelBlock, 0);
+            System.Windows.Controls.Grid.SetRow(labelBlock, 0);
+            grid.Children.Add(labelBlock);
+
+            if (control is System.Windows.FrameworkElement fe)
+                fe.VerticalAlignment = VerticalAlignment.Center;
+            System.Windows.Controls.Grid.SetColumn(control, 1);
+            System.Windows.Controls.Grid.SetRow(control, 0);
+            grid.Children.Add(control);
+
+            if (hint != null)
+            {
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var hintBlock = new TextBlock
+                {
+                    Text = hint,
+                    FontSize = 11,
+                    Foreground = SystemColors.GrayTextBrush,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 2, 0, 0),
+                };
+                System.Windows.Controls.Grid.SetColumn(hintBlock, 1);
+                System.Windows.Controls.Grid.SetRow(hintBlock, 1);
+                grid.Children.Add(hintBlock);
+            }
+            return grid;
+        }
+
+        // 开关受控组：开关在上，下方一个缩进容器（带左侧浅色竖线引导）放受控子项。
+        // childrenPanel 由调用方填充；受控控件实例本身不变，灰显仍由既有联动函数按变量引用驱动。
+        System.Windows.Controls.StackPanel MakeToggleGroup(
+            System.Windows.Controls.CheckBox checkbox,
+            System.Windows.Controls.Panel childrenPanel)
+        {
+            var outer = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 0, 0, 8) };
+            outer.Children.Add(checkbox);
+            var indentBorder = new System.Windows.Controls.Border
+            {
+                BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)),
+                BorderThickness = new Thickness(1, 0, 0, 0),
+                Margin = new Thickness(8, 4, 0, 0),
+                Padding = new Thickness(8, 0, 0, 0),
+                Child = childrenPanel,
+            };
+            outer.Children.Add(indentBorder);
+            return outer;
+        }
+
         Stretch(serverUrlBox);
         Stretch(whitelistBox);
         Stretch(fixedRoutePathBox);
@@ -2332,13 +2402,13 @@ public partial class ScriptControlViewModel : ViewModel
 
         // ========== multiplayer-hoeing-fixed-fight-strategy §6 ==========
         // 联机战斗策略（固定文件）说明 + 打开按钮：与 TaskSettingsPage 设置页文案逐字符一致。
-        // Click 委派给共享 helper（MultiplayerFightStrategyFileHelper.OpenForEdit），
-        // 不在弹窗内复制"判定 → 创建 → Process.Start → 异常兜底"逻辑。
+        // Click 委派给共享 helper（MultiplayerFightStrategyFileHelper.OpenForEdit）。
+        // UI 重排：构建为局部变量，加入 mpPanel 的时机挪到 hostPanel/memberPanel 之后（E 分组）。
+        var fixedStrategyPanel = new System.Windows.Controls.StackPanel
         {
-            var fixedStrategyPanel = new System.Windows.Controls.StackPanel
-            {
-                Margin = new Thickness(0, 0, 0, 8)
-            };
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        {
             fixedStrategyPanel.Children.Add(new TextBlock
             {
                 Text = "联机战斗策略（固定文件）",
@@ -2363,7 +2433,7 @@ public partial class ScriptControlViewModel : ViewModel
             openFixedStrategyBtn.Click += (_, _) =>
                 BetterGenshinImpact.GameTask.AutoFight.MultiplayerFightStrategyFileHelper.OpenForEdit();
             fixedStrategyPanel.Children.Add(openFixedStrategyBtn);
-            // multiplayer-hoeing-selectable-fight-strategy §C7: 开关 + 红字说明（OQ-B 两处都加 / OQ-D 措辞）
+            // multiplayer-hoeing-selectable-fight-strategy §C7: 开关 + 红字说明
             useFixedFightStrategyCheck.Margin = new Thickness(0, 8, 0, 0);
             fixedStrategyPanel.Children.Add(useFixedFightStrategyCheck);
             fixedStrategyPanel.Children.Add(new TextBlock
@@ -2374,23 +2444,15 @@ public partial class ScriptControlViewModel : ViewModel
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 4, 0, 0)
             });
-            mpPanel.Children.Add(fixedStrategyPanel);
         }
         // ========== /multiplayer-hoeing-fixed-fight-strategy §6 ==========
 
-        // 分组1：身份信息
-        mpPanel.Children.Add(MakeGroupHeader("身份信息"));
-        mpPanel.Children.Add(MakeField("服务器地址", serverUrlBox));
-        // 玩家名称 + UID：固定宽度，同行
-        var nameUidRow = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 8) };
-        nameUidRow.Children.Add(MakeSmallField("玩家名称(必填)", playerNameBox, 130));
-        nameUidRow.Children.Add(MakeSmallField("玩家 UID(必填)", playerUidBox, 120));
-        mpPanel.Children.Add(nameUidRow);
-        mpPanel.Children.Add(MakeField("联机角色", roleCombo));
+        // ===== A：联机角色（置顶，决定下方房主/成员显示）=====
+        mpPanel.Children.Add(MakeGroupHeader("联机角色"));
+        mpPanel.Children.Add(MakeFieldRow("联机角色", roleCombo));
 
-        // ===== 拾取配置 =====
-        // 与 AutoHoeingTask.GetSettingDefinitions() 第 3027 行 pickupMode.Options 字面量逐字符一致
-        // 4 个选项 + ApplySettingsOverride 第 2881 行消费的 "pickupMode" 键
+        // ===== B：联机连接（房主成员共用）=====
+        // pickupModeCombo 4 选项字面量与 AutoHoeingTask.GetSettingDefinitions / ApplySettingsOverride 的 "pickupMode" 键对齐
         var pickupModeCombo = new System.Windows.Controls.ComboBox
         {
             ItemsSource = new[] { "模板匹配拾取狗粮和怪物材料", "模板匹配仅拾取狗粮", "BGI原版拾取", "不拾取" },
@@ -2398,84 +2460,94 @@ public partial class ScriptControlViewModel : ViewModel
             Margin = new Thickness(0, 0, 0, 0)
         };
         Stretch(pickupModeCombo);
-
-        mpPanel.Children.Add(MakeGroupHeader("拾取配置"));
-        mpPanel.Children.Add(MakeField("拾取模式", pickupModeCombo, "推荐使用模板匹配拾取，BGI原版拾取性能开销大、准确度低"));
-
-        // ===== 联机队伍和角色准备 =====
         var multiplayerPartyNameBox = new TextBox { Text = GetStr("multiplayerPartyName", globalCfg.MultiplayerPartyName), PlaceholderText = "留空则使用当前队伍" };
         var multiplayerStartAvatarNameBox = new TextBox { Text = GetStr("multiplayerStartAvatarName", globalCfg.MultiplayerStartAvatarName), PlaceholderText = "留空则使用当前角色，如：钟离、纳西妲" };
         Stretch(multiplayerPartyNameBox);
         Stretch(multiplayerStartAvatarNameBox);
-        
-        mpPanel.Children.Add(MakeGroupHeader("联机队伍和角色准备"));
-        mpPanel.Children.Add(MakeField("联机队伍名称", multiplayerPartyNameBox, "联机前自动切换到指定队伍，留空则使用当前队伍"));
-        mpPanel.Children.Add(MakeField("联机起始角色名称", multiplayerStartAvatarNameBox, "联机前自动切换到指定角色，留空则使用当前角色"));
+
+        mpPanel.Children.Add(MakeGroupHeader("联机连接"));
+        mpPanel.Children.Add(MakeFieldRow("服务器地址", serverUrlBox));
+        // 玩家名称 + UID：两列各占一半
+        Stretch(playerNameBox);
+        Stretch(playerUidBox);
+        var nameUidGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 0) };
+        nameUidGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        nameUidGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var nameCell = MakeFieldRow("玩家名称(必填)", playerNameBox);
+        var uidCell = MakeFieldRow("玩家 UID(必填)", playerUidBox);
+        System.Windows.Controls.Grid.SetColumn(nameCell, 0);
+        System.Windows.Controls.Grid.SetColumn(uidCell, 1);
+        uidCell.Margin = new Thickness(8, 0, 0, 0);
+        nameUidGrid.Children.Add(nameCell);
+        nameUidGrid.Children.Add(uidCell);
+        mpPanel.Children.Add(nameUidGrid);
+        mpPanel.Children.Add(MakeFieldRow("拾取模式", pickupModeCombo, "推荐使用模板匹配拾取，BGI原版拾取性能开销大、准确度低"));
+        mpPanel.Children.Add(MakeFieldRow("联机队伍名称", multiplayerPartyNameBox, "联机前自动切换到指定队伍，留空则使用当前队伍"));
+        mpPanel.Children.Add(MakeFieldRow("联机起始角色名称", multiplayerStartAvatarNameBox, "联机前自动切换到指定角色，留空则使用当前角色"));
 
         // 房主面板
         var hostPanel = new System.Windows.Controls.StackPanel();
 
-        // 分组2：房间设置
-        hostPanel.Children.Add(MakeGroupHeader("房间设置"));
-        // 期望人数（小）单独一行，白名单单独一行
-        hostPanel.Children.Add(MakeSmallRow(MakeSmallField("期望人数（2-4）", expectedCountBox, 50)));
-        hostPanel.Children.Add(MakeField("房间白名单（逗号分隔，留空不限，房主自己也要加进去）", whitelistBox));
-        // 组队超时（小）+ 超时动作（固定）同行
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("组队超时（秒）", partyTimeoutBox, 65),
+        // ===== C1：房间设置（默认展开）=====
+        var c1Inner = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        // 期望人数(70) + 组队超时(70) + 超时动作(160) 一行
+        c1Inner.Children.Add(MakeSmallRow(
+            MakeSmallField("期望人数(2-4)", expectedCountBox, NumericFieldWidth),
+            MakeSmallField("组队超时(秒)", partyTimeoutBox, NumericFieldWidth),
             MakeSmallField("超时动作", timeoutActionCombo, 160)));
+        c1Inner.Children.Add(MakeFieldRow("房间白名单", whitelistBox, "逗号分隔，留空不限，房主自己也要加进去"));
+        // 多世界开关 + 轮数（MakeToggleGroup；既有 multiWorldCheck 联动驱动轮数框 IsEnabled）
+        var mwChildren = new System.Windows.Controls.StackPanel();
+        multiWorldCountBox.Width = NumericFieldWidth; multiWorldCountBox.HorizontalAlignment = HorizontalAlignment.Left;
+        mwChildren.Children.Add(MakeFieldRow("轮数(1-4)", multiWorldCountBox, "按加入顺序轮换房主，最多4轮"));
+        c1Inner.Children.Add(MakeToggleGroup(multiWorldCheck, mwChildren));
+        hostPanel.Children.Add(new System.Windows.Controls.Expander
+        {
+            Header = "房间设置", IsExpanded = true,
+            Content = c1Inner, Margin = new Thickness(0, 4, 0, 0)
+        });
 
-        // 多世界行
-        var mwRow = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 0, 0, 8) };
-        var mwTopRow = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
-        mwTopRow.Children.Add(multiWorldCheck);
-        mwTopRow.Children.Add(new TextBlock { Text = "  轮数", FontSize = 12, Foreground = SystemColors.GrayTextBrush, VerticalAlignment = VerticalAlignment.Center });
-        multiWorldCountBox.Width = 50; multiWorldCountBox.HorizontalAlignment = HorizontalAlignment.Left;
-        mwTopRow.Children.Add(multiWorldCountBox);
-        mwRow.Children.Add(mwTopRow);
-        mwRow.Children.Add(new TextBlock { Text = "按加入顺序轮换房主，最多4轮", FontSize = 11, Foreground = SystemColors.GrayTextBrush, Margin = new Thickness(26, 2, 0, 0), TextWrapping = TextWrapping.Wrap });
-        hostPanel.Children.Add(mwRow);
+        // ===== C2：同步与战斗（默认收起）=====
+        var c2Inner = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        foreach (var b in new[] { syncTimeoutBox, minPlayersBox, syncPointMinDistBox, startRouteIndexBox, fightTimeoutBox })
+        { b.Width = NumericFieldWidth; b.HorizontalAlignment = HorizontalAlignment.Left; }
+        c2Inner.Children.Add(MakeFieldRow("集合点超时", syncTimeoutBox, "秒"));
+        c2Inner.Children.Add(MakeFieldRow("最低同步人数", minPlayersBox, "0=等齐"));
+        c2Inner.Children.Add(MakeFieldRow("集合点最小距离", syncPointMinDistBox, "默认30"));
+        c2Inner.Children.Add(MakeFieldRow("从第几条路线开始", startRouteIndexBox, "0=从头"));
+        c2Inner.Children.Add(MakeFieldRow("战斗超时", fightTimeoutBox, "秒，默认120"));
+        // 快速同步点抢报：MakeToggleGroup(开关, 2 参数)。既有 UpdateFastSyncEnabled 灰显驱动
+        var fastChildren = new System.Windows.Controls.StackPanel();
+        fastSyncPathingDistanceBox.Width = NumericFieldWidth; fastSyncPathingDistanceBox.HorizontalAlignment = HorizontalAlignment.Left;
+        fastSyncTeleportLoadingDelayBox.Width = NumericFieldWidth; fastSyncTeleportLoadingDelayBox.HorizontalAlignment = HorizontalAlignment.Left;
+        fastChildren.Children.Add(MakeFieldRow("路径抢报距离阈值", fastSyncPathingDistanceBox, "米，5-30，默认10"));
+        fastChildren.Children.Add(MakeFieldRow("传送loading抢报延迟", fastSyncTeleportLoadingDelayBox, "毫秒，0-3000，默认0"));
+        c2Inner.Children.Add(MakeToggleGroup(fastSyncEnabledCheck, fastChildren));
+        hostPanel.Children.Add(new System.Windows.Controls.Expander
+        {
+            Header = "同步与战斗(以下配置将同步给所有成员)", IsExpanded = false,
+            Content = c2Inner, Margin = new Thickness(0, 4, 0, 0)
+        });
 
-        // 分组3：同步设置
-        hostPanel.Children.Add(MakeGroupHeader("同步设置(以下所有配置将同步给所有成员，多轮次沿用同配置)"));
-        // 第一行：集合点超时 + 最低同步人数
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("集合点超时（秒）", syncTimeoutBox, 65),
-            MakeSmallField("最低同步人数（0=等齐）", minPlayersBox, 50)));
-        // 第二行：集合点最小距离 + 起始路线（万叶聚物开关挪到下面"万叶聚物同步配置"组首行）
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("集合点最小距离", syncPointMinDistBox, 65),
-            MakeSmallField("从第几条路线开始（0=从头）", startRouteIndexBox, 65)));
+        // ===== C3：万叶聚物同步（默认收起）=====
+        var c3Inner = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 6, 0, 0) };
+        var kazuhaChildren = new System.Windows.Controls.StackPanel();
+        foreach (var b in new[] { kazuhaSyncWaitSecondsBox, kazuhaSyncTimeoutSecondsBox, kazuhaWaitSkillCdSecondsBox, kazuhaSecondApproachMaxStepsBox })
+        { b.Width = NumericFieldWidth; b.HorizontalAlignment = HorizontalAlignment.Left; }
+        kazuhaChildren.Children.Add(MakeFieldRow("聚物完成后停留", kazuhaSyncWaitSecondsBox, "秒，0-30，默认1"));
+        kazuhaChildren.Children.Add(MakeFieldRow("聚物同步总超时", kazuhaSyncTimeoutSecondsBox, "秒，5-120，默认20"));
+        kazuhaChildren.Children.Add(MakeFieldRow("E技CD等待上限", kazuhaWaitSkillCdSecondsBox, "秒，3-10，默认5"));
+        kazuhaChildren.Children.Add(MakeFieldRow("拾取前精接近步数", kazuhaSecondApproachMaxStepsBox, "步，1-30，默认6"));
+        c3Inner.Children.Add(MakeToggleGroup(enableKazuhaSyncCheck, kazuhaChildren));
+        hostPanel.Children.Add(new System.Windows.Controls.Expander
+        {
+            Header = "万叶聚物同步", IsExpanded = false,
+            Content = c3Inner, Margin = new Thickness(0, 4, 0, 0)
+        });
 
-        // 万叶聚物同步配置（仅在启用万叶聚物同步时生效）
-        // 启用开关与其他万叶配置放一组，用户调参时不需要在两组之间来回找
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("启用万叶聚物同步", enableKazuhaSyncCheck, 180)));
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("万叶聚物完成后停留（秒，0-30）", kazuhaSyncWaitSecondsBox, 70),
-            MakeSmallField("聚物同步总超时（秒，5-120）", kazuhaSyncTimeoutSecondsBox, 70),
-            MakeSmallField("万叶 E 技 CD 等待上限（秒，3-10）", kazuhaWaitSkillCdSecondsBox, 70)));
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("拾取前精接近步数（联机万叶聚物，1-30）", kazuhaSecondApproachMaxStepsBox, 70)));
-
-        // 分组4：战斗配置
-        hostPanel.Children.Add(MakeGroupHeader("战斗配置"));
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("战斗超时（秒）", fightTimeoutBox, 65)));
-
-        // 分组：快速同步点抢报（multiplayer-fast-sync-host-controlled spec, host-controlled）
-        hostPanel.Children.Add(MakeGroupHeader("快速同步点抢报"));
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("启用快速同步点抢报", fastSyncEnabledCheck, 280)));
-        hostPanel.Children.Add(MakeSmallRow(
-            MakeSmallField("路径抢报距离阈值（米，5-30）", fastSyncPathingDistanceBox, 70),
-            MakeSmallField("传送 loading 抢报延迟（毫秒，0-3000）", fastSyncTeleportLoadingDelayBox, 70)));
-
-        // 分组5：线路选项（Expander 折叠，默认收起）
+        // 分组5：线路设置（Expander 折叠，默认收起）
         var debugInner = new System.Windows.Controls.StackPanel { Margin = new Thickness(0, 6, 0, 0) };
-        debugInner.Children.Add(debugModeCheck);
-        debugInner.Children.Add(new System.Windows.Controls.StackPanel { Height = 4 });
-        // route-mode-dropdown: 下拉框替换原 useFixedRoutesCheck（位置不变：debugModeCheck 之后）
+        // route-mode-dropdown: 线路模式下拉 + 提示（置于本组顶部）
         debugInner.Children.Add(routeModeCombo);
         debugInner.Children.Add(routeModeHint);
         debugInner.Children.Add(new System.Windows.Controls.StackPanel { Height = 4 });
@@ -2728,6 +2800,10 @@ public partial class ScriptControlViewModel : ViewModel
 
         debugInner.Children.Add(builtinRouteContainer);
 
+        // 调试模式开关挪到线路设置组底部（属调试项）
+        debugInner.Children.Add(new System.Windows.Controls.StackPanel { Height = 8 });
+        debugInner.Children.Add(debugModeCheck);
+
         // route-mode-dropdown: 线路模式可见性统一控制（覆盖扫描==0 场景）
         void UpdateRouteModeVisibility()
         {
@@ -2741,21 +2817,23 @@ public partial class ScriptControlViewModel : ViewModel
         routeModeCombo.SelectionChanged += (_, _) => UpdateRouteModeVisibility();
         UpdateRouteModeVisibility();
 
-        var debugExpander = new System.Windows.Controls.Expander
+        var routeExpander = new System.Windows.Controls.Expander
         {
-            Header = "线路选项",
-            IsExpanded = GetBool("debugMode", false) || GetBool("useFixedDebugRoutes", false),
+            Header = "线路设置",
+            IsExpanded = false,
             Content = debugInner,
             Margin = new Thickness(0, 4, 0, 0)
         };
-        hostPanel.Children.Add(debugExpander);
+        hostPanel.Children.Add(routeExpander);
 
-        // 成员面板
+        // 成员面板（D）
         var memberPanel = new System.Windows.Controls.StackPanel();
         memberPanel.Children.Add(MakeGroupHeader("加入设置"));
-        memberPanel.Children.Add(MakeSmallRow(MakeSmallField("加入方式", joinModeCombo, 160)));
-        memberPanel.Children.Add(MakeField("指定房主名称", targetHostBox, "仅「指定房主名称」模式下生效"));
-        memberPanel.Children.Add(MakeSmallRow(MakeSmallField("等待超时（秒）", memberPartyTimeoutBox, 65)));
+        joinModeCombo.Width = 160; joinModeCombo.HorizontalAlignment = HorizontalAlignment.Left;
+        memberPanel.Children.Add(MakeFieldRow("加入方式", joinModeCombo));
+        memberPanel.Children.Add(MakeFieldRow("指定房主名称", targetHostBox, "仅「指定房主名称」模式下生效"));
+        memberPartyTimeoutBox.Width = NumericFieldWidth; memberPartyTimeoutBox.HorizontalAlignment = HorizontalAlignment.Left;
+        memberPanel.Children.Add(MakeFieldRow("等待超时", memberPartyTimeoutBox, "秒，默认300"));
 
         void UpdateJoinModeVisibility() => targetHostBox.IsEnabled = joinModeCombo.SelectedIndex == 0;
         joinModeCombo.SelectionChanged += (_, _) => UpdateJoinModeVisibility();
@@ -2763,6 +2841,8 @@ public partial class ScriptControlViewModel : ViewModel
 
         mpPanel.Children.Add(hostPanel);
         mpPanel.Children.Add(memberPanel);
+        // ===== E：战斗策略（房主成员共用，挪到 host/member 之后）=====
+        mpPanel.Children.Add(fixedStrategyPanel);
 
         void UpdateRoleVisibility()
         {
