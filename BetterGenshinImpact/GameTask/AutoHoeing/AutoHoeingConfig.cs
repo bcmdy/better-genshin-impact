@@ -224,7 +224,7 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 协调服务器地址
     /// </summary>
     [ObservableProperty]
-    private string _coordinatorServerUrl = "https://bgi-sync.example.com";
+    private string _coordinatorServerUrl = "举例：https://bgi-sync.example.com(需部署自建服务)";
 
     /// <summary>
     /// 当前房间码（运行时状态，不持久化）
@@ -272,7 +272,7 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 使用固定调试线路：启用后从指定目录按文件名顺序加载路线，跳过正常路线选择逻辑
     /// </summary>
     [ObservableProperty]
-    private bool _useFixedDebugRoutes = false;
+    private bool _useFixedDebugRoutes = true;
 
     /// <summary>
     /// 固定调试线路目录路径，默认为内置 DebugRoutes 目录，可自定义
@@ -296,7 +296,7 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 联机模式战斗超时时间（秒），由房主设定并同步给所有成员，覆盖各自的自动战斗超时配置。默认 120
     /// </summary>
     [ObservableProperty]
-    private int _fightTimeoutSeconds = 120;
+    private int _fightTimeoutSeconds = 50;
 
     /// <summary>
     /// 联机锄地是否强制使用固定的"联机战斗策略"文件（User\AutoFight\联机战斗策略.txt）。
@@ -358,7 +358,7 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 详见 .kiro/specs/multiplayer-fast-sync-host-controlled/。
     /// </summary>
     [ObservableProperty]
-    private bool _fastSyncPointEnabled = false;
+    private bool _fastSyncPointEnabled = true;
 
     /// <summary>
     /// 路径同步点抢报距离阈值（米，原神坐标系）。范围 [5.0, 30.0]，默认 10.0。
@@ -366,7 +366,7 @@ public partial class AutoHoeingConfig : ObservableObject
     /// FastSyncDecisions.ClampPathingDistance 兜底 clamp。
     /// </summary>
     [ObservableProperty]
-    private double _fastSyncPathingDistance = 10.0;
+    private double _fastSyncPathingDistance = 30.0;
 
     /// <summary>
     /// 传送 loading 命中后到抢报上报之间的延迟毫秒数。范围 [0, 3000]，默认 0。
@@ -387,13 +387,13 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 万叶聚物完成后非万叶玩家原地再停留的秒数（让吸过来的物品被己方拾取），范围 [0, 30]，默认 1
     /// </summary>
     [ObservableProperty]
-    private int _kazuhaSyncWaitSeconds = 1;
+    private int _kazuhaSyncWaitSeconds = 0;
 
     /// <summary>
     /// 万叶聚物同步流程总超时秒数（在战斗点等待 + 聚物动作的总预算），范围 [5, 120]，默认 20
     /// </summary>
     [ObservableProperty]
-    private int _kazuhaSyncTimeoutSeconds = 20;
+    private int _kazuhaSyncTimeoutSeconds = 5;
 
     /// <summary>
     /// 万叶玩家等待 E 技 CD 的最长上限秒数（超时直接尝试释放，由 OCR + 视觉双判决定成败），范围 [3, 10]，默认 5。需保证小于 KazuhaSyncTimeoutSeconds
@@ -460,13 +460,13 @@ public partial class AutoHoeingConfig : ObservableObject
     /// 启用多世界连续锄地（房主设定，完成一个世界后轮换到下一个玩家的世界）
     /// </summary>
     [ObservableProperty]
-    private bool _multiWorldEnabled = false;
+    private bool _multiWorldEnabled = true;
 
     /// <summary>
     /// 多世界锄地轮数（1-4），由房主设定，按加入顺序依次成为房主
     /// </summary>
     [ObservableProperty]
-    private int _multiWorldCount = 2;
+    private int _multiWorldCount = 4;
 
     // === 反复复苏双层兜底（multi-revival-rapid-recurrence-fallback spec, OQ-1 / OQ-2 默认值）===
 

@@ -837,6 +837,13 @@ public class PathExecutor
                                             Logger.LogInformation("[联机] 战斗完成，走回战斗点集合");
                                             waypoint.Type =  WaypointType.Target.Code;
 
+                                            // kazuha-collect-fightpoint-position-misrecognition-fix 方案 A（首帧播种）：
+                                            // 走回战斗点的 MoveTo/MoveCloseTo 逐帧 GetPosition 之前，用战斗点坐标播种 Navigation 单例锚点，
+                                            // 避免沿用上一段远处残留的 _prevX/_prevY 导致局部匹配锚错 / 全局 garbage（BC1/BC2）。
+                                            // 仅 SetPrevPosition 覆写 prev，绝不调用 Navigation.Reset()（Navigation 是进程级共享单例，避免副作用）。
+                                            var __seed = KazuhaCollectPositionGuardDecisions.ComputeSeedAnchor(waypoint.X, waypoint.Y);
+                                            Navigation.SetPrevPosition((float)__seed.X, (float)__seed.Y);
+
                                             // multiplayer-kazuha-collect-speedup-and-position-fix:
                                             // BC3+BC4: MoveCloseTo 之前 kick off 后台预备（仅万叶玩家+缓存命中时实际工作，
                                             //          否则立即返回 PreparationResult.Skipped）。必须在 MoveCloseTo 之前

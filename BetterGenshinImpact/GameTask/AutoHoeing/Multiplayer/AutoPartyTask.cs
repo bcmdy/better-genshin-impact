@@ -1106,6 +1106,58 @@ public class AutoPartyTask
     }
 
     /// <summary>
+    /// 房主退世界等待阶段（方向 B）：停留 F2 的单轮轻量检测。
+    /// 仅截图 + 数踢出按钮，不每轮回主界面/重开 F2（单轮成本 ~1s）。
+    /// 若发现意外掉出 F2（已回到主界面），调一次 OpenCoOpScreen 重开再截图（Open Question 3 方案 a）。
+    /// 返回仍在房主世界的其他成员数（0-4）；重开仍失败 / 截图异常返回 -1（本轮不可观测）。
+    /// 首轮调用时通常在主界面（编排层已回主界面建立起点），会触发一次 OpenCoOpScreen 打开 F2；
+    /// 之后各轮停留 F2 走截图热路径。
+    /// </summary>
+    public async Task<int> CountKickButtonsInF2Async(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            // 1) 截图判断当前是否仍在 F2（OpenCoOpScreen 用 !IsInMainUi 判定 F2 已打开，
+            //    故 IsInMainUi == true 视为已掉出 F2）。
+            using (var ra = CaptureToRectArea())
+            {
+                if (!Bv.IsInMainUi(ra))
+                {
+                    // 仍在 F2：直接数按钮（热路径，单轮 ~1s）
+                    var kick = CountKickButtons(ra);
+                    _logger.LogInformation("[自动组队-房主][提前退出] F2 踢出按钮={Kick}（仍在房主世界成员数）", kick);
+                    return kick;
+                }
+            }
+
+            // 2) 意外掉出 F2（已在主界面）：重开一次（方案 a，不回主界面，OpenCoOpScreen 内含 3 次重试 + 弹窗处理）
+            _logger.LogDebug("[自动组队-房主][提前退出] 当前不在 F2（已回主界面），尝试重开 F2");
+            if (!await OpenCoOpScreen(ct))
+            {
+                _logger.LogDebug("[自动组队-房主][提前退出] 重开 F2 失败，本轮记为不可观测");
+                return -1;
+            }
+
+            // 3) 重开后重新截图 + 计数
+            using var checkRa = CaptureToRectArea();
+            var kickCount = CountKickButtons(checkRa);
+            _logger.LogInformation("[自动组队-房主][提前退出] 重开 F2 后踢出按钮={Kick}（仍在房主世界成员数）", kickCount);
+            return kickCount;
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // 取消语义不吞（bugfix.md 3.3）
+        }
+        catch (Exception ex)
+        {
+            // 可恢复：截图/识别瞬时异常按"不可观测"处理，不中断轮询（task-execution-discipline.md §10）
+            _logger.LogWarning(ex, "[自动组队-房主][提前退出] 停留 F2 检测踢出按钮异常，本轮记为不可观测");
+            return -1;
+        }
+    }
+
+    /// <summary>
     /// 在点击 F2 上的"离开队伍"按钮 (1600,1020) 之后，处理可能出现的"退回世界确认"弹窗。
     /// 实现方式：250ms 节拍轮询 ConfirmBtnRo，分三阶段：
     ///   1) 第一段轮询（最多 5s）：找到第一弹窗 → 点击

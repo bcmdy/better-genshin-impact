@@ -88,6 +88,7 @@
       "action_params": "attack(0.3);伊涅芙 e;芙宁娜 e;玛薇卡 e;爱可菲 e; ;",
       "id": 8,
       "move_mode": "dash",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 1407.7,
       "y": 931.34

@@ -2027,7 +2027,21 @@ public class AutoHoeingTask : ISoloTask
             var waitMs = Math.Min(_config.PartyTimeoutSeconds / 10 * 1000, 15000);
             _logger.LogInformation("[多世界] 房主等待成员离开（最多 {T}s，踢出按钮归零即提前退出）后关闭房间", waitMs / 1000);
 
-            // 轮询提前退出：每轮回主界面→开 F2→数踢出按钮，连续 5 次为 0 即确认无残留成员，提前继续。
+            // 方向 B：进入等待前建立一次稳定起点（回主界面，关闭可能的菜单/弹窗），
+            // F2 在首轮 CountKickButtonsInF2Async 内打开一次，之后停留 F2 每轮仅截图+计数。
+            try
+            {
+                await new BetterGenshinImpact.GameTask.Common.Job.ReturnMainUiTask().Start(_ct);
+                await Task.Delay(500, _ct);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // 可恢复：建立起点失败按"首轮检测自动开 F2"处理，不中断退世界流程
+                _logger.LogWarning(ex, "[多世界] 进入等待阶段回主界面异常，首轮将自动打开 F2");
+            }
+
+            // 轮询提前退出：停留 F2 每轮截图→数踢出按钮，连续 3 次为 0 即确认无残留成员，提前继续。
             // 真实墙钟累计（含检测耗时），到 waitMs 兜底强制继续。间隔固定 1000ms。
             long fallbackMs = waitMs;
             var swStart = Environment.TickCount;
@@ -2036,9 +2050,9 @@ public class AutoHoeingTask : ISoloTask
             {
                 _ct.ThrowIfCancellationRequested();
                 long elapsed = Environment.TickCount - swStart;
-                int kickCount = await autoParty.CountMembersRemainingInHostWorldAsync(_ct);
+                int kickCount = await autoParty.CountKickButtonsInF2Async(_ct);
                 consecutiveZero = HostLeaveEarlyExitDecisions.NextConsecutiveZero(consecutiveZero, kickCount);
-                var leaveDecision = HostLeaveEarlyExitDecisions.Decide(kickCount, consecutiveZero, elapsed, fallbackMs, 5);
+                var leaveDecision = HostLeaveEarlyExitDecisions.Decide(kickCount, consecutiveZero, elapsed, fallbackMs, 3);
                 if (leaveDecision == HostLeaveWaitDecision.EarlyExit)
                 {
                     _logger.LogInformation("[多世界] 房主检测到成员已全部离开（连续 {N} 次 0 踢出按钮），提前退出等待", consecutiveZero);

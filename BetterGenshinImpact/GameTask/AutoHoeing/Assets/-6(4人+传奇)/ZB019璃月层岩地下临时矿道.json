@@ -11,7 +11,7 @@
     "description": "  路线信息：该路线预计用时77秒，包含以下怪物：1只黯色空壳·近卫、1只岩龙蜥。",
     "enable_monster_loot_split": false,
     "hash_res": "87243908",
-    "last_modified_time": 1779906418827,
+    "last_modified_time": 1780419807596,
     "map_match_method": "",
     "map_name": "TheChasm",
     "name": "ZB019璃月层岩地下临时矿道",
@@ -93,8 +93,8 @@
       "y": 1058.7648
     },
     {
-      "action": "",
-      "action_params": "",
+      "action": "combat_script",
+      "action_params": ";茜特菈莉 e,wait(0.1),e;莱依拉 e,wait(0.1),e;伊涅芙 e,wait(0.1),e;尼可 e,wait(0.1),e; ;",
       "id": 9,
       "move_mode": "run",
       "type": "path",

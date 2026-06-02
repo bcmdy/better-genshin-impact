@@ -2,15 +2,19 @@
   "info": {
     "authors": [
       {
-        "links": "汐",
+        "links": "",
         "name": "蜜柑魚"
+      },
+      {
+        "links": "",
+        "name": "汐"
       }
     ],
     "bgi_version": "0.45.0",
     "description": "  路线信息：该路线预计用时56秒，包含以下怪物：1只打手丘丘人、1只爆弹丘丘人、3只水萤。",
     "enable_monster_loot_split": false,
     "hash_res": "20271831",
-    "last_modified_time": 1780251949829,
+    "last_modified_time": 1780423181212,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "B016璃月碧水原华池岩岫东北",
@@ -57,7 +61,7 @@
     },
     {
       "action": "combat_script",
-      "action_params": "s(0.2),attack(0.3);菈乌玛 e(hold);e",
+      "action_params": "attack(0.3);菈乌玛 e(hold);e",
       "id": 5,
       "move_mode": "dash",
       "type": "path",
@@ -66,9 +70,10 @@
     },
     {
       "action": "combat_script",
-      "action_params": "attack(0.3);菈乌玛 e(hold);玛薇卡 e,wait(1);e;",
+      "action_params": "s(0.2),attack(0.3);菈乌玛 e(hold);e",
       "id": 6,
       "move_mode": "dash",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": 1245.7168,
       "y": 1391.4907

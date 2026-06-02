@@ -25,6 +25,7 @@
       "action_params": "",
       "id": 1,
       "move_mode": "walk",
+      "sync_point_id": "fight_1",
       "type": "teleport",
       "x": -2595.99,
       "y": -6697.75

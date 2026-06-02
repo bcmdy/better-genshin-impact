@@ -88,7 +88,7 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
             UseMask = true,
             MaskColor = Color.FromArgb(0, 255, 0),
             DrawOnWindow = true,
-            Threshold = 0.8
+            Threshold = 0.9
         }.InitTemplate();
 
         MapCloseButtonRo = new RecognitionObject
@@ -153,7 +153,7 @@ public class QuickTeleportAssets : BaseAssets<QuickTeleportAssets>
             DrawOnWindow = true,
             UseMask = true,
             MaskColor = Color.FromArgb(0, 255, 0),
-            Threshold = 0.8
+            Threshold = 0.98
         }.InitTemplate();
         MapUndergroundToGroundButtonRo = new RecognitionObject
         {

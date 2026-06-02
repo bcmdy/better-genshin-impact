@@ -14,7 +14,7 @@
     "description": "  路线信息：该路线预计用时312秒，包含以下怪物：1只水史莱姆、1只大型水史莱姆、1只铸砂勇士·叩问人、1只铸砂勇士·碎盾者、1只铸砂勇士·投矛手、3只疾讯勇士·引索客、1只疾讯勇士·荡风斥候、1只疾讯勇士·重刃讯使、1只嵴锋龙武士·碎晶打者、1只匿叶龙武士·旋锯飞叶、4只幼嵴锋龙、6只嵴锋龙、1只幼匿叶龙、5只匿叶龙。",
     "enable_monster_loot_split": false,
     "hash_res": "20919146",
-    "last_modified_time": 1780081048620,
+    "last_modified_time": 1780340476722,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "F019纳塔万火之瓯竞技场-5",
@@ -126,7 +126,7 @@
       "action": "",
       "action_params": "",
       "id": 12,
-      "move_mode": "walk",
+      "move_mode": "dash",
       "type": "path",
       "x": 9020.9658,
       "y": -1585.9375

@@ -468,10 +468,41 @@ public sealed class KazuhaCollectSyncCoordinator : IDisposable
                     try
                     {
                         using var ra = TaskControl.CaptureToRectArea();
+
+                        // kazuha-collect-fightpoint-position-misrecognition-fix 方案 A（首帧播种）：
+                        // 读坐标算聚物点之前，用战斗点坐标播种 Navigation 单例锚点，避免沿用上一段远处残留 prev 锚错（BC3）。
+                        // 仅 SetPrevPosition 覆写 prev，绝不调用 Navigation.Reset()。
+                        var seed = KazuhaCollectPositionGuardDecisions.ComputeSeedAnchor(fightPointWaypoint.X, fightPointWaypoint.Y);
+                        Navigation.SetPrevPosition((float)seed.X, (float)seed.Y);
+
                         var pos = Navigation.GetPosition(ra, fightPointWaypoint.MapName, fightPointWaypoint.MapMatchMethod);
+
+                        // 方案 B（读取侧距离护栏）：识别结果距种子锚点（战斗点）超阈值 → 不可信。
+                        // B-1：先强制全局重匹配一次（SetPrevPosition(0,0) 让 GetPosition 走全局匹配路径，不调 Reset）。
+                        if (pos.X != 0 && pos.Y != 0
+                            && !KazuhaCollectPositionGuardDecisions.IsRecognizedPositionTrustworthy(
+                                   pos, seed.X, seed.Y, KazuhaCollectPositionGuardDecisions.RecognizedPositionGuardThreshold))
+                        {
+                            _logger.LogWarning(
+                                "[联机][聚物] 聚物点上报：识别结果 ({X:F1},{Y:F1}) 距战斗点 ({SX:F1},{SY:F1}) 超阈值 {Th}，B-1 强制全局重匹配一次",
+                                pos.X, pos.Y, seed.X, seed.Y, KazuhaCollectPositionGuardDecisions.RecognizedPositionGuardThreshold);
+                            Navigation.SetPrevPosition(0, 0); // 置无效锚点 → 下次 GetPosition 走全局匹配（不调 Reset，副作用最小）
+                            pos = Navigation.GetPosition(ra, fightPointWaypoint.MapName, fightPointWaypoint.MapMatchMethod);
+                        }
+
                         if (pos.X == 0 && pos.Y == 0)
                         {
                             _logger.LogDebug("[联机][聚物] 聚物点上报：位置识别失败 (0,0)，调无效坐标分支");
+                            cx = double.NaN; cy = double.NaN;
+                        }
+                        else if (!KazuhaCollectPositionGuardDecisions.IsRecognizedPositionTrustworthy(
+                                     pos, seed.X, seed.Y, KazuhaCollectPositionGuardDecisions.RecognizedPositionGuardThreshold))
+                        {
+                            // B-2：全局重匹配后仍超阈值 → 判失败，置无效坐标，复用既有 IsValid 三层过滤（不广播错误聚物点）。
+                            // 让所有 peer 退回原 MoveCloseTo(战斗点) 单段路径（上层兜底），绝不广播错误聚物点。
+                            _logger.LogWarning(
+                                "[联机][聚物] 聚物点上报：B-1 全局重匹配后 ({X:F1},{Y:F1}) 仍距战斗点超阈值，B-2 判失败（不广播聚物点）",
+                                pos.X, pos.Y);
                             cx = double.NaN; cy = double.NaN;
                         }
                         else
