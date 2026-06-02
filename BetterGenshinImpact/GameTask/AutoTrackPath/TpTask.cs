@@ -643,7 +643,6 @@ public class TpTask
         // 尝试打开地图失败后，先回到主界面后再次尝试打开地图
         if (!await TryToOpenBigMapUi())
         {
-            Logger.LogWarning("8056");
             await new ReturnMainUiTask().Start(ct);
             await Delay(500, ct);
             if (!await TryToOpenBigMapUi())
@@ -665,12 +664,10 @@ public class TpTask
         var ra1 = CaptureToRectArea();
         if (Bv.IsInBigMapUi(ra1))
         {
-            Logger.LogWarning("0-87095");
             return true;
         }
 
         Simulation.SendInput.SimulateAction(GIActions.OpenMap);
-        Logger.LogWarning("0-73256");
 
         // 加速识别模式：轮询等大地图 UI 出现，兜底 2500ms（≈旧逻辑 1000+500*3 上限）
         // fast-drag-recognition-acceleration spec / step 1 boot delay optimization
@@ -686,16 +683,14 @@ public class TpTask
             ra1 = CaptureToRectArea();
             if (!Bv.IsInBigMapUi(ra1))
             {
-                Logger.LogWarning("956789");
                 await Delay(50, ct);
             }
             else
             {
-                Logger.LogWarning("63786");
                 return true;
             }
         }
-        Logger.LogWarning("0-696");
+       
         return false;
     }
 
@@ -777,6 +772,10 @@ public class TpTask
                 await Delay(300, ct);
                 // throw; // 不抛出异常，继续重试
                 TaskControl.Logger.LogWarning(e.Message + "  重试");
+                // 联机锄地：传送失败重试视为"仍在合法传送中"，刷新 WorldStateMonitor 抑制计时窗口，
+                // 避免长传送被墙钟超时误判被踢出。单机 CurrentWorldStateMonitor==null → no-op。
+                // 详见 .kiro/specs/world-state-monitor-teleport-suppression-premature-expiry-fix/design.md 改动 5。
+                PathExecutor.CurrentWorldStateMonitor?.RefreshTeleportSuppression();
             }
             catch (Exception e) when (e is NormalEndException || e is TaskCanceledException)
             {
@@ -790,6 +789,8 @@ public class TpTask
                 //回到主界面，重置状态
                 await new ReturnMainUiTask().Start(ct);
                 await Delay(1000, ct);
+                // 联机锄地：传送失败重试视为"仍在合法传送中"，刷新抑制计时窗口（同上）。
+                PathExecutor.CurrentWorldStateMonitor?.RefreshTeleportSuppression();
             }
         }
 

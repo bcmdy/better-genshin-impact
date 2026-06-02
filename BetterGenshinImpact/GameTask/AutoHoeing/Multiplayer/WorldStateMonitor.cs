@@ -35,7 +35,7 @@ public class WorldStateMonitor : IAsyncDisposable
     // === 传送抑制（需求 4）===
     private volatile bool _isTeleportSuppressed;
     private DateTime _teleportSuppressionStart;
-    private const int TeleportSuppressionTimeoutSeconds = 15;
+    private const int TeleportSuppressionTimeoutSeconds = 40;
 
     // === 恢复窗口（需求 3）===
     private bool _isInRecoveryWindow;
@@ -130,6 +130,19 @@ public class WorldStateMonitor : IAsyncDisposable
     {
         _isTeleportSuppressed = false;
         _logger.LogDebug("[WorldStateMonitor] 传送抑制期结束");
+    }
+
+    /// <summary>
+    /// 传送失败重试时调用：仅当仍处于抑制期时，刷新抑制起始时刻（重置墙钟超时窗口）。
+    /// 由 TpTask.Tp 的重试 catch 分支经 PathExecutor.CurrentWorldStateMonitor?. 调用。
+    /// 非抑制态调用为 no-op（不创建新抑制态、不动任何计数）。单机模式 CurrentWorldStateMonitor==null
+    /// 时为 null-conditional no-op，零感知。详见 design.md §Correctness Properties Property 3/4。
+    /// </summary>
+    public void RefreshTeleportSuppression()
+    {
+        if (!_isTeleportSuppressed) return;
+        _teleportSuppressionStart = DateTime.UtcNow;
+        _logger.LogDebug("[WorldStateMonitor] 传送失败重试，刷新传送抑制计时");
     }
 
     /// <summary>多世界轮次切换开始，暂停所有检测。</summary>
@@ -241,6 +254,7 @@ public class WorldStateMonitor : IAsyncDisposable
         {
             _isTeleportSuppressed = false;
             teleportSuppressed = false;
+            _connectedButNotInGame = 0; // 墙钟兜底解除后，累计从 0 干净起算，不携带传送前陈旧计数（OQ-2）
             _logger.LogWarning("[WorldStateMonitor] 传送抑制期超过 {Timeout}s 未解除，自动解除",
                 TeleportSuppressionTimeoutSeconds);
         }
