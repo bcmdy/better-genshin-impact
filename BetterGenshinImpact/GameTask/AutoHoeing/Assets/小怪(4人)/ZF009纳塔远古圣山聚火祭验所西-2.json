@@ -9,7 +9,7 @@
     "bgi_version": "0.45.0",
     "description": "  路线信息：该路线预计用时53秒，包含以下怪物：1只幼突角龙、4只突角龙。",
     "enable_monster_loot_split": false,
-    "last_modified_time": 1780080010043,
+    "last_modified_time": 1780424984336,
     "map_match_method": "",
     "map_name": "AncientSacredMountain",
     "name": "ZF009纳塔远古圣山聚火祭验所西-2",
@@ -42,8 +42,8 @@
       "id": 3,
       "move_mode": "dash",
       "type": "path",
-      "x": -146.7109,
-      "y": -267.0469
+      "x": -144.75,
+      "y": -263.1259
     }
   ]
 }

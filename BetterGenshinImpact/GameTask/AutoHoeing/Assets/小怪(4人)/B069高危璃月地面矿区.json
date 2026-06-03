@@ -15,7 +15,7 @@
     "description": "  路线信息：该路线预计用时97秒，包含以下怪物：2只盗宝团·斥候、3只盗宝团·火之药剂师、1只盗宝团·水之药剂师、1只盗宝团·雷之药剂师、2只盗宝团·海上男儿、1只盗宝团·拳术家、3只盗宝团·粉碎者、3只炽热骗骗花。",
     "enable_monster_loot_split": false,
     "hash_res": "91331392",
-    "last_modified_time": 1780080575553,
+    "last_modified_time": 1780340336278,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "B069高危璃月地面矿区",
@@ -83,6 +83,7 @@
       "action_params": "keypress(F),wait(0.05),keypress(F),dash",
       "id": 7,
       "move_mode": "swim",
+      "sync_point_id": "fight_1",
       "type": "target",
       "x": 1639.87,
       "y": -675.74
@@ -111,8 +112,8 @@
       "id": 10,
       "move_mode": "dash",
       "type": "path",
-      "x": 1613.2354,
-      "y": -741.3081
+      "x": 1615.7266,
+      "y": -741.9764
     }
   ]
 }

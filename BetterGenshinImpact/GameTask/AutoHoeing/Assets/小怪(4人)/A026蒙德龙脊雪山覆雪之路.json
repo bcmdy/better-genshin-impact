@@ -14,7 +14,7 @@
     "description": "  路线信息：该路线预计用时55秒，包含以下怪物：2只冰萤。",
     "enable_monster_loot_split": false,
     "hash_res": "69915241",
-    "last_modified_time": 1779859074882,
+    "last_modified_time": 1780422894663,
     "map_match_method": "",
     "map_name": "Teyvat",
     "name": "A026蒙德龙脊雪山覆雪之路",
@@ -72,9 +72,10 @@
     },
     {
       "action": "combat_script",
-      "action_params": "s(0.2),attack(0.3);菈乌玛 e(hold);e,attack(0.7)",
+      "action_params": "s(0.2),attack(0.3);菈乌玛 e(hold);e",
       "id": 6,
       "move_mode": "dash",
+      "sync_point_id": "fight_1",
       "type": "path",
       "x": -1028.0554,
       "y": 1480.1949
@@ -85,8 +86,8 @@
       "id": 7,
       "move_mode": "dash",
       "type": "path",
-      "x": -1024.2725,
-      "y": 1481.4837
+      "x": -1025.2187,
+      "y": 1481.2266
     }
   ]
 }
