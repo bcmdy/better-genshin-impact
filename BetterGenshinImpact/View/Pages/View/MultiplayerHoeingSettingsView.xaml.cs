@@ -1,0 +1,674 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using BetterGenshinImpact.Core.Config;
+using BetterGenshinImpact.Core.Script.Group;
+using BetterGenshinImpact.GameTask;
+using BetterGenshinImpact.GameTask.AutoHoeing;
+using BetterGenshinImpact.GameTask.AutoHoeing.Services;
+using BetterGenshinImpact.ViewModel.Pages.View;
+using Microsoft.Extensions.Logging;
+using Wpf.Ui.Violeta.Controls;
+using BetterGenshinImpact.View.Windows;
+using Button = Wpf.Ui.Controls.Button;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
+using TextBlock = Wpf.Ui.Controls.TextBlock;
+using TextBox = Wpf.Ui.Controls.TextBox;
+
+namespace BetterGenshinImpact.View.Pages.View;
+
+/// <summary>
+/// 联机锄地配置弹窗的 UserControl（multiplayer-hoeing-dialog-xaml-refactor）。
+/// 静态卡片结构 + 标量控件由 XAML 承载并双向绑定 VM；本 code-behind 负责三块无法纯 MVVM 化的动态 UI：
+/// ① 单机区（SoloPanelHost）② 内置线路按钮组（BuiltinRouteHost）③ 变体偏好面板（VariantPanelHost），
+/// 逻辑整体迁自原 ScriptControlViewModel.ShowHoeingSettingsDialog，保存出口收敛到 Save()。
+/// </summary>
+public partial class MultiplayerHoeingSettingsView : UserControl
+{
+    private readonly ScriptGroupProject _item;
+    private readonly Dictionary<string, object?> _settings;
+    private readonly AutoHoeingConfig _globalCfg;
+
+    private readonly List<SoloTaskSettingItem> _settingItems;
+    private readonly Dictionary<string, FrameworkElement> _soloControls = new();
+
+    // 当前对话框会话内的变体偏好编辑缓冲（基名 → 变体文件夹名）。保存时写入 settings。
+    private readonly Dictionary<string, string> _variantPrefBuffer = new(StringComparer.Ordinal);
+    private Action? _refreshVariantPanel;
+
+    // 内置线路按钮组动态容器（迁现状 builtinRouteContainer / importRow / buttonPanel）
+    private System.Windows.Controls.StackPanel? _builtinRouteContainer;
+    private System.Windows.Controls.StackPanel? _importRow;
+    private System.Windows.Controls.WrapPanel? _builtinButtonPanel;
+
+    private readonly RouteDirectoryScanner _routeScanner = new();
+    private readonly ILogger<MultiplayerHoeingSettingsView> _logger = App.GetLogger<MultiplayerHoeingSettingsView>();
+
+    public MultiplayerHoeingSettingsViewModel ViewModel { get; }
+
+    public MultiplayerHoeingSettingsView(ScriptGroupProject item, MultiplayerHoeingSettingsViewModel viewModel)
+    {
+        _item = item;
+        _settings = item.SoloTaskSettingsObject!;
+        _globalCfg = TaskContext.Instance().Config.AutoHoeingConfig;
+        DataContext = ViewModel = viewModel;
+        InitializeComponent();   // 占位 ContentControl 此后才就绪
+
+        _settingItems = SoloTaskRegistry.GetSettingItems(item.Name);
+        BuildSoloPanel();          // 填充 SoloPanelHost（迁现状 soloPanel 构建）
+        InitVariantPrefBuffer();   // 迁现状 variantPrefBuffer 预填
+        BuildBuiltinRouteHost();   // 迁 RebuildBuiltinButtons + import/openDir 事件
+        HookVariantPanel();        // VariantExpander.Expanded += BuildVariantPanelContent; _refreshVariantPanel = ...
+        HookFightStrategyButton(); // "打开联机战斗策略文件" → MultiplayerFightStrategyFileHelper.OpenForEdit()
+        HookDocButtons();          // 变体卡 Header 的"使用教程"/"制作规则" → OpenDoc
+
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;   // 衔接 UpdateButtonStates
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // 等价现状 routeModeCombo.SelectionChanged + fixedRoutePathBox.TextChanged → UpdateButtonStates
+        if (e.PropertyName is nameof(ViewModel.BuiltinButtonsEnabled)
+            or nameof(ViewModel.RouteModeSelection) or nameof(ViewModel.FixedDebugRoutePath))
+        {
+            UpdateButtonStates();
+        }
+    }
+
+    private string GetStr(string key, string fallback) =>
+        _settings.TryGetValue(key, out var v) ? v?.ToString() ?? fallback : fallback;
+
+    // ===== 单机区构建（迁现状 soloPanel 构建循环；仅换承载容器，构建逻辑零改动）=====
+    private void BuildSoloPanel()
+    {
+        var soloPanel = new System.Windows.Controls.StackPanel();
+        foreach (var setting in _settingItems)
+        {
+            soloPanel.Children.Add(new TextBlock { Text = setting.Label, Margin = new Thickness(0, 8, 0, 2), FontSize = 13 });
+            object? currentValue = _settings.TryGetValue(setting.Name, out var ov) ? ov : setting.DefaultValue;
+            if (setting.Type == "select" && setting.Options != null)
+            {
+                var combo = new System.Windows.Controls.ComboBox
+                {
+                    ItemsSource = setting.Options,
+                    SelectedItem = currentValue?.ToString() ?? "",
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                soloPanel.Children.Add(combo);
+                _soloControls[setting.Name] = combo;
+            }
+            else if (setting.Type == "bool")
+            {
+                var check = new System.Windows.Controls.CheckBox
+                {
+                    IsChecked = currentValue is true or "True" or "true",
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                soloPanel.Children.Add(check);
+                _soloControls[setting.Name] = check;
+            }
+            else
+            {
+                var tb = new TextBox { Text = currentValue?.ToString() ?? "", Margin = new Thickness(0, 0, 0, 4) };
+                soloPanel.Children.Add(tb);
+                _soloControls[setting.Name] = tb;
+            }
+        }
+        SoloPanelHost.Content = soloPanel;
+    }
+
+    // ===== 变体偏好缓冲预填（迁现状）：先全局 gcfg.VariantPreferences，再用 settings 覆盖 =====
+    private void InitVariantPrefBuffer()
+    {
+        var gcfg = TaskContext.Instance().Config.AutoHoeingConfig;
+        if (gcfg.VariantPreferences != null)
+        {
+            foreach (var (k, v) in gcfg.VariantPreferences)
+            {
+                if (!string.IsNullOrEmpty(k) && !string.IsNullOrEmpty(v)) _variantPrefBuffer[k] = v;
+            }
+        }
+        if (_settings.TryGetValue("variantPreferences", out var existRaw) && existRaw != null)
+        {
+            try
+            {
+                if (existRaw is System.Text.Json.JsonElement je && je.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    foreach (var p in je.EnumerateObject())
+                    {
+                        if (p.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                        {
+                            var v = p.Value.GetString();
+                            if (!string.IsNullOrEmpty(p.Name) && !string.IsNullOrEmpty(v)) _variantPrefBuffer[p.Name] = v!;
+                        }
+                    }
+                }
+                else if (existRaw is Dictionary<string, string> sd)
+                {
+                    foreach (var (k, v) in sd)
+                    {
+                        if (!string.IsNullOrEmpty(k) && !string.IsNullOrEmpty(v)) _variantPrefBuffer[k] = v;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 已存偏好解析失败不应阻断弹窗，仅用全局值预填（可恢复异常）
+                _logger.LogWarning(ex, "[变体偏好] 读取配置组已存偏好失败，仅用全局值预填");
+            }
+        }
+    }
+
+    // ===== 内置线路按钮组（迁 RebuildBuiltinButtons + importRow + import/openDir 事件）=====
+    private void BuildBuiltinRouteHost()
+    {
+        _builtinRouteContainer = new System.Windows.Controls.StackPanel();
+
+        var importFolderBtn = new System.Windows.Controls.Button
+        {
+            Content = "从本地文件夹导入线路",
+            Margin = new Thickness(0, 8, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+
+        var openAssetsDirBtn = new System.Windows.Controls.Button
+        {
+            Content = "打开内置线路目录",
+            Margin = new Thickness(8, 8, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        openAssetsDirBtn.Click += (s, e) =>
+        {
+            try
+            {
+                var assetsDir = System.IO.Path.Combine(Global.Absolute("GameTask"), "AutoHoeing", "Assets");
+                System.IO.Directory.CreateDirectory(assetsDir);   // 目录不存在时创建（不删除任何内容）
+                Process.Start(new ProcessStartInfo(assetsDir) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                // 打开目录失败不应让弹窗崩溃；记录并提示
+                _logger.LogWarning(ex, "[内置线路] 打开内置线路目录失败");
+                Toast.Warning("打开内置线路目录失败，请查看日志");
+            }
+        };
+
+        _importRow = new System.Windows.Controls.StackPanel
+        {
+            Orientation = System.Windows.Controls.Orientation.Horizontal
+        };
+        _importRow.Children.Add(importFolderBtn);
+        _importRow.Children.Add(openAssetsDirBtn);
+
+        importFolderBtn.Click += OnImportFolderClick;
+
+        BuiltinRouteHost.Content = _builtinRouteContainer;
+        RebuildBuiltinButtons();   // 首次构建
+    }
+
+    // import-local-route-folder C2: 可重入构建函数，每次清空容器并按最新扫描结果重建
+    private void RebuildBuiltinButtons()
+    {
+        if (_builtinRouteContainer == null || _importRow == null) return;
+        _builtinRouteContainer.Children.Clear();
+        _builtinRouteContainer.Children.Add(_importRow);   // 导入按钮 + 打开目录按钮恒在顶部
+        _builtinButtonPanel = null;
+
+        var builtinFolders = _routeScanner.ScanBuiltinRoutes();   // 每次重扫
+        if (builtinFolders.Count > 0)
+        {
+            _builtinRouteContainer.Children.Add(new TextBlock
+            {
+                Text = "内置线路快速选择",
+                FontSize = 12,
+                Foreground = SystemColors.GrayTextBrush,
+                Margin = new Thickness(0, 8, 0, 4)
+            });
+
+            var buttonPanel = new System.Windows.Controls.WrapPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+            _builtinButtonPanel = buttonPanel;
+            var selectedRoute = GetStr("selectedBuiltinRoute", _globalCfg.SelectedBuiltinRoute);
+
+            foreach (var folder in builtinFolders)
+            {
+                var btn = new System.Windows.Controls.Button
+                {
+                    Content = folder.FolderName,
+                    Margin = new Thickness(0, 0, 8, 8),
+                    Tag = folder.FolderName
+                };
+
+                // 设置按钮样式 - 使用基本的 WPF 样式而不是 WPF UI 的 Appearance
+                if (folder.FolderName == selectedRoute)
+                {
+                    btn.Background = SystemColors.HighlightBrush;
+                    btn.Foreground = SystemColors.HighlightTextBrush;
+                }
+                else
+                {
+                    btn.Background = SystemColors.ControlBrush;
+                    btn.Foreground = SystemColors.ControlTextBrush;
+                }
+
+                btn.Click += (s, e) =>
+                {
+                    // 更新所有按钮样式
+                    foreach (var child in buttonPanel.Children.OfType<System.Windows.Controls.Button>())
+                    {
+                        child.Background = SystemColors.ControlBrush;
+                        child.Foreground = SystemColors.ControlTextBrush;
+                    }
+                    btn.Background = SystemColors.HighlightBrush;
+                    btn.Foreground = SystemColors.HighlightTextBrush;
+                    _settings["selectedBuiltinRoute"] = btn.Tag.ToString();
+                };
+
+                buttonPanel.Children.Add(btn);
+            }
+
+            _builtinRouteContainer.Children.Add(buttonPanel);
+
+            _builtinRouteContainer.Children.Add(new TextBlock
+            {
+                Text = "手动输入路径优先级高于按钮选择",
+                FontSize = 11,
+                Foreground = SystemColors.GrayTextBrush,
+                Margin = new Thickness(0, 4, 0, 0)
+            });
+
+            // 初始化状态（可见性由 XAML BuiltinRouteHost 绑定 ShowManualRoute 控制，本方法只管启用/高亮）
+            UpdateButtonStates();
+        }
+    }
+
+    // 等价现状 UpdateButtonStates：内置按钮启用/高亮（读 ViewModel.IsBuiltinOnlineMode + FixedDebugRoutePath）
+    private void UpdateButtonStates()
+    {
+        if (_builtinButtonPanel == null) return;
+        var useFixedRoutes = RouteModeDecisions.IsBuiltinOnline(ViewModel.RouteModeSelection);
+        var hasManualPath = !string.IsNullOrWhiteSpace(ViewModel.FixedDebugRoutePath);
+        var buttonsEnabled = useFixedRoutes && !hasManualPath;
+
+        // 可见性统一由 XAML 绑定 ShowManualRoute 控制，本方法只管按钮启用/高亮
+        foreach (var btn in _builtinButtonPanel.Children.OfType<System.Windows.Controls.Button>())
+        {
+            btn.IsEnabled = buttonsEnabled;
+        }
+
+        // 如果不满足条件，清除选择状态
+        if (!buttonsEnabled)
+        {
+            foreach (var btn in _builtinButtonPanel.Children.OfType<System.Windows.Controls.Button>())
+            {
+                btn.Background = SystemColors.ControlBrush;
+                btn.Foreground = SystemColors.ControlTextBrush;
+            }
+        }
+    }
+
+    // import-local-route-folder C3: 导入按钮点击 = 弹文件夹选择 → 校验 → 重名确认 → 拷贝 → 选中 → 重建 → 刷新变体 → Toast
+    private void OnImportFolderClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var picker = new Ookii.Dialogs.Wpf.VistaFolderBrowserDialog
+            {
+                Description = "选择要导入的本地线路文件夹",
+                UseDescriptionForTitle = true
+            };
+            if (picker.ShowDialog() != true) return;   // 取消 = no-op（Req 2.2）
+            var sourcePath = picker.SelectedPath;
+            if (string.IsNullOrWhiteSpace(sourcePath)) return;
+
+            // 校验 Valid_Route_Folder（Req 3.1 / 3.2 / 6.1）
+            if (!LocalRouteFolderImporter.IsValidRouteFolder(sourcePath))
+            {
+                Toast.Warning("所选文件夹不含线路文件（*.json）");
+                return;
+            }
+
+            var assetsDir = System.IO.Path.Combine(Global.Absolute("GameTask"), "AutoHoeing", "Assets");
+            var targetName = LocalRouteFolderImporter.ResolveTargetName(sourcePath);
+            if (string.IsNullOrWhiteSpace(targetName))
+            {
+                Toast.Warning("无法解析所选文件夹名称");
+                return;
+            }
+            var targetPath = System.IO.Path.Combine(assetsDir, targetName);
+
+            // 源已在 Assets 内 → 跳过拷贝直接选中（Req 3.5）
+            bool copied = false;
+            if (!LocalRouteFolderImporter.IsInsideAssets(sourcePath, assetsDir))
+            {
+                // 重名确认（OQ-2 / Req 4.1）
+                if (LocalRouteFolderImporter.NeedsOverwriteConfirm(System.IO.Directory.Exists(targetPath)))
+                {
+                    var r = ThemedMessageBox.Question(
+                        $"内置线路目录已存在同名文件夹「{targetName}」。\n是否覆盖其中的同名文件？（不会删除目标目录的其他文件）",
+                        "导入线路 - 重名确认",
+                        MessageBoxButton.YesNo,
+                        System.Windows.MessageBoxResult.No);
+                    if (r != System.Windows.MessageBoxResult.Yes) return;   // 否/取消 = 终止，不拷贝不改选中（Req 4 / 6.4）
+                }
+
+                try
+                {
+                    LocalRouteFolderImporter.CopyDirectoryRecursive(sourcePath, targetPath, overwrite: true);
+                    copied = true;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    // 无权限写入：记录并提示，不崩溃、不改选中（Req 6.3 / 6.4）
+                    _logger.LogWarning(ex, "[导入线路] 无权限拷贝到内置线路目录: {Target}", targetPath);
+                    Toast.Error("导入失败：无权限写入内置线路目录");
+                    return;
+                }
+                catch (IOException ex)
+                {
+                    // 拷贝 IO 错误：记录并提示，不崩溃、不改选中（Req 6.2 / 6.4）
+                    _logger.LogWarning(ex, "[导入线路] 拷贝发生 IO 错误: {Target}", targetPath);
+                    Toast.Error("导入失败：拷贝文件时发生 IO 错误");
+                    return;
+                }
+            }
+
+            // 成功：写选中 → 重建按钮组（高亮新文件夹）（Req 5.1/5.2/5.3）
+            _settings["selectedBuiltinRoute"] = targetName;
+            RebuildBuiltinButtons();
+
+            // 刷新变体偏好面板（仅当已展开，OQ-5）
+            _refreshVariantPanel?.Invoke();
+
+            // 成功提示 + 联机一致性前提 A2（Req 7.1 / 7.2）
+            Toast.Success(copied ? $"已导入线路「{targetName}」并设为当前内置线路" : $"已选中内置线路「{targetName}」");
+            Toast.Information("提示：联机仅同步文件夹名并做 MD5 校验，不传输线路文件。请确保每位成员各自拥有同名、同内容的线路文件夹。", time: 6000);
+        }
+        catch (Exception ex)
+        {
+            // 兜底：任何未预期异常都不应让弹窗崩溃（Req 6.2/6.3/6.4）
+            _logger.LogWarning(ex, "[导入线路] 导入流程发生未预期异常");
+            Toast.Error("导入失败，请查看日志");
+        }
+    }
+
+    // ===== 战斗策略 / 文档按钮挂接 =====
+    private void HookFightStrategyButton()
+    {
+        OpenFightStrategyButton.Click += (_, _) =>
+            BetterGenshinImpact.GameTask.AutoFight.MultiplayerFightStrategyFileHelper.OpenForEdit();
+    }
+
+    private void HookDocButtons()
+    {
+        VariantTutorialButton.Click += (s, e) => { e.Handled = true; OpenDoc("联机锄地使用教程.md"); };
+        VariantRulesButton.Click += (s, e) => { e.Handled = true; OpenDoc("联机锄地变体线路制作规则.md"); };
+    }
+
+    // 打开输出根目录下的某个 md 说明文档
+    private void OpenDoc(string fileName)
+    {
+        try
+        {
+            var docPath = System.IO.Path.Combine(AppContext.BaseDirectory, fileName);
+            if (System.IO.File.Exists(docPath))
+            {
+                Process.Start(new ProcessStartInfo(docPath) { UseShellExecute = true });
+            }
+            else
+            {
+                Toast.Warning($"未找到《{fileName}》，请重新编译以生成该文件");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[变体偏好] 打开说明文档失败: {File}", fileName);
+            Toast.Warning("打开说明文档失败，请查看日志");
+        }
+    }
+
+    // ===== 变体偏好面板（迁现状 BuildVariantPanelContent / refreshVariantPanel）=====
+    private void HookVariantPanel()
+    {
+        VariantExpander.Expanded += (_, _) => BuildVariantPanelContent();
+        // C7: 供导入成功后复用（OQ-5）。IsExpanded 守卫在委托内，避免前向引用。
+        _refreshVariantPanel = () => { if (VariantExpander.IsExpanded) BuildVariantPanelContent(); };
+    }
+
+    // import-local-route-folder C7: 幂等，每次 forceRefresh 重扫
+    private void BuildVariantPanelContent()
+    {
+        try
+        {
+            var globalCfg = TaskContext.Instance().Config.AutoHoeingConfig;
+            var dirs = BetterGenshinImpact.GameTask.AutoHoeing.AutoHoeingTask
+                .ResolveAllHoeingRouteDirs(globalCfg);
+            // 按"总文件夹"分组：每个总文件夹 → 其下存在的变体子文件夹集合（A→B→C→D）
+            var topFolders = BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.RouteVariantScanner
+                .ScanTopFolders(dirs, forceRefresh: true);
+
+            if (topFolders.Count == 0)
+            {
+                VariantPanelHost.Content = new TextBlock
+                {
+                    Text = "未发现变体线路。请在总线路文件夹下建 A变体/B变体/C变体/D变体 子文件夹并放入对应 _a/_b 后缀的 JSON。",
+                    Margin = new Thickness(8),
+                    Foreground = SystemColors.GrayTextBrush,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                return;
+            }
+
+            var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(8) };
+            foreach (var kv in topFolders.OrderBy(k => k.Key, StringComparer.Ordinal))
+            {
+                var topName = kv.Key;
+                var availableFolders = kv.Value;   // 已按 A→B→C→D 排序
+                if (availableFolders.Count == 0) continue;
+
+                var rowGrid = new System.Windows.Controls.Grid { Margin = new Thickness(0, 0, 0, 6) };
+                // 左列放线路名（自适应，给个最小宽），右列按钮占满剩余空间（避免说明文字被截断）
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 90 });
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                var label = new TextBlock
+                {
+                    Text = topName,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 12, 0),
+                    TextWrapping = TextWrapping.Wrap
+                };
+                System.Windows.Controls.Grid.SetColumn(label, 0);
+                rowGrid.Children.Add(label);
+
+                // 默认代表（A→B→C→D 第一个存在）
+                var repFolder = availableFolders[0];
+
+                // 预读各变体说明（变体说明.txt），用于弹窗 + 按钮展示（R15.11）
+                var folderDescs = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var vf in availableFolders)
+                {
+                    var desc = BetterGenshinImpact.GameTask.AutoHoeing.Multiplayer.RouteVariantScanner
+                        .ReadVariantDescription(dirs, topName, vf);
+                    folderDescs[vf] = desc;
+                }
+                string DescSuffix(string vf)
+                    => folderDescs.TryGetValue(vf, out var d) && !string.IsNullOrEmpty(d) ? $"（{d}）" : "";
+
+                string CurrentLabel()
+                {
+                    if (_variantPrefBuffer.TryGetValue(topName, out var f) && !string.IsNullOrEmpty(f))
+                        return $"当前：{f}{DescSuffix(f)}";
+                    return $"跟随默认（{repFolder}{DescSuffix(repFolder)}）";
+                }
+
+                var pickBtn = new Button
+                {
+                    Content = CurrentLabel(),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Left,
+                };
+                System.Windows.Controls.Grid.SetColumn(pickBtn, 1);
+                rowGrid.Children.Add(pickBtn);
+
+                pickBtn.Click += async (_, _) =>
+                {
+                    try
+                    {
+                        var optionPanel = new System.Windows.Controls.StackPanel { Margin = new Thickness(8) };
+                        optionPanel.Children.Add(new TextBlock
+                        {
+                            Text = $"为「{topName}」选择变体（整个文件夹下所有线路都跑此变体）：",
+                            Margin = new Thickness(0, 0, 0, 8),
+                            TextWrapping = TextWrapping.Wrap
+                        });
+                        string? chosen = _variantPrefBuffer.TryGetValue(topName, out var cur) ? cur : null;
+                        var group = "variant_" + topName;
+
+                        var rbDefault = new System.Windows.Controls.RadioButton
+                        {
+                            Content = $"跟随默认（{repFolder}{DescSuffix(repFolder)}）",
+                            GroupName = group,
+                            Margin = new Thickness(0, 2, 0, 2),
+                            IsChecked = string.IsNullOrEmpty(chosen)
+                        };
+                        optionPanel.Children.Add(rbDefault);
+                        var folderRadios = new List<System.Windows.Controls.RadioButton>();
+                        foreach (var f in availableFolders)
+                        {
+                            var rb = new System.Windows.Controls.RadioButton
+                            {
+                                Content = $"{f}{DescSuffix(f)}",
+                                GroupName = group,
+                                Tag = f,
+                                Margin = new Thickness(0, 2, 0, 2),
+                                IsChecked = string.Equals(chosen, f, StringComparison.Ordinal)
+                            };
+                            folderRadios.Add(rb);
+                            optionPanel.Children.Add(rb);
+                        }
+
+                        var pickDialog = new Wpf.Ui.Controls.MessageBox
+                        {
+                            Title = $"选择变体 - {topName}",
+                            Content = optionPanel,
+                            PrimaryButtonText = "确定",
+                            CloseButtonText = "取消",
+                            Owner = Application.Current.MainWindow,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        };
+                        var r = await pickDialog.ShowDialogAsync();
+                        if (r != MessageBoxResult.Primary) return;
+
+                        var pickedFolder = folderRadios.FirstOrDefault(x => x.IsChecked == true)?.Tag as string;
+                        if (string.IsNullOrEmpty(pickedFolder))
+                            _variantPrefBuffer.Remove(topName);   // 跟随默认 = 清除偏好
+                        else
+                            _variantPrefBuffer[topName] = pickedFolder!;
+                        pickBtn.Content = CurrentLabel();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[变体偏好] 选择变体弹窗异常");
+                    }
+                };
+
+                stack.Children.Add(rowGrid);
+            }
+            VariantPanelHost.Content = stack;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[变体偏好] 折叠面板加载失败");
+            VariantPanelHost.Content = new TextBlock
+            {
+                Text = "加载变体列表失败，请查看日志",
+                Margin = new Thickness(8),
+                Foreground = SystemColors.GrayTextBrush
+            };
+        }
+    }
+
+    // ===== 保存出口（聚合 VM 标量 + 动态 UI + 单机区 + 变体）=====
+    public void Save()
+    {
+        bool isMp = ViewModel.MultiplayerEnabled;
+        _settings["multiplayerEnabled"] = isMp;
+        if (isMp)
+        {
+            ViewModel.WriteMultiplayerSettings(_settings);   // 见映射表；selectedBuiltinRoute 不在 VM
+            // selectedBuiltinRoute 兜底：按钮点过则已写入 settings，否则取 settings/globalCfg 当前值
+            if (!_settings.ContainsKey("selectedBuiltinRoute"))
+            {
+                _settings["selectedBuiltinRoute"] = GetStr("selectedBuiltinRoute", _globalCfg.SelectedBuiltinRoute);
+            }
+        }
+        else
+        {
+            SaveSoloBranch();
+        }
+        SaveVariantPreferences();
+    }
+
+    // 单机分支保存（迁现状，逐字符等价）：遍历 settingItems + controls 写值 + Remove 联机专属字段
+    private void SaveSoloBranch()
+    {
+        foreach (var setting in _settingItems)
+        {
+            if (!_soloControls.TryGetValue(setting.Name, out var ctrl)) continue;
+            object? value = ctrl switch
+            {
+                System.Windows.Controls.ComboBox combo => combo.SelectedItem?.ToString(),
+                System.Windows.Controls.CheckBox check => check.IsChecked ?? false,
+                TextBox tb => setting.Type == "number"
+                    ? double.TryParse(tb.Text, out var n) ? (object)n : tb.Text
+                    : tb.Text,
+                _ => null
+            };
+            _settings[setting.Name] = value;
+        }
+        // 清除联机专属字段，防止残留值在单机模式下被 ApplySettingsOverride 错误应用
+        // 注意：保留 "multiplayerRole" 和 "memberJoinMode"，避免单机保存破坏联机角色配置
+        foreach (var key in new[]
+        {
+            "targetHostName", "coordinatorServerUrl",
+            "playerName", "playerUid", "multiplayerPartyName", "multiplayerStartAvatarName",
+            "expectedPlayerCount", "roomWhitelist",
+            "partyTimeoutSeconds", "partyTimeoutAction", "syncTimeoutSeconds", "minPlayersToSync",
+            "syncPointMinDistance", "startRouteIndex", "enableKazuhaSync", "multiplayerUseFixedFightStrategy",
+            "kazuhaSyncWaitSeconds", "kazuhaSyncTimeoutSeconds", "kazuhaWaitSkillCdSeconds",
+            "fightTimeoutSeconds",
+            // === 快速同步点抢报（单机模式清除）===
+            "fastSyncPointEnabled", "fastSyncPathingDistance", "fastSyncTeleportLoadingDelayMs",
+            "debugMode", "useFixedDebugRoutes", "fixedDebugRoutePath", "selectedBuiltinRoute",
+            "multiWorldEnabled", "multiWorldCount"
+        })
+        {
+            _settings.Remove(key);
+        }
+    }
+
+    // 变体偏好写入（迁现状）：不分联机/单机，Save 末尾统一
+    private void SaveVariantPreferences()
+    {
+        if (_variantPrefBuffer.Count > 0)
+        {
+            _settings["variantPreferences"] = new Dictionary<string, string>(_variantPrefBuffer, StringComparer.Ordinal);
+            var gcfg = TaskContext.Instance().Config.AutoHoeingConfig;
+            foreach (var (k, v) in _variantPrefBuffer)
+                gcfg.SetVariantPreference(k, v);   // 镜像到全局兜底
+        }
+        else
+        {
+            _settings.Remove("variantPreferences");
+        }
+    }
+}
