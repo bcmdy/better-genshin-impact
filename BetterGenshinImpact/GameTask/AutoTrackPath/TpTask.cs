@@ -296,6 +296,7 @@ public class TpTask
             await SwitchArea(MapTypesExtensions.ParseFromName(mapName).GetDescription());
         }
         await Delay(50, ct);
+        await WaitMapStableOrTimeoutAsync(1000); 
 
         Rect bigMapInAllMapRect;
         // 3. 调整初始缩放等级，避免识别中心点失败
@@ -334,7 +335,7 @@ public class TpTask
                     int timeoutMs = 800 + _tpConfig.StepIntervalMilliseconds * 10;
                     if (_tpConfig.FastDragRecognitionEnabled)
                     {
-                        await WaitMapStableOrTimeoutAsync(2000); // fast-drag-recognition-acceleration spec
+                        await WaitMapStableOrTimeoutAsync(1000); // fast-drag-recognition-acceleration spec
                     }
                     else
                     {
@@ -354,7 +355,7 @@ public class TpTask
         }
         
         // 5. 判断传送点是否在当前界面，若否则移动地图
-        await WaitMapStableOrTimeoutAsync(500,10,5); // fast-drag-recognition-acceleration spec
+        await WaitMapStableOrTimeoutAsync(1000,20,5); // fast-drag-recognition-acceleration spec
         bigMapInAllMapRect = GetBigMapRect(mapName);
         var retryCount = 0;
         do
@@ -375,7 +376,7 @@ public class TpTask
                 {
                     // 加速：等像素稳定（远比连续两次模板匹配 GetBigMapRect 快），稳定后再单次 GetBigMapRect
                     // fast-drag-recognition-acceleration spec / design.md §4.2（feedback adjustment）
-                    await WaitMapStableOrTimeoutAsync(2000);
+                    await WaitMapStableOrTimeoutAsync(1000);
                 }
                 else
                 {
@@ -672,7 +673,7 @@ public class TpTask
         // fast-drag-recognition-acceleration spec / step 1 boot delay optimization
         if (_tpConfig.MapMoveStepDivisor && _tpConfig.FastDragRecognitionEnabled)
         {
-            await WaitMapStableOrTimeoutAsync(timeoutMs: 2000); 
+            await WaitMapStableOrTimeoutAsync(timeoutMs: 1000); 
             using var ra2 = CaptureToRectArea();
             if (ra2.Find(QuickTeleportAssets.Instance.MapScaleButtonRo).IsExist())
             {
@@ -1232,7 +1233,7 @@ public class TpTask
             try
             {
                 using var ra = CaptureToRectArea();
-                var p1 = ra.SrcMat.At<Vec3b>(960, 540);
+                var p1 = ra.SrcMat.At<Vec3b>(860, 520);
                 var p2 = ra.SrcMat.At<Vec3b>(860, 540);
                 if (ra.Find(QuickTeleportAssets.Instance.MapScaleButtonRo).IsExist() && prev1.HasValue && p1 == prev1.Value && p2 == prev2!.Value)
                 {
@@ -1542,12 +1543,12 @@ public class TpTask
     {
         // 可能是地下地图，切换到地上地图
         using var ra2 = CaptureToRectArea();
-        // if (Bv.BigMapIsUnderground(ra2))
-        // {
-        using var ra3 = CaptureToRectArea();
-        ra3.Find(_assets.MapUndergroundToGroundButtonRo, rg => rg.Click());
-        await Delay(200, ct);
-        // }
+        if (Bv.BigMapIsUnderground(ra2))
+        {
+            using var ra3 = CaptureToRectArea();
+            ra3.Find(_assets.MapUndergroundToGroundButtonRo, rg => rg.Click());
+            await Delay(200, ct);
+        }
 
         // 识别当前位置
         // 第一次识别可能因地图刚打开特征点未渲染而失败 → 短轮询补救（最多 ~450ms）。
@@ -1624,6 +1625,7 @@ public class TpTask
         // fast-drag-recognition-acceleration spec / SwitchArea menu popup optimization
         if (_tpConfig.MapMoveStepDivisor && _tpConfig.FastDragRecognitionEnabled)
         {
+            await Delay(100, ct);
             await WaitForElementOrTimeoutAsync(QuickTeleportAssets.Instance.MapCloseButtonWhiteRo, timeoutMs:1000);
         }
         else
