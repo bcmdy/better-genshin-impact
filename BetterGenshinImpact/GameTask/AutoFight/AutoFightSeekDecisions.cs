@@ -96,4 +96,16 @@ public static class AutoFightSeekDecisions
     {
         return teleportingToStatue;
     }
+
+    /// <summary>
+    /// 判定 SeekAndFightAsync 寻敌旋转是否应跳过 MoveMouseBy（让位给回点的 RotateToApproach）。
+    /// 语义：回点进行中（returnToPointInProgress=true）⇒ true（跳过）；否则 false（正常甩鼠标）。
+    /// 纯函数：仅以"回点是否进行中"为输入，不依据是否万叶玩家、不依据 RotaryFactor。
+    /// PBT 友好：无外部依赖。
+    /// 详见 .kiro/specs/fight-return-to-point-seek-rotation-conflict-fix/design.md 改动 2 / Property 1。
+    /// </summary>
+    public static bool ShouldSkipSeekRotation(bool returnToPointInProgress)
+    {
+        return returnToPointInProgress;
+    }
 }

@@ -95,6 +95,37 @@ public class AutoFightTask : ISoloTask
     public static volatile bool IsTeleportingToStatue = false;
 
     /// <summary>
+    /// "战斗中回点移动进行中"引用计数（fight-return-to-point-seek-rotation-conflict-fix spec）。
+    /// 唯一语义：当前有至少一个回点发起方正在执行移动/回点（count &gt; 0）。
+    ///
+    /// 写者（成对）：三个回点发起方在真正执行移动前后调用 EnterReturnToFightPoint() / ExitReturnToFightPoint()：
+    ///   - B：KazuhaContinuousReturnLoopAsync（MoveCloseTo 前后）
+    ///   - C：GeneralReturnToFightPointLoopAsync（MoveTo 前后）
+    ///   - E：AutoFightSeek.SeekAndFightAsync 内置回点分支（MoveTo 前后）
+    /// 读者（唯一）：AutoFightSeek.SeekAndFightAsync 的两处 MoveMouseBy 前，经
+    ///   AutoFightSeekDecisions.ShouldSkipSeekRotation(IsReturningToFightPoint) 判定是否跳过甩鼠标。
+    ///
+    /// 用引用计数（而非单一 bool）的原因：万叶玩家场景下 B（后台循环）与 E（寻敌内置回点）
+    ///   可能并发置位（同源 _taskParam.KazuhaContinuousReturn），单一 bool 存在
+    ///   "一方复位掩盖另一方仍在进行"的风险；引用计数保证嵌套/重叠安全。
+    /// 跨线程：Interlocked 增减 + Volatile.Read，无复合判断，线程安全。
+    ///
+    /// 严禁与以下信号合并 / 混用 / 重命名（语义完全不同）：
+    ///   - IsTeleportingToStatue（神像传送进行中 → 回点循环 return 终止）
+    ///   - IsSuspend / IsSuspendedByCapture（用户主动暂停 / 截图暂停）
+    /// </summary>
+    private static int _returnToFightPointDepth;
+
+    /// <summary>回点移动是否进行中（引用计数 &gt; 0）。读者：SeekAndFightAsync 的 MoveMouseBy 门控。</summary>
+    public static bool IsReturningToFightPoint => System.Threading.Volatile.Read(ref _returnToFightPointDepth) > 0;
+
+    /// <summary>进入回点移动（计数 +1）。回点发起方在真正执行移动前调用，必须与 ExitReturnToFightPoint 成对（try-finally）。</summary>
+    public static void EnterReturnToFightPoint() => System.Threading.Interlocked.Increment(ref _returnToFightPointDepth);
+
+    /// <summary>退出回点移动（计数 -1）。必须在 finally 中调用，保证任何退出路径都复位。</summary>
+    public static void ExitReturnToFightPoint() => System.Threading.Interlocked.Decrement(ref _returnToFightPointDepth);
+
+    /// <summary>
     /// 最近一次"看到敌人"的时间戳。
     /// 由 AutoFightSeek.SeekAndFightAsync 在 4 处 return false 之前同步赋值；
     /// 由 GeneralReturnToFightPointLoopAsync 时间触发判据读取；
@@ -2914,7 +2945,17 @@ public class AutoFightTask : ISoloTask
                     // 战斗中玩家与战斗点距离一般较小（被怪推开 1-5 单位），MoveCloseTo 25 步小碎步就够；
                     // 用 MoveTo 真寻路反而可能因为有寻路逻辑导致绕远 / 翻越障碍。
                     // 默认 closeDistance=2.0 / tailDelayMs=null / maxSteps=25 即可（原 MoveCloseTo 行为）。
-                    await pathExecutor.MoveCloseTo(fightWaypoint);
+                    // 标记回点移动进行中：让 D（SeekAndFightAsync 两处 MoveMouseBy）让位。
+                    // try-finally 保证任何退出路径都复位计数。
+                    AutoFightTask.EnterReturnToFightPoint();
+                    try
+                    {
+                        await pathExecutor.MoveCloseTo(fightWaypoint);
+                    }
+                    finally
+                    {
+                        AutoFightTask.ExitReturnToFightPoint();
+                    }
                     lastReturnAt = DateTime.UtcNow;
                 }
                 catch (OperationCanceledException) { return; }
@@ -3096,6 +3137,9 @@ public class AutoFightTask : ISoloTask
                         }
                     }, endWatcher.Token);
 
+                    // 标记回点移动进行中：让 D（SeekAndFightAsync 两处 MoveMouseBy）让位。
+                    // Enter 放在 try 第一行、Exit 放在既有 finally 内，与 W 键释放一同执行，保证任何退出路径都复位。
+                    AutoFightTask.EnterReturnToFightPoint();
                     try
                     {
                         // 每轮新建 PathExecutor，传入 linked CTS Token 以便 FightEndTotoly 时立即打断
@@ -3106,6 +3150,7 @@ public class AutoFightTask : ISoloTask
                     }
                     finally
                     {
+                        AutoFightTask.ExitReturnToFightPoint();
                         endWatcher.Cancel();
                         try { await watcherTask; } catch { /* ignore */ }
                         // 兜底释放 W 键，避免战斗结束 / 取消时角色继续前进

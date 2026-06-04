@@ -405,9 +405,19 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                                         try
                                         {
                                             AutoFightTask.FightWaypoint.MoveMode = MoveModeEnum.Walk.Code;
-                                            await pathExecutor.MoveTo(AutoFightTask.FightWaypoint,
-                                                isGetOut: false, task: null, nextWaypoint: null, nextDistance: null,
-                                                retryDis: 4, isPoint: false);
+                                            // 标记回点移动进行中：让 D（本方法两处 MoveMouseBy）让位，避免甩鼠标与回点 RotateToApproach 互相抵消。
+                                            // try-finally 保证任何退出路径（正常 / 取消 / 异常）都复位计数。
+                                            AutoFightTask.EnterReturnToFightPoint();
+                                            try
+                                            {
+                                                await pathExecutor.MoveTo(AutoFightTask.FightWaypoint,
+                                                    isGetOut: false, task: null, nextWaypoint: null, nextDistance: null,
+                                                    retryDis: 4, isPoint: false);
+                                            }
+                                            finally
+                                            {
+                                                AutoFightTask.ExitReturnToFightPoint();
+                                            }
                                             lastReturnAt = DateTime.UtcNow;
                                         }
                                         catch (OperationCanceledException) { throw; }
@@ -567,14 +577,16 @@ namespace BetterGenshinImpact.GameTask.AutoFight
                             (rotationCount6 == 2) ? 1 :
                             (rotationCount6 >= 3) ? 2 : 3;
                         
-                        if (!AutoFightTask.FightEndTotoly)
+                        if (!AutoFightTask.FightEndTotoly
+                            && !AutoFightSeekDecisions.ShouldSkipSeekRotation(AutoFightTask.IsReturningToFightPoint))
                         {
                             Simulation.SendInput.Mouse.MoveMouseBy(offsets[offsetIndex].x, offsets[offsetIndex].y);
                         }
                     }
                     else
                     {
-                        if (!AutoFightTask.FightEndTotoly)
+                        if (!AutoFightTask.FightEndTotoly
+                            && !AutoFightSeekDecisions.ShouldSkipSeekRotation(AutoFightTask.IsReturningToFightPoint))
                         {
                             Simulation.SendInput.Mouse.MoveMouseBy(image.Width / 6, 0);
                         }

@@ -24,7 +24,7 @@ public class CameraRotateTask(CancellationToken ct)
     /// <param name="targetOrientation"></param>
     /// <param name="imageRegion"></param>
     /// <returns></returns>
-    public float RotateToApproach(float targetOrientation, ImageRegion imageRegion)
+    public float? RotateToApproach(float targetOrientation, ImageRegion imageRegion)
     {
         if (Monitor.TryEnter(_rLock))
         {
@@ -63,7 +63,8 @@ public class CameraRotateTask(CancellationToken ct)
             {
                 Console.WriteLine(e);
                 TaskControl.Logger.LogWarning("转动视角发生异常，停止转动-1111 {e}", e);
-                return 0;
+                // 异常 = 本轮未真实测量到角度，返回 null（而非 0）让调用方区分"未测量"与"误差=0"
+                return null;
             }
             finally
             {
@@ -71,7 +72,8 @@ public class CameraRotateTask(CancellationToken ct)
             }
         }
         TaskControl.Logger.LogWarning("转动视角发生异常，停止转动-2222");
-        return 0;
+        // 抢 _rLock 失败 = 本轮未真实测量到角度，返回 null（而非 0），避免调用方误判为"已到位"
+        return null;
     }
 
     private static volatile object _zLock = new object(); 
@@ -91,12 +93,14 @@ public class CameraRotateTask(CancellationToken ct)
         while (!ct.IsCancellationRequested)
         {
             var screen = CaptureToRectArea();
-            float aa = 0;
+            // null = 本轮未真实测量到角度（_zLock 抢锁失败 或 RotateToApproach 抢 _rLock 失败/异常返回 null）
+            float? measuredDiff = null;
             if (Monitor.TryEnter(_zLock))
             {
                 try
                 {
-                    aa = Math.Abs(RotateToApproach(targetOrientation, screen));
+                    var raw = RotateToApproach(targetOrientation, screen);
+                    measuredDiff = raw.HasValue ? Math.Abs(raw.Value) : (float?)null;
                 }
                 catch (Exception e)
                 {
@@ -108,8 +112,11 @@ public class CameraRotateTask(CancellationToken ct)
                     Monitor.Exit(_zLock);
                 }
             }
-            
-            if (aa < maxDiff + count / 2)
+            // 注意：_zLock TryEnter 失败时 measuredDiff 保持 null —— 这是 ② 的核心 bug 点修复，
+            // 原代码此处无 else，aa 保持 0 会被下面误判为"已到位"。
+
+            // 仅当本轮真实测量到角度时才判定是否到位；未测量（null）绝不判到位。
+            if (CameraRotateDecisions.IsRotationArrived(measuredDiff, maxDiff, count))
             {
                 isSuccessful = true;
                 break;
@@ -117,8 +124,10 @@ public class CameraRotateTask(CancellationToken ct)
 
             if (count > maxTryTimes)
             {
+                // 超时兜底（bugfix.md 3.8 不变）：用本轮测到的误差方向；未测到时按 0 处理（bb=-1），仅决定甩动方向
+                var diffForDirection = measuredDiff ?? 0f;
                 //aa为正bb=1，aa为负数bb=-1
-                var bb = aa > 0 ? 1 : -1;
+                var bb = diffForDirection > 0 ? 1 : -1;
                 Simulation.SendInput.Mouse.MoveMouseBy((int)Math.Round(bb * _dpi * 1000), 0);
                 //按鼠标中键
                 Simulation.SendInput.Mouse.MiddleButtonClick();
@@ -126,7 +135,8 @@ public class CameraRotateTask(CancellationToken ct)
                 break;
             }
 
-            // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}，尝试次数-{count}", aa, count);
+            // 未到位且未超时（含本轮未测量）：跳过本轮，等下一轮再尝试（Q2=a：不累加成功判定、不提前 break）
+            // TaskControl.Logger.LogWarning("转动视角到目标角度中，当前角度误差-{aa}，尝试次数-{count}", measuredDiff, count);
             await Delay(50-count/2, ct);
             count++;
         }

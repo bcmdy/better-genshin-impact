@@ -3236,11 +3236,12 @@ public class PathExecutor
             var diff = _rotateTask.RotateToApproach(targetOrientation, screen2);
             if (num > 20)
             {
-                if (Math.Abs(diff) > 5)
+                // diff == null 表示本轮未真实测量到角度（抢锁失败），不累加也不清零卡死计数，保持上一轮状态
+                if (diff.HasValue && Math.Abs(diff.Value) > 5)
                 {
                     consecutiveRotationCountBeyondAngle++;
                 }
-                else
+                else if (diff.HasValue)
                 {
                     consecutiveRotationCountBeyondAngle = 0;
                 }
