@@ -122,7 +122,7 @@ public class TaskControl
                 {
                     var enter = qq.FindMulti(GetConfirmRa());
                     using var enterDone = enter.FirstOrDefault(t =>
-                        Regex.IsMatch(t.Text, "连接已断开") || Regex.IsMatch(t.Text, "点击进入"));
+                        Regex.IsMatch(t.Text, "连接已断开") || Regex.IsMatch(t.Text, "点击进入") || Regex.IsMatch(t.Text, "更新通知"));
                     if (enterDone != null)
                     {
                         IsSuspendedByWindow = true;
