@@ -2153,7 +2153,10 @@ public class PathExecutor
                     await Task.Delay(399, ct);
                     confirmRectArea.ClickTo(-100, 0);
                     await Task.Delay(300, ct);
-                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); 
+                    if (PathingConditionConfig.AutoEatCount < 3)
+                    {
+                        Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                    }
                     await Task.Delay(500, ct);
                 }
             }
@@ -3932,7 +3935,10 @@ public class PathExecutor
                 Logger.LogInformation("死亡，点击确认-s1 {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                if (PathingConditionConfig.AutoEatCount < 3)
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                }
             }
             
             var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);
@@ -3983,7 +3989,10 @@ public class PathExecutor
                 Logger.LogInformation("死亡，点击确认-s2 {t}",PathingConditionConfig.AutoEatCount);
                 confirmRectArea.Click();
                 confirmRectArea.ClickTo(-100, 0);
-                Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                if (PathingConditionConfig.AutoEatCount < 3)
+                {
+                    Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget);
+                }
             }
             
             var pixelValue = bitmap.SrcMat.At<Vec3b>(1010,814);

@@ -179,11 +179,15 @@ public class Avatar
     {
         if (!AutoFightTask.IsTpForRecover && Bv.IsInRevivePrompt(region))
         {
-            // AutoEatCount >= 2 表示吃药超额，直接去七天神像
+            // AutoEatCount == 3 表示自动吃药已关闭或未确认营养袋，不能在复苏后重置成可吃药状态，
+            // 否则当前装备化种匣等小道具时会被误按。
             if (PathingConditionConfig.AutoEatCount >= 2)
             {
                 Logger.LogWarning("检测到复苏界面，吃药已超额(AutoEatCount={t})，前往七天神像", PathingConditionConfig.AutoEatCount);
-                PathingConditionConfig.AutoEatCount = 0;
+                if (PathingConditionConfig.AutoEatCount < 3)
+                {
+                    PathingConditionConfig.AutoEatCount = 0;
+                }
                 TpForRecover(ct, new RetryException("检测到复苏界面，存在角色被击败，前往七天神像复活"));
             }
             else
@@ -446,7 +450,8 @@ public class Avatar
                                 try
                                 {
 
-                                    if (!AutoFightSkill.MedicinalCdAsync(Logger, false, 1, Ct).Result)
+                                    if (PathingConditionConfig.AutoEatCount < 3 &&
+                                        !AutoFightSkill.MedicinalCdAsync(Logger, false, 1, Ct).Result)
                                     {
                                         Simulation.SendInput.SimulateAction(GIActions.QuickUseGadget); //1800,816 1838,835
                                         Simulation.ReleaseAllKey();
