@@ -211,6 +211,8 @@ public partial class CommonSettingsPageViewModel : ViewModel
         }
     }
 
+    public string RealVersion => Global.RealVersion;
+
     public ObservableCollection<PaddleOcrModelConfig> PaddleOcrModelConfigs { get; } =
         new(Enum.GetValues(typeof(PaddleOcrModelConfig)).Cast<PaddleOcrModelConfig>());
 
