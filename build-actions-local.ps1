@@ -1,4 +1,4 @@
-﻿param([string]$Version = "0.62.0+lcb.22.5-OnLine-fix2")
+﻿param([string]$Version = "0.62.0+lcb.22.2-OnLine-fix10")
 
 # 函数：更新版本号（保持编码）
 function Update-VersionInFile {

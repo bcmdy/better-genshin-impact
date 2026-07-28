@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$Version = "0.62.0+lcb.22.5-OnLine-fix2",
+    [string]$Version = "0.62.0+lcb.22.2-OnLine-fix10",
     [string]$KachinaChannel = "release",
     [switch]$SkipClone,
     [switch]$SkipBuild,
