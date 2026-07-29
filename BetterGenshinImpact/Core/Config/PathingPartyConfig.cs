@@ -233,6 +233,9 @@ public partial class PathingPartyConfig : ObservableObject
     private int _combatScriptEndDelayMs = 900;
     
     [ObservableProperty]
+    private int _preTeleportDelayMs = 0;
+
+    [ObservableProperty]
     private bool _disableAutoFetchDispatch = false;
     
     public static OtherConfig OtherConfig { get; set; } = TaskContext.Instance().Config.OtherConfig;
