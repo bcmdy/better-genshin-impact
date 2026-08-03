@@ -97,7 +97,16 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
         _configService = configService;
         _childSessionService = childSessionService;
         Config = _configService.Get();
+        Config.CommonConfig.PropertyChanged += OnCommonConfigPropertyChanged;
         _logger = App.GetLogger<MainWindowViewModel>();
+    }
+
+    private void OnCommonConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CommonConfig.SoftwareVersionOverride))
+        {
+            OnPropertyChanged(nameof(Title));
+        }
     }
 
     [RelayCommand]
