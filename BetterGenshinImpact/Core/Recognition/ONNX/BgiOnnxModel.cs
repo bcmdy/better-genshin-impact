@@ -10,14 +10,23 @@ public class BgiOnnxModel
     /// <summary>
     /// 模型使用的缓存文件的相对目录
     /// </summary>
-    public static readonly string ModelCacheRelativePath = Path.Combine("Cache", Global.Version, "Model");
+    public static string ModelCacheRelativePath => Path.Combine("Cache", Global.Version, "Model");
 
     private static readonly List<BgiOnnxModel> RegisteredModels = [];
     public string Name { get; private init; }
     public string ModelRelativePath { get; private init; }
     public string ModalPath => Global.Absolute(ModelRelativePath);
-    public string CacheRelativePath { get; private init; }
-    public string CachePath => Global.Absolute(CacheRelativePath);
+    private string CacheRelativePathName { get; init; }
+    public string CacheRelativePath => Path.Combine(ModelCacheRelativePath, CacheRelativePathName);
+    public string CachePath
+    {
+        get
+        {
+            var cachePath = Global.Absolute(CacheRelativePath);
+            Directory.CreateDirectory(cachePath);
+            return cachePath;
+        }
+    }
 
     #region 模型注册
 
@@ -135,11 +144,11 @@ public class BgiOnnxModel
 
     #endregion
 
-    private BgiOnnxModel(string name, string modelRelativePath, string cacheRelativePath)
+    private BgiOnnxModel(string name, string modelRelativePath, string cacheRelativePathName)
     {
         Name = name;
         ModelRelativePath = modelRelativePath;
-        CacheRelativePath = cacheRelativePath;
+        CacheRelativePathName = cacheRelativePathName;
     }
 
     public static bool IsModelExist(BgiOnnxModel model)
@@ -159,17 +168,13 @@ public class BgiOnnxModel
 
     private static BgiOnnxModel Register(string name, string modelRelativePath)
     {
-        return Register(name, modelRelativePath, Path.Combine(ModelCacheRelativePath, name));
+        return Register(name, modelRelativePath, name);
     }
 
-    private static BgiOnnxModel Register(string name, string modelRelativePath, string cacheRelativePath)
+    private static BgiOnnxModel Register(string name, string modelRelativePath, string cacheRelativePathName)
     {
-        var model = new BgiOnnxModel(name, modelRelativePath, cacheRelativePath);
-        var cachePath = model.CachePath;
-        if (!Directory.Exists(cachePath))
-        {
-            Directory.CreateDirectory(cachePath);
-        }
+        var model = new BgiOnnxModel(name, modelRelativePath, cacheRelativePathName);
+        _ = model.CachePath;
 
         RegisteredModels.Add(model);
         return model;
