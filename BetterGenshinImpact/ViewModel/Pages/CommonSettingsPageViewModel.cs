@@ -81,6 +81,11 @@ public partial class CommonSettingsPageViewModel : ViewModel
         RecognitionTemplateEditorService recognitionTemplateEditorService)
     {
         Config = configService.Get();
+        if (string.IsNullOrWhiteSpace(Config.CommonConfig.SoftwareVersionOverride))
+        {
+            Config.CommonConfig.SoftwareVersionOverride = Global.RealVersion;
+        }
+
         Config.MaskWindowConfig.EnsureOverlayMetricItems();
         Config.MaskWindowConfig.MigrateLegacyOverlayMetricsLayout();
         _navigationService = navigationService;
@@ -219,6 +224,14 @@ public partial class CommonSettingsPageViewModel : ViewModel
                 UpdateRevivePoint(SelectedCountry, SelectedArea);
             }
         }
+    }
+
+    public string RealVersion => Global.RealVersion;
+
+    [RelayCommand]
+    private void OnResetSoftwareVersionOverride()
+    {
+        Config.CommonConfig.SoftwareVersionOverride = Global.RealVersion;
     }
 
     public ObservableCollection<PaddleOcrModelConfig> PaddleOcrModelConfigs { get; } =
