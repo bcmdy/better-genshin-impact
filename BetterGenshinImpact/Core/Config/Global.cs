@@ -9,9 +9,21 @@ namespace BetterGenshinImpact.Core.Config;
 
 public class Global
 {
-    public static string Version { get; } = Assembly.GetEntryAssembly()?.
+    private static readonly string _realVersion = Assembly.GetEntryAssembly()?.
         GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.
-        InformationalVersion!;
+        InformationalVersion ?? string.Empty;
+
+    private static string _versionOverride = string.Empty;
+
+    public static string RealVersion => _realVersion;
+
+    public static string Version => string.IsNullOrWhiteSpace(_versionOverride) ? RealVersion : _versionOverride.Trim();
+
+    public static string VersionOverride
+    {
+        get => _versionOverride;
+        set => _versionOverride = value ?? string.Empty;
+    }
 
     public static string StartUpPath { get; set; } = AppContext.BaseDirectory;
 
