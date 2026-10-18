@@ -1,4 +1,4 @@
-﻿param([string]$Version = "0.66.2+lcb.22.9-NexusBGI-fix7-DF4.1")
+$Version = "0.66.2+lcb.22.9-NexusBGI-fix7-DF4.1")
 
 # 函数：更新版本号（保持编码）
 function Update-VersionInFile {

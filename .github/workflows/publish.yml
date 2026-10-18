@@ -105,12 +105,21 @@ jobs:
       - name: npm install (with retry on transient network errors)
         shell: bash
         run: |
-          # 提升 npm 内建 fetch 层对瞬时网络错误的容忍度
           npm config set fetch-retries 5
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
           npm config set fetch-timeout 300000
-          # 步骤级重试：最多尝试 4 次（首次 + 最多重试 3 次）
+
+          # 上游 package-lock.json 的 resolved 指向腾讯云镜像，
+          # GitHub 海外 runner 访问不稳定会导致 ECONNRESET，
+          # 这里把腾讯云的 tarball 地址替换为官方 registry。
+          if [ -f package-lock.json ]; then
+            sed -i 's|http://mirrors.cloud.tencent.com/npm/|https://registry.npmjs.org/|g' package-lock.json
+            echo "patched package-lock.json, sample resolved URLs:"
+            # 用 sed 取前 5 行，避免 grep|head 在 pipefail 下触发 SIGPIPE
+            sed -n '1,5p' <(grep -o '"resolved": "[^"]*"' package-lock.json) || true
+          fi
+
           for attempt in 1 2 3 4; do
             echo "npm install attempt #${attempt}"
             if npm install; then
@@ -119,7 +128,7 @@ jobs:
             fi
             echo "::warning::npm install failed on attempt #${attempt}"
             if [ "${attempt}" -lt 4 ]; then
-              sleep_seconds=$((attempt * 15))
+              sleep_seconds=$((attempt * 30))
               echo "retrying in ${sleep_seconds}s..."
               sleep "${sleep_seconds}"
             fi

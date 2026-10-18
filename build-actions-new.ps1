@@ -135,8 +135,8 @@ if (Test-Path $csprojPath) {
 $localScript = "build-actions-local.ps1"
 if (Test-Path $localScript) {
     $content = Get-Content $localScript -Raw -Encoding UTF8
-    if ($content -match 'param\(\[string\]\$Version = "([^"]+)"') {
-        $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$Version`""
+    if ($content -match 'param\(\[string\]\$Version = "([^"]+)"\)') {
+        $content = $content -replace 'param\(\[string\]\$Version = "[^"]+"\)', ('param([string]$Version = "' + $Version + '")')
         [System.IO.File]::WriteAllText($localScript, $content, [System.Text.UTF8Encoding]::new($false))
         Write-Info "已同步版本到: $localScript"
     }
