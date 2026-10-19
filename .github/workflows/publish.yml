@@ -168,16 +168,32 @@ jobs:
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
           npm config set fetch-timeout 300000
+
+          # 上游 package-lock.json 的 resolved 指向腾讯云镜像，
+          # GitHub 海外 runner 访问不稳定会导致 ECONNRESET，
+          # 这里把腾讯云的 tarball 地址替换为官方 registry。
+          if [ -f package-lock.json ]; then
+            sed -i 's|http://mirrors.cloud.tencent.com/npm/|https://registry.npmjs.org/|g' package-lock.json
+            echo "patched package-lock.json, sample resolved URLs:"
+            # 用 sed 取前 5 行，避免 grep|head 在 pipefail 下触发 SIGPIPE
+            sed -n '1,5p' <(grep -o '"resolved": "[^"]*"' package-lock.json) || true
+          fi
+
           # 步骤级重试：最多尝试 4 次（首次 + 最多重试 3 次）
           for attempt in 1 2 3 4; do
             echo "npm install attempt #${attempt}"
             if npm install --prefer-offline --no-audit --no-fund --loglevel=http; then
               echo "npm install succeeded on attempt #${attempt}"
+              # 补装 Linux 平台缺失的 lightningcss 原生二进制
+              # lock 文件在非 Linux 环境生成时可能未记录 Linux 版可选依赖
+              LIGHTNINGCSS_VER=$(node -p "require('./node_modules/lightningcss/package.json').version")
+              echo "installing lightningcss-linux-x64-gnu@${LIGHTNINGCSS_VER}"
+              npm install --no-save "lightningcss-linux-x64-gnu@${LIGHTNINGCSS_VER}" || true
               exit 0
             fi
             echo "::warning::npm install failed on attempt #${attempt}"
             if [ "${attempt}" -lt 4 ]; then
-              sleep_seconds=$((attempt * 15))
+              sleep_seconds=$((attempt * 30))
               echo "retrying in ${sleep_seconds}s..."
               sleep "${sleep_seconds}"
             fi
@@ -808,4 +824,3 @@ jobs:
           wget https://uploads.steambird.pub/upload.sh
           chmod +x upload.sh
           ./upload.sh https://uploads.steambird.pub/dav/bgi/ upload_files/BetterGI.Install.*.exe
-
