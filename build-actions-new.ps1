@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Version = "0.66.2+lcb.22.9-NexusBGI-fix11-DF4.2",
     [string]$KachinaChannel = "release",
     [switch]$SkipClone,
@@ -136,7 +136,7 @@ $localScript = "build-actions-local.ps1"
 if (Test-Path $localScript) {
     $content = Get-Content $localScript -Raw -Encoding UTF8
     if ($content -match 'param\(\[string\]\$Version = "([^"]+)"\)') {
-        $content = $content -replace 'param\(\[string\]\$Version = "[^"]+"\)', ('param([string]$Version = "' + $Version + '")')
+        $content = $content -replace 'param\(\[string\]\$Version = "[^"]+"\)', ('$Version = "0.66.2+lcb.22.9-NexusBGI-fix11-DF4.3")')
         [System.IO.File]::WriteAllText($localScript, $content, [System.Text.UTF8Encoding]::new($false))
         Write-Info "已同步版本到: $localScript"
     }
