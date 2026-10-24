@@ -4381,6 +4381,7 @@ public partial class PathExecutor
             bool isNextTeleport = nextWaypoint?.Type == WaypointType.Teleport.Code;
             if ((isLastNode || isNextTeleport) && PartyConfig.PreTeleportDelayMs > 0)
             {
+                Logger.LogInformation("已设置传送前延迟: {Delay} ms", PartyConfig.PreTeleportDelayMs);
                 await Delay(PartyConfig.PreTeleportDelayMs, ct);
             }
 
