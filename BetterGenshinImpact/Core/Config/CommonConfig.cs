@@ -106,6 +106,12 @@ public partial class CommonConfig : ObservableObject
     private string _runForVersion = string.Empty;
 
     /// <summary>
+    /// 软件版本号伪装；默认使用程序真实版本号。
+    /// </summary>
+    [ObservableProperty]
+    private string _softwareVersionOverride = Global.RealVersion;
+
+    /// <summary>
     /// 一个设备只运行一次的已运行设备ID列表
     /// </summary>
     [ObservableProperty]
@@ -141,4 +147,9 @@ public partial class CommonConfig : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _redeemCodeGlobalFeedsUpdateVersion = string.Empty;
+
+    partial void OnSoftwareVersionOverrideChanged(string value)
+    {
+        Global.VersionOverride = value;
+    }
 }
