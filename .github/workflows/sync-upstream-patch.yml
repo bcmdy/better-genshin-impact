@@ -1,5 +1,7 @@
 name: Fork&Patch OldTeaBag
 
+run-name: "${{ inputs.target_branch }} ← ${{ inputs.upstream_branch }}${{ inputs.description && format(' | {0}', inputs.description) || '' }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +19,11 @@ on:
         description: '补丁文件路径（相对本仓库根目录）'
         required: true
         default: '.github/patches/0001-DF4.3.patch'
+        type: string
+      description:
+        description: '运行描述（可选，会显示在运行标题里）'
+        required: false
+        default: '自动同步补丁'
         type: string
 
 permissions:
@@ -54,7 +61,7 @@ jobs:
             echo "❌ 错误: 补丁文件 $PATCH_FILE 不存在。请先创建补丁文件。"
             exit 1
           fi
-          
+
           # 使用 --3way 进行三方合并，能更好地处理上下文偏移
           if git apply --3way --verbose "$PATCH_FILE"; then
             echo "✅ 补丁应用成功。"
