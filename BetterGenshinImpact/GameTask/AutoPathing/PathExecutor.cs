@@ -4396,6 +4396,16 @@ public partial class PathExecutor
                 SuccessFight++;
             }
 
+            // 检查是否为最后一个节点
+            bool isLastNode = nextWaypoint == null;
+            // 检查下一个节点是否是传送点
+            bool isNextTeleport = nextWaypoint?.Type == WaypointType.Teleport.Code;
+            if ((isLastNode || isNextTeleport) && PartyConfig.PreTeleportDelayMs > 0)
+            {
+                Logger.LogInformation("已设置传送前延迟: {Delay} ms", PartyConfig.PreTeleportDelayMs);
+                await Delay(PartyConfig.PreTeleportDelayMs, ct);
+            }
+
             if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code || nextWaypoint?.Action == ActionEnum.Fight.Code))
             {
                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
