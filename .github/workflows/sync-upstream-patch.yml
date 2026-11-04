@@ -8,7 +8,7 @@ on:
       upstream_branch:
         description: '上游仓库 (kaedelcb) 的分支名'
         required: true
-        default: 'main-OldTeaBag-B184'
+        default: 'main-OldTeaBag-B188'
         type: string
       target_branch:
         description: '推送到本仓库 (bcmdy) 的目标分支名'
