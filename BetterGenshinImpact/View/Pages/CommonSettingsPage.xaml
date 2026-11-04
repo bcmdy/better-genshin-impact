@@ -26,8 +26,60 @@
                    FontSize="18"
                    FontWeight="SemiBold"
                    Text="{i18n:T 软件设置}" />
-        
-                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
+
+        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Info24}">
+            <ui:CardControl.Header>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <ui:TextBlock Grid.Row="0"
+                                  Margin="0,0,36,0"
+                                  FontTypography="Body"
+                                  Text="{i18n:T 版本号伪装}"
+                                  TextWrapping="Wrap" />
+                    <Grid Grid.Row="1" Margin="0,8,36,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Column="0"
+                                      Margin="0,0,12,0"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="{i18n:T 真实版本号：}"
+                                      TextWrapping="NoWrap" />
+                        <ui:TextBlock Grid.Column="1"
+                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                      Text="{Binding RealVersion}"
+                                      TextWrapping="Wrap"
+                                      ToolTip="{Binding RealVersion}" />
+                    </Grid>
+                    <Grid Grid.Row="2" Margin="0,8,36,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:TextBlock Grid.Column="0"
+                                      Margin="0,0,12,0"
+                                      VerticalAlignment="Center"
+                                      Text="{i18n:T 伪装版本号}"
+                                      TextWrapping="NoWrap" />
+                        <ui:TextBox Grid.Column="1"
+                                    PlaceholderText="{Binding RealVersion}"
+                                    Text="{Binding Config.CommonConfig.SoftwareVersionOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ui:Button Grid.Column="2"
+                                   Margin="8,0,0,0"
+                                   Command="{Binding ResetSoftwareVersionOverrideCommand}"
+                                   Content="{i18n:T 重置}" />
+                    </Grid>
+                </Grid>
+            </ui:CardControl.Header>
+        </ui:CardControl>
+
+        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
             <ui:CardControl.Header>
                 <Grid>
                     <Grid.RowDefinitions>
