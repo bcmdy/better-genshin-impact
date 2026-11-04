@@ -13,12 +13,12 @@ on:
       target_branch:
         description: '推送到本仓库 (bcmdy) 的目标分支名'
         required: true
-        default: 'LCB-66.3-lcb.23.0-NBGI-fix3-DF4.3'
+        default: 'LCB-66.3-lcb.23.0-NBGI-fix9-DF4.4'
         type: string
       patch_file:
         description: '补丁文件路径（相对本仓库根目录）'
         required: true
-        default: '.github/patches/0001-DF4.3.patch'
+        default: '.github/patches/0001-DF4.4.patch'
         type: string
       description:
         description: '运行描述（可选，会显示在运行标题里）'
@@ -86,7 +86,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "没有文件变更，跳过提交。"
           else
-            git commit -m "自动补丁DF4.3至${{ inputs.upstream_branch }}"
+            git commit -m "自动补丁DF4.4至${{ inputs.upstream_branch }}"
           fi
 
       # 5. 将结果推送到本仓库 (bcmdy) 的目标分支
