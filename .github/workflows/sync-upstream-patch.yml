@@ -28,7 +28,6 @@ on:
 
 permissions:
   contents: write # 必须授予写权限，才能将提交推送到本仓库
-  workflows: write  # 推送内容包含 .github/workflows/ 时必须显式授予
 
 jobs:
   sync-and-patch:
