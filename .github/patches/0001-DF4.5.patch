@@ -1,0 +1,1541 @@
+From 1c9d7cff98e6e9c79d5ae8fc53d68224672816c3 Mon Sep 17 00:00:00 2001
+From: bcmdy <48650902+bcmdy@users.noreply.github.com>
+Date: Sat, 7 Nov 2026 21:49:27 +0800
+Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6=20DF4.5=20=E5=8A=9F=E8=83=BD?=
+ =?UTF-8?q?=E5=B9=B6=E8=A7=A3=E5=86=B3=E4=B8=BB=E7=BA=BF=E5=86=B2=E7=AA=81?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+保留主线国际化结构与 SDK 决策，合入版本号伪装、传送前等待及本地构建脚本。
+同步定制版本号和构建脚本默认值，并合并属性变更处理逻辑，避免隐性编译冲突。
+发布流程改为默认公开 Release 并分任务追加成品。
+---
+ .github/workflows/publish.yml                 | 113 ++++---
+ .gitignore                                    |   1 +
+ .../BetterGenshinImpact.csproj                |   2 +-
+ .../Core/Config/CommonConfig.cs               |  11 +
+ BetterGenshinImpact/Core/Config/Global.cs     |  16 +-
+ .../Core/Config/PathingPartyConfig.cs         |   3 +
+ .../Core/Recognition/ONNX/BgiOnnxModel.cs     |  31 +-
+ .../GameTask/AutoPathing/PathExecutor.cs      |  10 +
+ .../View/Pages/CommonSettingsPage.xaml        |  56 +++-
+ .../Pages/View/ScriptGroupConfigView.xaml     |  26 +-
+ .../ViewModel/MainWindowViewModel.cs          |   5 +
+ .../Pages/CommonSettingsPageViewModel.cs      |  13 +
+ ...56\346\224\271\346\226\207\346\241\243.md" | 170 +++++++++++
+ ...71\351\200\240\351\234\200\346\261\202.md" | 210 +++++++++++++
+ build-actions-local.ps1                       | 241 +++++++++++++++
+ build-actions-new.ps1                         | 280 ++++++++++++++++++
+ clean.ps1                                     |  18 ++
+ 17 files changed, 1126 insertions(+), 80 deletions(-)
+ create mode 100644 "Docs/\344\274\240\351\200\201\345\211\215\347\255\211\345\276\205\346\227\266\351\227\264\344\277\256\346\224\271\346\226\207\346\241\243.md"
+ create mode 100644 "Docs/\345\217\221\345\270\203\346\265\201\347\250\213\346\224\271\351\200\240\351\234\200\346\261\202.md"
+ create mode 100644 build-actions-local.ps1
+ create mode 100644 build-actions-new.ps1
+ create mode 100644 clean.ps1
+
+diff --git a/.github/workflows/publish.yml b/.github/workflows/publish.yml
+index 80ac698c0..67ad92a70 100644
+--- a/.github/workflows/publish.yml
++++ b/.github/workflows/publish.yml
+@@ -5,7 +5,7 @@ on:
+   workflow_dispatch:
+     inputs:
+       version:
+-        description: 'BetterGI 版本号；茶包分支填 release:版本号可在构建成功后公开发布'
++        description: 'BetterGI 版本号，例如 0.66.3+lcb.23.0-NexusBGI-fix9；构建成功后自动发布 Release'
+         required: true
+         type: string
+       expected-sha:
+@@ -23,9 +23,9 @@ on:
+           - dev
+       create-release:
+         type: boolean
+-        description: '创建 GitHub Release 草稿'
++        description: '创建并发布 GitHub Release'
+         required: true
+-        default: false
++        default: true
+       upload-to-steambird:
+         type: boolean
+         description: '上传到 Steambird'
+@@ -37,13 +37,11 @@ jobs:
+     runs-on: ubuntu-latest
+     outputs:
+       version: ${{ steps.set-version.outputs.version }}
+-      publish: ${{ steps.set-version.outputs.publish }}
+     steps:
+-      - name: Validate version and publication choice
++      - name: Validate version
+         id: set-version
+         env:
+           REQUESTED_VERSION: ${{ inputs.version }}
+-          CREATE_DRAFT: ${{ inputs.create-release }}
+           EXPECTED_SHA: ${{ inputs['expected-sha'] }}
+         run: |
+           # expected-commit-guard-v1
+@@ -53,25 +51,13 @@ jobs:
+               exit 1
+             fi
+           fi
+-          version="$REQUESTED_VERSION"
+-          publish=false
+-          if [[ "$version" == release:* ]]; then
+-            if [[ "$GITHUB_REPOSITORY" != kaedelcb/better-genshin-impact || ! "$GITHUB_REF" =~ ^refs/heads/main-OldTeaBag-B[0-9]+$ ]]; then
+-              echo '::error::只能从本仓库的 main-OldTeaBag-B 数字分支公开发布。'
+-              exit 1
+-            fi
+-            if [[ "$CREATE_DRAFT" == true ]]; then
+-              echo '::error::公开发布和创建草稿只能选一种。使用 release: 时请取消勾选创建草稿。'
+-              exit 1
+-            fi
+-            version="${version#release:}"
+-            publish=true
+-          fi
++          # 兼容旧的 release: 前缀写法；去掉前缀后一律按发布处理。
++          version="${REQUESTED_VERSION#release:}"
+           if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+             echo '::error::版本格式不正确，例如 0.66.3+lcb.23.0-NexusBGI-fix9。'
+             exit 1
+           fi
+-          printf 'version=%s\npublish=%s\n' "$version" "$publish" >> "$GITHUB_OUTPUT"
++          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+ 
+   build_web_map_editor:
+     runs-on: ubuntu-latest
+@@ -221,7 +207,9 @@ jobs:
+   
+   build_dist:
+     runs-on: windows-latest
+-    needs: [validate, build_web_map_editor, build_web_scripts_list]
++    needs: [validate, create_release, build_web_map_editor, build_web_scripts_list]
++    permissions:
++      contents: write
+     steps:
+       - name: Enable Git long paths
+         shell: pwsh
+@@ -342,10 +330,23 @@ jobs:
+         with:
+           name: BetterGI_7z
+           path: dist/BetterGI_*.7z
++      - name: 📤 追加绿色版压缩包到 Release
++        if: ${{ inputs.create-release }}
++        uses: softprops/action-gh-release@v1
++        with:
++          tag_name: ${{ needs.validate.outputs.version }}
++          name: BetterGI v${{ needs.validate.outputs.version }}
++          draft: false
++          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
++          fail_on_unmatched_files: true
++          files: |
++            dist/BetterGI_v${{ needs.validate.outputs.version }}.7z
+ 
+   build_installer:
+     runs-on: windows-latest
+     needs: [validate, build_dist]
++    permissions:
++      contents: write
+     steps:
+       - name: Enable Git long paths
+         shell: pwsh
+@@ -475,10 +476,23 @@ jobs:
+         with:
+           name: BetterGI_OnlineInst
+           path: dist/BetterGI/BetterGI.update.exe
++      - name: 📤 追加安装器到 Release
++        if: ${{ inputs.create-release }}
++        uses: softprops/action-gh-release@v1
++        with:
++          tag_name: ${{ needs.validate.outputs.version }}
++          name: BetterGI v${{ needs.validate.outputs.version }}
++          draft: false
++          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
++          fail_on_unmatched_files: true
++          files: |
++            dist/BetterGI.Install.${{ needs.validate.outputs.version }}.exe
+ 
+   build_setup:
+     runs-on: windows-latest
+     needs: [validate, build_dist]
++    permissions:
++      contents: write
+     steps:
+       - name: Enable Git long paths
+         shell: pwsh
+@@ -579,57 +593,36 @@ jobs:
+         with:
+           name: BetterGI_Setup
+           path: BetterGI_Setup*.exe
+-
+-  # 创建 GitHub Release
+-  create_release:
+-    if: github.event.inputs.create-release == 'true'
+-    needs: [validate, build_dist, build_installer]
+-    runs-on: ubuntu-latest
+-    permissions:
+-      contents: write
+-    steps:
+-      - uses: actions/download-artifact@v4
+-        with:
+-          path: artifacts
+-
+-      - name: Create Release
++      - name: 📤 追加安装向导到 Release
++        if: ${{ inputs.create-release }}
+         uses: softprops/action-gh-release@v1
+         with:
+           tag_name: ${{ needs.validate.outputs.version }}
+           name: BetterGI v${{ needs.validate.outputs.version }}
+-          draft: true
++          draft: false
+           prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+           fail_on_unmatched_files: true
+           files: |
+-            artifacts/BetterGI_7z/*.7z
+-            artifacts/BetterGI_Install/*.exe
++            BetterGI_Setup_v${{ needs.validate.outputs.version }}.exe
+ 
+-  publish_release:
+-    name: 公开发布 GitHub Release
+-    if: >-
+-      github.event_name == 'workflow_dispatch' &&
+-      github.repository == 'kaedelcb/better-genshin-impact' &&
+-      needs.validate.outputs.publish == 'true' && !inputs.create-release
+-    needs: [validate, build_dist, build_installer, build_setup]
++  # 创建 GitHub Release（只建壳，成品由各构建任务自行追加）
++  # 任务本身始终执行，避免跳过时连带跳过依赖它的构建任务；是否建 Release 由步骤条件决定。
++  create_release:
++    needs: [validate]
+     runs-on: ubuntu-latest
+-    timeout-minutes: 45
+-    concurrency:
+-      group: bettergi-release-${{ needs.validate.outputs.version }}
+-      cancel-in-progress: false
+-      queue: max
+     permissions:
+-      actions: read
+       contents: write
+     steps:
+-      - uses: actions/checkout@v4
++      - name: Create empty Release
++        if: ${{ inputs.create-release }}
++        uses: softprops/action-gh-release@v1
+         with:
+-          ref: ${{ github.sha }}
+-          persist-credentials: false
+-      - name: 校验两项原始附件并公开发布
+-        env:
+-          GH_TOKEN: ${{ github.token }}
+-          EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
+-        run: python -B tools/release_actions.py
++          tag_name: ${{ needs.validate.outputs.version }}
++          name: BetterGI v${{ needs.validate.outputs.version }}
++          draft: false
++          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
++          # 此处尚无附件，必须为 false，否则会因找不到文件而失败
++          fail_on_unmatched_files: false
+ 
+   mirrorchyan_uploading:
+     if: github.repository_owner == 'babalae' && contains(needs.validate.outputs.version, '-')
+diff --git a/.gitignore b/.gitignore
+index 641bbf2fa..87ba9faa6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -22,6 +22,7 @@ bld/
+ 
+ # Mine
+ /Tmp/
++dist/
+ 
+ # AI temporary design docs
+ Docs/tmp/*
+diff --git a/BetterGenshinImpact/BetterGenshinImpact.csproj b/BetterGenshinImpact/BetterGenshinImpact.csproj
+index 44e191358..0ba164f86 100644
+--- a/BetterGenshinImpact/BetterGenshinImpact.csproj
++++ b/BetterGenshinImpact/BetterGenshinImpact.csproj
+@@ -2,7 +2,7 @@
+ 
+ 	<PropertyGroup>
+ 		<AssemblyName>BetterGI</AssemblyName>
+-		<Version>0.66.3-alpha.1</Version>
++		<Version>0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5</Version>
+ 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+ 		<OutputType>WinExe</OutputType>
+ 		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+diff --git a/BetterGenshinImpact/Core/Config/CommonConfig.cs b/BetterGenshinImpact/Core/Config/CommonConfig.cs
+index 2caa78aec..22e8508be 100644
+--- a/BetterGenshinImpact/Core/Config/CommonConfig.cs
++++ b/BetterGenshinImpact/Core/Config/CommonConfig.cs
+@@ -105,6 +105,12 @@ public partial class CommonConfig : ObservableObject
+     [ObservableProperty]
+     private string _runForVersion = string.Empty;
+ 
++    /// <summary>
++    /// 软件版本号伪装；默认使用程序真实版本号。
++    /// </summary>
++    [ObservableProperty]
++    private string _softwareVersionOverride = Global.RealVersion;
++
+     /// <summary>
+     /// 一个设备只运行一次的已运行设备ID列表
+     /// </summary>
+@@ -141,4 +147,9 @@ public partial class CommonConfig : ObservableObject
+     /// </summary>
+     [ObservableProperty]
+     private string _redeemCodeGlobalFeedsUpdateVersion = string.Empty;
++
++    partial void OnSoftwareVersionOverrideChanged(string value)
++    {
++        Global.VersionOverride = value;
++    }
+ }
+diff --git a/BetterGenshinImpact/Core/Config/Global.cs b/BetterGenshinImpact/Core/Config/Global.cs
+index e7cba0a08..a02f00b89 100644
+--- a/BetterGenshinImpact/Core/Config/Global.cs
++++ b/BetterGenshinImpact/Core/Config/Global.cs
+@@ -9,9 +9,21 @@ namespace BetterGenshinImpact.Core.Config;
+ 
+ public class Global
+ {
+-    public static string Version { get; } = Assembly.GetEntryAssembly()?.
++    private static readonly string _realVersion = Assembly.GetEntryAssembly()?.
+         GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.
+-        InformationalVersion!;
++        InformationalVersion ?? string.Empty;
++
++    private static string _versionOverride = string.Empty;
++
++    public static string RealVersion => _realVersion;
++
++    public static string Version => string.IsNullOrWhiteSpace(_versionOverride) ? RealVersion : _versionOverride.Trim();
++
++    public static string VersionOverride
++    {
++        get => _versionOverride;
++        set => _versionOverride = value ?? string.Empty;
++    }
+ 
+     private static readonly object UserRootGate = new();
+     private static string _startUpPath = AppContext.BaseDirectory;
+diff --git a/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs b/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
+index cd0b8f866..9bf188054 100644
+--- a/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
++++ b/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
+@@ -326,6 +326,9 @@ public partial class PathingPartyConfig : ObservableObject, IJsonOnDeserialized
+     [ObservableProperty]
+     private bool _enablePickupTargetCount = false;
+     
++    [ObservableProperty]
++    private int _preTeleportDelayMs = 0;
++
+     [ObservableProperty]
+     private bool _disableAutoFetchDispatch = false;
+     
+diff --git a/BetterGenshinImpact/Core/Recognition/ONNX/BgiOnnxModel.cs b/BetterGenshinImpact/Core/Recognition/ONNX/BgiOnnxModel.cs
+index 1ce9bd3a1..4c4aef7eb 100644
+--- a/BetterGenshinImpact/Core/Recognition/ONNX/BgiOnnxModel.cs
++++ b/BetterGenshinImpact/Core/Recognition/ONNX/BgiOnnxModel.cs
+@@ -10,14 +10,23 @@ public class BgiOnnxModel
+     /// <summary>
+     /// 模型使用的缓存文件的相对目录
+     /// </summary>
+-    public static readonly string ModelCacheRelativePath = Path.Combine("Cache", Global.Version, "Model");
++    public static string ModelCacheRelativePath => Path.Combine("Cache", Global.Version, "Model");
+ 
+     private static readonly List<BgiOnnxModel> RegisteredModels = [];
+     public string Name { get; private init; }
+     public string ModelRelativePath { get; private init; }
+     public string ModalPath => Global.Absolute(ModelRelativePath);
+-    public string CacheRelativePath { get; private init; }
+-    public string CachePath => Global.Absolute(CacheRelativePath);
++    private string CacheRelativePathName { get; init; }
++    public string CacheRelativePath => Path.Combine(ModelCacheRelativePath, CacheRelativePathName);
++    public string CachePath
++    {
++        get
++        {
++            var cachePath = Global.Absolute(CacheRelativePath);
++            Directory.CreateDirectory(cachePath);
++            return cachePath;
++        }
++    }
+ 
+     #region 模型注册
+ 
+@@ -153,11 +162,11 @@ public class BgiOnnxModel
+ 
+     #endregion
+ 
+-    public BgiOnnxModel(string name, string modelRelativePath, string cacheRelativePath)
++    public BgiOnnxModel(string name, string modelRelativePath, string cacheRelativePathName)
+     {
+         Name = name;
+         ModelRelativePath = modelRelativePath;
+-        CacheRelativePath = cacheRelativePath;
++        CacheRelativePathName = cacheRelativePathName;
+     }
+ 
+     public static bool IsModelExist(BgiOnnxModel model)
+@@ -177,17 +186,13 @@ public class BgiOnnxModel
+ 
+     private static BgiOnnxModel Register(string name, string modelRelativePath)
+     {
+-        return Register(name, modelRelativePath, Path.Combine(ModelCacheRelativePath, name));
++        return Register(name, modelRelativePath, name);
+     }
+ 
+-    private static BgiOnnxModel Register(string name, string modelRelativePath, string cacheRelativePath)
++    private static BgiOnnxModel Register(string name, string modelRelativePath, string cacheRelativePathName)
+     {
+-        var model = new BgiOnnxModel(name, modelRelativePath, cacheRelativePath);
+-        var cachePath = model.CachePath;
+-        if (!Directory.Exists(cachePath))
+-        {
+-            Directory.CreateDirectory(cachePath);
+-        }
++        var model = new BgiOnnxModel(name, modelRelativePath, cacheRelativePathName);
++        _ = model.CachePath;
+ 
+         RegisteredModels.Add(model);
+         return model;
+diff --git a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
+index d7e3d79ca..82387d59a 100644
+--- a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
++++ b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
+@@ -4591,6 +4591,16 @@ public partial class PathExecutor
+             if (pickup is { IsDisposed: false } && pickup.ReachedToken.IsCancellationRequested)
+                 return plannedPickupResume;
+ 
++            // 检查是否为最后一个节点
++            bool isLastNode = nextWaypoint == null;
++            // 检查下一个节点是否是传送点
++            bool isNextTeleport = nextWaypoint?.Type == WaypointType.Teleport.Code;
++            if ((isLastNode || isNextTeleport) && PartyConfig.PreTeleportDelayMs > 0)
++            {
++                Logger.LogInformation("已设置传送前延迟: {Delay} ms", PartyConfig.PreTeleportDelayMs);
++                await Delay(PartyConfig.PreTeleportDelayMs, ct);
++            }
++
+             if (PartyConfig.QuicklySkip && (_lastWaypoint?.Action == ActionEnum.Fight.Code || waypoint.Action == ActionEnum.Fight.Code || nextWaypoint?.Action == ActionEnum.Fight.Code))
+             {
+                 if (nextWaypoint?.Type != WaypointType.Teleport.Code)
+diff --git a/BetterGenshinImpact/View/Pages/CommonSettingsPage.xaml b/BetterGenshinImpact/View/Pages/CommonSettingsPage.xaml
+index 384f0fbb1..67f0b625c 100644
+--- a/BetterGenshinImpact/View/Pages/CommonSettingsPage.xaml
++++ b/BetterGenshinImpact/View/Pages/CommonSettingsPage.xaml
+@@ -26,8 +26,60 @@
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Text="{i18n:T 软件设置}" />
+-        
+-                <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
++
++        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Info24}">
++            <ui:CardControl.Header>
++                <Grid>
++                    <Grid.RowDefinitions>
++                        <RowDefinition Height="Auto" />
++                        <RowDefinition Height="Auto" />
++                        <RowDefinition Height="Auto" />
++                    </Grid.RowDefinitions>
++                    <ui:TextBlock Grid.Row="0"
++                                  Margin="0,0,36,0"
++                                  FontTypography="Body"
++                                  Text="{i18n:T 版本号伪装}"
++                                  TextWrapping="Wrap" />
++                    <Grid Grid.Row="1" Margin="0,8,36,0">
++                        <Grid.ColumnDefinitions>
++                            <ColumnDefinition Width="Auto" />
++                            <ColumnDefinition Width="*" />
++                        </Grid.ColumnDefinitions>
++                        <ui:TextBlock Grid.Column="0"
++                                      Margin="0,0,12,0"
++                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
++                                      Text="{i18n:T 真实版本号：}"
++                                      TextWrapping="NoWrap" />
++                        <ui:TextBlock Grid.Column="1"
++                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
++                                      Text="{Binding RealVersion}"
++                                      TextWrapping="Wrap"
++                                      ToolTip="{Binding RealVersion}" />
++                    </Grid>
++                    <Grid Grid.Row="2" Margin="0,8,36,0">
++                        <Grid.ColumnDefinitions>
++                            <ColumnDefinition Width="Auto" />
++                            <ColumnDefinition Width="*" />
++                            <ColumnDefinition Width="Auto" />
++                        </Grid.ColumnDefinitions>
++                        <ui:TextBlock Grid.Column="0"
++                                      Margin="0,0,12,0"
++                                      VerticalAlignment="Center"
++                                      Text="{i18n:T 伪装版本号}"
++                                      TextWrapping="NoWrap" />
++                        <ui:TextBox Grid.Column="1"
++                                    PlaceholderText="{Binding RealVersion}"
++                                    Text="{Binding Config.CommonConfig.SoftwareVersionOverride, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
++                        <ui:Button Grid.Column="2"
++                                   Margin="8,0,0,0"
++                                   Command="{Binding ResetSoftwareVersionOverrideCommand}"
++                                   Content="{i18n:T 重置}" />
++                    </Grid>
++                </Grid>
++            </ui:CardControl.Header>
++        </ui:CardControl>
++
++        <ui:CardControl Margin="0,0,0,12" Icon="{ui:SymbolIcon Globe24}">
+             <ui:CardControl.Header>
+                 <Grid>
+                     <Grid.RowDefinitions>
+diff --git a/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml b/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
+index 2b61ad751..a7a9cee3e 100644
+--- a/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
++++ b/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
+@@ -218,16 +218,17 @@
+                             <ColumnDefinition Width="Auto" />
+                             <ColumnDefinition Width="Auto" />
+                             <ColumnDefinition Width="Auto" />
++                            <ColumnDefinition Width="Auto" />
+                         </Grid.ColumnDefinitions>
+                         <ui:TextBlock Grid.Row="0"
+                                       Grid.Column="0"
+                                       FontTypography="Body"
+-                                      Text="减少等待(删除战后等待/简易策略等待时间可配置)"
++                                      Text="等待设置(删除战后等待/简易策略等待/传送前额外等待)"
+                                       TextWrapping="Wrap" />
+                         <ui:TextBlock Grid.Row="1"
+                                       Grid.Column="0"
+                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+-                                      Text="锄地和采集中可能会漏捡掉，简易策略配置时间默认900ms（联机时由房主同步给成员）"
++                                      Text="减少等待可能导致锄地和采集中漏捡；简易策略等待默认900ms，传送前等待默认0ms，并在下一节点为传送点或当前节点为尾节点时额外生效"
+                                       TextWrapping="Wrap" />
+                         <ui:ToggleSwitch Grid.Row="0"
+                                          Grid.RowSpan="2"
+@@ -266,6 +267,27 @@
+                                       Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
+                                       Text="简易等待时间(ms)"
+                                       TextWrapping="Wrap" />
++
++                        <ui:TextBox Grid.Row="0"
++                                    Grid.RowSpan="2"
++                                    Grid.Column="5"
++                                    FontSize="10"
++                                    Width="80"
++                                    MaxHeight="30"
++                                    HorizontalAlignment="Center"
++                                    VerticalContentAlignment="Center"
++                                    HorizontalContentAlignment="Center"
++                                    Text="{Binding PathingConfig.PreTeleportDelayMs}" />
++
++                        <ui:TextBlock Grid.Row="0"
++                                      Grid.RowSpan="2"
++                                      Grid.Column="5"
++                                      FontSize="9"
++                                      Margin="0,0,0,40"
++                                      HorizontalAlignment="Center"
++                                      Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"
++                                      Text="传送前等待时间(ms)"
++                                      TextWrapping="Wrap" />
+                     </Grid>
+                     <Grid Margin="16" Visibility="{Binding PathingConfig.IsDisableAutoFetchDispatch, Converter={StaticResource BooleanToVisibilityRevertConverter}}">
+                         <Grid.RowDefinitions>
+diff --git a/BetterGenshinImpact/ViewModel/MainWindowViewModel.cs b/BetterGenshinImpact/ViewModel/MainWindowViewModel.cs
+index 60c9c7f7e..0720bc3f3 100644
+--- a/BetterGenshinImpact/ViewModel/MainWindowViewModel.cs
++++ b/BetterGenshinImpact/ViewModel/MainWindowViewModel.cs
+@@ -131,6 +131,11 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
+         {
+             LoadMainBackground();
+         }
++
++        if (e.PropertyName == nameof(CommonConfig.SoftwareVersionOverride))
++        {
++            OnPropertyChanged(nameof(Title));
++        }
+     }
+ 
+     /// <summary>
+diff --git a/BetterGenshinImpact/ViewModel/Pages/CommonSettingsPageViewModel.cs b/BetterGenshinImpact/ViewModel/Pages/CommonSettingsPageViewModel.cs
+index 2bf9459a0..e0bcad0ce 100644
+--- a/BetterGenshinImpact/ViewModel/Pages/CommonSettingsPageViewModel.cs
++++ b/BetterGenshinImpact/ViewModel/Pages/CommonSettingsPageViewModel.cs
+@@ -89,6 +89,11 @@ public partial class CommonSettingsPageViewModel : ViewModel
+         RecognitionTemplateEditorService recognitionTemplateEditorService)
+     {
+         Config = configService.Get();
++        if (string.IsNullOrWhiteSpace(Config.CommonConfig.SoftwareVersionOverride))
++        {
++            Config.CommonConfig.SoftwareVersionOverride = Global.RealVersion;
++        }
++
+         Config.MaskWindowConfig.EnsureOverlayMetricItems();
+         Config.MaskWindowConfig.MigrateLegacyOverlayMetricsLayout();
+         _navigationService = navigationService;
+@@ -229,6 +234,14 @@ public partial class CommonSettingsPageViewModel : ViewModel
+         }
+     }
+ 
++    public string RealVersion => Global.RealVersion;
++
++    [RelayCommand]
++    private void OnResetSoftwareVersionOverride()
++    {
++        Config.CommonConfig.SoftwareVersionOverride = Global.RealVersion;
++    }
++
+     public ObservableCollection<PaddleOcrModelConfig> PaddleOcrModelConfigs { get; } =
+         new(Enum.GetValues(typeof(PaddleOcrModelConfig)).Cast<PaddleOcrModelConfig>());
+ 
+diff --git "a/Docs/\344\274\240\351\200\201\345\211\215\347\255\211\345\276\205\346\227\266\351\227\264\344\277\256\346\224\271\346\226\207\346\241\243.md" "b/Docs/\344\274\240\351\200\201\345\211\215\347\255\211\345\276\205\346\227\266\351\227\264\344\277\256\346\224\271\346\226\207\346\241\243.md"
+new file mode 100644
+index 000000000..4f745a863
+--- /dev/null
++++ "b/Docs/\344\274\240\351\200\201\345\211\215\347\255\211\345\276\205\346\227\266\351\227\264\344\277\256\346\224\271\346\226\207\346\241\243.md"
+@@ -0,0 +1,170 @@
++# 传送前等待时间修改文档
++
++## 文档状态
++
++- 当前阶段：已按本方案完成实施。
++- 修改原则：只做最小修改，新增等待直接写入现有 `AfterMoveToTarget` 方法，不新增方法，不修改节点主循环。
++- 功能修改范围仅包含：
++  - `BetterGenshinImpact/Core/Config/PathingPartyConfig.cs`
++  - `BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs`
++  - `BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml`
++
++## 1. 修改目标
++
++在“简易等待时间(ms)”右侧新增“传送前等待时间(ms)”选项，默认值为 `0`。
++
++该配置只增加额外等待，不删除、替换、移动或修改任何现有等待逻辑。额外等待判断包含：
++
++1. 当前节点是尾节点：`nextWaypoint == null`。
++2. 下一节点是传送点：`nextWaypoint?.Type == WaypointType.Teleport.Code`。
++
++满足任一条件且配置值大于 `0` 时，额外等待一次。
++
++## 2. 配置修改
++
++文件：`BetterGenshinImpact/Core/Config/PathingPartyConfig.cs`
++
++在 `CombatScriptEndDelayMs` 后新增配置：
++
++```csharp
++[ObservableProperty]
++private int _preTeleportDelayMs = 0;
++```
++
++生成的公共属性为 `PreTeleportDelayMs`。
++
++- 默认值为 `0`，旧配置没有该字段时保持原有行为。
++- 仅当配置值大于 `0` 时增加等待。
++- 不修改 `BuildDefault()` 或其他配置初始化流程。
++
++## 3. 执行逻辑修改
++
++文件：`BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs`
++
++### 3.1 修改位置
++
++只修改现有 `AfterMoveToTarget(WaypointForTrack waypoint, Waypoint? nextWaypoint = null)` 方法。
++
++新增逻辑放在 Action Handler 执行完成及战斗次数统计之后、现有 `QuicklySkip` 判断之前：
++
++```csharp
++// 检查是否为最后一个节点
++bool isLastNode = nextWaypoint == null;
++// 检查下一个节点是否是传送点
++bool isNextTeleport = nextWaypoint?.Type == WaypointType.Teleport.Code;
++
++if ((isLastNode || isNextTeleport) && PartyConfig.PreTeleportDelayMs > 0)
++{
++    await Delay(PartyConfig.PreTeleportDelayMs, ct);
++}
++```
++
++位置示意：
++
++```csharp
++var handler = ActionFactory.GetAfterHandler(waypoint.Action);
++await handler.RunAsync(ct, waypoint, PartyConfig);
++
++if (waypoint.Action == ActionEnum.Fight.Code)
++{
++    SuccessFight++;
++}
++
++// 在此处增加传送前/尾节点额外等待
++
++if (PartyConfig.QuicklySkip && ...)
++{
++    // 原有逻辑保持不变
++}
++```
++
++### 3.2 流程约束
++
++- 不新增辅助方法、扩展方法或决策类。
++- 不修改 `AfterMoveToTarget` 的方法签名。
++- 不修改主循环中 `nextWaypoint` 的计算方式。
++- 不修改现有 `QuicklySkip` 判断、提前 `return`、`Delay(100)`、`CombatScriptEndDelayMs` 或固定 `Delay(895)`。
++- 新增等待位于现有提前返回之前，因此开启“删除战后等待”时也不会跳过该额外等待。
++- 新增等待执行完毕后，继续进入原有流程；原有流程的条件和顺序保持不变。
++- 继续使用现有取消令牌 `ct`。
++- 受 `AfterMoveToTarget` 原有 Action 条件限制，只有进入该方法现有 Action 处理分支的节点才会执行新增判断；不扩大到纯移动、朝向或其他无后置 Action 的节点。
++
++实际顺序为：
++
++```text
++执行当前节点 Action Handler
++→ 更新原有战斗次数统计
++→ 按传送前/尾节点条件增加额外等待
++→ 执行原有 QuicklySkip 或原有 Action 尾部等待
++→ 返回原节点执行流程
++```
++
++## 4. UI 修改
++
++文件：`BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml`
++
++### 4.1 布局
++
++在当前“简易等待时间(ms)”右侧增加“传送前等待时间(ms)”：
++
++- 为当前 `Grid` 追加一个 `Width="Auto"` 的列。
++- 新输入框放在新增列中。
++- 输入框大小直接参考“简易等待时间(ms)”：
++  - `FontSize="10"`
++  - `Width="80"`
++  - `MaxHeight="30"`
++  - 使用相同的水平、垂直和内容对齐方式。
++- 标签使用与“简易等待时间(ms)”相同的字号、颜色、位置和换行方式。
++- 不调整该区域之外的其他 UI。
++
++绑定配置：
++
++```xml
++Text="{Binding PathingConfig.PreTeleportDelayMs}"
++```
++
++### 4.2 文案
++
++主标题调整为：
++
++```text
++等待设置(删除战后等待/简易策略等待/传送前额外等待)
++```
++
++说明文字调整为：
++
++```text
++减少等待可能导致锄地和采集中漏捡；简易策略等待默认900ms，传送前等待默认0ms，并在下一节点为传送点或当前节点为尾节点时额外生效
++```
++
++控件标签：
++
++- `删除战后等待`
++- `简易等待时间(ms)`
++- `传送前等待时间(ms)`
++
++## 5. 行为规则
++
++| 配置值 | 节点状态 | 预期行为 |
++| --- | --- | --- |
++| `0` 或负数 | 任意 | 不增加等待，原流程不变 |
++| 正数 | `nextWaypoint == null` | 在 `AfterMoveToTarget` 原有 Action 处理中额外等待一次 |
++| 正数 | 下一节点为传送点 | 在 `AfterMoveToTarget` 原有 Action 处理中额外等待一次 |
++| 正数 | 下一节点为普通节点 | 不增加等待 |
++
++## 6. 验收标准
++
++1. 新配置默认值为 `0`。
++2. UI 中新增输入框位于“简易等待时间(ms)”右侧，尺寸和样式一致。
++3. 新增判断只写在 `AfterMoveToTarget` 中，未新增任何方法。
++4. 尾节点和下一节点为传送点两种条件都已包含。
++5. 配置值大于 `0` 时只额外等待一次。
++6. `QuicklySkip` 开启时，新增等待仍会在原提前返回之前执行。
++7. 所有现有判断、等待数值、提前返回和调用顺序保持不变。
++8. 不修改节点主循环及其他文件。
++
++## 7. 实施约束
++
++- 不修改上述三个目标文件之外的功能代码或 XAML。
++- 不新增方法或测试代码。
++- 不执行编译验证。
+diff --git "a/Docs/\345\217\221\345\270\203\346\265\201\347\250\213\346\224\271\351\200\240\351\234\200\346\261\202.md" "b/Docs/\345\217\221\345\270\203\346\265\201\347\250\213\346\224\271\351\200\240\351\234\200\346\261\202.md"
+new file mode 100644
+index 000000000..6c5620b4b
+--- /dev/null
++++ "b/Docs/\345\217\221\345\270\203\346\265\201\347\250\213\346\224\271\351\200\240\351\234\200\346\261\202.md"
+@@ -0,0 +1,210 @@
++# 发布流程改造需求
++
++## 一、背景
++
++当前分支 `main-OldTeaBag-B188` 上的 `.github/workflows/publish.yml` 存在四处限制：
++
++1. 公开发布只在 `main-OldTeaBag-B<数字>` 分支且仓库为 `kaedelcb/better-genshin-impact` 时可用，其他分支、其他仓库无法直接发布。
++2. 必须手动勾选「创建 GitHub Release 草稿」或在版本号前手写 `release:` 前缀，默认行为不是发布。
++3. 创建的是草稿（draft），还需人工确认后才公开。
++4. 所有构建任务全部完成后，才由末尾一个独立任务一次性上传全部附件；任一环节失败则本次运行的产物全部无法进入 Release。
++
++## 二、目标
++
++把发布流程改为「分支无关、默认发布、直接公开、边构建边追加」的模式，减少人工步骤，并让已完成的成品尽早可见。
++
++## 三、实施蓝本
++
++**以分支 `DF4.3-Patch` 的 `.github/workflows/publish.yml` 为蓝本改造。**
++
++理由：该蓝本没有引入 `tools/release_actions.py` 及其配套测试，发布完全由 YAML 与 `softprops/action-gh-release` 实现，改造不涉及任何 Python 脚本。
++
++两个分支的相关文件对比：
++
++| 文件 | `DF4.3-Patch` | `main-OldTeaBag-B188` |
++| --- | --- | --- |
++| `.github/workflows/publish.yml` | 有（790 行，12 个 job） | 有（846 行，13 个 job） |
++| `tools/release_actions.py` | 无 | 有 |
++| `Test/ReleaseActions/test_release_actions.py` | 无 | 有 |
++| `.github/workflows/release-artifacts-check.yml` | 无 | 有 |
++
++蓝本选用 `softprops/action-gh-release`。该 action 的行为：同 `tag_name` 的 Release 已存在时，**更新已有 Release 并追加附件**，而不是报错重建。这一特性是 R4「先建空 Release，之后各任务自行追加」能够纯 YAML 实现的前提。
++
++## 四、需求项
++
++### R1 去除分支名限制
++
++- 移除工作流对触发分支名称的限制，任意分支手动触发均可执行发布流程。
++- 移除对仓库所有者的限制，当前仓库自身即可发布。
++- 保留版本号格式校验（语义化版本），该项不属于分支限制。
++
++蓝本现状：`validate` 任务只做版本号格式校验，无分支判断，**本项无需改动**。
++
++**验收**：在非 `main-OldTeaBag-B*` 的分支上手动触发，发布流程正常执行，不因分支名被拒绝。
++
++### R2 默认发布 Release
++
++- 触发参数中的发布开关默认值为「发布」，无需额外勾选即可进入发布流程。
++- 不再要求版本号携带 `release:` 前缀；直接填写版本号即表示发布。
++- 若仍保留该前缀作为兼容写法，需能被自动识别并剥离。
++
++蓝本改法：`create-release` 输入的 `default: false` 改为 `true`。
++
++**验收**：只填写版本号、不做其他勾选时，运行结束后仓库中出现对应版本的 Release。
++
++### R3 删除草稿限制，直接发布
++
++- 创建的 Release 状态为公开，不经过草稿阶段。
++- 移除「草稿」与「发布」互斥的校验与提示。
++- 移除发布前从草稿切换为公开的二次确认步骤。
++
++蓝本改法：`softprops/action-gh-release` 的 `draft: true` 改为 `draft: false`。
++
++**验收**：Release 创建完成后立即可被未登录用户访问，不出现「需手动点击发布」的中间态。
++
++### R4 先创建 Release，再逐步追加成品
++
++发布顺序调整为：
++
++1. 校验通过后**立即创建**对应版本的空 Release（公开状态）。
++2. 后续每个构建任务完成后，**自行把本次产出的成品上传到该 Release**，不等待其他任务。
++3. 各任务互不阻塞；某个任务失败不影响其他任务已上传的成品。
++
++成品与来源任务对应关系：
++
++| 成品 | 来源任务 | Actions 产物名 | 产物路径 |
++| --- | --- | --- | --- |
++| `BetterGI_v<版本>.7z` | `build_dist` | `BetterGI_7z` | `dist/BetterGI_*.7z` |
++| `BetterGI.Install.<版本>.exe` | `build_installer` | `BetterGI_Install` | `dist/BetterGI.Install.*.exe` |
++| `BetterGI_Setup_v<版本>.exe` | `build_setup` | `BetterGI_Setup` | `BetterGI_Setup*.exe` |
++
++注意：蓝本原 `create_release` 的 `needs` 是 `[validate, build_dist, build_installer]`，**未包含 `build_setup`**，因此原流程的 Release 里从来没有 `BetterGI_Setup` 安装向导。拆开后正好补上这一项。
++
++**验收**：
++- Release 在第一个成品产出前即已存在（可观察到空附件的时间窗口）。
++- 三个成品分别出现，单个任务完成即上传，不等待全部完成。
++- 中途失败时，已上传的成品保留在 Release 中。
++
++## 五、实施方案
++
++### 5.1 输入参数调整
++
++```yaml
++      create-release:
++        type: boolean
++        description: '创建并发布 GitHub Release'
++        required: true
++        default: true        # 原为 false
++```
++
++版本号输入去掉 `release:` 前缀相关说明，直接填版本号。若需兼容旧写法，在 `validate` 中加一行剥离：
++
++```bash
++version="${version#release:}"
++```
++
++### 5.2 新建独立建 Release 任务
++
++将蓝本原有的 `create_release` 改造为「只建壳、不传附件」，`needs` 只保留 `validate`，使其在构建开始前就执行：
++
++```yaml
++  create_release:
++    needs: [validate]
++    runs-on: ubuntu-latest
++    permissions:
++      contents: write
++    steps:
++      - uses: softprops/action-gh-release@v1
++        with:
++          tag_name: ${{ needs.validate.outputs.version }}
++          name: BetterGI v${{ needs.validate.outputs.version }}
++          draft: false
++          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
++          fail_on_unmatched_files: false
++```
++
++`fail_on_unmatched_files: false` 是必须的——此时没有附件，设为 `true` 会直接失败。
++
++`tag_name` 会创建对应的 Git 标签。若标签已存在，该 action 会复用而非报错。
++
++### 5.3 三个构建任务各自追加
++
++在 `build_dist`、`build_installer`、`build_setup` 三个任务末尾，各自在原有 `upload-artifact` 步骤之后增加一步：
++
++```yaml
++      - name: 📤 追加到 Release
++        uses: softprops/action-gh-release@v1
++        with:
++          tag_name: ${{ needs.validate.outputs.version }}
++          draft: false
++          fail_on_unmatched_files: true
++          files: |
++            <本任务产物路径>
++```
++
++三处 `files` 分别填：
++
++| 任务 | `files` |
++| --- | --- |
++| `build_dist` | `dist/BetterGI_v${{ needs.validate.outputs.version }}.7z` |
++| `build_installer` | `dist/BetterGI.Install.${{ needs.validate.outputs.version }}.exe` |
++| `build_setup` | `BetterGI_Setup_v${{ needs.validate.outputs.version }}.exe` |
++
++`build_setup` 的产物在仓库根目录（`ren BetterGI_Setup.exe BetterGI_Setup_v<版本>.exe`），不在 `dist/` 下，路径需注意。
++
++### 5.4 依赖关系变化
++
++改造后各任务依赖关系：
++
++```
++validate
++  └─ create_release（建空 Release）
++
++build_web_map_editor ─┐
++build_web_scripts_list ─┴─ build_dist ──┬─ build_installer
++                                        └─ build_setup
++```
++
++`build_installer` 与 `build_setup` 均只依赖 `build_dist`，二者可并行，各自完成后立即上传自己的成品。
++
++### 5.5 与既有任务的关系
++
++- `mirrorchyan_uploading`、`cnb_uploading`、`cnb_trigger`、`upload_to_steambird` 四个任务保持原样，不受本次改造影响。
++- 它们仍依赖 `build_dist` 与 `build_installer`，产物仍通过 Actions artifacts 传递，与 Release 流程互不干扰。
++
++### 5.6 完整改动清单
++
++| 位置 | 改动 |
++| --- | --- |
++| `on.workflow_dispatch.inputs.create-release` | `default: false` → `true`，描述改为「创建并发布」 |
++| `jobs.create_release` | `needs` 改为 `[validate]`；删除 `download-artifact` 步骤；`draft` 改 `false`；`fail_on_unmatched_files` 改 `false`；删除 `files` |
++| `jobs.build_dist` 末尾 | 新增一步上传 `dist/BetterGI_v<版本>.7z` |
++| `jobs.build_installer` 末尾 | 新增一步上传 `dist/BetterGI.Install.<版本>.exe` |
++| `jobs.build_setup` 末尾 | 新增一步上传 `BetterGI_Setup_v<版本>.exe` |
++
++## 六、约束与边界
++
++- 版本号格式校验保持不变。
++- 已有同版本标签或 Release 时不覆盖、不续传，按原逻辑报错并保留现状。
++- 发布仍使用运行期临时令牌，不引入个人长期凭据。
++- 三个任务并发向同一 Release 追加附件，可能触发 GitHub API 限流或短暂冲突；实施时需实测一次，必要时在任务级加 `concurrency` 分组。
++
++## 七、影响范围
++
++| 文件 | 变更性质 |
++| --- | --- |
++| `.github/workflows/publish.yml` | 唯一需要修改的文件 |
++| `tools/release_actions.py` | **不修改**（蓝本不含此文件，改造后工作流不再调用） |
++| `Test/ReleaseActions/` | **不修改**（同上） |
++| `.github/workflows/release-artifacts-check.yml` | **不修改**（同上） |
++| `Docs/ci-release-artifacts.md` | 使用说明需同步更新（实施时处理） |
++
++### 关于 CI 检查失败
++
++`main-OldTeaBag-B188` 上的 `.github/workflows/release-artifacts-check.yml` 会在 `publish.yml` 变更时自动触发，其中用例断言 `jobs["publish_release"]` 必须存在、`needs` 为四个任务、`if` 含 `!inputs.create-release`。改造后这些断言必然失败。
++
++**该检查失败可以无视，不删除相关文件，也不修改测试用例。**
++
++## 八、暂不实施
++
++本文档仅记录需求与实施方案，本次不修改上述任何脚本与配置。待确认后另行实施。
+diff --git a/build-actions-local.ps1 b/build-actions-local.ps1
+new file mode 100644
+index 000000000..64b72e839
+--- /dev/null
++++ b/build-actions-local.ps1
+@@ -0,0 +1,241 @@
++﻿param([string]$Version = "0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5")
++
++# 函数：更新版本号（保持编码）
++function Update-VersionInFile {
++    param(
++        [string]$FilePath,
++        [string]$NewVersion
++    )
++    if (Test-Path $FilePath) {
++        $content = Get-Content $FilePath -Raw -Encoding UTF8
++        if ($content -match '<Version>.*</Version>') {
++            $content = $content -replace '<Version>.*</Version>', "<Version>$NewVersion</Version>"
++            [System.IO.File]::WriteAllText($FilePath, $content, [System.Text.UTF8Encoding]::new($false))
++            $script:updatedFiles += $FilePath
++            return $true
++        }
++        if ($FilePath -match 'param\(\[string\]\$Version') {
++            $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$NewVersion`""
++            [System.IO.File]::WriteAllText($FilePath, $content, [System.Text.UTF8Encoding]::new($false))
++            $script:updatedFiles += $FilePath
++            return $true
++        }
++    }
++    return $false
++}
++
++# 函数：同步版本号到另一个脚本
++function Sync-VersionToOther {
++    param([string]$NewVersion)
++    $otherScript = "build-actions-new.ps1"
++    if ($MyInvocation.MyCommand.Name -match "local") { $otherScript = "build-actions-local.ps1" }
++    if (Test-Path $otherScript) {
++        $content = Get-Content $otherScript -Raw -Encoding UTF8
++        if ($content -match 'param\(\[string\]\$Version = "([^"]+)"') {
++            $content = $content -replace 'param\(\[string\]\$Version = "([^"]+)"', "`$Version = `"$NewVersion`""
++            [System.IO.File]::WriteAllText($otherScript, $content, [System.Text.UTF8Encoding]::new($false))
++            Write-Host "  已同步版本到: $otherScript" -ForegroundColor Gray
++        }
++    }
++}
++
++$updatedFiles = @()
++
++# 编译前先更新csproj和另一个脚本的版本号
++Write-Host "`n[0] 更新版本号..." -ForegroundColor Cyan
++Update-VersionInFile -FilePath "BetterGenshinImpact\BetterGenshinImpact.csproj" -NewVersion $Version
++Sync-VersionToOther -NewVersion $Version
++
++Write-Host "=== BetterGI 本地构建脚本 ===" -ForegroundColor Cyan
++Write-Host "版本: $Version" -ForegroundColor Yellow
++
++# 计时开始
++$totalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++# 1. 强制清理临时目录
++Write-Host "`n[1/8] 清理临时目录..." -ForegroundColor Cyan
++Start-Sleep -Seconds 2
++
++$cleanDirs = @(
++    "Fischless.WindowsInput\bin",
++    "Fischless.WindowsInput\obj",
++    "Fischless.HotkeyCapture\bin",
++    "Fischless.HotkeyCapture\obj",
++    "Fischless.GameCapture\bin",
++    "Fischless.GameCapture\obj",
++    "BetterGenshinImpact\bin",
++    "BetterGenshinImpact\obj"
++)
++
++foreach ($dir in $cleanDirs) {
++    if (Test-Path $dir) {
++        cmd /c "rmdir /s /q $dir 2>nul"
++        Write-Host "  已删除: $dir" -ForegroundColor Green
++    } else {
++        Write-Host "  未找到: $dir" -ForegroundColor Gray
++    }
++}
++
++# 2. 发布
++Write-Host "`n[2/8] 开始编译..." -ForegroundColor Cyan
++$compileStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++# dotnet clean
++# dotnet publish BetterGenshinImpact/BetterGenshinImpact.csproj `
++#     -c Release `
++#     -p:Version=$Version `
++#     -p:PublishSingleFile=true `
++#     -p:EnableCompressionInSingleFile=true `
++#     -p:DebugType=none `
++#     -p:DebugSymbols=false `
++#     --runtime win-x64
++dotnet publish BetterGenshinImpact/BetterGenshinImpact.csproj `
++    -c Release `
++    -p:PublishProfile=FolderProfile `
++    -p:Version=$Version `
++
++if ($LASTEXITCODE -ne 0) {
++    Write-Host "❌ 编译失败，退出代码: $LASTEXITCODE" -ForegroundColor Red
++    exit $LASTEXITCODE
++}
++
++$compileStopwatch.Stop()
++$compileTime = $compileStopwatch.Elapsed
++Write-Host "✅ 编译完成，耗时: $($compileTime.ToString('hh\:mm\:ss'))" -ForegroundColor Green
++
++# 3. 查找发布目录
++Write-Host "`n[3/8] 查找发布目录..." -ForegroundColor Cyan
++$publishDir = Get-ChildItem -Path "BetterGenshinImpact\bin" -Recurse -Directory -Filter "publish" |
++    Where-Object { $_.FullName -like "*Release*" } |
++    Select-Object -First 1 -ExpandProperty FullName
++$sourceDir = Join-Path $publishDir "win-x64"
++if ($sourceDir) {
++    Write-Host "✅ 找到发布目录: $sourceDir" -ForegroundColor Green
++} else {
++    Write-Host "❌ 未找到发布目录" -ForegroundColor Red
++    exit 1
++}
++
++# 4. 清理发布目录
++Write-Host "`n[4/8] 清理发布目录..." -ForegroundColor Cyan
++if ($sourceDir) {
++    $beforeSize = (Get-ChildItem -Path $sourceDir -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB
++
++    # 定义要清理的文件类型
++    $libFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*.lib"
++    $pdbFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*.pdb"
++    $ffmpegFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*ffmpeg*.dll"
++
++    # 执行删除
++    $libFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++    $pdbFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++    $ffmpegFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++    $cor3Files | Remove-Item -Force -ErrorAction SilentlyContinue
++
++    $afterSize = (Get-ChildItem -Path $sourceDir -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1MB
++    $savedSize = $beforeSize - $afterSize
++
++    Write-Host "✅ 已移除: $($libFiles.Count) 个 .lib 文件" -ForegroundColor Green
++    Write-Host "✅ 已移除: $($pdbFiles.Count) 个 .pdb 文件" -ForegroundColor Green
++    Write-Host "✅ 已移除: $($ffmpegFiles.Count) 个 ffmpeg dll 文件" -ForegroundColor Green
++    Write-Host "💾 清理节省空间: $([math]::Round($savedSize, 2)) MB" -ForegroundColor Cyan
++}
++
++# 5. 复制到 dist
++Write-Host "`n[5/8] 复制到分发目录..." -ForegroundColor Cyan
++$distDir = "dist\BetterGI"
++if (Test-Path $distDir) {
++    Remove-Item -Path $distDir -Recurse -Force -ErrorAction SilentlyContinue
++}
++New-Item -Path $distDir -ItemType Directory -Force | Out-Null
++if ($sourceDir) {
++    Copy-Item -Path "$sourceDir\*" -Destination $distDir -Recurse -Force
++    Write-Host "✅ 已复制到: $distDir" -ForegroundColor Green
++}
++
++# 6. 清理不必要的文件
++Write-Host "`n[6/8] 清理临时目录..." -ForegroundColor Cyan
++Start-Sleep -Seconds 2
++
++$cleanDirs = @(
++    "Fischless.WindowsInput\bin",
++    "Fischless.WindowsInput\obj",
++    "Fischless.HotkeyCapture\bin",
++    "Fischless.HotkeyCapture\obj",
++    "Fischless.GameCapture\bin",
++    "Fischless.GameCapture\obj",
++    "BetterGenshinImpact\bin",
++    "BetterGenshinImpact\obj"
++)
++
++foreach ($dir in $cleanDirs) {
++    if (Test-Path $dir) {
++        cmd /c "rmdir /s /q $dir 2>nul"
++        Write-Host "  已删除: $dir" -ForegroundColor Green
++    } else {
++        Write-Host "  未找到: $dir" -ForegroundColor Gray
++    }
++}
++dotnet restore BetterGenshinImpact/BetterGenshinImpact.csproj
++
++# 7. 打包
++Write-Host "`n[7/8] 开始打包..." -ForegroundColor Cyan
++$packageStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++Push-Location dist
++if (Get-Command 7z -ErrorAction SilentlyContinue) {
++    Write-Host "使用 7z 进行压缩..." -ForegroundColor Yellow
++    7z a "BetterGI_v$Version.7z" BetterGI -t7z -mx=5 -r -y
++    if ($LASTEXITCODE -ne 0) {
++        Write-Host "⚠️ 7z 压缩可能出现问题，退出代码: $LASTEXITCODE" -ForegroundColor Yellow
++    }
++    $archiveType = "7z"
++} else {
++    Write-Host "使用 PowerShell Compress-Archive 进行压缩..." -ForegroundColor Yellow
++    Compress-Archive -Path "BetterGI" -DestinationPath "BetterGI_v$Version.zip" -Force
++    $archiveType = "zip"
++}
++Pop-Location
++
++$packageStopwatch.Stop()
++$packageTime = $packageStopwatch.Elapsed
++Write-Host "✅ 打包完成，耗时: $($packageTime.ToString('hh\:mm\:ss'))" -ForegroundColor Green
++
++# 计时结束
++$totalStopwatch.Stop()
++$totalTime = $totalStopwatch.Elapsed
++
++# 8. 输出统计信息
++Write-Host "`n========================================" -ForegroundColor Cyan
++Write-Host "           构 建 统 计                  " -ForegroundColor Cyan
++Write-Host "========================================" -ForegroundColor Cyan
++Write-Host "⏱️  编译时间: $($compileTime.ToString('hh\:mm\:ss\.fff'))" -ForegroundColor Yellow
++Write-Host "⏱️  打包时间: $($packageTime.ToString('hh\:mm\:ss\.fff'))" -ForegroundColor Yellow
++Write-Host "⏱️  其他操作: $($totalTime.Subtract($compileTime).Subtract($packageTime).ToString('hh\:mm\:ss\.fff'))" -ForegroundColor Gray
++Write-Host "----------------------------------------" -ForegroundColor Cyan
++Write-Host "⏱️  总耗时:   $($totalTime.ToString('hh\:mm\:ss\.fff'))" -ForegroundColor Green
++Write-Host "========================================" -ForegroundColor Cyan
++
++Write-Host "`n=== 输出位置 ===" -ForegroundColor Cyan
++Write-Host "📁 发布目录: $sourceDir" -ForegroundColor Yellow
++Write-Host "📁 分发目录: $distDir" -ForegroundColor Yellow
++
++# 查找生成的压缩包
++$archiveFile = Get-ChildItem -Path "dist" -Filter "BetterGI_v*.$archiveType" | Select-Object -First 1
++if ($archiveFile) {
++    $archiveSize = [math]::Round($archiveFile.Length / 1MB, 2)
++    Write-Host "📦 压缩包: $($archiveFile.FullName) ($archiveSize MB)" -ForegroundColor Green
++}
++
++# 打印 exe 文件位置
++$exeFile = Get-ChildItem -Path $distDir -Filter "*.exe" | Select-Object -First 1
++if ($exeFile) {
++    $exeSize = [math]::Round($exeFile.Length / 1MB, 2)
++    Write-Host "🚀 可执行文件: $($exeFile.FullName) ($exeSize MB)" -ForegroundColor Green
++}
++
++# 打印文件统计
++$fileCount = (Get-ChildItem -Path $distDir -Recurse -File).Count
++Write-Host "📄 文件总数: $fileCount" -ForegroundColor Cyan
++
++Write-Host "`n✅ 构建成功完成!" -ForegroundColor Green
+diff --git a/build-actions-new.ps1 b/build-actions-new.ps1
+new file mode 100644
+index 000000000..9be4cf564
+--- /dev/null
++++ b/build-actions-new.ps1
+@@ -0,0 +1,280 @@
++﻿param(
++    [string]$Version = "0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5",
++    [string]$KachinaChannel = "release",
++    [switch]$SkipClone,
++    [switch]$SkipBuild,
++    [switch]$SkipPackage
++)
++
++# 颜色输出函数
++function Write-Step { param([string]$Message) Write-Host "[步骤] $Message" -ForegroundColor Cyan }
++function Write-Success { param([string]$Message) Write-Host "✅ $Message" -ForegroundColor Green }
++function Write-Info { param([string]$Message) Write-Host "ℹ️ $Message" -ForegroundColor Yellow }
++function Write-Error { param([string]$Message) Write-Host "❌ $Message" -ForegroundColor Red }
++
++Write-Host "=== BetterGI 自动化构建脚本 ===" -ForegroundColor Cyan
++Write-Host "版本: $Version" -ForegroundColor Yellow
++Write-Host "Kachina 通道: $KachinaChannel" -ForegroundColor Yellow
++
++# 计时开始
++$totalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++# ============================================
++# 1. 克隆资源仓库
++# ============================================
++if (-not $SkipClone) {
++    Write-Step "开始克隆资源仓库..."
++
++    # 临时目录
++    $tempDir = ".build_temp"
++    if (Test-Path $tempDir) { Remove-Item -Path $tempDir -Recurse -Force }
++    New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
++
++    # 1.1 克隆 map editor web
++    $mapEditorDir = "$tempDir\map-editor"
++    if (-not (Test-Path $mapEditorDir)) {
++        Write-Info "克隆 bettergi-map (web map editor)..."
++        git clone --depth 1 https://github.com/huiyadanli/bettergi-map.git $mapEditorDir
++        if ($LASTEXITCODE -ne 0) {
++            Write-Error "克隆 bettergi-map 失败"
++            exit 1
++        }
++        Push-Location $mapEditorDir
++        npm install
++        npm run build:single
++        Pop-Location
++    }
++
++    # 1.2 克隆 scripts list web
++    $scriptsListDir = "$tempDir\scripts-list"
++    if (-not (Test-Path $scriptsListDir)) {
++        Write-Info "克隆 bettergi-script-web (scripts list)..."
++        git clone --depth 1 https://github.com/zaodonganqi/bettergi-script-web.git $scriptsListDir
++        if ($LASTEXITCODE -ne 0) {
++            Write-Error "克隆 bettergi-script-web 失败"
++            exit 1
++        }
++        Push-Location $scriptsListDir
++        npm install
++        npm run build:single
++        Pop-Location
++    }
++
++    # 1.3 克隆 publish 仓库
++    $publishDir = "$tempDir\publish"
++    if (-not (Test-Path $publishDir)) {
++        Write-Info "克隆 bettergi-publish (资源文件)..."
++        git clone --depth 1 https://github.com/babalae/bettergi-publish.git $publishDir
++        if ($LASTEXITCODE -ne 0) {
++            Write-Error "克隆 bettergi-publish 失败"
++            exit 1
++        }
++    }
++
++    # 复制资源到 dist 目录
++    $distDir = "dist\BetterGI"
++    $assetsDir = "$distDir\Assets"
++
++    # 创建目录结构
++    New-Item -Path "$assetsDir\Map\Editor" -ItemType Directory -Force | Out-Null
++    New-Item -Path "$assetsDir\Web\ScriptRepo" -ItemType Directory -Force | Out-Null
++    New-Item -Path "$assetsDir\Map" -ItemType Directory -Force | Out-Null
++
++    # 复制 map editor
++    if (Test-Path "$mapEditorDir\dist") {
++        Copy-Item -Path "$mapEditorDir\dist\*" -Destination "$assetsDir\Map\Editor" -Recurse -Force
++        Write-Success "已复制 Map Editor 资源"
++    }
++
++    # 复制 scripts list
++    if (Test-Path "$scriptsListDir\dist") {
++        Copy-Item -Path "$scriptsListDir\dist\*" -Destination "$assetsDir\Web\ScriptRepo" -Recurse -Force
++        Write-Success "已复制 Scripts List 资源"
++    }
++
++    # 复制 publish 资源
++    if (Test-Path $publishDir) {
++        # 复制 zst 文件
++        Get-ChildItem -Path $publishDir -Filter "*.zst" | ForEach-Object {
++            $destFile = "$assetsDir\Map\$($_.Name)"
++            if (Test-Path $_.FullName) {
++                Copy-Item -Path $_.FullName -Destination $destFile -Force
++            }
++        }
++        # 复制 zip 文件
++        Get-ChildItem -Path $publishDir -Filter "*.zip" | ForEach-Object {
++            $destFile = "$assetsDir\Map\$($_.Name)"
++            if (Test-Path $_.FullName) {
++                Copy-Item -Path $_.FullName -Destination $destFile -Force
++            }
++        }
++        Write-Success "已复制 Publish 资源"
++    }
++
++    Write-Success "资源仓库处理完成"
++} else {
++    Write-Info "跳过克隆资源仓库"
++    $distDir = "dist\BetterGI"
++}
++
++# ============================================
++# 2. 更新版本号
++# ============================================
++Write-Step "更新版本号..."
++$csprojPath = "BetterGenshinImpact\BetterGenshinImpact.csproj"
++if (Test-Path $csprojPath) {
++    $content = Get-Content $csprojPath -Raw -Encoding UTF8
++    if ($content -match '<Version>.*</Version>') {
++        $content = $content -replace '<Version>.*</Version>', "<Version>$Version</Version>"
++        [System.IO.File]::WriteAllText($csprojPath, $content, [System.Text.UTF8Encoding]::new($false))
++        Write-Success "版本号已更新为: $Version"
++    }
++}
++
++# 同步版本到本地脚本
++$localScript = "build-actions-local.ps1"
++if (Test-Path $localScript) {
++    $content = Get-Content $localScript -Raw -Encoding UTF8
++    if ($content -match 'param\(\[string\]\$Version = "([^"]+)"\)') {
++        $content = $content -replace 'param\(\[string\]\$Version = "[^"]+"\)', ('$Version = "0.66.2+lcb.22.9-NexusBGI-fix11-DF4.3")')
++        [System.IO.File]::WriteAllText($localScript, $content, [System.Text.UTF8Encoding]::new($false))
++        Write-Info "已同步版本到: $localScript"
++    }
++}
++
++# ============================================
++# 3. 编译项目
++# ============================================
++if (-not $SkipBuild) {
++    Write-Step "开始编译项目..."
++    $compileStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++    dotnet publish BetterGenshinImpact/BetterGenshinImpact.csproj `
++        -c Release `
++        -p:PublishProfile=FolderProfile `
++        -p:Version=$Version
++
++    if ($LASTEXITCODE -ne 0) {
++        Write-Error "编译失败，退出代码: $LASTEXITCODE"
++        exit $LASTEXITCODE
++    }
++
++    $compileStopwatch.Stop()
++    Write-Success "编译完成，耗时: $($compileStopwatch.Elapsed.ToString('hh\:mm\:ss'))"
++} else {
++    Write-Info "跳过编译"
++}
++
++# ============================================
++# 4. 整理发布文件
++# ============================================
++Write-Step "整理发布文件..."
++
++# 查找发布目录
++$publishDir = Get-ChildItem -Path "BetterGenshinImpact\bin" -Recurse -Directory -Filter "publish" |
++    Where-Object { $_.FullName -like "*Release*" } |
++    Select-Object -First 1 -ExpandProperty FullName
++$sourceDir = Join-Path $publishDir "win-x64"
++
++if (-not (Test-Path $sourceDir)) {
++    Write-Error "未找到发布目录: $sourceDir"
++    exit 1
++}
++Write-Info "发布目录: $sourceDir"
++
++# 清理不必要的文件
++$libFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*.lib"
++$pdbFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*.pdb"
++$ffmpegFiles = Get-ChildItem -Path $sourceDir -Recurse -Filter "*ffmpeg*.dll"
++
++$libFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++$pdbFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++$ffmpegFiles | Remove-Item -Force -ErrorAction SilentlyContinue
++
++Write-Success "已清理: $($libFiles.Count) 个 .lib, $($pdbFiles.Count) 个 .pdb, $($ffmpegFiles.Count) 个 ffmpeg dll"
++
++# 复制到 dist
++if (Test-Path $distDir) { Remove-Item -Path $distDir -Recurse -Force }
++New-Item -Path $distDir -ItemType Directory -Force | Out-Null
++Copy-Item -Path "$sourceDir\*" -Destination $distDir -Recurse -Force
++
++# 如果有预先克隆的资源，复制进去
++if (-not $SkipClone) {
++    if (Test-Path "$assetsDir\Map\Editor") {
++        Copy-Item -Path "$assetsDir\Map\Editor\*" -Destination "$distDir\Assets\Map\Editor" -Recurse -Force
++    }
++    if (Test-Path "$assetsDir\Web\ScriptRepo") {
++        Copy-Item -Path "$assetsDir\Web\ScriptRepo\*" -Destination "$distDir\Assets\Web\ScriptRepo" -Recurse -Force
++    }
++    if (Test-Path "$assetsDir\Map\*.zst") {
++        Copy-Item -Path "$assetsDir\Map\*.zst" -Destination "$distDir\Assets\Map" -Recurse -Force
++    }
++    if (Test-Path "$assetsDir\Map\*.zip") {
++        Copy-Item -Path "$assetsDir\Map\*.zip" -Destination "$distDir\Assets\Map" -Recurse -Force
++    }
++}
++
++Write-Success "文件整理完成"
++
++# ============================================
++# 5. 打包
++# ============================================
++if (-not $SkipPackage) {
++    Write-Step "开始打包..."
++    $packageStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
++
++    Push-Location dist
++    if (Get-Command 7z -ErrorAction SilentlyContinue) {
++        7z a "BetterGI_v$Version.7z" BetterGI -t7z -mx=5 -r -y
++        if ($LASTEXITCODE -ne 0) {
++            Write-Error "7z 压缩失败，退出代码: $LASTEXITCODE"
++        } else {
++            Write-Success "7z 打包完成"
++        }
++        $archiveType = "7z"
++    } else {
++        Compress-Archive -Path "BetterGI" -DestinationPath "BetterGI_v$Version.zip" -Force
++        Write-Success "ZIP 打包完成"
++        $archiveType = "zip"
++    }
++    Pop-Location
++
++    $packageStopwatch.Stop()
++    Write-Success "打包完成，耗时: $($packageStopwatch.Elapsed.ToString('hh\:mm\:ss'))"
++} else {
++    Write-Info "跳过打包"
++}
++
++# 清理临时目录
++if (-not $SkipClone -and (Test-Path ".build_temp")) {
++    Remove-Item -Path ".build_temp" -Recurse -Force
++    Write-Info "已清理临时目录"
++}
++
++# 计时结束
++$totalStopwatch.Stop()
++
++# 输出统计
++Write-Host "`n========================================" -ForegroundColor Cyan
++Write-Host "           构 建 统 计                  " -ForegroundColor Cyan
++Write-Host "========================================" -ForegroundColor Cyan
++Write-Host "⏱️  总耗时: $($totalStopwatch.Elapsed.ToString('hh\:mm\:ss'))" -ForegroundColor Green
++Write-Host "========================================" -ForegroundColor Cyan
++
++Write-Host "`n=== 输出文件 ===" -ForegroundColor Cyan
++$archiveFile = Get-ChildItem -Path "dist" -Filter "BetterGI_v*.$archiveType" | Select-Object -First 1
++if ($archiveFile) {
++    $archiveSize = [math]::Round($archiveFile.Length / 1MB, 2)
++    Write-Host "📦 压缩包: $($archiveFile.FullName) ($archiveSize MB)" -ForegroundColor Green
++}
++
++$exeFile = Get-ChildItem -Path $distDir -Filter "*.exe" | Select-Object -First 1
++if ($exeFile) {
++    $exeSize = [math]::Round($exeFile.Length / 1MB, 2)
++    Write-Host "🚀 主程序: $($exeFile.FullName) ($exeSize MB)" -ForegroundColor Green
++}
++
++$fileCount = (Get-ChildItem -Path $distDir -Recurse -File).Count
++Write-Host "📄 文件总数: $fileCount" -ForegroundColor Cyan
++
++Write-Host "`n✅ 构建成功完成!" -ForegroundColor Green
+diff --git a/clean.ps1 b/clean.ps1
+new file mode 100644
+index 000000000..f29570675
+--- /dev/null
++++ b/clean.ps1
+@@ -0,0 +1,18 @@
++# clean.ps1 - 单独运行清理
++Write-Host "Cleaning temporary directories..." -ForegroundColor Cyan
++
++# 使用 cmd 命令强制删除
++cmd /c "rmdir /s /q Fischless.WindowsInput\bin 2>nul"
++cmd /c "rmdir /s /q Fischless.WindowsInput\obj 2>nul"
++cmd /c "rmdir /s /q Fischless.HotkeyCapture\bin 2>nul"
++cmd /c "rmdir /s /q Fischless.HotkeyCapture\obj 2>nul"
++cmd /c "rmdir /s /q Fischless.GameCapture\bin 2>nul"
++cmd /c "rmdir /s /q Fischless.GameCapture\obj 2>nul"
++cmd /c "rmdir /s /q BetterGenshinImpact\bin 2>nul"
++cmd /c "rmdir /s /q BetterGenshinImpact\obj 2>nul"
++
++Write-Host "Cleaned!" -ForegroundColor Green
++
++dotnet restore BetterGenshinImpact/BetterGenshinImpact.csproj
++
++Write-Host "Restored!" -ForegroundColor Green
+\ No newline at end of file
+-- 
+2.56.0.windows.2
+
