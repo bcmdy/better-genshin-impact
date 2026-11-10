@@ -1,6 +1,6 @@
-From 1c9d7cff98e6e9c79d5ae8fc53d68224672816c3 Mon Sep 17 00:00:00 2001
+From b03971e6740473fc7cf02642b5f6fbaaaf7fe454 Mon Sep 17 00:00:00 2001
 From: bcmdy <48650902+bcmdy@users.noreply.github.com>
-Date: Sat, 7 Nov 2026 21:49:27 +0800
+Date: Tue, 10 Nov 2026 19:03:10 +0800
 Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6=20DF4.5=20=E5=8A=9F=E8=83=BD?=
  =?UTF-8?q?=E5=B9=B6=E8=A7=A3=E5=86=B3=E4=B8=BB=E7=BA=BF=E5=86=B2=E7=AA=81?=
 MIME-Version: 1.0
@@ -251,15 +251,15 @@ index 641bbf2fa..87ba9faa6 100644
  # AI temporary design docs
  Docs/tmp/*
 diff --git a/BetterGenshinImpact/BetterGenshinImpact.csproj b/BetterGenshinImpact/BetterGenshinImpact.csproj
-index 44e191358..0ba164f86 100644
+index 4b4ce481f..4f824f7a7 100644
 --- a/BetterGenshinImpact/BetterGenshinImpact.csproj
 +++ b/BetterGenshinImpact/BetterGenshinImpact.csproj
 @@ -2,7 +2,7 @@
  
  	<PropertyGroup>
  		<AssemblyName>BetterGI</AssemblyName>
--		<Version>0.66.3-alpha.1</Version>
-+		<Version>0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5</Version>
+-		<Version>0.67.0-alpha.1</Version>
++		<Version>0.67.0+lcb.23.1-NexusBGI-DF4.5</Version>
  		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
  		<OutputType>WinExe</OutputType>
  		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
@@ -400,10 +400,10 @@ index 1ce9bd3a1..4c4aef7eb 100644
          RegisteredModels.Add(model);
          return model;
 diff --git a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
-index d7e3d79ca..82387d59a 100644
+index b325d0433..7c81f8068 100644
 --- a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
 +++ b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
-@@ -4591,6 +4591,16 @@ public partial class PathExecutor
+@@ -4613,6 +4613,16 @@ public partial class PathExecutor
              if (pickup is { IsDisposed: false } && pickup.ReachedToken.IsCancellationRequested)
                  return plannedPickupResume;
  
@@ -980,11 +980,11 @@ index 000000000..6c5620b4b
 +本文档仅记录需求与实施方案，本次不修改上述任何脚本与配置。待确认后另行实施。
 diff --git a/build-actions-local.ps1 b/build-actions-local.ps1
 new file mode 100644
-index 000000000..64b72e839
+index 000000000..d261305c8
 --- /dev/null
 +++ b/build-actions-local.ps1
 @@ -0,0 +1,241 @@
-+﻿param([string]$Version = "0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5")
++﻿param([string]$Version = "0.67.0+lcb.23.1-NexusBGI-DF4.5")
 +
 +# 函数：更新版本号（保持编码）
 +function Update-VersionInFile {
@@ -1227,12 +1227,12 @@ index 000000000..64b72e839
 +Write-Host "`n✅ 构建成功完成!" -ForegroundColor Green
 diff --git a/build-actions-new.ps1 b/build-actions-new.ps1
 new file mode 100644
-index 000000000..9be4cf564
+index 000000000..d8c9b44be
 --- /dev/null
 +++ b/build-actions-new.ps1
 @@ -0,0 +1,280 @@
 +﻿param(
-+    [string]$Version = "0.66.3+lcb.23.0-NexusBGI-fix10-DF4.5",
++    [string]$Version = "0.67.0+lcb.23.1-NexusBGI-DF4.5",
 +    [string]$KachinaChannel = "release",
 +    [switch]$SkipClone,
 +    [switch]$SkipBuild,
