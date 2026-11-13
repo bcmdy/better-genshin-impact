@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'BetterGI 版本号；茶包分支填 release:版本号可在构建成功后公开发布'
+        description: 'BetterGI 版本号，例如 0.66.3+lcb.23.0-NexusBGI-fix9；构建成功后自动发布 Release'
         required: true
         type: string
       expected-sha:
@@ -23,9 +23,9 @@ on:
           - dev
       create-release:
         type: boolean
-        description: '创建 GitHub Release 草稿'
+        description: '创建并发布 GitHub Release'
         required: true
-        default: false
+        default: true
       upload-to-steambird:
         type: boolean
         description: '上传到 Steambird'
@@ -37,13 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set-version.outputs.version }}
-      publish: ${{ steps.set-version.outputs.publish }}
     steps:
-      - name: Validate version and publication choice
+      - name: Validate version
         id: set-version
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
-          CREATE_DRAFT: ${{ inputs.create-release }}
           EXPECTED_SHA: ${{ inputs['expected-sha'] }}
         run: |
           # expected-commit-guard-v1
@@ -53,25 +51,13 @@ jobs:
               exit 1
             fi
           fi
-          version="$REQUESTED_VERSION"
-          publish=false
-          if [[ "$version" == release:* ]]; then
-            if [[ "$GITHUB_REPOSITORY" != kaedelcb/better-genshin-impact || ! "$GITHUB_REF" =~ ^refs/heads/main-OldTeaBag-B[0-9]+$ ]]; then
-              echo '::error::只能从本仓库的 main-OldTeaBag-B 数字分支公开发布。'
-              exit 1
-            fi
-            if [[ "$CREATE_DRAFT" == true ]]; then
-              echo '::error::公开发布和创建草稿只能选一种。使用 release: 时请取消勾选创建草稿。'
-              exit 1
-            fi
-            version="${version#release:}"
-            publish=true
-          fi
+          # 兼容旧的 release: 前缀写法；去掉前缀后一律按发布处理。
+          version="${REQUESTED_VERSION#release:}"
           if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
             echo '::error::版本格式不正确，例如 0.66.3+lcb.23.0-NexusBGI-fix9。'
             exit 1
           fi
-          printf 'version=%s\npublish=%s\n' "$version" "$publish" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
 
   build_web_map_editor:
     runs-on: ubuntu-latest
@@ -221,7 +207,9 @@ jobs:
   
   build_dist:
     runs-on: windows-latest
-    needs: [validate, build_web_map_editor, build_web_scripts_list]
+    needs: [validate, create_release, build_web_map_editor, build_web_scripts_list]
+    permissions:
+      contents: write
     steps:
       - name: Enable Git long paths
         shell: pwsh
@@ -342,10 +330,23 @@ jobs:
         with:
           name: BetterGI_7z
           path: dist/BetterGI_*.7z
+      - name: 📤 追加绿色版压缩包到 Release
+        if: ${{ inputs.create-release }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: BetterGI v${{ needs.validate.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/BetterGI_v${{ needs.validate.outputs.version }}.7z
 
   build_installer:
     runs-on: windows-latest
     needs: [validate, build_dist]
+    permissions:
+      contents: write
     steps:
       - name: Enable Git long paths
         shell: pwsh
@@ -475,10 +476,23 @@ jobs:
         with:
           name: BetterGI_OnlineInst
           path: dist/BetterGI/BetterGI.update.exe
+      - name: 📤 追加安装器到 Release
+        if: ${{ inputs.create-release }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: BetterGI v${{ needs.validate.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/BetterGI.Install.${{ needs.validate.outputs.version }}.exe
 
   build_setup:
     runs-on: windows-latest
     needs: [validate, build_dist]
+    permissions:
+      contents: write
     steps:
       - name: Enable Git long paths
         shell: pwsh
@@ -587,57 +601,36 @@ jobs:
           name: BetterGI_Setup
           path: BetterGI_Setup_v${{ needs.validate.outputs.version }}.exe
           if-no-files-found: error
-
-  # 创建 GitHub Release
-  create_release:
-    if: github.event.inputs.create-release == 'true'
-    needs: [validate, build_dist, build_installer]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Release
+      - name: 📤 追加安装向导到 Release
+        if: ${{ inputs.create-release }}
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.validate.outputs.version }}
           name: BetterGI v${{ needs.validate.outputs.version }}
-          draft: true
+          draft: false
           prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
           fail_on_unmatched_files: true
           files: |
-            artifacts/BetterGI_7z/*.7z
-            artifacts/BetterGI_Install/*.exe
+            BetterGI_Setup_v${{ needs.validate.outputs.version }}.exe
 
-  publish_release:
-    name: 公开发布 GitHub Release
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.repository == 'kaedelcb/better-genshin-impact' &&
-      needs.validate.outputs.publish == 'true' && !inputs.create-release
-    needs: [validate, build_dist, build_installer, build_setup]
+  # 创建 GitHub Release（只建壳，成品由各构建任务自行追加）
+  # 任务本身始终执行，避免跳过时连带跳过依赖它的构建任务；是否建 Release 由步骤条件决定。
+  create_release:
+    needs: [validate]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    concurrency:
-      group: bettergi-release-${{ needs.validate.outputs.version }}
-      cancel-in-progress: false
-      queue: max
     permissions:
-      actions: read
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Create empty Release
+        if: ${{ inputs.create-release }}
+        uses: softprops/action-gh-release@v1
         with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: 校验两项原始附件并公开发布
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
-        run: python -B tools/release_actions.py
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: BetterGI v${{ needs.validate.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          # 此处尚无附件，必须为 false，否则会因找不到文件而失败
+          fail_on_unmatched_files: false
 
   mirrorchyan_uploading:
     if: github.repository_owner == 'babalae' && contains(needs.validate.outputs.version, '-')
