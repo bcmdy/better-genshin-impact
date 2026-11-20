@@ -13,7 +13,7 @@ on:
       target_branch:
         description: '推送到本仓库 (bcmdy) 的目标分支名'
         required: true
-        default: 'LCB-67.0-lcb.23.1-NBGI-fix4-DF4.5'
+        default: 'LCB-67.2-lcb.23.2-NBGI-DF4.5'
         type: string
       patch_file:
         description: '补丁文件路径（相对本仓库根目录）'
