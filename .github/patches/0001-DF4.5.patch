@@ -1,6 +1,6 @@
-From 1a8ccf95a572fd134c0690bd0889b4b5d6a75793 Mon Sep 17 00:00:00 2001
+From 24a1d770d1f486a34e9bc018dde7d3eddbad43ce Mon Sep 17 00:00:00 2001
 From: bcmdy <48650902+bcmdy@users.noreply.github.com>
-Date: Fri, 20 Nov 2026 19:00:03 +0800
+Date: Fri, 20 Nov 2026 19:03:13 +0800
 Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6=20DF4.5=20=E8=A1=A5=E4=B8=81?=
  =?UTF-8?q?=E5=88=B0=20main-OldTeaBag-B191=20=E5=B9=B6=E8=A7=A3=E5=86=B3?=
  =?UTF-8?q?=E5=8F=91=E5=B8=83=E6=B5=81=E7=A8=8B=E5=86=B2=E7=AA=81?=
@@ -9,7 +9,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 保留主线 MicaSetup 版本固定、打包守卫与产物上传收紧，含 if-no-files-found 校验。
-采用先建空 Release、各构建任务边构建边追加的发布结构。
+采用先建空 Release、各构建任务边构建边追加的发布结构，删除旧的 create_release
+与 publish_release 任务，避免同名与结构性冲突。
 合入版本号伪装、ONNX 模型缓存按版本重算、传送前等待时间配置。
 版本号更新为 0.67.2+lcb.23.2-NexusBGI-DF4.5。
 ---
