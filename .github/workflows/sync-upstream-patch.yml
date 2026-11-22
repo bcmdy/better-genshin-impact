@@ -8,12 +8,12 @@ on:
       upstream_branch:
         description: '上游仓库 (kaedelcb) 的分支名'
         required: true
-        default: 'main-OldTeaBag-B191'
+        default: 'main-OldTeaBag-B192'
         type: string
       target_branch:
         description: '推送到本仓库 (bcmdy) 的目标分支名'
         required: true
-        default: 'LCB-67.2-lcb.23.2-NBGI-DF4.5'
+        default: 'LCB-67.2-LCB23.2-NBGI-fix1-DF4.5'
         type: string
       patch_file:
         description: '补丁文件路径（相对本仓库根目录）'

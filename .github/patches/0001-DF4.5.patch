@@ -1,22 +1,15 @@
-From 24a1d770d1f486a34e9bc018dde7d3eddbad43ce Mon Sep 17 00:00:00 2001
+From 567a03a5cba63f0b148e04cd04842edddbb889db Mon Sep 17 00:00:00 2001
 From: bcmdy <48650902+bcmdy@users.noreply.github.com>
-Date: Fri, 20 Nov 2026 19:03:13 +0800
-Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6=20DF4.5=20=E8=A1=A5=E4=B8=81?=
- =?UTF-8?q?=E5=88=B0=20main-OldTeaBag-B191=20=E5=B9=B6=E8=A7=A3=E5=86=B3?=
- =?UTF-8?q?=E5=8F=91=E5=B8=83=E6=B5=81=E7=A8=8B=E5=86=B2=E7=AA=81?=
+Date: Sun, 22 Nov 2026 20:35:52 +0800
+Subject: [PATCH] =?UTF-8?q?=E8=A1=A5=E4=B8=81DF4.5=E8=87=B3main-OldTeaBag-?=
+ =?UTF-8?q?B192?=
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
-保留主线 MicaSetup 版本固定、打包守卫与产物上传收紧，含 if-no-files-found 校验。
-采用先建空 Release、各构建任务边构建边追加的发布结构，删除旧的 create_release
-与 publish_release 任务，避免同名与结构性冲突。
-合入版本号伪装、ONNX 模型缓存按版本重算、传送前等待时间配置。
-版本号更新为 0.67.2+lcb.23.2-NexusBGI-DF4.5。
 ---
  .github/workflows/publish.yml                 | 113 ++++---
  .gitignore                                    |   1 +
- .../BetterGenshinImpact.csproj                |   2 +-
  .../Core/Config/CommonConfig.cs               |  11 +
  BetterGenshinImpact/Core/Config/Global.cs     |  16 +-
  .../Core/Config/PathingPartyConfig.cs         |   3 +
@@ -31,7 +24,7 @@ Content-Transfer-Encoding: 8bit
  build-actions-local.ps1                       | 241 +++++++++++++++
  build-actions-new.ps1                         | 280 ++++++++++++++++++
  clean.ps1                                     |  18 ++
- 17 files changed, 1126 insertions(+), 80 deletions(-)
+ 16 files changed, 1125 insertions(+), 79 deletions(-)
  create mode 100644 "Docs/\344\274\240\351\200\201\345\211\215\347\255\211\345\276\205\346\227\266\351\227\264\344\277\256\346\224\271\346\226\207\346\241\243.md"
  create mode 100644 "Docs/\345\217\221\345\270\203\346\265\201\347\250\213\346\224\271\351\200\240\351\234\200\346\261\202.md"
  create mode 100644 build-actions-local.ps1
@@ -39,7 +32,7 @@ Content-Transfer-Encoding: 8bit
  create mode 100644 clean.ps1
 
 diff --git a/.github/workflows/publish.yml b/.github/workflows/publish.yml
-index d226d5164..2476926e0 100644
+index 391eeb4b6..5a89c5e21 100644
 --- a/.github/workflows/publish.yml
 +++ b/.github/workflows/publish.yml
 @@ -5,7 +5,7 @@ on:
@@ -118,7 +111,7 @@ index d226d5164..2476926e0 100644
      steps:
        - name: Enable Git long paths
          shell: pwsh
-@@ -361,10 +349,23 @@ jobs:
+@@ -371,10 +359,23 @@ jobs:
            name: BetterGI_7z
            path: dist/BetterGI_*.7z
            if-no-files-found: error
@@ -142,7 +135,7 @@ index d226d5164..2476926e0 100644
      steps:
        - name: Enable Git long paths
          shell: pwsh
-@@ -494,10 +495,23 @@ jobs:
+@@ -504,10 +505,23 @@ jobs:
          with:
            name: BetterGI_OnlineInst
            path: dist/BetterGI/BetterGI.update.exe
@@ -166,7 +159,7 @@ index d226d5164..2476926e0 100644
      steps:
        - name: Enable Git long paths
          shell: pwsh
-@@ -606,57 +620,36 @@ jobs:
+@@ -616,57 +630,36 @@ jobs:
            name: BetterGI_Setup
            path: BetterGI_Setup_v${{ needs.validate.outputs.version }}.exe
            if-no-files-found: error
@@ -253,19 +246,6 @@ index 641bbf2fa..87ba9faa6 100644
  
  # AI temporary design docs
  Docs/tmp/*
-diff --git a/BetterGenshinImpact/BetterGenshinImpact.csproj b/BetterGenshinImpact/BetterGenshinImpact.csproj
-index 2d46bbe64..d45f24f53 100644
---- a/BetterGenshinImpact/BetterGenshinImpact.csproj
-+++ b/BetterGenshinImpact/BetterGenshinImpact.csproj
-@@ -2,7 +2,7 @@
- 
- 	<PropertyGroup>
- 		<AssemblyName>BetterGI</AssemblyName>
--		<Version>0.67.2-alpha.1</Version>
-+		<Version>0.67.2+lcb.23.2-NexusBGI-DF4.5</Version>
- 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
- 		<OutputType>WinExe</OutputType>
- 		<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
 diff --git a/BetterGenshinImpact/Core/Config/CommonConfig.cs b/BetterGenshinImpact/Core/Config/CommonConfig.cs
 index 2caa78aec..22e8508be 100644
 --- a/BetterGenshinImpact/Core/Config/CommonConfig.cs
@@ -322,7 +302,7 @@ index e7cba0a08..a02f00b89 100644
      private static readonly object UserRootGate = new();
      private static string _startUpPath = AppContext.BaseDirectory;
 diff --git a/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs b/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
-index cd0b8f866..9bf188054 100644
+index 273583ead..2e5262da7 100644
 --- a/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
 +++ b/BetterGenshinImpact/Core/Config/PathingPartyConfig.cs
 @@ -326,6 +326,9 @@ public partial class PathingPartyConfig : ObservableObject, IJsonOnDeserialized
@@ -403,10 +383,10 @@ index 1ce9bd3a1..4c4aef7eb 100644
          RegisteredModels.Add(model);
          return model;
 diff --git a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
-index 41a9bca25..0d8775242 100644
+index 455284ff5..86468de33 100644
 --- a/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
 +++ b/BetterGenshinImpact/GameTask/AutoPathing/PathExecutor.cs
-@@ -4656,6 +4656,16 @@ public partial class PathExecutor
+@@ -4653,6 +4653,16 @@ public partial class PathExecutor
              if (pickup is { IsDisposed: false } && pickup.ReachedToken.IsCancellationRequested)
                  return plannedPickupResume;
  
@@ -491,7 +471,7 @@ index 384f0fbb1..67f0b625c 100644
                  <Grid>
                      <Grid.RowDefinitions>
 diff --git a/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml b/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
-index 2b61ad751..a7a9cee3e 100644
+index 88ef347d1..cd6c377c5 100644
 --- a/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
 +++ b/BetterGenshinImpact/View/Pages/View/ScriptGroupConfigView.xaml
 @@ -218,16 +218,17 @@
@@ -983,11 +963,11 @@ index 000000000..6c5620b4b
 +本文档仅记录需求与实施方案，本次不修改上述任何脚本与配置。待确认后另行实施。
 diff --git a/build-actions-local.ps1 b/build-actions-local.ps1
 new file mode 100644
-index 000000000..19b6e835b
+index 000000000..84051b791
 --- /dev/null
 +++ b/build-actions-local.ps1
 @@ -0,0 +1,241 @@
-+﻿param([string]$Version = "0.67.0+lcb.23.1-NexusBGI-fix4-DF4.5")
++﻿param([string]$Version = "0.67.2+lcb.23.2-NexusBGI-fix1-DF4.5")
 +
 +# 函数：更新版本号（保持编码）
 +function Update-VersionInFile {
@@ -1230,12 +1210,12 @@ index 000000000..19b6e835b
 +Write-Host "`n✅ 构建成功完成!" -ForegroundColor Green
 diff --git a/build-actions-new.ps1 b/build-actions-new.ps1
 new file mode 100644
-index 000000000..94dcf10eb
+index 000000000..d88462f61
 --- /dev/null
 +++ b/build-actions-new.ps1
 @@ -0,0 +1,280 @@
 +﻿param(
-+    [string]$Version = "0.67.0+lcb.23.1-NexusBGI-fix4-DF4.5",
++    [string]$Version = "0.67.2+lcb.23.2-NexusBGI-fix1-DF4.5",
 +    [string]$KachinaChannel = "release",
 +    [switch]$SkipClone,
 +    [switch]$SkipBuild,
