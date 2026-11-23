@@ -327,6 +327,9 @@ public partial class PathingPartyConfig : ObservableObject, IJsonOnDeserialized
     private bool _enablePickupTargetCount = false;
     
     [ObservableProperty]
+    private int _preTeleportDelayMs = 0;
+
+    [ObservableProperty]
     private bool _disableAutoFetchDispatch = false;
     
     public static OtherConfig OtherConfig { get; set; } = TaskContext.Instance().Config.OtherConfig;
