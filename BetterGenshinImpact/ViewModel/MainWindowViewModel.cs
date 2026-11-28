@@ -133,6 +133,11 @@ public partial class MainWindowViewModel : ObservableObject, IViewModel
         {
             LoadMainBackground();
         }
+
+        if (e.PropertyName == nameof(CommonConfig.SoftwareVersionOverride))
+        {
+            OnPropertyChanged(nameof(Title));
+        }
     }
 
     /// <summary>
